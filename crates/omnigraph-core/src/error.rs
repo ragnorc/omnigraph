@@ -180,6 +180,15 @@ pub enum OmniError {
         "full-text index '{index}' requires rebuild: {reason}; run omnigraph rebuild-full-text-indexes <URI> --branch <branch> on the live branch (historical snapshots are unchanged)"
     )]
     FullTextIndexRebuildRequired { index: String, reason: String },
+    /// A full-text call (`search`, `fuzzy`, `match_text`, `bm25`) names a
+    /// declared full-text index with no built segment at the query's
+    /// snapshot. Refused at planning, before any scan: without segments Lance
+    /// would scan the property with a bare, case-sensitive tokenizer and
+    /// answer differently than the index does. Building the index answers it.
+    #[error(
+        "full-text index on '{index}' has no built segment at this snapshot: {reason}; build it with omnigraph build-indexes <URI> --branch <branch>"
+    )]
+    FullTextIndexRequired { index: String, reason: String },
     /// The exact staged-commit adapter proved that Lance contention was
     /// effect-free. This operation-local signal lets RFC-023 distinguish a
     /// safe key-fence re-evaluation from an arbitrary storage failure; generic

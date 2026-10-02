@@ -56,7 +56,7 @@ pub use lower::{
     ContainsJoinFields, ExpandFields, HashJoinFields, Lower, RankFuseFields, SortMergeJoinFields,
 };
 pub use operation::{Operation, PageBudgetSpec, ScopeSpec, Side, TableRef};
-pub use optimizer::{Bounds, physical_plan, rewrite};
+pub use optimizer::{Bounds, full_text_targets, physical_plan, rewrite};
 pub use physical::{
     Assumptions, DatasetPin, Eligibility, EmptyEligible, Estimate, GatePolicy, Hop, NearestPolicy,
     NodeId, OrderKey, OverfetchRung, PhysicalNode, PhysicalPlan, Prefilter, PrefilterMode,

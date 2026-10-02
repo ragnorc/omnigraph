@@ -970,6 +970,7 @@ const EXPECTED_SCHEMAS: &[&str] = &[
     "ErrorCode",
     "ErrorOutput",
     "FullTextIndexRebuildRequiredOutput",
+    "FullTextIndexRequiredOutput",
     "DiagnosticOutput",
     "PositionOutput",
     "SuggestionOutput",
@@ -1358,6 +1359,22 @@ fn error_output_schema_has_expected_fields() {
             .any(|field| field == "full_text_index_rebuild_required")
     );
     let details = &doc["components"]["schemas"]["FullTextIndexRebuildRequiredOutput"];
+    let required: HashSet<&str> = details["required"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|field| field.as_str().unwrap())
+        .collect();
+    assert_eq!(required, HashSet::from(["index", "reason"]));
+    let unbuilt = &props["full_text_index_required"];
+    assert!(
+        unbuilt["oneOf"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|schema| { schema["$ref"] == "#/components/schemas/FullTextIndexRequiredOutput" })
+    );
+    let details = &doc["components"]["schemas"]["FullTextIndexRequiredOutput"];
     let required: HashSet<&str> = details["required"]
         .as_array()
         .unwrap()

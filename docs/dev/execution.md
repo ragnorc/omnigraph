@@ -14,7 +14,8 @@ A query runs against one resolved `ReadTarget`:
    its type context beside it.
 4. Gather the planning inputs once: bound parameters (`now()` among them),
    constants folded to their values, statistics, settings and the full-text
-   coverage of every ranked property.
+   coverage of every property a full-text call reads
+   (`omnigraph_planner::full_text_targets`).
 5. Plan the query and accept the plan (see [Plan acceptance](#plan-acceptance)).
 6. Bind the accepted plan's values and execute it against the same snapshot.
 7. Serialize result batches at the calling boundary.
@@ -659,6 +660,17 @@ covers every fragment at the pinned version, a fact the plan records in
 Lance scores uncovered fragments flat from statistics over the rows its
 prefilter admits, so filtering before scoring there would change scores.
 
+Every full-text call (`search`, `fuzzy`, `match_text`, `bm25`) needs a
+declared full-text index on its property: the type checker refuses any other
+(`T27`). Its recorded coverage must also name a built segment: planning
+refuses `FullTextCoverage::Absent` with `FullTextIndexRequired` (a conflict,
+HTTP 409), and acceptance refuses a plan that records no coverage, or absent
+coverage, for a call the query makes. Without a segment Lance matches with
+its bare default tokenizer, which neither lowercases nor stems, so the answer
+would differ from the indexed one; with one, rows outside every segment are
+matched with the first segment's analyzer. A table with no fragment holds no
+rows and counts as fully covered.
+
 A `nearest` scan carries a probe cap per index delta (the `ann_nprobes`
 session setting, `request` scope, default 20, `0` is no cap; the process
 default is `OMNIGRAPH_ANN_NPROBES`) and the adaptive policy the plan declares
@@ -760,4 +772,5 @@ Schema apply, mutation, and Load publish logical data and index intent only.
 `ensure_indices` materializes declared missing indexes through the shared
 recovery protocol; `optimize` folds coverage as physical maintenance. Reads
 remain correct through Lance's indexed-plus-unindexed scan behavior while
-coverage converges.
+coverage converges, except a full-text call on a declared index with no built
+segment, which planning refuses (see [Search and rank](#search-and-rank)).

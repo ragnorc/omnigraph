@@ -94,6 +94,19 @@ a standalone call or compare the call to literal `true` with `=`. Other
 comparisons, including `= false`, `!= true`, a Boolean parameter, and a
 call on the right side, are refused at type checking (`T38`).
 
+Every full-text call (`search`, `match_text`, `fuzzy` and `bm25`) reads its
+property's full-text index, whose analyzer decides how the text and the query
+are split and normalized, case included. The property must declare one, a
+free-text String with `@index` ([Indexes](#indexes)); a call on any other
+property is refused at type checking (`T27`). The index must also have a built
+segment at the snapshot the query reads. Until a build reaches a declared
+index, a call on it is refused at planning with `full_text_index_required`
+(HTTP 409); `omnigraph build-indexes --branch <branch>` builds a branch's
+missing indexes, and `omnigraph optimize` builds them on `main` as part of its
+maintenance. A type with no rows needs no build. Rows written after the last build are matched
+with the built index's analyzer by a scan, so they are found before the next
+build.
+
 ```gq
 query relevant($q: String) {
   match { $d: Document }
@@ -151,8 +164,11 @@ declarations do not currently create property indexes.
 
 Indexes are derived performance data. A new declaration may still be pending,
 and newly written entities may fall outside existing coverage. Queries remain
-correct by scanning missing or uncovered data; vector search falls back to an
-exact scan when needed. Run:
+correct by scanning uncovered data; vector search falls back to an exact scan
+when needed. A full-text call is the exception for a declared index that has
+never been built: without a built segment there is no analyzer to match with,
+so the call is refused rather than answered by a different one (see
+[Full-text search](#full-text-search)). Run:
 
 ```bash
 omnigraph optimize graph.omni

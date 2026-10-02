@@ -130,7 +130,7 @@ impl<'a> QuerySource<'a> {
         let params = resolve_params(&query.ir, params)?;
         let ir = super::constant::fold_query_constants(&query.ir, params.shared())?;
         let table_stats = destination_table_statistics(&ir, snapshot).await?;
-        let full_text = ranked_full_text_coverage(&ir, snapshot).await?;
+        let full_text = full_text_coverage(&ir, snapshot).await?;
         let mut source = QuerySource {
             ir,
             checked: query.checked.clone(),
@@ -357,6 +357,17 @@ impl PlanSource for QuerySource<'_> {
     }
 }
 
+/// A full-text call on a declared index with no built segment: a conflict
+/// the operator resolves by building the index.
+fn index_required(index: String) -> OmniError {
+    OmniError::FullTextIndexRequired {
+        index,
+        reason:
+            "a full-text call matches with the index's analyzer, which only a built segment carries"
+                .to_string(),
+    }
+}
+
 /// A query shape the planner refuses by design: the caller's error, a bad
 /// request carrying the planner's diagnostic on every door.
 fn unsupported_query(diagnostic: Box<omnigraph_compiler::QueryDiagnostic>) -> OmniError {
@@ -368,6 +379,7 @@ fn unsupported_query(diagnostic: Box<omnigraph_compiler::QueryDiagnostic>) -> Om
 fn plan_error(error: PlanError) -> OmniError {
     match error {
         PlanError::Unsupported(diagnostic) => unsupported_query(diagnostic),
+        PlanError::FullTextIndexRequired { index } => index_required(index),
         other => no_plan(other),
     }
 }
@@ -425,6 +437,7 @@ impl ConstantEvaluator for BoundConstants<'_> {
 fn unaccepted(reason: Unrouted) -> OmniError {
     match reason {
         Unrouted::UnsupportedQuery { diagnostic } => unsupported_query(diagnostic),
+        Unrouted::FullTextIndexRequired { index } => index_required(index),
         Unrouted::ValidationExhausted { limit, value } => OmniError::ResourceLimitExceeded {
             resource: format!("plan validation {limit}"),
             limit: value,
@@ -497,13 +510,7 @@ pub(crate) async fn replayed_coverage_holds(
                 "the plan records full-text coverage of `{key}` without pinning `{type_key}`"
             )));
         }
-        let actual = match snapshot.dataset(type_key) {
-            Some(_) => {
-                let dataset = snapshot.open_lance_dataset(type_key).await?;
-                crate::table_store::TableStore::fts_coverage(&dataset, property).await?
-            }
-            None => FullTextCoverage::Absent,
-        };
+        let actual = coverage_at(snapshot, type_key, property).await?;
         if actual != *recorded {
             return Err(refuse(format!(
                 "the plan records full-text coverage {recorded:?} of `{key}`; the pinned snapshot holds {actual:?}"
@@ -555,66 +562,39 @@ pub(crate) fn explain_query(source: &QuerySource<'_>) -> Result<ExplainedQuery> 
     Ok(ExplainedQuery { explain, accepted })
 }
 
-/// The full-text coverage of every property the leading `order` key ranks
-/// by `bm25()` (alone or as an `rrf()` arm), at the snapshot's pinned
-/// version: the fact that decides where the ranked scan applies its
-/// eligibility.
-async fn ranked_full_text_coverage(
+/// The full-text coverage of every property a full-text call of the query
+/// reads the index of (`omnigraph_planner::full_text_targets`, the list the
+/// planner checks), at the snapshot's pinned version: the fact that decides
+/// whether the call is refused and where a ranked scan applies its
+/// eligibility. A type with no dataset holds no rows, which every index
+/// covers.
+async fn full_text_coverage(
     ir: &QueryIR,
     snapshot: &Snapshot,
 ) -> Result<HashMap<(String, String), FullTextCoverage>> {
-    fn bm25_targets(expr: &IRExpr, out: &mut Vec<(String, String)>) {
-        match expr {
-            IRExpr::Bm25 { field, .. } => {
-                if let IRExpr::PropAccess { variable, property } = field.as_ref() {
-                    out.push((variable.clone(), property.clone()));
-                }
-            }
-            IRExpr::Rrf {
-                primary, secondary, ..
-            } => {
-                bm25_targets(primary, out);
-                bm25_targets(secondary, out);
-            }
-            _ => {}
-        }
-    }
-    fn binding_type(ops: &[IROp], binding: &str) -> Option<String> {
-        ops.iter().find_map(|op| match op {
-            IROp::NodeScan {
-                variable,
-                type_name,
-                ..
-            } if variable == binding => Some(type_name.clone()),
-            IROp::Expand {
-                dst_var, dst_type, ..
-            } if dst_var == binding => Some(dst_type.clone()),
-            _ => None,
-        })
-    }
-    let mut targets = Vec::new();
-    if let Some(leading) = ir.order_by.first() {
-        bm25_targets(&leading.expr, &mut targets);
-    }
     let mut coverage = HashMap::new();
-    for (binding, property) in targets {
-        let Some(type_name) = binding_type(&ir.pipeline, &binding) else {
-            continue;
-        };
+    for (type_name, property) in omnigraph_planner::full_text_targets(ir) {
         let type_key = format!("node:{type_name}");
-        if coverage.contains_key(&(type_key.clone(), property.clone())) {
-            continue;
-        }
-        let known = match snapshot.dataset(&type_key) {
-            Some(_) => {
-                let dataset = snapshot.open_lance_dataset(&type_key).await?;
-                crate::table_store::TableStore::fts_coverage(&dataset, &property).await?
-            }
-            None => FullTextCoverage::Absent,
-        };
+        let known = coverage_at(snapshot, &type_key, &property).await?;
         coverage.insert((type_key, property), known);
     }
     Ok(coverage)
+}
+
+/// The full-text coverage of `property` in the table `type_key` names at
+/// `snapshot`: a table with no dataset holds no rows and is covered.
+async fn coverage_at(
+    snapshot: &Snapshot,
+    type_key: &str,
+    property: &str,
+) -> Result<FullTextCoverage> {
+    match snapshot.dataset(type_key) {
+        Some(_) => {
+            let dataset = snapshot.open_lance_dataset(type_key).await?;
+            crate::table_store::TableStore::fts_coverage(&dataset, property).await
+        }
+        None => Ok(FullTextCoverage::Full),
+    }
 }
 
 async fn destination_table_statistics(

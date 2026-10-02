@@ -15,6 +15,11 @@ pub enum PlanError {
     /// planner defect.
     #[error("{0}")]
     Unsupported(Box<QueryDiagnostic>),
+    /// A full-text call names a declared full-text index with no built
+    /// segment at the pinned snapshot (`index` is `Type.property`): a
+    /// conflict building the index resolves, not the caller's query error.
+    #[error("the full-text index on `{index}` has no built segment at this snapshot")]
+    FullTextIndexRequired { index: String },
     /// A pass met a plan it has no rule for. A registered shape never reaches
     /// this arm; the registry test pins that.
     #[error("planner internal error: {0}")]

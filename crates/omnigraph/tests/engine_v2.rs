@@ -14,7 +14,7 @@ async fn vector_doc_graph(dir: &tempfile::TempDir) -> omnigraph::Session {
     let schema = r#"
 node Doc {
     slug: String @key
-    title: String
+    title: String @index
     embedding: Vector(4)?
 }
 "#;
@@ -29,6 +29,8 @@ node Doc {
             .unwrap(),
     );
     db.load_jsonl(&seed, LoadMode::Overwrite).await.unwrap();
+    // A full-text call needs a built segment; the vector index stays unbuilt.
+    db.db().rebuild_full_text_indices_on("main").await.unwrap();
     db
 }
 
@@ -734,6 +736,7 @@ async fn rrf_order_runs_a_cross_join_over_multiple_probe_batches() {
             .unwrap(),
     );
     db.load_jsonl(&seed, LoadMode::Overwrite).await.unwrap();
+    db.db().rebuild_full_text_indices_on("main").await.unwrap();
     let db = with_setting(&db, "engine", "v2");
     let source = "query fused($t: String) {\n    match {\n        $d: Doc\n        $p: Probe\n        $d.n = $p.n\n    }\n    return { $d.slug }\n    order { rrf(bm25($d.text, $t), bm25($d.text, $t)) }\n    limit 1\n}";
     let result = query_main(

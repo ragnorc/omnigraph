@@ -892,10 +892,14 @@ query nearest_with_edge($q: Vector(4)) {
 }
 "#;
 
+/// The document graph with its full-text index built (a full-text call needs
+/// a built segment) and its vector index left unbuilt.
 async fn doc_graph(dir: &tempfile::TempDir) -> Session {
     let seed = doc_seed();
     let seed: Vec<&str> = seed.iter().map(String::as_str).collect();
-    graph(dir, DOC_SCHEMA, &seed).await
+    let db = graph(dir, DOC_SCHEMA, &seed).await;
+    db.db().rebuild_full_text_indices_on("main").await.unwrap();
+    db
 }
 
 #[tokio::test]

@@ -128,3 +128,8 @@ an internal error.
 | `P002` | An edge alternation or wildcard traversal has no finite traversal work limit. The fix sets `traversal_work_limit` before the query. |
 | `P003` | The traversal work limit is outside `1..=9223372036854775807`, or a plan records it twice. |
 | `P004` | An edge alternation or wildcard traversal was asked to run in CSR traversal mode; it runs in `auto` or `indexed` mode. |
+
+A refusal caused by the graph's state rather than the query's shape carries no
+planner code. A full-text call on a declared index that no build has reached is
+a `409` conflict carrying `full_text_index_required`; it persists until the
+index is built (see [Full-text search](../search/index.md#full-text-search)).

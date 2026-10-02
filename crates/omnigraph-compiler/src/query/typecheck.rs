@@ -11,6 +11,7 @@ use crate::types::{Direction, PropType, ScalarType};
 
 use super::ast::*;
 use super::codes::*;
+use super::diagnostic::QueryDiagnostic;
 
 /// A variable in the query's single namespace, tagged by what it binds.
 ///
@@ -1921,6 +1922,43 @@ fn typecheck_comparison(
     }
 }
 
+/// T27: a full-text call reads the full-text index of the node property it
+/// names, which the schema declares with a one-column `@index` on a free-text
+/// String property ([`crate::catalog::NodeType::has_full_text_index`]). The
+/// check reads the schema only, never physical index state; without it the
+/// substrate scans with a bare, case-sensitive tokenizer.
+fn require_full_text_index(
+    catalog: &Catalog,
+    ctx: &TypeContext,
+    field: &Expr,
+    func: &str,
+) -> Result<()> {
+    let Expr::PropAccess { variable, property } = field else {
+        return Ok(());
+    };
+    let Some(BoundVariable::Node { type_name }) = ctx.bindings.get(variable) else {
+        return Ok(());
+    };
+    let Some(node_type) = catalog.node_types.get(type_name) else {
+        return Ok(());
+    };
+    if !node_type.properties.contains_key(property) || node_type.has_full_text_index(property) {
+        return Ok(());
+    }
+    Err(CompilerError::query(
+        QueryDiagnostic::typecheck(
+            T27,
+            format!(
+                "`{func}` over `${variable}.{property}` needs a full-text index, and `{type_name}.{property}` declares none"
+            ),
+        )
+        .with_expression(format!("${variable}.{property}"))
+        .with_fix(format!(
+            "declare `{property}: String @index` on `{type_name}`, then build the index with `omnigraph build-indexes`"
+        )),
+    ))
+}
+
 /// Search/rank filters are hoisted onto the field variable's NodeScan; an
 /// edge binding has none, so accepting one here would silently drop the
 /// filter. Reject at typecheck instead.
@@ -2175,6 +2213,7 @@ fn resolve_expr_type(
         }
         Expr::Search { field, query } => {
             reject_edge_binding_search_field(ctx, field, "search")?;
+            require_full_text_index(catalog, ctx, field, "search")?;
             let field_type = resolve_expr_type(catalog, field, ctx, params, scope)?;
             match field_type {
                 ResolvedType::Scalar(s) if s.scalar == ScalarType::String && !s.list => {}
@@ -2220,6 +2259,7 @@ fn resolve_expr_type(
             max_edits,
         } => {
             reject_edge_binding_search_field(ctx, field, "fuzzy")?;
+            require_full_text_index(catalog, ctx, field, "fuzzy")?;
             let field_type = resolve_expr_type(catalog, field, ctx, params, scope)?;
             match field_type {
                 ResolvedType::Scalar(s) if s.scalar == ScalarType::String && !s.list => {}
@@ -2292,6 +2332,7 @@ fn resolve_expr_type(
         }
         Expr::MatchText { field, query } => {
             reject_edge_binding_search_field(ctx, field, "match_text")?;
+            require_full_text_index(catalog, ctx, field, "match_text")?;
             let field_type = resolve_expr_type(catalog, field, ctx, params, scope)?;
             match field_type {
                 ResolvedType::Scalar(s) if s.scalar == ScalarType::String && !s.list => {}
@@ -2333,6 +2374,7 @@ fn resolve_expr_type(
         }
         Expr::Bm25 { field, query } => {
             reject_edge_binding_search_field(ctx, field, "bm25")?;
+            require_full_text_index(catalog, ctx, field, "bm25")?;
             let field_type = resolve_expr_type(catalog, field, ctx, params, scope)?;
             match field_type {
                 ResolvedType::Scalar(s) if s.scalar == ScalarType::String && !s.list => {}

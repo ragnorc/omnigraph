@@ -32,7 +32,7 @@ fn setup() -> Catalog {
     let schema = parse_schema(
         r#"
 node Person {
-name: String
+name: String @index
 age: I32?
 }
 node Company {
@@ -72,7 +72,7 @@ fn setup_vector() -> Catalog {
     let schema = parse_schema(
         r#"
 node Doc {
-id_str: String
+id_str: String @index
 embedding: Vector(3)
 }
 "#,
@@ -1924,7 +1924,7 @@ fn setup_expressions() -> Catalog {
     let schema = parse_schema(
         r#"
 node Person {
-name: String
+name: String @index
 email: String?
 age: I32?
 active: Bool
@@ -2409,4 +2409,77 @@ fn a_type_error_exposes_its_diagnostic_with_code_and_stage() {
             .iter()
             .any(|code| code.as_str() == "T1")
     );
+}
+
+/// T27: a full-text call needs a full-text index on the node property it
+/// names. The check reads the schema only: a one-column `@index` on a
+/// free-text String is one; an unindexed property, an enum (which takes a
+/// scalar BTREE) and a composite declaration are not.
+#[test]
+fn full_text_calls_need_a_declared_full_text_index() {
+    let catalog = build_catalog(
+        &parse_schema(
+            r#"
+node Doc {
+slug: String @key
+title: String @index
+body: String
+kind: enum(a, b) @index
+first: String
+last: String
+@index(first, last)
+}
+"#,
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    let check = |query: &str| {
+        let qf = parse_query(query).unwrap();
+        typecheck_query(&catalog, qf.single_decl())
+    };
+    for call in [
+        "search($d.title, $q)",
+        "fuzzy($d.title, $q)",
+        "match_text($d.title, $q)",
+    ] {
+        check(&format!(
+            "query q($q: String) {{ match {{ $d: Doc {call} }} return {{ $d.slug }} }}"
+        ))
+        .unwrap_or_else(|error| panic!("{call} over an indexed property: {error}"));
+    }
+    check(
+        "query q($q: String) { match { $d: Doc } return { $d.slug } order { bm25($d.title, $q) } }",
+    )
+    .unwrap();
+    for (property, call) in [
+        ("body", "search"),
+        ("body", "fuzzy"),
+        ("body", "match_text"),
+        ("kind", "search"),
+        ("first", "search"),
+    ] {
+        let error = check(&format!(
+            "query q($q: String) {{ match {{ $d: Doc {call}($d.{property}, $q) }} return {{ $d.slug }} }}"
+        ))
+        .unwrap_err();
+        let diagnostic = error.diagnostic().expect("a typed refusal");
+        assert_eq!(
+            diagnostic.code.as_str(),
+            "T27",
+            "{call}($d.{property}): {error}"
+        );
+        assert!(
+            diagnostic
+                .fix
+                .as_deref()
+                .is_some_and(|fix| fix.contains(&format!("{property}: String @index"))),
+            "{diagnostic:?}"
+        );
+    }
+    let error = check(
+        "query q($q: String) { match { $d: Doc } return { $d.slug } order { bm25($d.body, $q) } limit 3 }",
+    )
+    .unwrap_err();
+    assert_eq!(error.diagnostic().unwrap().code.as_str(), "T27", "{error}");
 }

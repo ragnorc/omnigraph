@@ -628,6 +628,8 @@ async fn docs(dir: &tempfile::TempDir) -> Session {
     db.load_jsonl(&seed.join("\n"), LoadMode::Overwrite)
         .await
         .unwrap();
+    // A full-text call needs a built segment; the vector index stays unbuilt.
+    db.db().rebuild_full_text_indices_on("main").await.unwrap();
     with_setting(&db, "engine", "v2")
 }
 

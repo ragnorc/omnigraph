@@ -250,6 +250,9 @@ pub enum Unrouted {
     /// Plan acceptance ran out of a configured validation limit before it
     /// finished: a resource outcome, not evidence the plan is invalid.
     ValidationExhausted { limit: &'static str, value: u64 },
+    /// A full-text call names a declared index with no built segment at the
+    /// pinned snapshot (`PlanError::FullTextIndexRequired`).
+    FullTextIndexRequired { index: String },
 }
 
 impl Unrouted {
@@ -258,6 +261,7 @@ impl Unrouted {
     fn of(error: PlanError) -> Self {
         match error {
             PlanError::Unsupported(diagnostic) => Self::UnsupportedQuery { diagnostic },
+            PlanError::FullTextIndexRequired { index } => Self::FullTextIndexRequired { index },
             other => Self::PlannerError {
                 message: other.to_string(),
             },
@@ -274,6 +278,7 @@ impl Unrouted {
             Self::PlannerError { .. } => "planner_error",
             Self::UnsupportedQuery { .. } => "unsupported_query",
             Self::ValidationExhausted { .. } => "validation_exhausted",
+            Self::FullTextIndexRequired { .. } => "full_text_index_required",
         }
     }
 
@@ -294,6 +299,9 @@ impl Unrouted {
             }),
             Self::ValidationExhausted { limit, value } => {
                 json!({ "kind": self.kind(), "limit": limit, "value": value })
+            }
+            Self::FullTextIndexRequired { index } => {
+                json!({ "kind": self.kind(), "index": index })
             }
         }
     }

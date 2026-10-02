@@ -465,6 +465,7 @@ enum ApiErrorDetails {
     ChangeFeedGap(api::ChangeFeedGapOutput),
     ChangeDiffRefusal(api::ChangeDiffRefusalOutput),
     FullTextIndexRebuildRequired(api::FullTextIndexRebuildRequiredOutput),
+    FullTextIndexRequired(api::FullTextIndexRequiredOutput),
     Diagnostic(api::DiagnosticOutput),
 }
 
@@ -1386,6 +1387,16 @@ impl ApiError {
                 )));
                 response
             }
+            error @ OmniError::FullTextIndexRequired { .. } => {
+                let mut response = Self::conflict(error.to_string());
+                let OmniError::FullTextIndexRequired { index, reason } = error else {
+                    unreachable!()
+                };
+                response.details = Some(Box::new(ApiErrorDetails::FullTextIndexRequired(
+                    api::FullTextIndexRequiredOutput { index, reason },
+                )));
+                response
+            }
             // Caller-side continuation fault (decode, checksum, or scope). The
             // "change cursor rejected: " prefix is a stable contract so raw
             // HTTP clients can tell it from a genuine retention gap.
@@ -1590,6 +1601,9 @@ impl ApiError {
                 ApiErrorDetails::FullTextIndexRebuildRequired(value) => {
                     output.full_text_index_rebuild_required = Some(value)
                 }
+                ApiErrorDetails::FullTextIndexRequired(value) => {
+                    output.full_text_index_required = Some(value)
+                }
                 ApiErrorDetails::Diagnostic(value) => output.diagnostic = Some(value),
             }
         }
@@ -1606,6 +1620,29 @@ pub fn engine_error_output(error: OmniError) -> api::ErrorOutput {
 #[cfg(test)]
 mod api_error_tests {
     use super::*;
+
+    #[tokio::test]
+    async fn unbuilt_full_text_index_returns_index_required_conflict() {
+        let response = ApiError::from_omni(OmniError::FullTextIndexRequired {
+            index: "Doc.title".into(),
+            reason: "the property declares a full-text index with no built segment".into(),
+        })
+        .into_response();
+        assert_eq!(response.status(), StatusCode::CONFLICT);
+        let body = axum::body::to_bytes(response.into_body(), 8192)
+            .await
+            .unwrap();
+        let error: ErrorOutput = serde_json::from_slice(&body).unwrap();
+        assert_eq!(error.code, Some(ErrorCode::Conflict));
+        assert!(
+            error.error.contains("omnigraph build-indexes"),
+            "{}",
+            error.error
+        );
+        let details = error.full_text_index_required.unwrap();
+        assert_eq!(details.index, "Doc.title");
+        assert!(error.full_text_index_rebuild_required.is_none());
+    }
 
     #[tokio::test]
     async fn incompatible_full_text_index_returns_rebuild_required_conflict() {

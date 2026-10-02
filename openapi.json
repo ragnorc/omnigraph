@@ -8542,6 +8542,17 @@
               }
             ]
           },
+          "full_text_index_required": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FullTextIndexRequiredOutput",
+                "description": "Set with HTTP 409 when a full-text call names a declared index with\nno built segment at the query's snapshot. Building the index clears\nit; retrying alone does not."
+              }
+            ]
+          },
           "key_conflict": {
             "oneOf": [
               {
@@ -8668,6 +8679,24 @@
           "reason": {
             "type": "string",
             "description": "Human-readable diagnosis; branch on the enclosing detail's presence,\nnot this text, to distinguish the operator-action-required condition."
+          }
+        }
+      },
+      "FullTextIndexRequiredOutput": {
+        "type": "object",
+        "description": "A full-text call names a declared full-text index with no built segment\nat the query's snapshot (HTTP 409). Build it (`omnigraph build-indexes\n--branch <branch>`) and retry; the query is not at fault.",
+        "required": [
+          "index",
+          "reason"
+        ],
+        "properties": {
+          "index": {
+            "type": "string",
+            "description": "The indexed property, as `Type.property`."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Human-readable diagnosis; branch on the enclosing detail's presence,\nnot this text."
           }
         }
       },

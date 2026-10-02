@@ -2,7 +2,8 @@
 //! boundaries"): binding identity, search identity and its declared
 //! approximation, retained eligibility predicates, correlated blocks, the
 //! projection and the origin of every projected score, the required order
-//! and the row cut, and the policy data the plan declares for its search.
+//! and the row cut, the policy data the plan declares for its search, and
+//! the built full-text index every full-text call reads.
 //! They establish that the plan keeps what the query requires; they do not
 //! prove row-selection equivalence, which only the exact subset's checked
 //! derivation does.
@@ -23,7 +24,7 @@ use super::requirements::{
 use super::{AcceptInput, ValidationError};
 use crate::logical::{ColumnRef, EDGE_TYPE_MEMBER, IDENTITY_MEMBER};
 use crate::lower::ContainsJoinFields;
-use crate::optimizer::{RRF_NEAREST_ARM_K, derived_order};
+use crate::optimizer::{RRF_NEAREST_ARM_K, derived_order, full_text_targets};
 use crate::physical::{
     Assumptions, Eligibility, EmptyEligible, NodeId, OverfetchRung, PhysicalNode, PhysicalPlan,
     RankKind, RankScope, RankedAccess,
@@ -141,6 +142,7 @@ impl Requirements {
         self.check_returns(plan, &top, &matcher, budget)?;
         self.check_order_and_cut(plan, &top, &matcher, budget)?;
         check_policies(plan, budget)?;
+        check_full_text_indexes(plan, input, budget)?;
         Ok(())
     }
 
@@ -906,6 +908,37 @@ const SYSTEM_ID: &str = "@id";
 /// scans its kind may prefilter, decides an empty set as its kind must, and
 /// guards BM25 scans by their recorded coverage. The gate policy's
 /// thresholds are finite.
+/// Every full-text call of the query reads its property's full-text index,
+/// so the plan must record that index's coverage at its snapshot, and the
+/// recorded coverage must name a built segment (full or partial, never
+/// absent): a call over an unbuilt index has no analyzer to match with.
+fn check_full_text_indexes(
+    plan: &PhysicalPlan,
+    input: &AcceptInput<'_>,
+    budget: &mut Budget,
+) -> Result<(), ValidationError> {
+    for (type_name, property) in full_text_targets(input.ir) {
+        budget.visit(1)?;
+        let type_key = format!("node:{type_name}");
+        let recorded = plan
+            .assumptions()
+            .full_text
+            .get(&Assumptions::full_text_key(&type_key, &property));
+        match recorded {
+            Some(FullTextCoverage::Full | FullTextCoverage::Partial) => {}
+            other => {
+                return Err(ValidationError::violated(
+                    "prerequisite",
+                    format!(
+                        "the full-text call on `{type_name}.{property}` reads an index whose recorded coverage is {other:?}; it needs a built segment"
+                    ),
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
 fn check_policies(plan: &PhysicalPlan, budget: &mut Budget) -> Result<(), ValidationError> {
     let policy = plan.assumptions().gate_policy;
     if !policy.ratio.is_finite() || policy.ratio < 0.0 {

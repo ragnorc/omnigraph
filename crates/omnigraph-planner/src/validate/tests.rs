@@ -21,7 +21,7 @@ use crate::source::{MemorySource, NodeTypeSpec};
 const SCHEMA: &str = r#"
 node Doc {
     slug: String @key
-    title: String
+    title: String @index
     year: I64
     open: Bool
     rank: I32?
@@ -307,6 +307,44 @@ fn a_bm25_rank_before_scoring_needs_full_coverage() {
             assert_eq!(check, "prerequisite", "{detail}");
         }
         other => panic!("{other:?}"),
+    }
+}
+
+/// A full-text call reads a built index: planning refuses an absent one, and
+/// a plan whose recorded coverage is missing or absent fails the
+/// prerequisite even where its scan filters after scoring.
+#[test]
+fn a_full_text_call_needs_a_recorded_built_index() {
+    let mut fixture = ranked();
+    fixture.source = std::mem::take(&mut fixture.source).with_full_text_coverage(
+        "node:Doc",
+        "title",
+        crate::source::FullTextCoverage::Absent,
+    );
+    match crate::gate::plan_traced(&fixture.ir, &fixture.source, &BOUNDS) {
+        Err(crate::gate::Unrouted::FullTextIndexRequired { index }) => {
+            assert_eq!(index, "Doc.title")
+        }
+        other => panic!("{:?}", other.map(|_| ())),
+    }
+    let fixture = ranked();
+    let traced = fixture.traced();
+    let key = crate::physical::Assumptions::full_text_key("node:Doc", "title");
+    for recorded in [None, Some(crate::source::FullTextCoverage::Absent)] {
+        let mut plan = traced.optimized.physical.clone();
+        let mut assumptions = plan.assumptions().clone();
+        assumptions.full_text.remove(&key);
+        if let Some(coverage) = recorded {
+            assumptions.full_text.insert(key.clone(), coverage);
+        }
+        plan.set_assumptions(assumptions);
+        match fixture.accept_with(plan, traced.derivation.clone()) {
+            Err(ValidationError::Violated { check, detail }) => {
+                assert_eq!(check, "prerequisite", "{detail}");
+                assert!(detail.contains("Doc.title"), "{detail}");
+            }
+            other => panic!("{recorded:?}: {other:?}"),
+        }
     }
 }
 

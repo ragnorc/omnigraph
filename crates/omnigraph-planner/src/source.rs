@@ -193,21 +193,24 @@ pub trait PlanSource {
     }
 
     /// How far the full-text index of `property` covers the pinned table
-    /// `type_key` names. The default claims no coverage, the answer under
-    /// which every plan stays correct.
+    /// `type_key` names. The default claims an index of unproven coverage:
+    /// nothing is refused and every bm25 scan filters after scoring, the
+    /// placement under which every plan stays correct.
     fn full_text_coverage(&self, _type_key: &str, _property: &str) -> FullTextCoverage {
-        FullTextCoverage::Absent
+        FullTextCoverage::Partial
     }
 }
 
 /// How far a property's full-text index covers the pinned dataset's
 /// fragments. Only full coverage makes a BM25 score independent of a filter
 /// applied before scoring: Lance scores the unindexed fragments flat, from
-/// statistics over the rows the filter admits.
+/// statistics over the rows the filter admits. An absent index refuses every
+/// full-text call on the property (`FullTextIndexRequired`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FullTextCoverage {
-    /// Every fragment of the pinned version is in a full-text segment.
+    /// Every fragment of the pinned version is in a full-text segment, which
+    /// a table with no rows has vacuously.
     Full,
     /// A full-text index exists; some fragment is not in it.
     Partial,
@@ -388,6 +391,6 @@ impl PlanSource for MemorySource {
         self.full_text
             .get(&(type_key.to_string(), property.to_string()))
             .copied()
-            .unwrap_or(FullTextCoverage::Absent)
+            .unwrap_or(FullTextCoverage::Partial)
     }
 }

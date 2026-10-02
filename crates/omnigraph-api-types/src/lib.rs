@@ -1515,6 +1515,18 @@ pub struct FullTextIndexRebuildRequiredOutput {
     pub reason: String,
 }
 
+/// A full-text call names a declared full-text index with no built segment
+/// at the query's snapshot (HTTP 409). Build it (`omnigraph build-indexes
+/// --branch <branch>`) and retry; the query is not at fault.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct FullTextIndexRequiredOutput {
+    /// The indexed property, as `Type.property`.
+    pub index: String,
+    /// Human-readable diagnosis; branch on the enclosing detail's presence,
+    /// not this text.
+    pub reason: String,
+}
+
 /// A source position: 1-based line and column (in characters) and the byte
 /// offset.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -1670,6 +1682,11 @@ pub struct ErrorOutput {
     /// preserves the closed [`ErrorCode`] contract.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub full_text_index_rebuild_required: Option<FullTextIndexRebuildRequiredOutput>,
+    /// Set with HTTP 409 when a full-text call names a declared index with
+    /// no built segment at the query's snapshot. Building the index clears
+    /// it; retrying alone does not.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub full_text_index_required: Option<FullTextIndexRequiredOutput>,
     /// Set for a refused query: the diagnostics contract's code, position or
     /// stage, expectation and fix. `error` keeps the one-line rendering.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1695,6 +1712,7 @@ impl ErrorOutput {
             change_feed_gap: None,
             change_diff_refusal: None,
             full_text_index_rebuild_required: None,
+            full_text_index_required: None,
             diagnostic: None,
         }
     }

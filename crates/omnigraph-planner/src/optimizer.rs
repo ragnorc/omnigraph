@@ -185,6 +185,7 @@ fn resolve_query(
             ));
         }
     }
+    require_full_text_indexes(ir, source)?;
     let QueryIR {
         name: _,
         params: _,
@@ -281,6 +282,105 @@ fn resolve_query(
         );
     }
     plan.set_root(current);
+    Ok(())
+}
+
+/// The node properties every full-text call of the query reads the index
+/// of, as `(type name, property)`: `search`, `fuzzy` and `match_text` in any
+/// filter (correlated blocks included), `bm25` in the leading order key and
+/// either arm of an `rrf()`. The planner checks each one's coverage and the
+/// engine gathers exactly these before planning.
+pub fn full_text_targets(ir: &QueryIR) -> Vec<(String, String)> {
+    fn bindings(ops: &[IROp], out: &mut HashMap<String, String>) {
+        for op in ops {
+            match op {
+                IROp::NodeScan {
+                    variable,
+                    type_name,
+                    ..
+                } => {
+                    out.insert(variable.clone(), type_name.clone());
+                }
+                IROp::Expand {
+                    dst_var, dst_type, ..
+                } => {
+                    out.insert(dst_var.clone(), dst_type.clone());
+                }
+                IROp::AntiJoin { inner, .. } => bindings(inner, out),
+                IROp::Filter(_) => {}
+            }
+        }
+    }
+    fn calls(expr: &IRExpr, out: &mut Vec<(String, String)>) {
+        match expr {
+            IRExpr::Search { field, .. }
+            | IRExpr::Fuzzy { field, .. }
+            | IRExpr::MatchText { field, .. }
+            | IRExpr::Bm25 { field, .. } => {
+                if let IRExpr::PropAccess { variable, property } = field.as_ref() {
+                    out.push((variable.clone(), property.clone()));
+                }
+            }
+            IRExpr::Rrf {
+                primary, secondary, ..
+            } => {
+                calls(primary, out);
+                calls(secondary, out);
+            }
+            IRExpr::Binary { left, right, .. } => {
+                calls(left, out);
+                calls(right, out);
+            }
+            IRExpr::Not(inner) | IRExpr::IsNull { expr: inner, .. } => calls(inner, out),
+            _ => {}
+        }
+    }
+    fn filter_calls(ops: &[IROp], out: &mut Vec<(String, String)>) {
+        for op in ops {
+            match op {
+                IROp::NodeScan { filters, .. }
+                | IROp::Expand {
+                    dst_filters: filters,
+                    ..
+                } => filters.iter().for_each(|filter| calls(filter, out)),
+                IROp::Filter(filter) => calls(filter, out),
+                IROp::AntiJoin { inner, .. } => filter_calls(inner, out),
+            }
+        }
+    }
+    let mut types = HashMap::new();
+    bindings(&ir.pipeline, &mut types);
+    let mut variables = Vec::new();
+    filter_calls(&ir.pipeline, &mut variables);
+    if let Some(leading) = ir.order_by.first() {
+        calls(&leading.expr, &mut variables);
+    }
+    let mut targets: Vec<(String, String)> = Vec::new();
+    for (variable, property) in variables {
+        if let Some(type_name) = types.get(&variable) {
+            let target = (type_name.clone(), property);
+            if !targets.contains(&target) {
+                targets.push(target);
+            }
+        }
+    }
+    targets
+}
+
+/// Every full-text call reads its property's full-text index, so that index
+/// must have a built segment at the pinned snapshot: the recorded coverage
+/// may be full or partial (rows written after the last build are scanned
+/// with the index's analyzer), never absent. The type checker (`T27`)
+/// already required the declaration; this is the planning fact.
+fn require_full_text_indexes(ir: &QueryIR, source: &dyn PlanSource) -> Result<(), PlanError> {
+    for (type_name, property) in full_text_targets(ir) {
+        let type_key = format!("node:{type_name}");
+        if source.full_text_coverage(&type_key, &property) == FullTextCoverage::Absent {
+            return Err(PlanError::FullTextIndexRequired {
+                index: format!("{type_name}.{property}"),
+            });
+        }
+    }
     Ok(())
 }
 

@@ -74,6 +74,18 @@ pub struct NodeType {
 }
 
 impl NodeType {
+    /// Whether `property` carries a full-text index: a one-column `@index`
+    /// declaration on a free-text String property
+    /// ([`PropType::index_kind`]). Edge properties and composite declarations
+    /// build no property index.
+    pub fn has_full_text_index(&self, property: &str) -> bool {
+        self.indices
+            .iter()
+            .any(|columns| matches!(columns.as_slice(), [column] if column == property))
+            && self.properties.get(property).and_then(PropType::index_kind)
+                == Some(crate::types::PropIndexKind::FullText)
+    }
+
     /// Backward-compatible accessor: returns the first (and typically only) key property name.
     pub fn key_property(&self) -> Option<&str> {
         self.key

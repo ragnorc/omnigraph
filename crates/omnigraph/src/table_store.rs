@@ -4784,12 +4784,16 @@ impl TableStore {
     /// optimize maintenance schedule production tables follow. Anything
     /// short of full is always safe — eligibility then applies after
     /// scoring and the gates run their postfilter plans — so every
-    /// unprovable case (an entry without a fragment bitmap) is partial.
+    /// unprovable case (an entry without a fragment bitmap) is partial. A
+    /// dataset with no fragment holds no rows, which every index covers.
     pub(crate) async fn fts_coverage(
         ds: &Dataset,
         column: &str,
     ) -> Result<omnigraph_planner::FullTextCoverage> {
         use omnigraph_planner::FullTextCoverage;
+        if ds.fragments().is_empty() {
+            return Ok(FullTextCoverage::Full);
+        }
         let indices = user_indices_for_column(ds, column).await?;
         let fts_entries: Vec<_> = indices
             .iter()

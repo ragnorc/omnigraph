@@ -1,0 +1,133 @@
+# issue: 747
+# red_on: 2026-10-02, main @ 97f293e8: step 3 answered `d-lower` alone (a case-sensitive flat scan), step 4 ranked `d-lower` alone, and step 7 answered `l-lower` alone where the built index finds both rows.
+# notes: A full-text call reads its property's full-text index (RFC 0047, "Full-text search needs
+# notes: its index"). On `Indexed` the index lowercases both sides, so "deep" and "Deep" find
+# notes: both titles. `Doc.title` declares no index; a flat scan there once tokenized both sides
+# notes: case-sensitively and answered each spelling with one row, so the type checker now refuses
+# notes: every full-text call on it (T27). `Later.title` declares an index that no build has
+# notes: reached: with no rows every index covers the table and the search answers nothing; after
+# notes: the insert the rows have no segment to match with, and planning refuses the call until
+# notes: `omnigraph optimize` builds one.
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+    slug: String @key
+    title: String
+}
+
+node Indexed {
+    slug: String @key
+    title: String @index
+}
+
+node Later {
+    slug: String @key
+    title: String @index
+}
+
+--- seed
+{"type":"Doc","data":{"slug":"d-upper","title":"Deep Learning"}}
+{"type":"Doc","data":{"slug":"d-lower","title":"deep dive"}}
+{"type":"Indexed","data":{"slug":"i-upper","title":"Deep Learning"}}
+{"type":"Indexed","data":{"slug":"i-lower","title":"deep dive"}}
+
+--- query
+query indexed_lowercase($q: String) {
+    match {
+        $d: Indexed
+        search($d.title, $q)
+    }
+    return { $d.slug }
+    order { $d.slug }
+}
+
+--- params
+{"q": "deep"}
+
+--- expect ordered
+{"d.slug": "i-lower"}
+{"d.slug": "i-upper"}
+
+--- expect shape
+d.slug: String
+
+--- query
+query indexed_capitalized($q: String) {
+    match {
+        $d: Indexed
+        search($d.title, $q)
+    }
+    return { $d.slug }
+    order { $d.slug }
+}
+
+--- params
+{"q": "Deep"}
+
+--- expect ordered
+{"d.slug": "i-lower"}
+{"d.slug": "i-upper"}
+
+--- expect shape
+d.slug: String
+
+--- query
+query unindexed_search() {
+    match {
+        $d: Doc
+        search($d.title, "deep")
+    }
+    return { $d.slug }
+    order { $d.slug }
+}
+
+--- expect error: T27: `search` over `$d.title` needs a full-text index, and `Doc.title` declares none
+
+--- query
+query unindexed_bm25() {
+    match { $d: Doc }
+    return { $d.slug }
+    order { bm25($d.title, "deep") }
+}
+
+--- expect error: T27: `bm25` over `$d.title` needs a full-text index, and `Doc.title` declares none
+
+--- query
+query declared_before_any_row() {
+    match {
+        $d: Later
+        search($d.title, "deep")
+    }
+    return { $d.slug }
+    order { $d.slug }
+}
+
+--- expect ordered
+
+--- expect shape
+d.slug: String
+
+--- mutate
+query arrive() {
+    insert Later { slug: "l-upper", title: "Deep Learning" }
+    insert Later { slug: "l-lower", title: "deep dive" }
+}
+--- expect ok
+
+--- query
+query declared_but_unbuilt() {
+    match {
+        $d: Later
+        search($d.title, "deep")
+    }
+    return { $d.slug }
+    order { $d.slug }
+}
+
+--- expect error: full-text index on 'Later.title' has no built segment at this snapshot

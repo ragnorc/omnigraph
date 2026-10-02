@@ -149,14 +149,16 @@ catalogue by the change that adds each refusal.
 
 - `T27`: a full-text predicate or ranking (`search`, `fuzzy`, `match_text`,
   `bm25`) on a String property that the schema does not declare `@index`. The
-  fix is to declare `@index` and build it (`omnigraph optimize`). The check
-  reads only the schema, never physical index state.
+  fix is to declare `@index` and build it (`omnigraph build-indexes`). The
+  check reads only the schema, never physical index state.
 - `FullTextIndexRequired`: the property is declared but its index has no
   built segments at the query's snapshot. It is refused at planning, before
   any scan, as HTTP `409` with a typed detail, the shape RFC 0043's
   `FullTextIndexRebuildRequired` already has; both can fire on one graph.
   Rows written after the last build keep today's behavior: Lance scans them
-  with the index's analyzer.
+  with the index's analyzer. A table with no fragment holds no rows and
+  counts as covered, so a declared index on an empty type answers with no
+  rows instead of refusing (`optimize` builds no index on an empty table).
 
 The analyzer-equivalent exact scan that later lets an unbuilt index answer
 instead of refusing belongs to the analyzed lexical search RFC.
@@ -732,12 +734,16 @@ attempt it can name.
 segments at the pinned dataset version. Step 2a introduced it as
 `full_text_coverage` (`full`, `partial` or `absent`), recorded per ranked
 property in `Assumptions.full_text` for the eligibility placement; step 3
-reads `absent` for the refusal. The planner reads it while resolving
-a ranked scan or a search predicate and refuses when it is absent. The read
-goes through the recording wrapper, so the fact is part of the plan's
-`Assumptions` and a replay against another snapshot is refused, as for every
-other planner input. Index coverage of newer rows is not consulted: an
-uncovered tail is not a refusal.
+records it for every property a full-text call reads
+(`full_text_targets`: the search predicates on every scan, expansion
+destination and correlated block, and the leading `order` key) and reads
+`absent` for the refusal. The planner checks every target once, before
+resolving the pipeline. The read goes through the recording wrapper, so the
+fact is part of the plan's `Assumptions` and a replay against another
+snapshot is refused, as for every other planner input; acceptance refuses a
+plan that records no coverage, or absent coverage, for a call the query
+makes. Index coverage of newer rows is not consulted: an uncovered tail is
+not a refusal.
 
 The `T27` rule is the catalog predicate index reconciliation already uses (a
 non-enum, single-column String `@index`), moved into the compiler so the type
@@ -1026,3 +1032,10 @@ None.
   blocks; evidence memory is bounded by byte and node limits because no
   planning pool exists; the fusion and aggregate order checks land with
   step 5.
+- 2026-10-02: step 3 implemented as specified, with three precisions: a
+  table with no fragment counts as covered, so a declared index on an empty
+  type is not refused; the coverage fact is recorded for every full-text
+  call, not only ranked ones, and acceptance checks it; and the remedy is
+  the new `omnigraph build-indexes --branch`, which builds a branch's
+  missing declared indexes, because `optimize` reaches only `main` and
+  `rebuild-full-text-indexes` replaces every full-text index.

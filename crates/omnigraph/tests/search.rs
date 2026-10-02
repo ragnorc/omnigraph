@@ -352,13 +352,20 @@ async fn doc_user_index_count(db: &Omnigraph) -> usize {
         .count()
 }
 
-/// RFC-022 data writes publish only their exact table effects. Declared FTS
-/// and vector indexes may therefore still be pending immediately after load;
-/// both retrieval modes (and their RRF composition) must remain logically
-/// correct through Lance's flat-search paths.
+/// RFC-022 data writes publish only their exact table effects, so declared
+/// FTS and vector indexes are still pending immediately after load. A
+/// `nearest` ranking degrades to an exact scan; a full-text call refuses with
+/// `FullTextIndexRequired` until the index has a built segment, because
+/// Lance's flat search without one tokenizes with a different analyzer. The
+/// refusal moves nothing, and once the full-text index is built the hybrid
+/// read answers with the vector index still pending. The rows of the
+/// refusal are owned by `cases/v2/issue_747_full_text_calls_need_a_built_index.gqt`;
+/// this test owns the error variant and the unchanged index inventory.
 #[tokio::test]
 #[serial]
-async fn deferred_indexes_do_not_block_hybrid_reads() {
+async fn deferred_vector_index_degrades_and_unbuilt_full_text_index_refuses() {
+    use omnigraph::error::OmniError;
+
     let dir = tempfile::tempdir().unwrap();
     let uri = dir.path().to_str().unwrap();
     let db = session(Omnigraph::init(uri, MOCK_SEARCH_SCHEMA).await.unwrap());
@@ -371,14 +378,51 @@ async fn deferred_indexes_do_not_block_hybrid_reads() {
         0,
         "load must leave declared physical indexes to the reconciler"
     );
-    let result = query_main(
+    let vector = query_main(
         &db,
         MOCK_SEARCH_QUERIES,
-        "hybrid_search_vector",
-        &vector_and_string_params("$vq", &mock_embedding("alpha", 4), "$tq", "alpha"),
+        "vector_search_vector",
+        &vector_param("$q", &mock_embedding("alpha", 4)),
     )
     .await
-    .expect("pending FTS/vector indexes must degrade to flat search");
+    .expect("a pending vector index must degrade to exact search");
+    assert_eq!(result_slugs(&vector)[0], "alpha-doc");
+    let hybrid = vector_and_string_params("$vq", &mock_embedding("alpha", 4), "$tq", "alpha");
+    match query_main(&db, MOCK_SEARCH_QUERIES, "hybrid_search_vector", &hybrid).await {
+        Err(OmniError::FullTextIndexRequired { index, .. }) => assert_eq!(index, "Doc.title"),
+        other => panic!(
+            "an unbuilt full-text index must refuse: {:?}",
+            other.map(|_| ())
+        ),
+    }
+    assert_eq!(
+        doc_user_index_count(&db).await,
+        0,
+        "the refusal builds nothing"
+    );
+
+    db.db().rebuild_full_text_indices_on("main").await.unwrap();
+    let built: Vec<String> = snapshot_main(&db)
+        .await
+        .unwrap()
+        .open_dataset("node:Doc")
+        .await
+        .unwrap()
+        .load_indices()
+        .await
+        .unwrap()
+        .iter()
+        .filter(|idx| !is_system_index(idx))
+        .map(|idx| idx.name.clone())
+        .collect();
+    assert!(
+        built.contains(&"title_idx".to_string())
+            && !built.iter().any(|name| name.starts_with("embedding")),
+        "the full-text index is built and the vector index stays pending: {built:?}"
+    );
+    let result = query_main(&db, MOCK_SEARCH_QUERIES, "hybrid_search_vector", &hybrid)
+        .await
+        .expect("a built full-text index and a pending vector index answer");
     assert_eq!(result_slugs(&result)[0], "alpha-doc");
 }
 
