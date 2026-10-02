@@ -111,6 +111,31 @@ async fn init_with_policy_and_feature_branch(
 /// One JSONL record for `load_as` / `ingest_as` exercises.
 const ONE_PERSON_JSONL: &str = r#"{"type": "Person", "data": {"name": "Eve"}}"#;
 
+/// Every file and directory under `root` with its bytes: a policy refusal
+/// must leave it unchanged.
+fn physical_tree(root: &Path) -> std::collections::BTreeMap<std::path::PathBuf, Option<Vec<u8>>> {
+    fn visit(
+        root: &Path,
+        path: &Path,
+        entries: &mut std::collections::BTreeMap<std::path::PathBuf, Option<Vec<u8>>>,
+    ) {
+        for entry in fs::read_dir(path).unwrap() {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            let relative = path.strip_prefix(root).unwrap().to_path_buf();
+            if entry.file_type().unwrap().is_dir() {
+                entries.insert(relative, None);
+                visit(root, &path, entries);
+            } else {
+                entries.insert(relative, Some(fs::read(path).unwrap()));
+            }
+        }
+    }
+    let mut entries = std::collections::BTreeMap::new();
+    visit(root, root, &mut entries);
+    entries
+}
+
 fn assert_denied(result: Result<impl std::fmt::Debug, OmniError>, what: &str) {
     match result {
         Err(OmniError::Policy(msg)) => {
@@ -441,32 +466,83 @@ async fn branch_merge_as_allows_when_policy_permits_actor() {
 }
 
 #[tokio::test]
-async fn full_text_rebuild_enforces_selected_branch_before_effects_and_records_actor() {
-    fn physical_tree(
-        root: &Path,
-    ) -> std::collections::BTreeMap<std::path::PathBuf, Option<Vec<u8>>> {
-        fn visit(
-            root: &Path,
-            path: &Path,
-            entries: &mut std::collections::BTreeMap<std::path::PathBuf, Option<Vec<u8>>>,
-        ) {
-            for entry in fs::read_dir(path).unwrap() {
-                let entry = entry.unwrap();
-                let path = entry.path();
-                let relative = path.strip_prefix(root).unwrap().to_path_buf();
-                if entry.file_type().unwrap().is_dir() {
-                    entries.insert(relative, None);
-                    visit(root, &path, entries);
-                } else {
-                    entries.insert(relative, Some(fs::read(path).unwrap()));
-                }
-            }
-        }
-        let mut entries = std::collections::BTreeMap::new();
-        visit(root, root, &mut entries);
-        entries
-    }
+async fn index_build_enforces_selected_branch_before_effects_and_records_actor_issue_840() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = session(
+        Omnigraph::init(dir.path().to_str().unwrap(), TEST_SCHEMA)
+            .await
+            .unwrap(),
+    );
+    // Loaded without an index build, so `feature` inherits missing indexes.
+    db.load_jsonl(TEST_DATA, LoadMode::Overwrite).await.unwrap();
+    db.db().branch_create("feature").await.unwrap();
+    drop(db);
+    let policy = POLICY_YAML.replace("      branch_scope: any", "      branch_scope: unprotected");
+    let db = Omnigraph::open(dir.path().to_str().unwrap()).await.unwrap();
+    let (db, _engine) = install_policy_source(db, dir.path(), &policy);
+    let main_before = db.list_commits(None).await.unwrap();
+    let feature_before = db.list_commits(Some("feature")).await.unwrap();
+    let files_before = physical_tree(dir.path());
 
+    for (branch, actor) in [("feature", "act-denied"), ("main", "act-allowed")] {
+        assert_denied(
+            db.ensure_indices_on_as(branch, Some(actor)).await,
+            "ensure_indices_on_as",
+        );
+        assert_eq!(
+            physical_tree(dir.path()),
+            files_before,
+            "policy refusal must not write index artifacts, native refs, sidecars, or publications"
+        );
+    }
+    for error in [
+        db.ensure_indices_on("feature").await.unwrap_err(),
+        db.ensure_indices().await.unwrap_err(),
+    ] {
+        assert!(
+            matches!(&error, OmniError::Policy(message) if message.contains("no actor")),
+            "{error}"
+        );
+    }
+    assert_eq!(
+        physical_tree(dir.path()),
+        files_before,
+        "the no-actor wrappers must not bypass policy"
+    );
+
+    let result = db
+        .ensure_indices_on_as("feature", Some("act-allowed"))
+        .await
+        .expect("Change on the selected unprotected branch must permit a build");
+    assert_eq!(result.branch, "feature");
+    assert!(
+        result
+            .built_indexes
+            .iter()
+            .any(|index| index.type_key == "node:Person" && index.column == "name"),
+        "{:?}",
+        result.built_indexes
+    );
+    let feature_after = db.list_commits(Some("feature")).await.unwrap();
+    assert_eq!(feature_after.len(), feature_before.len() + 1);
+    assert_eq!(
+        result.graph_commit_id.as_deref(),
+        Some(feature_after[0].graph_commit_id.as_str())
+    );
+    assert_eq!(feature_after[0].actor_id.as_deref(), Some("act-allowed"));
+    let main_after = db.list_commits(None).await.unwrap();
+    assert_eq!(main_after.len(), main_before.len());
+
+    let again = db
+        .ensure_indices_on_as("feature", Some("act-allowed"))
+        .await
+        .unwrap();
+    assert_eq!(again.graph_commit_id, None);
+    assert!(again.built_indexes.is_empty());
+}
+
+#[tokio::test]
+async fn full_text_rebuild_enforces_selected_branch_before_effects_and_records_actor() {
     let dir = tempfile::tempdir().unwrap();
     let db = init_and_load(&dir).await;
     db.branch_create("feature").await.unwrap();

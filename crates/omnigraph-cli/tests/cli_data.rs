@@ -821,7 +821,7 @@ fn optimize_json_succeeds_on_local_graph() {
 fn optimize_with_server_flag_errors_wrong_plane() {
     // RFC-010 Slice 1: --server is a data-plane addressing flag; on a
     // storage-plane verb the guard rejects it loudly (was: silently ignored).
-    for command in ["optimize", "rebuild-full-text-indexes"] {
+    for command in ["optimize", "build-indexes", "rebuild-full-text-indexes"] {
         let output = output_failure(cli().arg(command).arg("--server").arg("prod"));
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
@@ -928,7 +928,7 @@ fn query_by_name_against_a_store_needs_a_server() {
 fn optimize_with_remote_target_errors_storage_plane() {
     // RFC-010 Slice 1: a maintenance verb pointed at a remote URI fails loudly
     // and declaratively (was: whatever Omnigraph::open said about an https URI).
-    for command in ["optimize", "rebuild-full-text-indexes"] {
+    for command in ["optimize", "build-indexes", "rebuild-full-text-indexes"] {
         let output = output_failure(cli().arg(command).arg("https://graph.example.invalid"));
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
@@ -965,6 +965,111 @@ fn repair_json_reports_noop_on_clean_graph() {
     assert!(human.contains("preview mode, 4 datasets"), "{human}");
     assert!(human.contains("node type 'Person'"), "{human}");
     assert!(!human.contains("node:Person"), "{human}");
+}
+
+/// A type that gains its first rows on a branch has no full-text index there
+/// (`optimize` reaches only `main`), so a full-text call on it is refused
+/// until `build-indexes --branch` builds the missing indexes; it builds only
+/// what is missing, leaves `main` alone and is a no-op the second time.
+#[test]
+fn build_indexes_builds_a_branch_s_missing_indexes_issue_840() {
+    const SEARCH: &str = "query deep() {\n    match {\n        $d: Doc\n        search($d.title, \"Deep\")\n    }\n    return { $d.slug }\n    order { $d.slug }\n}\n";
+
+    let temp = tempdir().unwrap();
+    let graph = graph_path(temp.path());
+    let schema = temp.path().join("docs.pg");
+    write_file(
+        &schema,
+        "node Doc {\n    slug: String @key\n    title: String @index\n}\n",
+    );
+    output_success(cli().arg("init").arg("--schema").arg(&schema).arg(&graph));
+    output_success(
+        cli()
+            .args(["branch", "create", "--from", "main", "feature", "--store"])
+            .arg(&graph),
+    );
+    let rows = temp.path().join("docs.jsonl");
+    write_jsonl(
+        &rows,
+        "{\"type\":\"Doc\",\"data\":{\"slug\":\"d-upper\",\"title\":\"Deep Learning\"}}\n{\"type\":\"Doc\",\"data\":{\"slug\":\"d-lower\",\"title\":\"deep dive\"}}\n",
+    );
+    output_success(
+        cli()
+            .args(["load", "--mode", "merge", "--branch", "feature", "--data"])
+            .arg(&rows)
+            .arg("--store")
+            .arg(&graph),
+    );
+    let search = || {
+        let mut command = cli();
+        command
+            .arg("query")
+            .arg("--store")
+            .arg(&graph)
+            .args(["--branch", "feature", "-e", SEARCH, "--json"]);
+        command
+    };
+    let refused = String::from_utf8(output_failure(&mut search()).stderr).unwrap();
+    assert!(
+        refused.contains("full-text index on 'Doc.title' has no built segment")
+            && refused.contains("omnigraph build-indexes <URI> --branch <branch>"),
+        "{refused}"
+    );
+
+    let main_before = resolved_snapshot_id(&graph, "main");
+    let built = parse_stdout_json(&output_success(
+        cli().arg("build-indexes").arg(&graph).args([
+            "--branch",
+            "feature",
+            "--as",
+            "act-cli-build",
+            "--json",
+        ]),
+    ));
+    assert_eq!(built["branch"], "feature");
+    let indexes = built["built_indexes"].as_array().unwrap();
+    for (column, kind) in [("slug", "full_text"), ("title", "full_text")] {
+        assert!(
+            indexes.iter().any(|index| index["type_key"] == "node:Doc"
+                && index["column"] == column
+                && index["kind"] == kind),
+            "{built}"
+        );
+    }
+    assert_eq!(built["pending_indexes"], serde_json::json!([]));
+    let commit_id = built["graph_commit_id"].as_str().unwrap();
+    let commit = parse_stdout_json(&output_success(
+        cli()
+            .args(["commit", "show", commit_id, "--uri"])
+            .arg(&graph)
+            .arg("--json"),
+    ));
+    assert_eq!(commit["actor_id"], "act-cli-build");
+    assert_eq!(commit["graph_branch"], "feature");
+    assert_eq!(resolved_snapshot_id(&graph, "main"), main_before);
+    assert_eq!(resolved_snapshot_id(&graph, "feature"), commit_id);
+
+    let answered = parse_stdout_json(&output_success(&mut search()));
+    assert_eq!(
+        answered["rows"],
+        serde_json::json!([{"d.slug": "d-lower"}, {"d.slug": "d-upper"}]),
+        "the index's analyzer matches both spellings"
+    );
+
+    let again = output_success(
+        cli()
+            .arg("build-indexes")
+            .arg("--store")
+            .arg(&graph)
+            .args(["--branch", "feature"]),
+    );
+    let human = stdout_string(&again);
+    assert!(human.contains("branch feature, 0 indexes built"), "{human}");
+    assert!(
+        human.contains("no-op; no graph commit published"),
+        "{human}"
+    );
+    assert_eq!(resolved_snapshot_id(&graph, "feature"), commit_id);
 }
 
 #[test]

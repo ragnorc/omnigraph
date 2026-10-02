@@ -56,6 +56,7 @@ server resolves the actor from the bearer token. Drop it, or use `--store <uri>`
 | `lint` | Validate `.gq` source | local schema or direct graph |
 | `upgrade` | Check or execute a registered offline storage migration | direct standalone |
 | `optimize` | Compact data and reconcile declared indexes | direct |
+| `build-indexes` | Build the declared indexes one branch lacks; keep existing ones | direct |
 | `rebuild-full-text-indexes` | Replace full-text indexes on one branch | direct |
 | `repair` | Report each table's Lance history against its registration (`no_drift` or `foreign_drift`) | direct |
 | `cleanup` | Delete table versions that no retained graph commit pins, under an explicit retention policy ([Maintenance](../operations/maintenance.md#cleanup)) | direct |
@@ -70,9 +71,9 @@ server resolves the actor from the bearer token. Drop it, or use `--store <uri>`
 | `alias` | Invoke a personal stored-query alias | served |
 | `version` | Print build and storage-format information | local |
 
-`rebuild-full-text-indexes` accepts `--branch` (default `main`), `--json`, and
-`--as` for actor attribution. Direct maintenance does not load server policy;
-see the [rebuild procedure](../operations/maintenance.md#rebuild-full-text-indexes).
+`build-indexes` and `rebuild-full-text-indexes` take `--branch` (default `main`),
+`--json` and `--as`; direct maintenance loads no server policy. See [building
+indexes](../operations/maintenance.md#build-indexes) and [rebuilding](../operations/maintenance.md#rebuild-full-text-indexes).
 
 ## Query inputs and output
 
@@ -223,9 +224,8 @@ aliases:
 Each profile binds exactly one of `server`, `cluster`, or `store`. Select it with
 `--profile` or `OMNIGRAPH_PROFILE`. Explicit flags override values filled by a profile.
 
-Bearer tokens never belong in `config.yaml`. Store a token with
-`omnigraph login <server>` or provide `OMNIGRAPH_BEARER_TOKEN` for the current
-invocation.
+Bearer tokens never belong in `config.yaml`. Store a token with `omnigraph login
+<server>` or provide `OMNIGRAPH_BEARER_TOKEN` for the current invocation.
 
 ## Managed cluster commands
 

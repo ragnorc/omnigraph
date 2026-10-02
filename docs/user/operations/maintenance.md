@@ -1,8 +1,9 @@
 # Maintenance
 
-OmniGraph provides four direct-storage maintenance commands:
+OmniGraph provides five direct-storage maintenance commands:
 
-- `optimize` compacts data and reconciles declared indexes.
+- `optimize` compacts data and reconciles declared indexes on `main`.
+- `build-indexes` builds the declared indexes one branch lacks.
 - `rebuild-full-text-indexes` replaces full-text indexes on one branch.
 - `repair` classifies storage drift and can publish an approved repair.
 - `cleanup` permanently removes unretained table versions and unused table
@@ -63,6 +64,32 @@ commit or maintenance work.
 
 A vector index whose property has no usable vectors remains pending rather than
 failing the run. Run optimize again after loading or generating vectors.
+
+## Build indexes
+
+```bash
+omnigraph build-indexes ./graph.omni --branch review --json
+omnigraph build-indexes --cluster s3://company/omnigraph --graph knowledge --branch review
+```
+
+The command builds every declared index the selected branch's tables lack: a
+scalar, full-text or vector index for each one-column `@index` or `@key`, and
+the identity and endpoint indexes of node and edge tables. Existing indexes are
+kept, whatever their coverage. An empty table gets no index, and a vector
+property without vectors stays pending with its reason. All built indexes
+become visible in one graph commit on that branch; other branches and
+historical snapshots are unchanged, and a run with nothing to build is a no-op
+without a commit. `--as` attributes the publication, and an embedded host with
+a policy checker installed requires `Change` on the branch.
+
+JSON reports `branch`, `graph_commit_id`, `built_indexes` (each `type_key`,
+`column` and `kind`: `btree`, `full_text` or `vector`) and `pending_indexes`
+(each `type_key`, `property` and `reason`).
+
+A full-text call on a declared index that has never been built is refused
+with `full_text_index_required` until this command, or `optimize` on `main`,
+builds it. A branch reaches that state when a type gains its first rows there;
+a branch created from an indexed `main` inherits its indexes.
 
 ## Rebuild full-text indexes
 

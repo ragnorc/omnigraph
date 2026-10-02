@@ -15,11 +15,11 @@ pub use commit_graph::GraphCommit;
 pub use graph_coordinator::{ReadTarget, ResolvedTarget, SnapshotId};
 pub use manifest::{DatasetEntry, DatasetUpdate};
 pub use omnigraph::{
-    CleanupPolicyOptions, CollectorCost, CollectorPathSnapshot, CollectorReport,
+    BuiltIndex, CleanupPolicyOptions, CollectorCost, CollectorPathSnapshot, CollectorReport,
     CollectorRowSummary, DatasetCleanupStats, DatasetOptimizeStats, DatasetRepairStats,
-    EXPORT_CHUNK_MAX_BYTES, ExportCut, FullTextIndexRebuildResult, InitOptions, MergeOutcome,
-    MergeResult, Omnigraph, OpenMode, PendingIndex, RebuiltFullTextIndex, RepairAction,
-    RepairClassification, RepairOptions, RepairStats, RetainedManifestVersions,
+    EXPORT_CHUNK_MAX_BYTES, ExportCut, FullTextIndexRebuildResult, IndexBuildResult, InitOptions,
+    MergeOutcome, MergeResult, Omnigraph, OpenMode, PendingIndex, RebuiltFullTextIndex,
+    RepairAction, RepairClassification, RepairOptions, RepairStats, RetainedManifestVersions,
     SYSTEM_COLUMNS_PREFLIGHT, SchemaApplyOptions, SchemaApplyResult, SkipReason, StagingVerdict,
     SystemColumnUpgradeFinding, SystemColumnUpgradeOptions, SystemColumnUpgradeOutcome,
     SystemColumnUpgradeReport, TableCollectionPlan, UnpublishedManifest,

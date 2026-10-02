@@ -250,7 +250,7 @@ write_surfaces! {
     "db/omnigraph.rs" => SYSTEM_COLUMNS_V9 => ["upgrade_system_columns", "upgrade_system_columns_as"],
     "exec/merge.rs" => MERGE_V9 => ["branch_merge", "branch_merge_as"],
     "db/omnigraph.rs" => INDICES_V9 => [
-        "ensure_indices", "ensure_indices_on",
+        "ensure_indices", "ensure_indices_on", "ensure_indices_on_as",
         "rebuild_full_text_indices_on", "rebuild_full_text_indices_on_as",
     ],
     "db/omnigraph.rs" => WriteProtocol::TestOnly => ["failpoint_publish_table_head_without_index_rebuild_for_test", "init_with_legacy_system_columns_for_tests"],

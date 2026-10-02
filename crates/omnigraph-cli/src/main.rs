@@ -1637,6 +1637,75 @@ async fn run(cli: Cli) -> Result<()> {
                 }
             }
         }
+        Command::BuildIndexes { uri, branch, json } => {
+            let uri = resolve_maintenance_uri(
+                cli.profile.as_deref(),
+                cli.store.as_deref(),
+                cli.cluster.as_deref(),
+                cli.graph.as_deref(),
+                uri,
+                "build-indexes",
+            )
+            .await?;
+            let actor = resolve_cli_actor(cli.as_actor.as_deref())?;
+            echo_write_target(cli.quiet, "build-indexes", &uri, false);
+            let db = Omnigraph::open(&uri).await?;
+            let result = db.ensure_indices_on_as(&branch, actor.as_deref()).await?;
+            let kind = |kind: omnigraph_compiler::types::PropIndexKind| match kind {
+                omnigraph_compiler::types::PropIndexKind::Btree => "btree",
+                omnigraph_compiler::types::PropIndexKind::FullText => "full_text",
+                omnigraph_compiler::types::PropIndexKind::Vector => "vector",
+            };
+            if json {
+                print_json(&serde_json::json!({
+                    "uri": uri,
+                    "branch": result.branch,
+                    "graph_commit_id": result.graph_commit_id,
+                    "built_indexes": result.built_indexes.iter().map(|index| {
+                        serde_json::json!({
+                            "type_key": index.type_key,
+                            "column": index.column,
+                            "kind": kind(index.kind),
+                        })
+                    }).collect::<Vec<_>>(),
+                    "pending_indexes": result.pending_indexes.iter().map(|pending| {
+                        serde_json::json!({
+                            "type_key": pending.type_key,
+                            "property": pending.property,
+                            "reason": pending.reason,
+                        })
+                    }).collect::<Vec<_>>(),
+                }))?;
+            } else {
+                println!(
+                    "build-indexes {} — branch {}, {} indexes built",
+                    uri,
+                    result.branch,
+                    result.built_indexes.len(),
+                );
+                for index in &result.built_indexes {
+                    println!(
+                        "  {}, column '{}' ({})",
+                        graph_type_subject(&index.type_key),
+                        index.column,
+                        kind(index.kind),
+                    );
+                }
+                for pending in &result.pending_indexes {
+                    println!(
+                        "  ↳ index pending on {}, property '{}': {}",
+                        graph_type_subject(&pending.type_key),
+                        pending.property,
+                        pending.reason,
+                    );
+                }
+                if let Some(commit_id) = result.graph_commit_id {
+                    println!("graph commit: {commit_id}");
+                } else {
+                    println!("no-op; no graph commit published");
+                }
+            }
+        }
         Command::RebuildFullTextIndexes { uri, branch, json } => {
             let uri = resolve_maintenance_uri(
                 cli.profile.as_deref(),

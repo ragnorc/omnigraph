@@ -337,6 +337,16 @@ pub(crate) enum Command {
         #[arg(long)]
         json: bool,
     },
+    /// Build every declared index missing on one branch; existing indexes are kept
+    BuildIndexes {
+        /// Graph storage URI; alternatively use --store or --cluster/--graph
+        uri: Option<String>,
+        /// Branch to build on; other branches and historical snapshots are unchanged
+        #[arg(long, default_value = "main")]
+        branch: String,
+        #[arg(long)]
+        json: bool,
+    },
     /// Rebuild all full-text indexes from one branch's current rows
     ///
     /// Uses the default English analyzer; replaces any custom tokenizer settings.

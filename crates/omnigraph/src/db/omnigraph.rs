@@ -56,7 +56,9 @@ pub use system_column_upgrade::{
     SystemColumnUpgradeOutcome, SystemColumnUpgradeReport,
 };
 pub(crate) use table_ops::OpenedForMutation;
-pub use table_ops::{FullTextIndexRebuildResult, PendingIndex, RebuiltFullTextIndex};
+pub use table_ops::{
+    BuiltIndex, FullTextIndexRebuildResult, IndexBuildResult, PendingIndex, RebuiltFullTextIndex,
+};
 
 use super::commit_graph::GraphCommit;
 use super::manifest::{
@@ -2658,7 +2660,23 @@ impl Omnigraph {
     }
 
     pub async fn ensure_indices_on(&self, branch: &str) -> Result<Vec<PendingIndex>> {
-        table_ops::ensure_indices_on(self, branch).await
+        Ok(self
+            .ensure_indices_on_as(branch, None)
+            .await?
+            .pending_indexes)
+    }
+
+    /// Build every declared index the selected branch's tables lack, keeping
+    /// existing indexes, in one graph commit; an empty table and an
+    /// untrainable vector column stay pending. Requires `Change` on the
+    /// selected branch before any effect and records the actor in the graph
+    /// publication; with a policy installed, the no-actor wrappers refuse.
+    pub async fn ensure_indices_on_as(
+        &self,
+        branch: &str,
+        actor: Option<&str>,
+    ) -> Result<IndexBuildResult> {
+        table_ops::ensure_indices_on_as(self, branch, actor).await
     }
 
     /// Fully rebuild all declared or existing supported full-text indexes from

@@ -197,7 +197,10 @@ fn flag_applies(flag: ScopeFlag, capability: Capability, cmd: &Command) -> bool 
                     ..
                 }
             ),
-            Direct => matches!(cmd, Command::RebuildFullTextIndexes { .. }),
+            Direct => matches!(
+                cmd,
+                Command::BuildIndexes { .. } | Command::RebuildFullTextIndexes { .. }
+            ),
             Served | Local => false,
         },
         // A profile is consumed wherever scope resolution runs: the data/
@@ -267,6 +270,7 @@ pub(crate) fn command_plane(cmd: &Command) -> Plane {
         Command::Init { .. }
         | Command::Upgrade { .. }
         | Command::Optimize { .. }
+        | Command::BuildIndexes { .. }
         | Command::RebuildFullTextIndexes { .. }
         | Command::Repair { .. }
         | Command::Cleanup { .. }
@@ -324,6 +328,7 @@ pub(crate) fn command_label(cmd: &Command) -> &'static str {
         Command::Policy { .. } => "policy",
         Command::Upgrade { .. } => "upgrade",
         Command::Optimize { .. } => "optimize",
+        Command::BuildIndexes { .. } => "build-indexes",
         Command::RebuildFullTextIndexes { .. } => "rebuild-full-text-indexes",
         Command::Repair { .. } => "repair",
         Command::Cleanup { .. } => "cleanup",
@@ -345,6 +350,7 @@ pub(crate) fn accepts_cluster_addressing(cmd: &Command) -> bool {
     matches!(
         cmd,
         Command::Optimize { .. }
+            | Command::BuildIndexes { .. }
             | Command::RebuildFullTextIndexes { .. }
             | Command::Repair { .. }
             | Command::Cleanup { .. }
@@ -425,6 +431,7 @@ fn remediation(capability: Capability, cmd: &Command) -> &'static str {
         Capability::Direct => match cmd {
             Command::Init { .. } => " Pass a storage URI.",
             Command::Optimize { .. }
+            | Command::BuildIndexes { .. }
             | Command::RebuildFullTextIndexes { .. }
             | Command::Repair { .. }
             | Command::Cleanup { .. } => " Pass a storage URI, or --cluster <dir> --graph <id>.",

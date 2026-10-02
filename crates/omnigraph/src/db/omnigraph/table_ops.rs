@@ -42,12 +42,58 @@ pub(super) async fn ensure_indices(db: &Omnigraph) -> Result<Vec<PendingIndex>> 
         .await
         .current_branch()
         .map(str::to_string);
-    ensure_indices_for_branch(db, current_branch.as_deref()).await
+    Ok(
+        ensure_indices_on_as(db, current_branch.as_deref().unwrap_or("main"), None)
+            .await?
+            .pending_indexes,
+    )
 }
 
-pub(super) async fn ensure_indices_on(db: &Omnigraph, branch: &str) -> Result<Vec<PendingIndex>> {
+/// Build every declared index the selected branch's tables lack, keeping the
+/// ones they have, in one graph commit. Requires `Change` on the branch
+/// before any effect, as every index writer does.
+pub(super) async fn ensure_indices_on_as(
+    db: &Omnigraph,
+    branch: &str,
+    actor: Option<&str>,
+) -> Result<IndexBuildResult> {
     let branch = normalize_branch_name(branch)?;
-    ensure_indices_for_branch(db, branch.as_deref()).await
+    let public_branch = branch.as_deref().unwrap_or("main");
+    db.enforce(
+        omnigraph_policy::PolicyAction::Change,
+        &omnigraph_policy::ResourceScope::Branch(public_branch.to_string()),
+        actor,
+    )?;
+    let outcome =
+        maintain_indices_for_branch(db, branch.as_deref(), IndexMaintenanceMode::Ensure, actor)
+            .await?;
+    Ok(IndexBuildResult {
+        branch: public_branch.to_string(),
+        graph_commit_id: outcome.graph_commit_id,
+        built_indexes: outcome.built_indexes,
+        pending_indexes: outcome.pending,
+    })
+}
+
+/// The declared indexes one published build added, and the ones it could not
+/// build yet.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct IndexBuildResult {
+    /// The selected logical graph branch, including `main`.
+    pub branch: String,
+    /// The publication made by this operation, or `None` when every declared
+    /// index already exists.
+    pub graph_commit_id: Option<String>,
+    pub built_indexes: Vec<BuiltIndex>,
+    pub pending_indexes: Vec<PendingIndex>,
+}
+
+/// One index a build added: its table, its column and the kind of index.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BuiltIndex {
+    pub type_key: String,
+    pub column: String,
+    pub kind: PropIndexKind,
 }
 
 /// The indexes replaced by one successfully published full-text rebuild.
@@ -76,6 +122,7 @@ enum IndexMaintenanceMode {
 struct IndexMaintenanceOutcome {
     pending: Vec<PendingIndex>,
     graph_commit_id: Option<String>,
+    built_indexes: Vec<BuiltIndex>,
     rebuilt_indexes: Vec<RebuiltFullTextIndex>,
 }
 
@@ -184,17 +231,6 @@ pub(super) async fn failpoint_publish_table_head_without_index_rebuild_for_test(
         None,
     )
     .await
-}
-
-pub(super) async fn ensure_indices_for_branch(
-    db: &Omnigraph,
-    branch: Option<&str>,
-) -> Result<Vec<PendingIndex>> {
-    Ok(
-        maintain_indices_for_branch(db, branch, IndexMaintenanceMode::Ensure, None)
-            .await?
-            .pending,
-    )
 }
 
 decide_seam! {
@@ -500,6 +536,30 @@ async fn maintain_indices_for_branch(
             pending.append(&mut table_pending);
         }
     }
+    let mut built_indexes = Vec::new();
+    if graph_commit_id.is_some() {
+        for target in &targets {
+            for spec in &work_by_table[&target.table_key].specs {
+                let (column, kind) = match spec {
+                    crate::storage_layer::IndexBuildSpec::BTree { column, .. } => {
+                        (column, PropIndexKind::Btree)
+                    }
+                    crate::storage_layer::IndexBuildSpec::FullText { column } => {
+                        (column, PropIndexKind::FullText)
+                    }
+                    crate::storage_layer::IndexBuildSpec::Vector { column } => {
+                        (column, PropIndexKind::Vector)
+                    }
+                };
+                built_indexes.push(BuiltIndex {
+                    type_key: target.table_key.clone(),
+                    column: column.clone(),
+                    kind,
+                });
+            }
+        }
+        built_indexes.sort_by(|a, b| (&a.type_key, &a.column).cmp(&(&b.type_key, &b.column)));
+    }
     let mut rebuilt_indexes = Vec::new();
     if mode == IndexMaintenanceMode::RebuildFullText && graph_commit_id.is_some() {
         for target in &targets {
@@ -517,6 +577,7 @@ async fn maintain_indices_for_branch(
     Ok(IndexMaintenanceOutcome {
         pending,
         graph_commit_id,
+        built_indexes,
         rebuilt_indexes,
     })
 }
@@ -976,7 +1037,7 @@ pub(super) async fn open_owned_dataset_for_branch_write(
 /// vectors can be retried once populated; an existing full-text index with
 /// incomplete coverage requires explicit rebuilding. `reason` names the remedy.
 /// Reads retain their unindexed fallback; this status alone is not a write.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PendingIndex {
     pub type_key: String,
     pub property: String,
