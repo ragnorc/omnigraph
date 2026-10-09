@@ -12,11 +12,13 @@ cargo test -p omnigraph-engine --test polymorphism_proto
 cargo run -p omnigraph-gqt --bin omnigraph-gqt -- crates/omnigraph-gqt/cases/polymorphism_proto_interface_endpoints.gqt
 ```
 
-Results on 2026-10-08: 11 of 11 Rust tests and the GQT case pass. The existing suites still pass:
+Results on 2026-10-09: 13 of 13 Rust tests and the GQT case pass. The existing suites still pass:
 465 compiler tests, the planner suites, 706 engine tests (library, `schema_apply`, `changes`,
 `end_to_end`, `engine_v2`, `traversal_indexed`, `traversal_adaptive`, `consistency`,
-`forbidden_apis`, `literal_filters`, `export`), and all 275 GQT cases (six DST cases first hit
-their 10-second timeout under machine load, then passed alone).
+`forbidden_apis`, `literal_filters`, `export`), and all 275 GQT cases. After the direction change
+(P11, P12) the compiler, engine library, `end_to_end` and traversal suites and all GQT cases were
+rerun. Under machine load 57 DST cases exceeded their 10-second budget; with the budget raised to
+120 seconds in scratch copies, all 57 passed.
 
 Not prototyped: GQ `insert` with `Type($id)` endpoints, binding the edge variable of a
 polymorphic traversal (refused), search over an interface, `return { $x }` for an abstract
@@ -167,6 +169,35 @@ one-member selection, not anything the user wrote.
 **RFC:** give polymorphic traversals a dedicated policy (the RFC's `ExpandPolicy::Budgeted` for a
 named polymorphic edge, not a one-member alternation). Its own refusal should name the edge, as in
 "edge Identifies has an interface endpoint and cannot use traversal = csr".
+
+## P11. Direction for equal endpoint sets (compiler, typecheck), raised in review
+
+The RFC refused a traversal whose source fits both ends of an edge unless the other endpoint
+decides. For `RelatedTo: Named -> Named` every source fits both ends and no destination can decide,
+so the rule refused the recursion the RFC promises. The prototype had the opposite gap: it always
+took the outgoing reading, even for a genuinely ambiguous `Mentions: Named -> Note` traversal from a
+Note.
+
+The prototype now keeps the outgoing reading when the edge's two endpoint sets are equal
+(`EdgeType::has_equal_ends`, which also covers every same-type edge, so
+`test_traversal_direction_out` is unchanged). It refuses unequal overlapping sets unless the other
+endpoint fits only one reading. Tests: `equal_endpoint_sets_traverse_outgoing_for_one_hop_and_recursion`
+and `unequal_overlapping_endpoint_sets_need_the_other_endpoint_to_decide`.
+
+**RFC:** state the three-case rule (one end fits; both fit with equal sets; both fit with unequal
+sets).
+
+## P12. The multi-hop check compared binding names in three places (compiler, engine)
+
+`$a: Person` over `RelatedTo: Named -> Named` with `{1,3}` was refused by #885's rule that a
+multi-hop traversal needs the same type at both endpoints, because `Person` is not `Named`. The rule
+lives in three places: typecheck, `ExpandStep::validate` and plan admission (`engine/mod.rs`). The
+prototype gives them one predicate, `EdgeType::continues(direction)`: a path continues when every
+type a hop can end on may start the next hop. The engine sites share
+`expand_crosses_types`. The three-hop recursion across Person, Organization and Note with
+colliding ids then returns exactly acme, bob and n1.
+
+**RFC:** the multi-hop rule compares endpoint sets, through one catalog predicate.
 
 ## P10. What worked as designed
 

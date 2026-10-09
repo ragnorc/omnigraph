@@ -137,13 +137,15 @@ impl ExpandStep {
                 "a traversal across an interface must run on the budgeted indexed route",
             ));
         }
+        let cross_type =
+            expand_crosses_types(Some(catalog), self.members(), &self.src_type, &self.dst_type);
         validate_expand_structure(
             self.members(),
             matches!(
                 &self.execution,
                 ExpandExecution::Budgeted(EdgeSelection::Alternation(_))
             ),
-            self.src_type != self.dst_type,
+            cross_type,
             self.min_hops,
             Some(self.max_hops),
             self.edge_binding.is_some(),
@@ -182,6 +184,31 @@ impl ExpandStep {
         }
         Ok(())
     }
+}
+
+/// A path cannot take a second hop: the endpoint bindings differ and, for a
+/// traversal across an interface, some member's destination types cannot
+/// start the next hop. Without a catalog, binding names decide.
+pub(crate) fn expand_crosses_types(
+    catalog: Option<&Catalog>,
+    members: &[EdgeMember],
+    src_type: &str,
+    dst_type: &str,
+) -> bool {
+    if src_type == dst_type {
+        return false;
+    }
+    let Some(catalog) = catalog else {
+        return true;
+    };
+    let edge = |member: &EdgeMember| catalog.edge_types.get(&member.edge_type);
+    let typed = catalog.is_abstract_type(src_type)
+        || catalog.is_abstract_type(dst_type)
+        || members.iter().any(|member| edge(member).is_some_and(|e| e.is_polymorphic()));
+    !typed
+        || !members
+            .iter()
+            .all(|member| edge(member).is_some_and(|e| e.continues(member.direction)))
 }
 
 pub(crate) fn validate_expand_structure(

@@ -1632,9 +1632,26 @@ fn resolve_traversal(
     // A hop ends on the destination type, and the next hop must start on the
     // source type, so a path across distinct endpoint types never reaches a
     // second hop; a bound that allows one is refused, not silently capped.
+    // Across an interface, a path continues when each hop's destination
+    // types may start the next hop, whatever the bindings are named.
+    let typed = catalog.is_abstract_type(&src_type)
+        || catalog.is_abstract_type(&dst_type)
+        || edges.members().iter().any(|member| {
+            catalog
+                .edge_types
+                .get(&member.edge_type)
+                .is_some_and(|edge| edge.is_polymorphic())
+        });
+    let continues = edges.members().iter().all(|member| {
+        catalog
+            .edge_types
+            .get(&member.edge_type)
+            .is_some_and(|edge| edge.continues(member.direction))
+    });
     if let Some(max_hops) = traversal.max_hops
         && max_hops > 1
         && src_type != dst_type
+        && !(typed && continues)
     {
         let (EdgeSelector::Named(name), Some(member)) = (&traversal.selector, edges.named()) else {
             return Err(CompilerError::typed(
@@ -1708,14 +1725,17 @@ fn resolve_member(
     }
     // A declared endpoint fits an edge end when its member types are all
     // admitted there (an implementor of an interface endpoint, or the node
-    // type itself). With interfaces both ends can fit; the other declared
-    // endpoint decides, and an undecided source keeps the outgoing reading.
+    // type itself). When both readings fit, equal endpoint sets keep the
+    // outgoing reading, as a same-type edge always has; unequal overlapping
+    // sets are ambiguous unless the other declared endpoint decides.
     let fits = |declared: &str, end: &str| catalog.type_fits(declared, end);
     let direction = match (src, dst) {
         (Some(src), dst) => {
             let out = fits(src, &edge.from_type) && dst.is_none_or(|dst| overlaps(catalog, dst, &edge.to_type));
             let inbound = fits(src, &edge.to_type) && dst.is_none_or(|dst| overlaps(catalog, dst, &edge.from_type));
-            if out {
+            if out && inbound && !edge.has_equal_ends() {
+                return Err(ambiguous_direction_error(traversal, src, edge));
+            } else if out {
                 Direction::Out
             } else if inbound {
                 Direction::In
@@ -1727,7 +1747,10 @@ fn resolve_member(
             }
         }
         (None, Some(dst)) => {
-            if overlaps(catalog, dst, &edge.to_type) {
+            let out = overlaps(catalog, dst, &edge.to_type);
+            if out && overlaps(catalog, dst, &edge.from_type) && !edge.has_equal_ends() {
+                return Err(ambiguous_direction_error(traversal, dst, edge));
+            } else if out {
                 Direction::Out
             } else if overlaps(catalog, dst, &edge.from_type) {
                 Direction::In
@@ -1757,6 +1780,16 @@ fn resolve_member(
         src_type,
         dst_type,
     ))
+}
+
+fn ambiguous_direction_error(traversal: &Traversal, declared: &str, edge: &EdgeType) -> CompilerError {
+    CompilerError::typed(
+        T5,
+        format!(
+            "traversal `${} {} ${}` is ambiguous: `{declared}` fits both ends of `{}: {} -> {}`; declare the other endpoint's type to choose a direction",
+            traversal.src, edge.name, traversal.dst, edge.name, edge.from_type, edge.to_type
+        ),
+    )
 }
 
 /// Two type names share at least one concrete node type.

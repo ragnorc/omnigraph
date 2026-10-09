@@ -429,3 +429,123 @@ async fn generalizing_a_keyed_edge_is_refused() {
     let plan = db.plan_schema(&desired).await.unwrap();
     assert!(!plan.supported, "{plan:?}");
 }
+
+const DIRECTION_SCHEMA: &str = r#"
+interface Named {
+    slug: String @key
+}
+node Person implements Named {
+    email: String?
+}
+node Organization implements Named {
+    website: String?
+}
+node Note implements Named {
+    text: String?
+}
+edge RelatedTo: Named -> Named
+edge Mentions: Named -> Note
+"#;
+
+const DIRECTION_DATA: &str = r#"{"type":"Person","data":{"slug":"alice"}}
+{"type":"Person","data":{"slug":"bob"}}
+{"type":"Person","data":{"slug":"carol"}}
+{"type":"Organization","data":{"slug":"alice"}}
+{"type":"Organization","data":{"slug":"acme"}}
+{"type":"Note","data":{"slug":"n1"}}
+{"type":"Note","data":{"slug":"n2"}}
+{"edge":"RelatedTo","from":"alice","from_type":"Person","to":"acme","to_type":"Organization"}
+{"edge":"RelatedTo","from":"acme","from_type":"Organization","to":"bob","to_type":"Person"}
+{"edge":"RelatedTo","from":"alice","from_type":"Organization","to":"carol","to_type":"Person"}
+{"edge":"RelatedTo","from":"bob","from_type":"Person","to":"n1","to_type":"Note"}
+{"edge":"Mentions","from":"n2","from_type":"Note","to":"n1"}
+{"edge":"Mentions","from":"alice","from_type":"Person","to":"n2"}
+"#;
+
+const DIRECTION_QUERIES: &str = r#"
+query related($slug: String) {
+    match {
+        $a: Person { slug: $slug }
+        $a relatedTo $b
+    }
+    return { $b.@type as type, $b.slug as slug }
+}
+
+query related_within_three($slug: String) {
+    match {
+        $a: Person { slug: $slug }
+        $a relatedTo{1,3} $b
+    }
+    return { $b.@type as type, $b.slug as slug }
+}
+
+query note_mentions($slug: String) {
+    match {
+        $n: Note { slug: $slug }
+        $n mentions $x
+    }
+    return { $x.slug as slug }
+}
+
+query people_mentioning($slug: String) {
+    match {
+        $n: Note { slug: $slug }
+        $p: Person
+        $n mentions $p
+    }
+    return { $p.slug as slug }
+}
+"#;
+
+async fn direction_graph(dir: &tempfile::TempDir) -> Session {
+    let uri = dir.path().to_str().unwrap();
+    let db = session(Omnigraph::init(uri, DIRECTION_SCHEMA).await.unwrap());
+    db.load_jsonl(DIRECTION_DATA, LoadMode::Overwrite).await.unwrap();
+    db
+}
+
+#[tokio::test]
+async fn equal_endpoint_sets_traverse_outgoing_for_one_hop_and_recursion() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = direction_graph(&dir).await;
+    // Person "alice" relates to Organization "acme"; Organization "alice"'s
+    // edge to Person "carol" must not leak in through the shared id.
+    let one = rows(
+        &query_main(&db, DIRECTION_QUERIES, "related", &value("slug", "alice"))
+            .await
+            .unwrap(),
+    );
+    assert_eq!(one, vec![r#"{"slug":"acme","type":"Organization"}"#.to_string()]);
+    // Person alice -> Organization acme -> Person bob -> Note n1.
+    let three = rows(
+        &query_main(&db, DIRECTION_QUERIES, "related_within_three", &value("slug", "alice"))
+            .await
+            .unwrap(),
+    );
+    assert_eq!(
+        three,
+        vec![
+            r#"{"slug":"acme","type":"Organization"}"#.to_string(),
+            r#"{"slug":"bob","type":"Person"}"#.to_string(),
+            r#"{"slug":"n1","type":"Note"}"#.to_string(),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn unequal_overlapping_endpoint_sets_need_the_other_endpoint_to_decide() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = direction_graph(&dir).await;
+    // A Note fits both ends of `Mentions: Named -> Note`.
+    let error = query_main(&db, DIRECTION_QUERIES, "note_mentions", &value("slug", "n2"))
+        .await
+        .expect_err("an undecided direction is refused");
+    assert!(error.to_string().contains("ambiguous"), "{error}");
+    // A Person destination can only be the source end: the traversal is inbound.
+    let people = rows(
+        &query_main(&db, DIRECTION_QUERIES, "people_mentioning", &value("slug", "n2"))
+            .await
+            .unwrap(),
+    );
+    assert_eq!(people, vec![r#"{"slug":"alice"}"#.to_string()]);
+}

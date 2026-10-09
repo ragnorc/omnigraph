@@ -331,7 +331,10 @@ pub(crate) async fn execute_query_inspected(
 
 /// Replayed plans must keep the statement's admission contract intact.
 /// Refuse inconsistent policy before any shortcut can materialize a CSR.
-fn validate_traversal_admission(plan: &PhysicalPlan) -> Result<Option<std::num::NonZeroU64>> {
+fn validate_traversal_admission(
+    plan: &PhysicalPlan,
+    catalog: Option<&Catalog>,
+) -> Result<Option<std::num::NonZeroU64>> {
     let cap = plan
         .assumptions()
         .validated_traversal_work_limit()
@@ -364,7 +367,7 @@ fn validate_traversal_admission(plan: &PhysicalPlan) -> Result<Option<std::num::
                         edges,
                         omnigraph_compiler::traversal::EdgeSelection::Alternation(_)
                     ),
-                    src_type != dst_type,
+                    operators::expand_crosses_types(catalog, edges.members(), src_type, dst_type),
                     *min_hops,
                     *max_hops,
                     edge_binding.is_some(),
@@ -414,7 +417,7 @@ pub(crate) async fn execute(bound: BoundPlan, context: &EngineContext<'_>) -> Re
         .map_err(|error| OmniError::manifest_internal(error.to_string()))?;
     omnigraph_planner::validate_output_schemas(&bound.plan)
         .map_err(|error| OmniError::manifest_internal(error.to_string()))?;
-    let traversal_limit = validate_traversal_admission(&bound.plan)?;
+    let traversal_limit = validate_traversal_admission(&bound.plan, Some(context.catalog))?;
     omnigraph_planner::optimizer::validate_rank_fuse_row_tiebreaks(&bound.plan)
         .map_err(|error| OmniError::manifest_internal(error.to_string()))?;
     let ctx =
@@ -603,12 +606,12 @@ mod traversal_admission_tests {
     #[test]
     fn replay_refuses_missing_or_zero_selector_budget_issue_659() {
         let mut plan = selected_plan();
-        validate_traversal_admission(&plan).unwrap();
+        validate_traversal_admission(&plan, None).unwrap();
         for cap in [None, Some(0), Some(i64::MAX as u64 + 1)] {
             let mut assumptions = plan.assumptions().clone();
             assumptions.traversal_work_limit = cap;
             plan.set_assumptions(assumptions);
-            assert!(validate_traversal_admission(&plan).is_err());
+            assert!(validate_traversal_admission(&plan, None).is_err());
         }
     }
 
@@ -620,7 +623,7 @@ mod traversal_admission_tests {
             .settings
             .insert("traversal_work_limit".into(), "100".into());
         plan.set_assumptions(assumptions);
-        assert!(validate_traversal_admission(&plan).is_err());
+        assert!(validate_traversal_admission(&plan, None).is_err());
         let member = |name: &str| EdgeMember {
             edge_type: name.into(),
             direction: Direction::Out,
@@ -646,7 +649,7 @@ mod traversal_admission_tests {
             let mut assumptions = plan.assumptions().clone();
             assumptions.datasets.insert("edge:Likes".into(), None);
             plan.set_assumptions(assumptions);
-            assert!(validate_traversal_admission(&plan).is_err());
+            assert!(validate_traversal_admission(&plan, None).is_err());
         }
     }
 
@@ -658,19 +661,19 @@ mod traversal_admission_tests {
             unreachable!()
         };
         *mode = ExpandMode::Csr;
-        assert!(validate_traversal_admission(&plan).is_err());
+        assert!(validate_traversal_admission(&plan, None).is_err());
         let mut plan = selected_plan();
         let mut assumptions = plan.assumptions().clone();
         assumptions.datasets.clear();
         plan.set_assumptions(assumptions);
-        assert!(validate_traversal_admission(&plan).is_err());
+        assert!(validate_traversal_admission(&plan, None).is_err());
     }
 
     #[test]
     fn replay_refuses_capped_pinned_policy_and_mismatched_version_issue_659() {
         for named in [false, true] {
             let mut plan = selected_plan();
-            validate_traversal_admission(&plan).unwrap();
+            validate_traversal_admission(&plan, None).unwrap();
             let root = plan.root();
             let Some(PhysicalNode::Expand { edges, policy, .. }) = plan.node_mut(root) else {
                 unreachable!()
@@ -679,7 +682,7 @@ mod traversal_admission_tests {
                 *edges = EdgeSelection::Named(edges.members()[0].clone());
             }
             *policy = ExpandPolicy::Pinned;
-            let error = validate_traversal_admission(&plan).unwrap_err();
+            let error = validate_traversal_admission(&plan, None).unwrap_err();
             assert!(
                 error
                     .to_string()
@@ -694,7 +697,7 @@ mod traversal_admission_tests {
             unreachable!()
         };
         versions.insert("Knows".into(), Some(7));
-        let error = validate_traversal_admission(&plan).unwrap_err();
+        let error = validate_traversal_admission(&plan, None).unwrap_err();
         assert!(
             error
                 .to_string()
@@ -768,7 +771,7 @@ mod traversal_admission_tests {
                 prefilter: None,
             }),
         };
-        validate_traversal_admission(&plan).unwrap();
+        validate_traversal_admission(&plan, None).unwrap();
         let Some(PhysicalNode::Scan {
             ranked: Some(ranked),
             ..
@@ -777,7 +780,7 @@ mod traversal_admission_tests {
             unreachable!()
         };
         ranked.prefilter = Some(prefilter(vec![input]));
-        let error = validate_traversal_admission(&plan).unwrap_err();
+        let error = validate_traversal_admission(&plan, None).unwrap_err();
         assert!(
             error.to_string().contains("cannot use the CSR prefilter"),
             "{error}"
@@ -798,12 +801,12 @@ mod traversal_admission_tests {
             row_tiebreak: vec![ColumnRef::property("q", "@id")],
         });
         plan.set_root(root);
-        validate_traversal_admission(&plan).unwrap();
+        validate_traversal_admission(&plan, None).unwrap();
         let Some(PhysicalNode::RankFuse { prefilter, .. }) = plan.node_mut(root) else {
             unreachable!()
         };
         prefilter.feeds.push(0);
-        let error = validate_traversal_admission(&plan).unwrap_err();
+        let error = validate_traversal_admission(&plan, None).unwrap_err();
         assert!(
             error.to_string().contains("cannot use the CSR prefilter"),
             "{error}"
@@ -818,7 +821,7 @@ mod traversal_admission_tests {
             unreachable!()
         };
         *max_hops = None;
-        assert!(validate_traversal_admission(&plan).is_err());
+        assert!(validate_traversal_admission(&plan, None).is_err());
         let Some(PhysicalNode::Expand {
             max_hops,
             edge_binding,
@@ -829,6 +832,6 @@ mod traversal_admission_tests {
         };
         *max_hops = Some(2);
         *edge_binding = Some("e".into());
-        assert!(validate_traversal_admission(&plan).is_err());
+        assert!(validate_traversal_admission(&plan, None).is_err());
     }
 }

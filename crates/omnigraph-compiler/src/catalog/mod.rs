@@ -186,6 +186,24 @@ impl EdgeType {
     pub fn admits_destination(&self, node_type: &str) -> bool {
         self.to_members.iter().any(|member| member == node_type)
     }
+
+    /// Both ends admit the same concrete node types (a same-type edge, or
+    /// `Subject -> Subject`), so a source fitting both ends is not ambiguous.
+    pub fn has_equal_ends(&self) -> bool {
+        let from = self.from_members.iter().collect::<HashSet<_>>();
+        let to = self.to_members.iter().collect::<HashSet<_>>();
+        from == to
+    }
+
+    /// A path along this edge in `direction` can take a second hop: every
+    /// type a hop ends on may start the next one.
+    pub fn continues(&self, direction: crate::types::Direction) -> bool {
+        let (start, end) = match direction {
+            crate::types::Direction::In => (&self.to_members, &self.from_members),
+            _ => (&self.from_members, &self.to_members),
+        };
+        end.iter().all(|member| start.contains(member))
+    }
 }
 
 /// The concrete members of a declared endpoint name: itself when it is a node
