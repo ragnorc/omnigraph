@@ -303,6 +303,7 @@ fn resolve_pipeline(
                     version,
                     columns,
                     schema,
+                    members,
                     ..
                 } = source.node_type(type_name)?;
                 let side = SideId::Binding(*next_binding);
@@ -313,6 +314,7 @@ fn resolve_pipeline(
                         spec: Box::new(ScanSpec {
                             side,
                             table,
+                            members,
                             version,
                             columns,
                             fragments: None,
@@ -366,6 +368,7 @@ fn resolve_pipeline(
                     table,
                     version,
                     columns,
+                    members,
                     ..
                 } = source.node_type(dst_type)?;
                 let side = SideId::Binding(*next_binding);
@@ -390,6 +393,7 @@ fn resolve_pipeline(
                         spec: Box::new(ScanSpec {
                             side,
                             table,
+                            members,
                             version,
                             columns,
                             fragments: None,
@@ -850,6 +854,7 @@ fn scan(
             spec: Box::new(ScanSpec {
                 side: side_id,
                 table: side.table.clone(),
+                members: Vec::new(),
                 version: Some(side.version),
                 columns: side.columns,
                 fragments: None,
@@ -1733,6 +1738,7 @@ fn node_reads(node: &LogicalNode) -> Vec<ColumnRef> {
             let ScanSpec {
                 side: _,
                 table: _,
+                members: _,
                 version: _,
                 columns: _,
                 fragments: _,

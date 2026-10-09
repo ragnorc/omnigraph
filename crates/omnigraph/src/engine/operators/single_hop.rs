@@ -288,6 +288,7 @@ impl<'g> Source<'g> {
                     &mut map,
                     hop_memory,
                     hop_memory,
+                    None,
                 )
                 .await
                 .map_err(external)?;

@@ -504,9 +504,8 @@ fn validate_shape(shape: &SchemaShape) -> Result<()> {
                 edge.name
             )));
         }
-        if !node_names.contains(edge.from_type.as_str())
-            || !node_names.contains(edge.to_type.as_str())
-        {
+        let resolves = |name: &str| node_names.contains(name) || interface_names.contains(name);
+        if !resolves(edge.from_type.as_str()) || !resolves(edge.to_type.as_str()) {
             return Err(CompilerError::Catalog(format!(
                 "edge '{}' has an unresolved endpoint",
                 edge.name

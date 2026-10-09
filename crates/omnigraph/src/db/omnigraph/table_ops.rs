@@ -11,6 +11,7 @@ pub(super) async fn graph_index(db: &Omnigraph) -> Result<Arc<crate::graph_index
     let edge_types: std::collections::HashMap<String, (String, String)> = catalog
         .edge_types
         .iter()
+        .filter(|(_, et)| !et.is_polymorphic())
         .map(|(name, et)| (name.clone(), (et.from_type.clone(), et.to_type.clone())))
         .collect();
     db.runtime_cache

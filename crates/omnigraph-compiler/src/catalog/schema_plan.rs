@@ -20,6 +20,14 @@ pub enum SchemaTypeKind {
     Edge,
 }
 
+/// One end of an edge.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EndpointSide {
+    Source,
+    Destination,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SchemaMigrationPlan {
     pub supported: bool,
@@ -105,6 +113,16 @@ pub enum SchemaMigrationStep {
         type_name: String,
         property_name: String,
     },
+    /// Widen one edge endpoint from a node type to an interface that type
+    /// implements: the edge table is rewritten with the side's endpoint-type
+    /// column, every existing row taking the old node type's identity
+    /// (polymorphic types prototype). Narrowing stays unsupported.
+    GeneralizeEndpoint {
+        edge_name: String,
+        side: EndpointSide,
+        from: String,
+        to: String,
+    },
     UnsupportedChange {
         entity: String,
         reason: String,
@@ -181,7 +199,13 @@ pub fn plan_schema_migration(
     let mut steps = Vec::new();
     plan_interfaces(&accepted.interfaces, &desired.interfaces, &mut steps);
     plan_nodes(&accepted.nodes, &desired.nodes, &mut steps, system_columns);
-    plan_edges(&accepted.edges, &desired.edges, &mut steps, system_columns);
+    plan_edges(
+        &accepted.edges,
+        &desired.edges,
+        &desired.nodes,
+        &mut steps,
+        system_columns,
+    );
 
     if steps.is_empty() && accepted != desired {
         steps.push(SchemaMigrationStep::UnsupportedChange {
@@ -483,6 +507,7 @@ fn plan_nodes(
 fn plan_edges(
     accepted: &[EdgeIR],
     desired: &[EdgeIR],
+    desired_nodes: &[super::schema_ir::NodeIR],
     steps: &mut Vec<SchemaMigrationStep>,
     system_columns: super::schema_ir::SystemColumns,
 ) {
@@ -510,9 +535,56 @@ fn plan_edges(
             });
         }
 
-        if existing.from_type.type_id != edge.from_type.type_id
-            || existing.to_type.type_id != edge.to_type.type_id
-        {
+        // A node-type endpoint widened to an interface that node type
+        // implements is a generalization; any other endpoint change is not.
+        let generalized = |before: &super::schema_ir::TypeRefIR, after: &super::schema_ir::TypeRefIR| {
+            desired_nodes.iter().any(|node| {
+                node.type_id == before.type_id
+                    && node.implements.iter().any(|iface| iface.type_id == after.type_id)
+            })
+        };
+        let mut endpoints_supported = true;
+        for (side, before, after) in [
+            (EndpointSide::Source, &existing.from_type, &edge.from_type),
+            (EndpointSide::Destination, &existing.to_type, &edge.to_type),
+        ] {
+            if before.type_id == after.type_id {
+                continue;
+            }
+            // A key or unique tuple over the endpoint gains the side's type:
+            // existing rows would keep ids derived without it, and a later
+            // keyed write would miss them and insert a duplicate.
+            let keyed = edge.constraints.iter().any(|constraint| {
+                matches!(
+                    constraint,
+                    super::schema_ir::ConstraintIR::Key { .. }
+                        | super::schema_ir::ConstraintIR::Unique { .. }
+                )
+            });
+            if keyed && generalized(before, after) {
+                steps.push(SchemaMigrationStep::UnsupportedChange {
+                    entity: format!("edge:{}", edge.name),
+                    reason: format!(
+                        "generalizing an endpoint of '{}' would change the key of every existing edge; \
+                         generalizing a keyed or @unique edge is not supported",
+                        edge.name
+                    ),
+                    code: None,
+                });
+                continue;
+            }
+            if generalized(before, after) {
+                steps.push(SchemaMigrationStep::GeneralizeEndpoint {
+                    edge_name: edge.name.clone(),
+                    side,
+                    from: before.type_name.clone(),
+                    to: after.type_name.clone(),
+                });
+            } else {
+                endpoints_supported = false;
+            }
+        }
+        if !endpoints_supported {
             steps.push(SchemaMigrationStep::UnsupportedChange {
                 entity: format!("edge:{}", edge.name),
                 reason: format!(

@@ -111,7 +111,32 @@ impl ExpandStep {
         matches!(self.execution, ExpandExecution::Budgeted(_))
     }
 
+    /// The traversal crosses an interface: a member edge stores endpoint
+    /// types, or an endpoint binding is abstract (polymorphic types prototype).
+    pub(crate) fn typed(&self, catalog: &Catalog) -> bool {
+        catalog.is_abstract_type(&self.src_type)
+            || catalog.is_abstract_type(&self.dst_type)
+            || self.members().iter().any(|member| {
+                catalog
+                    .edge_types
+                    .get(&member.edge_type)
+                    .is_some_and(|edge| edge.is_polymorphic())
+            })
+    }
+
+    /// The destination carries its concrete type as `<dst>.~node_type`.
+    pub(crate) fn emits_type(&self, catalog: &Catalog) -> bool {
+        self.typed(catalog) && catalog.is_abstract_type(&self.dst_type)
+    }
+
     fn validate(&self, catalog: &Catalog) -> Result<()> {
+        // Only the budgeted route reads endpoint types; an untyped expansion
+        // across an interface matches colliding ids of different types.
+        if self.typed(catalog) && !self.budgeted() {
+            return Err(OmniError::manifest(
+                "a traversal across an interface must run on the budgeted indexed route",
+            ));
+        }
         validate_expand_structure(
             self.members(),
             matches!(
@@ -139,7 +164,17 @@ impl ExpandStep {
                     ));
                 }
             };
-            if src != &self.src_type || dst != &self.dst_type {
+            // An endpoint binding may be narrower or wider than the edge's
+            // declared end once interfaces are involved; it must share a
+            // concrete member with it.
+            let compatible = |binding: &str, end: &str| {
+                binding == end
+                    || match (catalog.concrete_members(binding), catalog.concrete_members(end)) {
+                        (Some(binding), Some(end)) => binding.iter().any(|member| end.contains(member)),
+                        _ => false,
+                    }
+            };
+            if !compatible(&self.src_type, src) || !compatible(&self.dst_type, dst) {
                 return Err(OmniError::manifest_internal(
                     "edge selection endpoint types do not match its members",
                 ));
@@ -268,11 +303,19 @@ impl ExpandExec {
 
 /// Source columns, the destination ID, then any bound-edge columns.
 fn expand_output_schema(input: &Schema, catalog: &Catalog, step: &ExpandStep) -> Result<SchemaRef> {
-    let destination = Schema::new(vec![Field::new(
+    let mut destination_fields = vec![Field::new(
         format!("{}.{}", step.dst, catalog.system_columns.id),
         DataType::Utf8,
         false,
-    )]);
+    )];
+    if step.emits_type(catalog) {
+        destination_fields.push(Field::new(
+            format!("{}.{}", step.dst, omnigraph_compiler::traversal::NODE_TYPE_COLUMN),
+            DataType::Utf8,
+            false,
+        ));
+    }
+    let destination = Schema::new(destination_fields);
     let mut schema = joined_schema(input, &destination)?;
     if let Some(binding) = &step.edge_binding {
         let pair_schema = bound_edge_pair_schema(catalog, step.members(), step.has_type_column())?;

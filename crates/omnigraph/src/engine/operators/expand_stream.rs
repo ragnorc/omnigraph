@@ -240,6 +240,11 @@ async fn emit_bound(
     sender: &BatchSender,
     declared: &SchemaRef,
 ) -> Result<()> {
+    if step.typed(&env.catalog) {
+        return Err(external(OmniError::manifest(
+            "binding an edge whose endpoint is an interface is not prototyped",
+        )));
+    }
     let pair_schema = bound_edge_pair_schema(&env.catalog, step.members(), step.has_type_column())
         .map_err(external)?;
     let partition = Arc::new(EdgePairs {
@@ -315,6 +320,7 @@ async fn emit_unbound(
     sender: &BatchSender,
     schema: &SchemaRef,
 ) -> Result<()> {
+    let typed = step.typed(&env.catalog).then(|| step.emits_type(&env.catalog));
     execute_expand(
         wide,
         env,
@@ -323,7 +329,7 @@ async fn emit_unbound(
         switch,
         memory,
         move |pairs| async move {
-            emit_pairs(wide, &pairs, memory, sender, schema)
+            emit_pairs(wide, &pairs, memory, sender, schema, typed)
                 .await
                 .map_err(|error| memory.error(error))
         },
@@ -332,12 +338,16 @@ async fn emit_unbound(
     .map_err(external)
 }
 
+/// `typed` is `Some(emit_type)` for a traversal over qualified keys: ids are
+/// split from their types, and the type rides as `<dst>.~node_type` when the
+/// destination is abstract.
 async fn emit_pairs(
     wide: &RecordBatch,
     pairs: &ExpandedPairs,
     memory: &WorkMemory,
     sender: &BatchSender,
     schema: &SchemaRef,
+    typed: Option<bool>,
 ) -> Result<()> {
     let rows = output_rows(memory);
     for offset in (0..pairs.source_rows.len()).step_by(rows) {
@@ -349,15 +359,27 @@ async fn emit_pairs(
         let bytes = ids.iter().map(String::len).sum();
         work.string(bytes)?;
         let mut destination = StringBuilder::with_capacity(ids.len(), bytes);
+        let mut types = StringBuilder::with_capacity(ids.len(), bytes);
         for id in ids {
             work.check()?;
-            destination.append_value(id);
+            match typed {
+                Some(_) => {
+                    let (node_type, raw) = crate::engine::graph::split_qualified(id);
+                    destination.append_value(raw);
+                    types.append_value(node_type);
+                }
+                None => destination.append_value(id),
+            }
         }
+        let extra: Vec<arrow_array::ArrayRef> = match typed {
+            Some(true) => vec![Arc::new(types.finish())],
+            _ => Vec::new(),
+        };
         let output = align_sources(
             wide,
             &source,
             Arc::new(destination.finish()),
-            &[],
+            &extra,
             schema,
             &work,
         )?;

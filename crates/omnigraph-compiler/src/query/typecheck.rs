@@ -1024,7 +1024,7 @@ fn typecheck_clauses(
     for clause in clauses {
         match clause {
             Clause::Binding(binding) => {
-                bind_node(binding, ctx)?;
+                bind_node(catalog, binding, ctx)?;
                 if binding.variable != "_" {
                     declared_nodes.insert(binding.variable.clone());
                 }
@@ -1244,15 +1244,13 @@ fn typecheck_binding(
     ctx: &mut TypeContext,
     params: &HashMap<String, PropType>,
 ) -> Result<()> {
-    // T1: binding type must exist in catalog
-    if !catalog.node_types.contains_key(&binding.type_name) {
+    // T1: binding type must be a node type or an interface
+    let Some(node_type) = catalog.binding_node_type(&binding.type_name) else {
         return Err(CompilerError::typed(
             T1,
             format!("unknown node type `{}`", binding.type_name),
         ));
-    }
-
-    let node_type = &catalog.node_types[&binding.type_name];
+    };
 
     // T2 + T3: property match fields must exist and have correct types
     for pm in &binding.prop_matches {
@@ -1296,10 +1294,10 @@ fn typecheck_binding(
         )?;
     }
 
-    bind_node(binding, ctx)
+    bind_node(catalog, binding, ctx)
 }
 
-fn bind_node(binding: &Binding, ctx: &mut TypeContext) -> Result<()> {
+fn bind_node(catalog: &Catalog, binding: &Binding, ctx: &mut TypeContext) -> Result<()> {
     // Don't overwrite if already bound to the same node type (re-binding the
     // same node var is OK). Node and edge namespaces are independent, so a
     // matching type name does not make a cross-kind rebind valid.
@@ -1321,7 +1319,12 @@ fn bind_node(binding: &Binding, ctx: &mut TypeContext) -> Result<()> {
                 ));
             }
             BoundVariable::Node { type_name } => {
-                if *type_name != binding.type_name {
+                // Rebinding intersects: a narrower type replaces the binding,
+                // a wider one adds nothing, unrelated types are refused.
+                if catalog.type_fits(type_name, &binding.type_name) {
+                    return Ok(());
+                }
+                if !catalog.type_fits(&binding.type_name, type_name) {
                     return Err(CompilerError::typed(
                         T50,
                         format!(
@@ -1539,8 +1542,19 @@ fn resolve_traversal(
     let (edges, src_type, dst_type) = match &traversal.selector {
         EdgeSelector::Named(name) => {
             let edge = lookup_traversal_edge(catalog, name)?;
-            let (member, src_type, dst_type) = resolve_member(edge, traversal, src, dst)?;
-            (EdgeSelection::Named(member), src_type, dst_type)
+            let (member, src_type, dst_type) = resolve_member(catalog, edge, traversal, src, dst)?;
+            // A traversal across an interface runs on the budgeted indexed
+            // route (the CSR has no typed endpoints): plan it as a one-member
+            // selection (polymorphic types prototype).
+            let typed = edge.is_polymorphic()
+                || catalog.is_abstract_type(&src_type)
+                || catalog.is_abstract_type(&dst_type);
+            let selection = if typed {
+                EdgeSelection::Alternation(vec![member])
+            } else {
+                EdgeSelection::Named(member)
+            };
+            (selection, src_type, dst_type)
         }
         EdgeSelector::Alternation(names) => {
             let Some((first, rest)) = names.split_first() else {
@@ -1559,14 +1573,14 @@ fn resolve_traversal(
                     }
                 }
             }
-            let (member, src_type, dst_type) = resolve_member(edge, traversal, src, dst)?;
+            let (member, src_type, dst_type) = resolve_member(catalog, edge, traversal, src, dst)?;
             let mut seen = HashSet::from([member.edge_type.clone()]);
             let mut members = vec![member];
             for name in rest {
                 let edge = lookup_traversal_edge(catalog, name)?;
                 if seen.insert(edge.name.clone()) {
                     let (member, _, _) =
-                        resolve_member(edge, traversal, Some(&src_type), Some(&dst_type))?;
+                        resolve_member(catalog, edge, traversal, Some(&src_type), Some(&dst_type))?;
                     members.push(member);
                 }
             }
@@ -1593,7 +1607,8 @@ fn resolve_traversal(
                 if (edge.from_type == src && edge.to_type == dst)
                     || (edge.to_type == src && edge.from_type == dst)
                 {
-                    let (member, _, _) = resolve_member(edge, traversal, Some(src), Some(dst))?;
+                    let (member, _, _) =
+                        resolve_member(catalog, edge, traversal, Some(src), Some(dst))?;
                     members.push(member);
                 }
             }
@@ -1676,6 +1691,7 @@ fn lookup_traversal_edge<'a>(catalog: &'a Catalog, name: &str) -> Result<&'a Edg
 }
 
 fn resolve_member(
+    catalog: &Catalog,
     edge: &EdgeType,
     traversal: &Traversal,
     src: Option<&str>,
@@ -1690,40 +1706,45 @@ fn resolve_member(
             ),
         ));
     }
-    let direction = if let Some(src) = src {
-        if src == edge.from_type {
-            Direction::Out
-        } else if src == edge.to_type {
-            Direction::In
-        } else {
-            return Err(endpoint_type_error(&traversal.src, src, edge));
+    // A declared endpoint fits an edge end when its member types are all
+    // admitted there (an implementor of an interface endpoint, or the node
+    // type itself). With interfaces both ends can fit; the other declared
+    // endpoint decides, and an undecided source keeps the outgoing reading.
+    let fits = |declared: &str, end: &str| catalog.type_fits(declared, end);
+    let direction = match (src, dst) {
+        (Some(src), dst) => {
+            let out = fits(src, &edge.from_type) && dst.is_none_or(|dst| overlaps(catalog, dst, &edge.to_type));
+            let inbound = fits(src, &edge.to_type) && dst.is_none_or(|dst| overlaps(catalog, dst, &edge.from_type));
+            if out {
+                Direction::Out
+            } else if inbound {
+                Direction::In
+            } else if fits(src, &edge.from_type) || fits(src, &edge.to_type) {
+                let dst = dst.expect("a fitting source without a fitting destination has one");
+                return Err(endpoint_type_error(&traversal.dst, dst, edge));
+            } else {
+                return Err(endpoint_type_error(&traversal.src, src, edge));
+            }
         }
-    } else if let Some(dst) = dst {
-        if dst == edge.to_type {
-            Direction::Out
-        } else if dst == edge.from_type {
-            Direction::In
-        } else {
-            return Err(endpoint_type_error(&traversal.dst, dst, edge));
+        (None, Some(dst)) => {
+            if overlaps(catalog, dst, &edge.to_type) {
+                Direction::Out
+            } else if overlaps(catalog, dst, &edge.from_type) {
+                Direction::In
+            } else {
+                return Err(endpoint_type_error(&traversal.dst, dst, edge));
+            }
         }
-    } else {
-        Direction::Out
+        (None, None) => Direction::Out,
     };
-    let (src_type, dst_type) = match direction {
+    let (edge_src, edge_dst) = match direction {
         Direction::Out | Direction::Both => (&edge.from_type, &edge.to_type),
         Direction::In => (&edge.to_type, &edge.from_type),
     };
-    if let Some(dst) = dst
-        && dst != dst_type
-    {
-        return Err(CompilerError::typed(
-            T5,
-            format!(
-                "endpoint `${}` resolves to type `{dst}` but edge `{}` expects `{dst_type}`",
-                traversal.dst, edge.name
-            ),
-        ));
-    }
+    // The traversal keeps a declared endpoint's (narrower) type; an undeclared
+    // one takes the edge's declared end, which may be an interface.
+    let src_type = src.map_or_else(|| edge_src.clone(), str::to_string);
+    let dst_type = dst.map_or_else(|| edge_dst.clone(), str::to_string);
     Ok((
         EdgeMember {
             edge_type: edge.name.clone(),
@@ -1733,9 +1754,17 @@ fn resolve_member(
                 direction
             },
         },
-        src_type.clone(),
-        dst_type.clone(),
+        src_type,
+        dst_type,
     ))
+}
+
+/// Two type names share at least one concrete node type.
+fn overlaps(catalog: &Catalog, left: &str, right: &str) -> bool {
+    match (catalog.concrete_members(left), catalog.concrete_members(right)) {
+        (Some(left), Some(right)) => left.iter().any(|member| right.contains(member)),
+        _ => left == right,
+    }
 }
 
 fn endpoint_type_error(var: &str, type_name: &str, edge: &EdgeType) -> CompilerError {
@@ -2090,12 +2119,13 @@ fn read_property_type(
     if let Some(role) = meta_field_role(property) {
         let admitted = match (bv, role) {
             (_, Some(MetaField::System(SystemFieldRole::Id))) => true,
+            (BoundVariable::Node { .. }, Some(MetaField::EdgeType)) => true,
             (BoundVariable::Edge { .. }, Some(_)) => true,
             (BoundVariable::Node { .. }, Some(_)) | (_, None) => false,
         };
         if !admitted {
             let known = match bv {
-                BoundVariable::Node { .. } => "`@id`".to_string(),
+                BoundVariable::Node { .. } => format!("`@id`, `{EDGE_TYPE_META}`"),
                 BoundVariable::Edge { .. } => format!("`@id`, `@src`, `@dst`, `{EDGE_TYPE_META}`"),
             };
             return Err(CompilerError::typed(
@@ -2110,10 +2140,10 @@ fn read_property_type(
 
     let prop = match bv {
         BoundVariable::Node { type_name } => {
-            let node_type = catalog.node_types.get(type_name).ok_or_else(|| {
+            let node_type = catalog.binding_node_type(type_name).ok_or_else(|| {
                 CompilerError::typed(T6, format!("type `{}` not found in catalog", type_name))
             })?;
-            node_type.properties.get(property).ok_or_else(|| {
+            node_type.properties.get(property).cloned().ok_or_else(|| {
                 CompilerError::typed(
                     T6,
                     format!(
@@ -2138,7 +2168,7 @@ fn read_property_type(
             });
         }
     };
-    Ok(prop.clone())
+    Ok(prop)
 }
 
 pub(crate) fn aggregate_signature(
@@ -2244,7 +2274,7 @@ fn resolve_expr_type(
                     ));
                 }
             };
-            let node_type = catalog.node_types.get(node_type_name).ok_or_else(|| {
+            let node_type = catalog.binding_node_type(node_type_name).ok_or_else(|| {
                 CompilerError::typed(
                     T15,
                     format!("type `{}` not found in catalog", node_type_name),
@@ -3069,7 +3099,7 @@ pub(crate) fn projection_field(catalog: &Catalog, name: &str, ty: &ExprType) -> 
             ));
         }
         ExprType::Node { type_name } => {
-            let node_type = catalog.node_types.get(type_name).ok_or_else(|| {
+            let node_type = catalog.binding_node_type(type_name).ok_or_else(|| {
                 CompilerError::typed(T51, format!("type `{}` not found in catalog", type_name))
             })?;
             let fields: Vec<Field> = node_type

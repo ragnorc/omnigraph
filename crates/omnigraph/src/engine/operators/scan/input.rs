@@ -31,6 +31,30 @@ impl ScanExec {
         projection: Option<&NeededColumns>,
         catalog: &Catalog,
     ) -> Result<SchemaRef> {
+        if catalog.is_abstract_type(type_name) {
+            // The input carries the destination's id and concrete type; the
+            // hydrated interface columns (with `~node_type`) replace both.
+            let id = format!("{binding}.{}", catalog.system_columns.id);
+            let type_column = format!(
+                "{binding}.{}",
+                omnigraph_compiler::traversal::NODE_TYPE_COLUMN
+            );
+            input
+                .index_of(&id)
+                .map_err(|error| OmniError::manifest_internal(error.to_string()))?;
+            let destination = RecordBatch::new_empty(crate::engine::scan::abstract_scan_schema(
+                type_name, catalog, projection,
+            )?);
+            let destination = prefix_batch(&destination, binding)?;
+            let fields = input
+                .fields()
+                .iter()
+                .filter(|field| field.name() != &id && field.name() != &type_column)
+                .cloned()
+                .chain(destination.schema().fields().iter().cloned())
+                .collect::<Vec<_>>();
+            return Ok(Arc::new(Schema::new(fields)));
+        }
         let node_type = catalog.node_types.get(type_name).ok_or_else(|| {
             OmniError::manifest_internal(format!(
                 "destination scan names unknown type '{type_name}'"
@@ -141,6 +165,12 @@ async fn read_candidates(
     catalog: &Catalog,
     memory: &WorkMemory,
 ) -> Result<RecordBatch> {
+    if catalog.is_abstract_type(type_name) {
+        return read_abstract_candidates(
+            candidates, type_name, binding, filters, projection, params, snapshot, catalog, memory,
+        )
+        .await;
+    }
     let id_name = format!("{binding}.{}", catalog.system_columns.id);
     let id_index = candidates
         .schema()
@@ -344,4 +374,121 @@ async fn hydrate_nodes(
         return Ok(result);
     }
     Ok(scan_result)
+}
+
+
+/// The candidates of an abstract (interface) destination: each candidate row
+/// names its concrete type in `<binding>.~node_type`, so ids are hydrated per
+/// member table and joined back on `(type, id)` — never on the id alone,
+/// which two implementors may share.
+#[allow(clippy::too_many_arguments)]
+async fn read_abstract_candidates(
+    candidates: &RecordBatch,
+    type_name: &str,
+    binding: &str,
+    filters: &[IRExpr],
+    projection: Option<&NeededColumns>,
+    params: &ParamMap,
+    snapshot: &Snapshot,
+    catalog: &Catalog,
+    memory: &WorkMemory,
+) -> Result<RecordBatch> {
+    let id_name = format!("{binding}.{}", catalog.system_columns.id);
+    let type_name_column = format!("{binding}.{}", omnigraph_compiler::traversal::NODE_TYPE_COLUMN);
+    let schema = candidates.schema();
+    let id_index = schema
+        .index_of(&id_name)
+        .map_err(|error| OmniError::manifest_internal(error.to_string()))?;
+    let type_index = schema.index_of(&type_name_column).map_err(|_| {
+        OmniError::manifest_internal(format!(
+            "abstract destination `${binding}` candidates carry no concrete type"
+        ))
+    })?;
+    let utf8 = |index: usize| {
+        candidates
+            .column(index)
+            .as_any()
+            .downcast_ref::<StringArray>()
+            .ok_or_else(|| OmniError::manifest_internal("candidate keys must be Utf8".to_string()))
+    };
+    let ids = utf8(id_index)?;
+    let types = utf8(type_index)?;
+    let declared = crate::engine::scan::abstract_scan_schema(type_name, catalog, projection)?;
+    // Hydrate each member's distinct ids.
+    let mut by_member: std::collections::BTreeMap<String, Vec<String>> = Default::default();
+    for row in 0..candidates.num_rows() {
+        if ids.is_null(row) || types.is_null(row) {
+            continue;
+        }
+        let ids_of = by_member.entry(types.value(row).to_string()).or_default();
+        if !ids_of.iter().any(|id| id == ids.value(row)) {
+            ids_of.push(ids.value(row).to_string());
+        }
+    }
+    let mut hydrated = Vec::new();
+    for (member, member_ids) in &by_member {
+        if catalog.binding_node_type(member).is_none() || catalog.is_abstract_type(member) {
+            return Err(OmniError::manifest_internal(format!(
+                "candidate names '{member}', which is not a concrete node type"
+            )));
+        }
+        let batch = hydrate_nodes(
+            snapshot, catalog, member, member_ids, filters, projection, params, memory,
+        )
+        .await?;
+        hydrated.push(crate::engine::scan::conform_member_batch(&batch, member, &declared)?);
+    }
+    let destination = if hydrated.is_empty() {
+        RecordBatch::new_empty(Arc::clone(&declared))
+    } else {
+        memory
+            .concat(&declared, &hydrated)
+            .map_err(|error| memory.error(error))?
+    };
+    memory
+        .hold(&destination)
+        .map_err(|error| memory.error(error))?;
+    let destination_ids = destination
+        .column_by_name(catalog.system_columns.id)
+        .and_then(|column| column.as_any().downcast_ref::<StringArray>())
+        .ok_or_else(|| OmniError::manifest_internal("destination ids must be Utf8".to_string()))?;
+    let destination_types = destination
+        .column_by_name(omnigraph_compiler::traversal::NODE_TYPE_COLUMN)
+        .and_then(|column| column.as_any().downcast_ref::<StringArray>())
+        .ok_or_else(|| OmniError::manifest_internal("destination types must be Utf8".to_string()))?;
+    let mut row_by_key = HashMap::with_capacity(destination.num_rows());
+    for row in 0..destination.num_rows() {
+        row_by_key.insert(
+            (destination_types.value(row), destination_ids.value(row)),
+            u32::try_from(row).map_err(|_| {
+                OmniError::manifest_internal("destination scan exceeds row index range".to_string())
+            })?,
+        );
+    }
+    let mut input_rows = Vec::new();
+    let mut output_rows = Vec::new();
+    for row in 0..candidates.num_rows() {
+        if ids.is_null(row) || types.is_null(row) {
+            continue;
+        }
+        if let Some(destination_row) = row_by_key.get(&(types.value(row), ids.value(row))) {
+            input_rows.push(u32::try_from(row).map_err(|_| {
+                OmniError::manifest_internal("candidate batch exceeds row index range".to_string())
+            })?);
+            output_rows.push(*destination_row);
+        }
+    }
+    let input_columns = (0..candidates.num_columns())
+        .filter(|index| *index != id_index && *index != type_index)
+        .collect::<Vec<_>>();
+    let input = candidates
+        .project(&input_columns)
+        .map_err(|error| OmniError::manifest_internal(error.to_string()))?;
+    let input = memory
+        .take(&input, &UInt32Array::from(input_rows))
+        .map_err(|error| memory.error(error))?;
+    let destination = memory
+        .take(&destination, &UInt32Array::from(output_rows))
+        .map_err(|error| memory.error(error))?;
+    hconcat_batches(&input, &prefix_batch(&destination, binding)?)
 }

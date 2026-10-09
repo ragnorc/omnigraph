@@ -9,7 +9,7 @@ use crate::query::typecheck::{
     aggregate_signature, block_aggregate_signature, executed_column_name, expression_type,
     projection_type,
 };
-use crate::traversal::{EDGE_TYPE_COLUMN, EDGE_TYPE_META};
+use crate::traversal::{EDGE_TYPE_COLUMN, EDGE_TYPE_META, NODE_TYPE_COLUMN};
 use crate::types::{PropType, ScalarType};
 
 use super::*;
@@ -89,6 +89,11 @@ impl LowerCtx<'_> {
                 "to" => return system_columns.dst.to_string(),
                 _ => {}
             }
+        }
+        if property == EDGE_TYPE_META
+            && let Some(BoundVariable::Node { .. }) = self.binding(variable)
+        {
+            return NODE_TYPE_COLUMN.to_string();
         }
         physical_property(property, system_columns)
     }
@@ -479,11 +484,10 @@ fn lower_clauses(
     // Lower bindings into NodeScan ops (skip deferred ones)
     for binding in &bindings {
         let node_type = catalog
-            .node_types
-            .get(&binding.type_name)
+            .binding_node_type(&binding.type_name)
             .expect("binding type was validated during typecheck");
 
-        let binding_filters = build_binding_filters(binding, node_type, &ctx)?;
+        let binding_filters = build_binding_filters(binding, &node_type, &ctx)?;
 
         // A variable the outer pattern already bound (a negation's inner
         // clauses run over the outer batch) is never deferred, whatever its
@@ -507,9 +511,15 @@ fn lower_clauses(
             continue;
         }
 
+        // A rebinding may have narrowed the variable (`$x: Subject` then
+        // `$x: Person`): scan the type the checker settled on.
+        let scanned_type = match type_ctx.bindings.get(&binding.variable) {
+            Some(BoundVariable::Node { type_name }) => type_name.clone(),
+            _ => binding.type_name.clone(),
+        };
         pipeline.push(IROp::NodeScan {
             variable: binding.variable.clone(),
-            type_name: binding.type_name.clone(),
+            type_name: scanned_type,
             filters: binding_filters,
         });
         bound_vars.insert(binding.variable.clone());
@@ -552,19 +562,27 @@ fn lower_clauses(
                         .filter(|binding| *binding != "_")
                         .map(str::to_string),
                 });
-                pipeline.push(IROp::Filter(coerce::binary(
-                    IRExpr::PropAccess {
-                        variable: temp_var,
-                        property: catalog.system_columns.id.to_string(),
-                        ty: ExprType::from_prop(&PropType::scalar(ScalarType::String, false)),
-                    },
-                    BinaryOp::Compare(CompOp::Eq),
-                    IRExpr::PropAccess {
-                        variable: traversal.dst.clone(),
-                        property: catalog.system_columns.id.to_string(),
-                        ty: ExprType::from_prop(&PropType::scalar(ScalarType::String, false)),
-                    },
-                )?));
+                // An id names a node only within its concrete type: closing a
+                // cycle on an interface compares the types too.
+                let mut keys = vec![catalog.system_columns.id.to_string()];
+                if catalog.is_abstract_type(&traversal.dst_type) {
+                    keys.push(NODE_TYPE_COLUMN.to_string());
+                }
+                for key in keys {
+                    pipeline.push(IROp::Filter(coerce::binary(
+                        IRExpr::PropAccess {
+                            variable: temp_var.clone(),
+                            property: key.clone(),
+                            ty: ExprType::from_prop(&PropType::scalar(ScalarType::String, false)),
+                        },
+                        BinaryOp::Compare(CompOp::Eq),
+                        IRExpr::PropAccess {
+                            variable: traversal.dst.clone(),
+                            property: key,
+                            ty: ExprType::from_prop(&PropType::scalar(ScalarType::String, false)),
+                        },
+                    )?));
+                }
             } else if !src_bound && dst_bound {
                 // Reverse expand: dst is bound, src is not.
                 let introduced_filters =
@@ -1097,6 +1115,17 @@ fn lower_expr(expr: &Expr, ctx: &LowerCtx<'_>) -> Result<IRExpr> {
             {
                 return Ok(IRExpr::Literal(
                     Literal::String(name.clone()),
+                    ctx.expr_type(expr)?,
+                ));
+            }
+            // A concrete node binding's `@type` is its own name; only an
+            // abstract binding reads the per-row `~node_type` column.
+            if property == EDGE_TYPE_META
+                && let Some(BoundVariable::Node { type_name }) = ctx.binding(variable)
+                && !ctx.catalog.is_abstract_type(type_name)
+            {
+                return Ok(IRExpr::Literal(
+                    Literal::String(type_name.clone()),
                     ctx.expr_type(expr)?,
                 ));
             }

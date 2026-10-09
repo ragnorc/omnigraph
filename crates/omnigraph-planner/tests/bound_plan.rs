@@ -52,6 +52,7 @@ fn source() -> MemorySource {
             ]
             .into(),
             row_count: Some(12),
+            members: vec![],
         },
     )
 }

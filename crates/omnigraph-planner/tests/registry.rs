@@ -335,6 +335,7 @@ fn doc_source() -> MemorySource {
             object_columns: vec!["id".to_string()],
             object_fields: vec![Field::new("@id", DataType::Utf8, false)].into(),
             row_count: None,
+            members: vec![],
         },
     )
 }

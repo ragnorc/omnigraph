@@ -444,6 +444,13 @@ where
                 }
                 rewritten_tables.insert(table_key);
             }
+            // The edge table is rewritten with the endpoint-type column,
+            // filled from the side's old node type (see
+            // `batch_for_schema_apply_rewrite`).
+            SchemaMigrationStep::GeneralizeEndpoint { edge_name, .. } => {
+                changed_edge_tables = true;
+                rewritten_tables.insert(schema_table_key(SchemaTypeKind::Edge, edge_name));
+            }
             SchemaMigrationStep::DropType { type_kind, name } => {
                 if matches!(type_kind, SchemaTypeKind::Interface) {
                     continue;
@@ -1050,12 +1057,47 @@ pub(super) async fn batch_for_schema_apply_rewrite(
             } else {
                 columns.push(column.clone());
             }
+        } else if let Some(tag) =
+            generalized_endpoint_tag(source_catalog, source_table_key, target_catalog, field.name())?
+        {
+            columns.push(Arc::new(UInt64Array::from(vec![tag; batch.num_rows()])));
         } else {
             columns.push(new_null_array(field.data_type(), batch.num_rows()));
         }
     }
 
     RecordBatch::try_new(target_schema, columns).map_err(OmniError::arrow_internal)
+}
+
+/// The endpoint-type tag every existing row of a generalized edge side takes:
+/// the StableTypeId of the node type the side named before the migration.
+/// `None` for any column that is not a newly added endpoint-type tag.
+fn generalized_endpoint_tag(
+    source_catalog: &Catalog,
+    source_table_key: &str,
+    target_catalog: &Catalog,
+    column: &str,
+) -> Result<Option<u64>> {
+    use omnigraph_compiler::catalog::schema_ir::{EDGE_DST_TYPE_COLUMN, EDGE_SRC_TYPE_COLUMN};
+    let Some(edge_name) = source_table_key.strip_prefix("edge:") else {
+        return Ok(None);
+    };
+    let Some(edge) = source_catalog.edge_types.get(edge_name) else {
+        return Ok(None);
+    };
+    let before = match column {
+        EDGE_SRC_TYPE_COLUMN => &edge.from_type,
+        EDGE_DST_TYPE_COLUMN => &edge.to_type,
+        _ => return Ok(None),
+    };
+    target_catalog
+        .node_type_id(before)
+        .map(|id| Some(id.get()))
+        .ok_or_else(|| {
+            OmniError::manifest_internal(format!(
+                "generalized endpoint '{before}' of edge '{edge_name}' is not a node type"
+            ))
+        })
 }
 
 /// Descriptor-only pre-effect validation for external Blob cells that a schema

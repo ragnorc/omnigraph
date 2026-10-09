@@ -55,7 +55,7 @@ pub use explain::Explain;
 pub use gate::{Decision, Unrouted, plan_query, route};
 pub use logical::{
     Census, ColumnRef, JoinKind, KeyJoinKind, LogicalId, LogicalKind, LogicalNode, LogicalPlan,
-    Predicate, RuntimeFilterKind, RuntimeFilterSpec, ScanSpec, SearchArm,
+    Predicate, RuntimeFilterKind, RuntimeFilterSpec, ScanMember, ScanSpec, SearchArm,
 };
 pub use lower::{
     AggregateFields, ContainsJoinFields, ExpandFields, HashJoinFields, Lower, RankFuseFields,

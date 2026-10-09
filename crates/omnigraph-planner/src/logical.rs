@@ -278,6 +278,10 @@ impl LogicalKind {
 pub struct ScanSpec {
     pub side: SideId,
     pub table: TableRef,
+    /// The concrete member tables of an abstract (interface) binding, each
+    /// scanned under the binding's schema with a `~node_type` column; empty
+    /// for a scan of one concrete table (polymorphic types prototype).
+    pub members: Vec<ScanMember>,
     /// The pinned dataset version, absent when no dataset belongs to this image.
     pub version: Option<u64>,
     pub columns: SystemColumns,
@@ -289,6 +293,14 @@ pub struct ScanSpec {
     /// The filter the join above this scan fills at run time, when the
     /// physical plan chose one; always `None` on a logical scan.
     pub runtime_filter: Option<RuntimeFilterSpec>,
+}
+
+/// One concrete table of an abstract binding's scan.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct ScanMember {
+    pub type_name: String,
+    pub table: TableRef,
+    pub version: Option<u64>,
 }
 
 /// A filter on a scan's own `column` whose values come from another binding

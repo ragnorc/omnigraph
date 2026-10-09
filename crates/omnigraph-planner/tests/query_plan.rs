@@ -83,6 +83,7 @@ fn node_type(type_name: &str, row_count: Option<u64>) -> NodeTypeSpec {
             })
             .collect(),
         row_count,
+        members: vec![],
     }
 }
 

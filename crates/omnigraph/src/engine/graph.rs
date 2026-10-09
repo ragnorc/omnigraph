@@ -427,6 +427,106 @@ pub(super) struct ExpandedPairs {
 pub(super) struct PreparedEdge {
     pub(super) dataset: Dataset,
     pub(super) probes: Vec<EndpointColumns>,
+    /// How each probe's key and opposite end name their concrete node type.
+    pub(super) qualifiers: Vec<Qualifier>,
+}
+
+/// Where one end of a stored edge names its concrete node type: a tag
+/// column (a polymorphic side) or the side's declared node type.
+#[derive(Debug, Clone)]
+pub(super) enum SideType {
+    Tag(&'static str),
+    Fixed(String),
+}
+
+#[derive(Debug, Clone)]
+pub(super) struct Qualifier {
+    pub(super) key: SideType,
+    pub(super) opposite: SideType,
+}
+
+/// Separates a concrete type from an id inside a typed traversal's interner,
+/// so `Person "alice"` and `Organization "alice"` are distinct nodes.
+const TYPED_KEY_SEPARATOR: char = '\u{1f}';
+
+pub(super) fn qualify(node_type: &str, id: &str) -> String {
+    format!("{node_type}{TYPED_KEY_SEPARATOR}{id}")
+}
+
+/// `(type, id)` of a qualified key.
+pub(super) fn split_qualified(key: &str) -> (&str, &str) {
+    key.split_once(TYPED_KEY_SEPARATOR).unwrap_or(("", key))
+}
+
+/// A traversal that crosses an interface: its keys carry concrete types
+/// (polymorphic types prototype).
+pub(super) struct TypedExpand {
+    /// Per prepared edge, per probe.
+    pub(super) qualifiers: Vec<Vec<Qualifier>>,
+    pub(super) tag_names: HashMap<u64, String>,
+    /// `<src>.~node_type` when the source binding is abstract.
+    pub(super) src_type_column: Option<String>,
+    pub(super) src_fixed: String,
+    /// Concrete destination types the destination binding admits.
+    pub(super) dst_members: HashSet<String>,
+}
+
+impl TypedExpand {
+    pub(super) fn new(step: &ExpandStep, catalog: &Catalog, prepared: &[PreparedEdge]) -> Self {
+        let tag_names = catalog
+            .node_types
+            .keys()
+            .filter_map(|name| catalog.node_type_id(name).map(|id| (id.get(), name.clone())))
+            .collect();
+        Self {
+            qualifiers: prepared.iter().map(|edge| edge.qualifiers.clone()).collect(),
+            tag_names,
+            src_type_column: catalog.is_abstract_type(&step.src_type).then(|| {
+                format!("{}.{}", step.src, omnigraph_compiler::traversal::NODE_TYPE_COLUMN)
+            }),
+            src_fixed: step.src_type.clone(),
+            dst_members: catalog
+                .concrete_members(&step.dst_type)
+                .unwrap_or_default()
+                .into_iter()
+                .collect(),
+        }
+    }
+
+    fn side_type<'b>(&'b self, side: &'b SideType, batch: &RecordBatch, row: usize) -> Result<Option<&'b str>> {
+        match side {
+            SideType::Fixed(name) => Ok(Some(name.as_str())),
+            SideType::Tag(column) => {
+                let tags = batch
+                    .column_by_name(column)
+                    .and_then(|array| array.as_any().downcast_ref::<arrow_array::UInt64Array>())
+                    .ok_or_else(|| OmniError::manifest_internal(format!("edge batch missing tag '{column}'")))?;
+                Ok((!tags.is_null(row))
+                    .then(|| self.tag_names.get(&tags.value(row)).map(String::as_str))
+                    .flatten())
+            }
+        }
+    }
+}
+
+/// The qualifier of one probe: the key end reads the edge side it filters on.
+fn qualifier_for(edge: &omnigraph_compiler::catalog::EdgeType, probe: &EndpointColumns, system_columns: SystemColumns) -> Qualifier {
+    use omnigraph_compiler::catalog::schema_ir::{EDGE_DST_TYPE_COLUMN, EDGE_SRC_TYPE_COLUMN};
+    let src = if edge.src_tagged {
+        SideType::Tag(EDGE_SRC_TYPE_COLUMN)
+    } else {
+        SideType::Fixed(edge.from_type.clone())
+    };
+    let dst = if edge.dst_tagged {
+        SideType::Tag(EDGE_DST_TYPE_COLUMN)
+    } else {
+        SideType::Fixed(edge.to_type.clone())
+    };
+    if probe.key == system_columns.src {
+        Qualifier { key: src, opposite: dst }
+    } else {
+        Qualifier { key: dst, opposite: src }
+    }
 }
 
 pub(super) async fn prepare_selected_edges(
@@ -450,9 +550,16 @@ pub(super) async fn prepare_selected_edges(
                 env.catalog.system_columns.dst,
             ],
         )?;
+        let probes = endpoint_probes(member.direction, env.catalog.system_columns);
+        let edge = &env.catalog.edge_types[&member.edge_type];
+        let qualifiers = probes
+            .iter()
+            .map(|probe| qualifier_for(edge, probe, env.catalog.system_columns))
+            .collect();
         prepared.push(PreparedEdge {
             dataset,
-            probes: endpoint_probes(member.direction, env.catalog.system_columns),
+            probes,
+            qualifiers,
         });
     }
     Ok(prepared)
@@ -481,6 +588,12 @@ where
     if step.members().is_empty() {
         return Ok(());
     }
+    let typed = match (&step.execution, prepared) {
+        (ExpandExecution::Budgeted(_), Some(prepared)) if step.typed(&env.catalog) => {
+            Some(TypedExpand::new(step, &env.catalog, prepared))
+        }
+        _ => None,
+    };
     let (start_indexed, hop_policy) = match &step.execution {
         ExpandExecution::Budgeted(_) => {
             memory
@@ -536,6 +649,7 @@ where
         hop_policy,
         switch,
         memory,
+        typed.as_ref(),
         emit,
     )
     .await
@@ -1068,12 +1182,22 @@ pub(super) async fn execute_expand_bfs<F>(
     hop_policy: HopPolicy,
     side: &Gauge,
     memory: &WorkMemory,
+    typed: Option<&TypedExpand>,
     mut emit: impl FnMut(ExpandedPairs) -> F + Send,
 ) -> Result<()>
 where
     F: std::future::Future<Output = Result<()>> + Send,
 {
     let src_var = &step.src;
+    let src_types = match typed.and_then(|typed| typed.src_type_column.as_ref()) {
+        Some(column) => Some(
+            wide.column_by_name(column)
+                .and_then(|array| array.as_any().downcast_ref::<StringArray>())
+                .ok_or_else(|| OmniError::manifest_internal(format!("wide batch missing '{column}'")))?
+                .clone(),
+        ),
+        None => None,
+    };
     let min_hops = step.min_hops;
     let work = memory
         .child("execute_expand_bfs")
@@ -1138,9 +1262,16 @@ where
     let mut seen_dst: Vec<HashSet<u32>> = Vec::with_capacity(n);
     for i in 0..n {
         let seed = match &mut active {
-            ActiveExpandSource::Indexed(src) => {
-                Some(intern(&mut src.interner, src_ids.value(i), memory)?)
-            }
+            ActiveExpandSource::Indexed(src) => match typed {
+                Some(typed) => {
+                    let node_type = match &src_types {
+                        Some(types) => types.value(i),
+                        None => typed.src_fixed.as_str(),
+                    };
+                    Some(intern(&mut src.interner, &qualify(node_type, src_ids.value(i)), memory)?)
+                }
+                None => Some(intern(&mut src.interner, src_ids.value(i), memory)?),
+            },
             ActiveExpandSource::Csr(CsrSource { src_idx, .. }) => {
                 src_idx.to_dense(src_ids.value(i))
             }
@@ -1287,7 +1418,7 @@ where
                         .to_string()
                 })
                 .collect();
-            for (dataset, probes) in &src.datasets {
+            for (index, (dataset, probes)) in src.datasets.iter().enumerate() {
                 scan_neighbor_map(
                     dataset,
                     probes,
@@ -1296,6 +1427,7 @@ where
                     &mut src.neighbor_map,
                     &hop_memory,
                     memory,
+                    typed.map(|typed| (typed, index)),
                 )
                 .await?;
             }
@@ -1357,6 +1489,11 @@ where
                                 dst_idx.to_id(neighbor)
                             }
                         };
+                        // A typed traversal emits only destinations whose
+                        // concrete type the destination binding admits.
+                        let dst_id = dst_id.filter(|key| {
+                            typed.is_none_or(|typed| typed.dst_members.contains(split_qualified(key).0))
+                        });
                         if let Some(dst_id) = dst_id {
                             emission_memory
                                 .entries::<(u32, String)>(1)
@@ -1517,6 +1654,7 @@ pub(super) enum HopPolicy {
 /// One `key IN (keys)` scan per probe, every row's endpoints interned into
 /// `interner` and the opposite appended to `neighbor_map[key]` in scan order
 /// (probe 0's rows, then probe 1's; parallel edges kept, like the CSR).
+#[allow(clippy::too_many_arguments)]
 pub(super) async fn scan_neighbor_map(
     edge_ds: &Dataset,
     probes: &[EndpointColumns],
@@ -1525,7 +1663,14 @@ pub(super) async fn scan_neighbor_map(
     neighbor_map: &mut HashMap<u32, Vec<u32>>,
     hop_memory: &WorkMemory,
     memory: &WorkMemory,
+    typed: Option<(&TypedExpand, usize)>,
 ) -> Result<()> {
+    if let Some((typed, index)) = typed {
+        return scan_typed_neighbor_map(
+            edge_ds, probes, keys, interner, neighbor_map, hop_memory, memory, typed, index,
+        )
+        .await;
+    }
     for &orientation in probes {
         let EndpointColumns {
             key: key_col,
@@ -1538,6 +1683,60 @@ pub(super) async fn scan_neighbor_map(
             for r in 0..batch.num_rows() {
                 let k = intern(interner, keys.value(r), memory)?;
                 let o = intern(interner, opposites.value(r), memory)?;
+                hop_memory
+                    .entries::<(u32, Vec<u32>, u32)>(1)
+                    .map_err(|error| memory.error(error))?;
+                neighbor_map.entry(k).or_default().push(o);
+            }
+        }
+    }
+    Ok(())
+}
+
+/// `scan_neighbor_map` over qualified keys: the Lance probe filters raw ids,
+/// each row's key is re-qualified with its stored type and kept only when the
+/// frontier holds it, and the opposite end is interned with its own type.
+#[allow(clippy::too_many_arguments)]
+async fn scan_typed_neighbor_map(
+    edge_ds: &Dataset,
+    probes: &[EndpointColumns],
+    keys: &[String],
+    interner: &mut crate::graph_index::TypeIndex,
+    neighbor_map: &mut HashMap<u32, Vec<u32>>,
+    hop_memory: &WorkMemory,
+    memory: &WorkMemory,
+    typed: &TypedExpand,
+    index: usize,
+) -> Result<()> {
+    let mut raw = keys
+        .iter()
+        .map(|key| split_qualified(key).1.to_string())
+        .collect::<Vec<_>>();
+    raw.sort();
+    raw.dedup();
+    for (probe, orientation) in probes.iter().enumerate() {
+        let qualifier = &typed.qualifiers[index][probe];
+        let mut extras = Vec::new();
+        for side in [&qualifier.key, &qualifier.opposite] {
+            if let SideType::Tag(column) = side {
+                extras.push(*column);
+            }
+        }
+        let batches = scan_edges(edge_ds, *orientation, &extras, &raw, hop_memory).await?;
+        for batch in &batches {
+            let key_ids = utf8_column(batch, orientation.key)?;
+            let opposites = utf8_column(batch, orientation.opposite)?;
+            for r in 0..batch.num_rows() {
+                let (Some(key_type), Some(opposite_type)) = (
+                    typed.side_type(&qualifier.key, batch, r)?,
+                    typed.side_type(&qualifier.opposite, batch, r)?,
+                ) else {
+                    continue;
+                };
+                let Some(k) = interner.to_dense(&qualify(key_type, key_ids.value(r))) else {
+                    continue;
+                };
+                let o = intern(interner, &qualify(opposite_type, opposites.value(r)), memory)?;
                 hop_memory
                     .entries::<(u32, Vec<u32>, u32)>(1)
                     .map_err(|error| memory.error(error))?;

@@ -595,6 +595,21 @@ pub(crate) fn render_schema_plan_step(step: &SchemaMigrationStep) -> String {
             schema_type_kind_label(*type_kind),
             type_name,
         ),
+        SchemaMigrationStep::GeneralizeEndpoint {
+            edge_name,
+            side,
+            from,
+            to,
+        } => format!(
+            "generalize the {} of edge '{}' from '{}' to '{}'",
+            match side {
+                omnigraph_compiler::EndpointSide::Source => "source",
+                omnigraph_compiler::EndpointSide::Destination => "destination",
+            },
+            edge_name,
+            from,
+            to,
+        ),
         SchemaMigrationStep::UnsupportedChange { entity, reason, .. } => {
             // When a schema-lint code is attached, render code + tier
             // so operators see at-a-glance the kind of risk (destructive

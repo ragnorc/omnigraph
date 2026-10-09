@@ -3456,6 +3456,8 @@ fn physical_table_schema(
                     );
                 } else if physical.name() == system_columns.src
                     || physical.name() == system_columns.dst
+                    || physical.name() == omnigraph_compiler::catalog::schema_ir::EDGE_SRC_TYPE_COLUMN
+                    || physical.name() == omnigraph_compiler::catalog::schema_ir::EDGE_DST_TYPE_COLUMN
                 {
                     metadata.remove(crate::db::STABLE_PROPERTY_ID_METADATA_KEY);
                 } else {

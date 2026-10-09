@@ -602,7 +602,7 @@ async fn load_jsonl_reader_once<R: BufRead>(
 
     // Phase 1: Parse all lines, spool into per-type collections
     let mut node_rows: HashMap<String, Vec<JsonValue>> = HashMap::new();
-    let mut edge_rows: HashMap<String, Vec<(String, String, JsonValue)>> = HashMap::new();
+    let mut edge_rows: HashMap<String, Vec<LenientEdgeRow>> = HashMap::new();
     let mut strict_rows = StrictGraphRows::default();
     let mut keyed_input_budget = KeyedInputBudget::default();
     // Strict syntax is independent of the keyed-write transaction ceiling.
@@ -692,6 +692,19 @@ async fn load_jsonl_reader_once<R: BufRead>(
                         OmniError::manifest(format!("record {}: edge missing 'to'", record_num))
                     })?
                     .to_string();
+                let declared_edge = catalog.lookup_edge_by_name(&edge_name).unwrap();
+                let from_type = resolve_endpoint_type(
+                    declared_edge,
+                    EndpointSide::Source,
+                    value.get("from_type").and_then(|v| v.as_str()),
+                    format_args!("record {record_num}"),
+                )?;
+                let to_type = resolve_endpoint_type(
+                    declared_edge,
+                    EndpointSide::Destination,
+                    value.get("to_type").and_then(|v| v.as_str()),
+                    format_args!("record {record_num}"),
+                )?;
                 let identity = take_lenient_identity(&mut value, record_num)?;
                 let mut data = value
                     .get_mut("data")
@@ -717,10 +730,23 @@ async fn load_jsonl_reader_once<R: BufRead>(
                         &mut keyed_input_budget,
                     )?;
                 }
-                edge_rows
-                    .entry(canonical)
-                    .or_default()
-                    .push((from, to, data));
+                for reserved in [
+                    omnigraph_compiler::catalog::schema_ir::EDGE_SRC_TYPE_COLUMN,
+                    omnigraph_compiler::catalog::schema_ir::EDGE_DST_TYPE_COLUMN,
+                ] {
+                    if data.get(reserved).is_some() {
+                        return Err(OmniError::manifest(format!(
+                            "record {record_num}: edge data field '{reserved}' is reserved structural state"
+                        )));
+                    }
+                }
+                edge_rows.entry(canonical).or_default().push(LenientEdgeRow {
+                    from,
+                    to,
+                    data,
+                    from_type,
+                    to_type,
+                });
             } else {
                 return Err(OmniError::manifest(format!(
                     "record {}: expected 'type' or 'edge' field",
@@ -840,7 +866,7 @@ async fn load_jsonl_reader_once<R: BufRead>(
     __dst_er.sort_by(|a, b| a.0.cmp(&b.0));
     for (edge_name, rows) in __dst_er {
         let edge_type = &catalog.edge_types[&edge_name];
-        let batch = build_edge_batch(edge_type, &rows, &node_id_remap, catalog.system_columns)?;
+        let batch = build_edge_batch(edge_type, &rows, &node_id_remap, &catalog)?;
         if bounded_keyed_input {
             prepared_keyed_bytes = retain_keyed_batch(prepared_keyed_bytes, &batch)?;
         }
@@ -1256,12 +1282,14 @@ fn parse_strict_graph_rows<R: BufRead>(
                 validate_strict_envelope_fields(
                     line_number,
                     &envelope,
-                    &["edge", "id", "from", "to", "data"],
+                    &["edge", "id", "from", "to", "from_type", "to_type", "data"],
                 )?;
                 let edge_name = take_required_string(&mut envelope, "edge", line_number)?;
                 let identity = take_optional_string(&mut envelope, "id", line_number)?;
                 let from = take_required_string(&mut envelope, "from", line_number)?;
                 let to = take_required_string(&mut envelope, "to", line_number)?;
+                let from_type_name = take_optional_string(&mut envelope, "from_type", line_number)?;
+                let to_type_name = take_optional_string(&mut envelope, "to_type", line_number)?;
                 let mut data = take_object_or_empty(&mut envelope, "data", line_number)?;
                 for reserved in [catalog.system_columns.src, catalog.system_columns.dst] {
                     if data.contains_key(reserved) {
@@ -1300,6 +1328,38 @@ fn parse_strict_graph_rows<R: BufRead>(
                     catalog.system_columns.dst.to_string(),
                     JsonValue::String(to),
                 );
+                for (side, supplied, column, tagged) in [
+                    (
+                        EndpointSide::Source,
+                        from_type_name.as_deref(),
+                        omnigraph_compiler::catalog::schema_ir::EDGE_SRC_TYPE_COLUMN,
+                        edge_type.src_tagged,
+                    ),
+                    (
+                        EndpointSide::Destination,
+                        to_type_name.as_deref(),
+                        omnigraph_compiler::catalog::schema_ir::EDGE_DST_TYPE_COLUMN,
+                        edge_type.dst_tagged,
+                    ),
+                ] {
+                    if data.contains_key(column) {
+                        return Err(OmniError::manifest(format!(
+                            "line {line_number}: edge data field '{column}' is reserved structural state"
+                        )));
+                    }
+                    let concrete = resolve_endpoint_type(
+                        edge_type,
+                        side,
+                        supplied,
+                        format_args!("line {line_number}"),
+                    )?;
+                    if tagged {
+                        data.insert(
+                            column.to_string(),
+                            JsonValue::from(endpoint_type_id(catalog, &concrete)?),
+                        );
+                    }
+                }
                 rows.edges
                     .entry(canonical)
                     .or_default()
@@ -1704,44 +1764,63 @@ fn build_node_batch(
 
 fn build_edge_batch(
     edge_type: &omnigraph_compiler::catalog::EdgeType,
-    rows: &[(String, String, JsonValue)],
+    rows: &[LenientEdgeRow],
     node_id_remap: &TypedNodeIdRemap,
-    system_columns: SystemColumns,
+    catalog: &Catalog,
 ) -> Result<RecordBatch> {
+    let system_columns = catalog.system_columns;
     let schema = edge_type.arrow_schema.clone();
-    let row_refs = rows.iter().map(|(_, _, data)| data).collect::<Vec<_>>();
+    let row_refs = rows.iter().map(|row| &row.data).collect::<Vec<_>>();
     preflight_blob_decode_budget(
         &format!("edge:{}", edge_type.name),
         edge_type.blob_properties.iter().map(String::as_str),
         &row_refs,
     )?;
 
+    // Endpoint ids remap within the row's concrete endpoint type: the declared
+    // node type, or the type a polymorphic row names.
     let srcs: Vec<String> = rows
         .iter()
-        .map(|(from, _, _)| {
+        .map(|row| {
             node_id_remap
-                .endpoint(&edge_type.from_type, from)
-                .unwrap_or(from)
+                .endpoint(&row.from_type, &row.from)
+                .unwrap_or(&row.from)
                 .to_string()
         })
         .collect();
     let dsts: Vec<String> = rows
         .iter()
-        .map(|(_, to, _)| {
+        .map(|row| {
             node_id_remap
-                .endpoint(&edge_type.to_type, to)
-                .unwrap_or(to)
+                .endpoint(&row.to_type, &row.to)
+                .unwrap_or(&row.to)
                 .to_string()
         })
         .collect();
     let src_column: ArrayRef = Arc::new(StringArray::from(srcs));
     let dst_column: ArrayRef = Arc::new(StringArray::from(dsts));
+    let tag_column = |tagged: bool, pick: &dyn Fn(&LenientEdgeRow) -> &str| -> Result<Option<ArrayRef>> {
+        if !tagged {
+            return Ok(None);
+        }
+        let ids = rows
+            .iter()
+            .map(|row| endpoint_type_id(catalog, pick(row)).map(Some))
+            .collect::<Result<Vec<Option<u64>>>>()?;
+        Ok(Some(Arc::new(arrow_array::UInt64Array::from(ids)) as ArrayRef))
+    };
+    let src_type_column = tag_column(edge_type.src_tagged, &|row| row.from_type.as_str())?;
+    let dst_type_column = tag_column(edge_type.dst_tagged, &|row| row.to_type.as_str())?;
 
-    // Build edge property columns (skip id, src, dst at indices 0-2)
-    let data_values: Vec<JsonValue> = rows.iter().map(|(_, _, data)| data.clone()).collect();
+    // Build edge property columns (skip id, src, dst at indices 0-2; tag
+    // columns after the properties are system state, filled above)
+    let data_values: Vec<JsonValue> = rows.iter().map(|row| row.data.clone()).collect();
     let mut property_columns: Vec<ArrayRef> =
         Vec::with_capacity(schema.fields().len().saturating_sub(3));
     for field in schema.fields().iter().skip(3) {
+        if is_edge_type_tag(field.name()) {
+            continue;
+        }
         if edge_type.blob_properties.contains(field.name()) {
             let col = build_blob_column(field.name(), field.is_nullable(), &data_values)?;
             property_columns.push(col);
@@ -1767,11 +1846,13 @@ fn build_edge_batch(
         &dst_column,
         &property_columns,
         system_columns,
+        src_type_column.as_ref(),
+        dst_type_column.as_ref(),
     )?;
     let ids = rows
         .iter()
         .enumerate()
-        .map(|(row_index, (_, _, data))| {
+        .map(|(row_index, LenientEdgeRow { data, .. })| {
             if let Some(key_columns) = &key_columns {
                 let canonical = canonical_key_id(key_columns, row_index)?.ok_or_else(|| {
                     OmniError::manifest(format!(
@@ -1812,8 +1893,91 @@ fn build_edge_batch(
     columns.push(src_column);
     columns.push(dst_column);
     columns.extend(property_columns);
+    columns.extend(src_type_column);
+    columns.extend(dst_type_column);
 
     RecordBatch::try_new(schema, columns).map_err(OmniError::arrow_internal)
+}
+
+/// One lenient edge input row with its endpoints' concrete node types.
+pub(crate) struct LenientEdgeRow {
+    from: String,
+    to: String,
+    data: JsonValue,
+    from_type: String,
+    to_type: String,
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum EndpointSide {
+    Source,
+    Destination,
+}
+
+/// The concrete node type of one endpoint: the declared node type of a
+/// monomorphic side, or the member a polymorphic row names (`from_type` /
+/// `to_type`). A one-member interface needs no name; naming a type on a
+/// monomorphic side is refused so existing envelopes stay byte-stable.
+pub(crate) fn resolve_endpoint_type(
+    edge_type: &omnigraph_compiler::catalog::EdgeType,
+    side: EndpointSide,
+    supplied: Option<&str>,
+    at: std::fmt::Arguments<'_>,
+) -> Result<String> {
+    let (tagged, members, declared, key) = match side {
+        EndpointSide::Source => (
+            edge_type.src_tagged,
+            &edge_type.from_members,
+            &edge_type.from_type,
+            "from_type",
+        ),
+        EndpointSide::Destination => (
+            edge_type.dst_tagged,
+            &edge_type.to_members,
+            &edge_type.to_type,
+            "to_type",
+        ),
+    };
+    if !tagged {
+        return match supplied {
+            None => Ok(declared.clone()),
+            Some(_) => Err(OmniError::manifest(format!(
+                "{at}: edge {} endpoint is the node type {declared}; '{key}' applies only to an interface endpoint",
+                edge_type.name
+            ))),
+        };
+    }
+    match supplied {
+        Some(name) if members.iter().any(|member| member == name) => Ok(name.to_string()),
+        Some(name) => Err(OmniError::manifest(format!(
+            "{at}: '{key}' {name} does not implement {declared}, the endpoint of edge {}",
+            edge_type.name
+        ))),
+        None if members.len() == 1 => Ok(members[0].clone()),
+        None => Err(OmniError::manifest(format!(
+            "{at}: edge {} endpoint {declared} is an interface; '{key}' must name one of {}",
+            edge_type.name,
+            members.join(", ")
+        ))),
+    }
+}
+
+/// The `StableTypeId` a tag column stores for a concrete node type.
+pub(crate) fn endpoint_type_id(catalog: &Catalog, node_type: &str) -> Result<u64> {
+    catalog
+        .node_type_id(node_type)
+        .map(|id| id.get())
+        .ok_or_else(|| {
+            OmniError::manifest_internal(format!(
+                "node type '{node_type}' has no accepted stable identity for an endpoint tag"
+            ))
+        })
+}
+
+/// True for an edge tag column name.
+pub(crate) fn is_edge_type_tag(name: &str) -> bool {
+    name == omnigraph_compiler::catalog::schema_ir::EDGE_SRC_TYPE_COLUMN
+        || name == omnigraph_compiler::catalog::schema_ir::EDGE_DST_TYPE_COLUMN
 }
 
 /// Resolve a keyed edge type's key columns to their built arrays: endpoints
@@ -1826,7 +1990,10 @@ fn edge_key_columns(
     dst_column: &ArrayRef,
     property_columns: &[ArrayRef],
     system_columns: SystemColumns,
+    src_type_column: Option<&ArrayRef>,
+    dst_type_column: Option<&ArrayRef>,
 ) -> Result<Option<Vec<ArrayRef>>> {
+    use omnigraph_compiler::catalog::schema_ir::{EDGE_DST_TYPE_COLUMN, EDGE_SRC_TYPE_COLUMN};
     edge_type
         .key
         .as_ref()
@@ -1836,6 +2003,12 @@ fn edge_key_columns(
                 .map(|column| match column.as_str() {
                     endpoint if endpoint == system_columns.src => Ok(src_column.clone()),
                     endpoint if endpoint == system_columns.dst => Ok(dst_column.clone()),
+                    EDGE_SRC_TYPE_COLUMN => src_type_column.cloned().ok_or_else(|| {
+                        OmniError::manifest_internal("edge key names a missing source tag")
+                    }),
+                    EDGE_DST_TYPE_COLUMN => dst_type_column.cloned().ok_or_else(|| {
+                        OmniError::manifest_internal("edge key names a missing destination tag")
+                    }),
                     property => {
                         let schema_index = schema.index_of(property).map_err(|_| {
                             OmniError::manifest_internal(format!(
@@ -2009,7 +2182,12 @@ fn normalize_strict_edge_rows(
             &table_key,
             object,
             &edge_type.properties,
-            &[system_columns.src, system_columns.dst],
+            &[
+                system_columns.src,
+                system_columns.dst,
+                omnigraph_compiler::catalog::schema_ir::EDGE_SRC_TYPE_COLUMN,
+                omnigraph_compiler::catalog::schema_ir::EDGE_DST_TYPE_COLUMN,
+            ],
             system_columns,
         )?;
         validate_optional_row_id(&edge_type.name, object, system_columns)?;
@@ -2041,8 +2219,37 @@ fn normalize_strict_edge_rows(
     let src_column: ArrayRef = Arc::new(StringArray::from(srcs));
     let dst_column: ArrayRef = Arc::new(StringArray::from(dsts));
 
+    let strict_tag = |tagged: bool, name: &str| -> Result<Option<ArrayRef>> {
+        if !tagged {
+            return Ok(None);
+        }
+        let values = objects
+            .iter()
+            .map(|object| {
+                object.get(name).and_then(JsonValue::as_u64).map(Some).ok_or_else(|| {
+                    OmniError::manifest(format!(
+                        "edge {} row is missing its endpoint type '{name}'",
+                        edge_type.name
+                    ))
+                })
+            })
+            .collect::<Result<Vec<Option<u64>>>>()?;
+        Ok(Some(Arc::new(arrow_array::UInt64Array::from(values)) as ArrayRef))
+    };
+    let src_type_column = strict_tag(
+        edge_type.src_tagged,
+        omnigraph_compiler::catalog::schema_ir::EDGE_SRC_TYPE_COLUMN,
+    )?;
+    let dst_type_column = strict_tag(
+        edge_type.dst_tagged,
+        omnigraph_compiler::catalog::schema_ir::EDGE_DST_TYPE_COLUMN,
+    )?;
+
     let mut property_columns = Vec::with_capacity(schema.fields().len().saturating_sub(3));
     for field in schema.fields().iter().skip(3) {
+        if is_edge_type_tag(field.name()) {
+            continue;
+        }
         let column = if edge_type.blob_properties.contains(field.name()) {
             build_blob_column(field.name(), field.is_nullable(), rows)?
         } else {
@@ -2067,6 +2274,8 @@ fn normalize_strict_edge_rows(
         &dst_column,
         &property_columns,
         system_columns,
+        src_type_column.as_ref(),
+        dst_type_column.as_ref(),
     )?;
     let ids = objects
         .iter()
@@ -2100,6 +2309,8 @@ fn normalize_strict_edge_rows(
     columns.push(src_column);
     columns.push(dst_column);
     columns.extend(property_columns);
+    columns.extend(src_type_column);
+    columns.extend(dst_type_column);
     RecordBatch::try_new(schema, columns).map_err(OmniError::arrow_internal)
 }
 

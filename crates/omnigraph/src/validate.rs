@@ -177,12 +177,57 @@ pub(crate) enum Constraint {
     },
     EdgeRi {
         table_key: String,
-        from_type: String,
-        to_type: String,
+        source: EndpointSpec,
+        destination: EndpointSpec,
     },
     Cardinality {
         table_key: String,
     },
+}
+
+/// One edge endpoint as validation sees it: the declared type, the concrete
+/// node types it admits, and for a polymorphic side the tag column with its
+/// `StableTypeId` → node type map.
+#[derive(Debug, Clone)]
+pub(crate) struct EndpointSpec {
+    pub declared: String,
+    pub members: Vec<String>,
+    pub tag: Option<(&'static str, HashMap<u64, String>)>,
+}
+
+impl EndpointSpec {
+    fn new(catalog: &Catalog, declared: &str, members: &[String], tag_column: Option<&'static str>) -> Self {
+        let tag = tag_column.map(|column| {
+            let ids = members
+                .iter()
+                .filter_map(|member| catalog.node_type_id(member).map(|id| (id.get(), member.clone())))
+                .collect();
+            (column, ids)
+        });
+        Self {
+            declared: declared.to_string(),
+            members: members.to_vec(),
+            tag,
+        }
+    }
+
+    /// The concrete node type of one stored endpoint, or `None` when its tag
+    /// names no member (an invalid row).
+    fn concrete(&self, tags: Option<&arrow_array::UInt64Array>, row: usize) -> Option<&str> {
+        match (&self.tag, tags) {
+            (Some((_, ids)), Some(tags)) => {
+                if tags.is_null(row) {
+                    None
+                } else {
+                    ids.get(&tags.value(row)).map(String::as_str)
+                }
+            }
+            // A polymorphic side whose batch lacks the tag column cannot name
+            // a concrete type (the generalization slice adds an implicit type).
+            (Some(_), None) => None,
+            (None, _) => Some(self.declared.as_str()),
+        }
+    }
 }
 
 /// Derive the runtime constraint set from the catalog (the schema's declared
@@ -256,8 +301,22 @@ pub(crate) fn constraints_for(catalog: &Catalog) -> Vec<Constraint> {
         }
         out.push(Constraint::EdgeRi {
             table_key: table_key.clone(),
-            from_type: edge_type.from_type.clone(),
-            to_type: edge_type.to_type.clone(),
+            source: EndpointSpec::new(
+                catalog,
+                &edge_type.from_type,
+                &edge_type.from_members,
+                edge_type
+                    .src_tagged
+                    .then_some(omnigraph_compiler::catalog::schema_ir::EDGE_SRC_TYPE_COLUMN),
+            ),
+            destination: EndpointSpec::new(
+                catalog,
+                &edge_type.to_type,
+                &edge_type.to_members,
+                edge_type
+                    .dst_tagged
+                    .then_some(omnigraph_compiler::catalog::schema_ir::EDGE_DST_TYPE_COLUMN),
+            ),
         });
         out.push(Constraint::Cardinality { table_key });
     }
@@ -543,7 +602,8 @@ impl<'a> CommittedState<'a> {
         src_nodes: &[String],
         dst_nodes: &[String],
         system_columns: SystemColumns,
-    ) -> Result<Vec<(String, String, String)>> {
+        tag_columns: &[&'static str],
+    ) -> Result<Vec<(String, String, String, RecordBatch, usize)>> {
         if src_nodes.is_empty() && dst_nodes.is_empty() {
             return Ok(Vec::new());
         }
@@ -565,12 +625,9 @@ impl<'a> CommittedState<'a> {
                 None => dst,
             });
         }
-        let batches = scan_filtered(
-            &ds,
-            &[system_columns.id, system_columns.src, system_columns.dst],
-            expr.unwrap(),
-        )
-        .await?;
+        let mut projection = vec![system_columns.id, system_columns.src, system_columns.dst];
+        projection.extend_from_slice(tag_columns);
+        let batches = scan_filtered(&ds, &projection, expr.unwrap()).await?;
         let mut out = Vec::new();
         for batch in &batches {
             let ids = string_col(batch, system_columns.id)?;
@@ -581,6 +638,8 @@ impl<'a> CommittedState<'a> {
                     ids.value(i).to_string(),
                     srcs.value(i).to_string(),
                     dsts.value(i).to_string(),
+                    batch.clone(),
+                    i,
                 ));
             }
         }
@@ -782,8 +841,8 @@ where
                 }
                 Constraint::EdgeRi {
                     table_key,
-                    from_type,
-                    to_type,
+                    source,
+                    destination,
                 } => {
                     // Run when the edge itself has a delta OR when a referenced node
                     // type has deletions (path-b can strand a committed target edge
@@ -795,11 +854,13 @@ where
                             .unwrap_or(false)
                     };
                     let change = changeset.get(table_key);
-                    if change.is_some() || node_deleted(from_type) || node_deleted(to_type) {
+                    let side_deleted =
+                        |side: &EndpointSpec| side.members.iter().any(|member| node_deleted(member));
+                    if change.is_some() || side_deleted(source) || side_deleted(destination) {
                         evaluate_edge_ri(
                             table_key,
-                            from_type,
-                            to_type,
+                            source,
+                            destination,
                             change,
                             changeset,
                             committed,
@@ -964,8 +1025,8 @@ where
 /// inputs.
 async fn evaluate_edge_ri<F>(
     edge_table: &str,
-    from_type: &str,
-    to_type: &str,
+    source: &EndpointSpec,
+    destination: &EndpointSpec,
     change: Option<&TableChange>,
     changeset: &ChangeSet,
     committed: &CommittedState<'_>,
@@ -975,52 +1036,66 @@ async fn evaluate_edge_ri<F>(
 where
     F: FnMut(Violation) -> Result<()>,
 {
-    let from_table = format!("node:{from_type}");
-    let to_table = format!("node:{to_type}");
     // Delta edge ids — excluded from path-b (path-a already covers them).
     let mut delta_edge_ids: HashSet<String> = HashSet::new();
 
     // Path-a: each added/changed edge's endpoints must exist in the merged node
-    // universe (`target ± delta`).
+    // universe (`target ± delta`) of its concrete endpoint type. A polymorphic
+    // side reads that type from the row's tag, and a tag naming no member of
+    // the declared interface is itself a violation.
     if let Some(change) = change {
-        let mut edges = Vec::new();
+        // (edge id, endpoint id, concrete type) per side.
+        let mut src_refs: Vec<(String, String, String)> = Vec::new();
+        let mut dst_refs: Vec<(String, String, String)> = Vec::new();
         for batch in change.value_batches() {
             let ids = string_col(batch, system_columns.id)?;
             let srcs = string_col(batch, system_columns.src)?;
             let dsts = string_col(batch, system_columns.dst)?;
+            let src_tags = tag_col(batch, source)?;
+            let dst_tags = tag_col(batch, destination)?;
             for i in 0..batch.num_rows() {
                 let id = ids.value(i).to_string();
                 delta_edge_ids.insert(id.clone());
-                edges.push((id, srcs.value(i).to_string(), dsts.value(i).to_string()));
+                for (side, tags, endpoints, refs, label) in [
+                    (source, src_tags, srcs, &mut src_refs, system_columns.src),
+                    (destination, dst_tags, dsts, &mut dst_refs, system_columns.dst),
+                ] {
+                    match side.concrete(tags, i) {
+                        Some(concrete) => {
+                            refs.push((id.clone(), endpoints.value(i).to_string(), concrete.to_string()))
+                        }
+                        None => sink(Violation {
+                            table_key: edge_table.to_string(),
+                            row_id: Some(id.clone()),
+                            kind: MergeConflictKind::OrphanEdge,
+                            message: format!(
+                                "{label} '{}' has no endpoint type implementing {}",
+                                endpoints.value(i),
+                                side.declared
+                            ),
+                        })?,
+                    }
+                }
             }
         }
-        if !edges.is_empty() {
-            let srcs: Vec<String> = edges.iter().map(|(_, src, _)| src.clone()).collect();
-            let dsts: Vec<String> = edges.iter().map(|(_, _, dst)| dst.clone()).collect();
-            let from_exist =
-                merged_node_existence(&from_table, &srcs, changeset, committed, system_columns)
-                    .await?;
-            let to_exist =
-                merged_node_existence(&to_table, &dsts, changeset, committed, system_columns)
-                    .await?;
-            for (id, src, dst) in &edges {
-                if !from_exist.contains(src) {
-                    sink(orphan_violation(
-                        edge_table,
-                        id,
-                        system_columns.src,
-                        src,
-                        from_type,
-                    ))?;
-                }
-                if !to_exist.contains(dst) {
-                    sink(orphan_violation(
-                        edge_table,
-                        id,
-                        system_columns.dst,
-                        dst,
-                        to_type,
-                    ))?;
+        for (refs, label) in [(&src_refs, system_columns.src), (&dst_refs, system_columns.dst)] {
+            let mut by_type: std::collections::BTreeMap<&str, Vec<String>> = Default::default();
+            for (_, endpoint, concrete) in refs {
+                by_type.entry(concrete.as_str()).or_default().push(endpoint.clone());
+            }
+            for (concrete, endpoints) in by_type {
+                let exist = merged_node_existence(
+                    &format!("node:{concrete}"),
+                    &endpoints,
+                    changeset,
+                    committed,
+                    system_columns,
+                )
+                .await?;
+                for (id, endpoint, row_type) in refs {
+                    if row_type == concrete && !exist.contains(endpoint) {
+                        sink(orphan_violation(edge_table, id, label, endpoint, concrete))?;
+                    }
                 }
             }
         }
@@ -1030,50 +1105,83 @@ where
     // the merge keeps — reachable when the edge lives on the target side and the
     // node deletion on the source side, so the edge is neither cascade-removed
     // nor in this table's delta. Probe committed target edges referencing the
-    // deleted nodes; any that survive (not in the delta, not removed) are orphans.
-    let deleted_from: Vec<String> = changeset
-        .get(&from_table)
-        .map(|change| change.deleted_ids.clone())
-        .unwrap_or_default();
-    let deleted_to: Vec<String> = changeset
-        .get(&to_table)
-        .map(|change| change.deleted_ids.clone())
-        .unwrap_or_default();
+    // deleted nodes of every member type; a stored endpoint is stranded only
+    // when its id AND its concrete type match a deletion.
+    let deleted_by_type = |side: &EndpointSpec| -> HashMap<String, HashSet<String>> {
+        side.members
+            .iter()
+            .filter_map(|member| {
+                changeset.get(&format!("node:{member}")).and_then(|change| {
+                    (!change.deleted_ids.is_empty()).then(|| {
+                        (member.clone(), change.deleted_ids.iter().cloned().collect())
+                    })
+                })
+            })
+            .collect()
+    };
+    let deleted_from = deleted_by_type(source);
+    let deleted_to = deleted_by_type(destination);
     if !deleted_from.is_empty() || !deleted_to.is_empty() {
         let removed: HashSet<&String> = change
             .map(|change| change.deleted_ids.iter().collect())
             .unwrap_or_default();
-        let from_set: HashSet<&String> = deleted_from.iter().collect();
-        let to_set: HashSet<&String> = deleted_to.iter().collect();
-        for (id, src, dst) in committed
-            .edges_referencing(edge_table, &deleted_from, &deleted_to, system_columns)
+        let flatten = |deleted: &HashMap<String, HashSet<String>>| -> Vec<String> {
+            let mut ids = deleted.values().flatten().cloned().collect::<Vec<_>>();
+            ids.sort();
+            ids.dedup();
+            ids
+        };
+        let tag_columns = [&source.tag, &destination.tag]
+            .into_iter()
+            .flatten()
+            .map(|(column, _)| *column)
+            .collect::<Vec<_>>();
+        for (id, src, dst, batch, row) in committed
+            .edges_referencing(
+                edge_table,
+                &flatten(&deleted_from),
+                &flatten(&deleted_to),
+                system_columns,
+                &tag_columns,
+            )
             .await?
         {
             if delta_edge_ids.contains(&id) || removed.contains(&id) {
                 continue;
             }
-            if from_set.contains(&src) {
-                sink(orphan_violation(
-                    edge_table,
-                    &id,
-                    system_columns.src,
-                    &src,
-                    from_type,
-                ))?;
-            }
-            if to_set.contains(&dst) {
-                sink(orphan_violation(
-                    edge_table,
-                    &id,
-                    system_columns.dst,
-                    &dst,
-                    to_type,
-                ))?;
+            for (side, endpoint, deleted, label) in [
+                (source, &src, &deleted_from, system_columns.src),
+                (destination, &dst, &deleted_to, system_columns.dst),
+            ] {
+                let tags = tag_col(&batch, side)?;
+                if let Some(concrete) = side.concrete(tags, row)
+                    && deleted.get(concrete).is_some_and(|ids| ids.contains(endpoint))
+                {
+                    sink(orphan_violation(edge_table, &id, label, endpoint, concrete))?;
+                }
             }
         }
     }
 
     Ok(())
+}
+
+/// The tag column of a polymorphic side, when the batch carries it.
+fn tag_col<'b>(
+    batch: &'b RecordBatch,
+    side: &EndpointSpec,
+) -> Result<Option<&'b arrow_array::UInt64Array>> {
+    let Some((column, _)) = &side.tag else {
+        return Ok(None);
+    };
+    let Some(array) = batch.column_by_name(column) else {
+        return Ok(None);
+    };
+    array
+        .as_any()
+        .downcast_ref::<arrow_array::UInt64Array>()
+        .map(Some)
+        .ok_or_else(|| OmniError::manifest_internal(format!("{column} is not a UInt64 column")))
 }
 
 /// Which of `ids` exist in the merged node table `node_table` = `target ± delta`:

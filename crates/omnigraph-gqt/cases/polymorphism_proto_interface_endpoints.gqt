@@ -1,0 +1,265 @@
+# issue: none
+# notes: Polymorphic types prototype. An interface binds every implementor, and an edge whose endpoint is an
+# notes: interface stores the concrete endpoint type per row. Person "alice" and Organization "alice" share an
+# notes: id, so every step below fails if any layer matches endpoints on the id alone.
+
+--- runner
+timeout_ms: 20000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+interface Identifiable {
+    slug: String @key
+    name: String
+}
+node Person implements Identifiable {
+    email: String?
+}
+node Organization implements Identifiable {
+    website: String?
+}
+node ExternalID {
+    value: String @key
+}
+edge Identifies: ExternalID -> Identifiable
+
+--- seed
+{"type":"Person","data":{"slug":"alice","name":"Alice Person","email":"alice@example.com"}}
+{"type":"Person","data":{"slug":"bob","name":"Bob"}}
+{"type":"Person","data":{"slug":"acme","name":"Acme Person"}}
+{"type":"Organization","data":{"slug":"alice","name":"Alice Org","website":"alice.org"}}
+{"type":"Organization","data":{"slug":"acme","name":"Acme"}}
+{"type":"ExternalID","data":{"value":"li:alice"}}
+{"type":"ExternalID","data":{"value":"web:alice"}}
+{"type":"ExternalID","data":{"value":"web:acme"}}
+{"edge":"Identifies","from":"li:alice","to":"alice","to_type":"Person"}
+{"edge":"Identifies","from":"web:alice","to":"alice","to_type":"Organization"}
+{"edge":"Identifies","from":"web:acme","to":"acme","to_type":"Organization"}
+
+--- query
+query all_identifiable() {
+    match { $x: Identifiable }
+    return { $x.@type as type, $x.slug as slug, $x.name as name }
+}
+
+--- expect unordered
+{"type": "Organization", "slug": "acme", "name": "Acme"}
+{"type": "Organization", "slug": "alice", "name": "Alice Org"}
+{"type": "Person", "slug": "acme", "name": "Acme Person"}
+{"type": "Person", "slug": "alice", "name": "Alice Person"}
+{"type": "Person", "slug": "bob", "name": "Bob"}
+
+--- expect shape
+type: String
+slug: String
+name: String
+
+--- query
+query identifiable_by_slug($slug: String) {
+    match { $x: Identifiable { slug: $slug } }
+    return { $x.@type as type, $x.name as name }
+}
+
+--- params
+{"slug": "alice"}
+
+--- expect unordered
+{"type": "Organization", "name": "Alice Org"}
+{"type": "Person", "name": "Alice Person"}
+
+--- expect shape
+type: String
+name: String
+
+--- query
+query identified($value: String) {
+    match {
+        $e: ExternalID { value: $value }
+        $e identifies $x
+    }
+    return { $x.@type as type, $x.@id as id, $x.name as name }
+}
+
+--- params
+{"value": "li:alice"}
+
+--- expect unordered
+{"type": "Person", "id": "alice", "name": "Alice Person"}
+
+--- expect shape
+type: String
+id: String
+name: String
+
+--- query
+query identified_org($value: String) {
+    match {
+        $e: ExternalID { value: $value }
+        $e identifies $x
+    }
+    return { $x.@type as type, $x.name as name }
+}
+
+--- params
+{"value": "web:alice"}
+
+--- expect unordered
+{"type": "Organization", "name": "Alice Org"}
+
+--- expect shape
+type: String
+name: String
+
+--- query
+query identified_people() {
+    match {
+        $e: ExternalID
+        $p: Person
+        $e identifies $p
+    }
+    return { $e.value as value, $p.email as email, $p.@type as type }
+}
+
+--- expect unordered
+{"value": "li:alice", "email": "alice@example.com", "type": "Person"}
+
+--- expect shape
+value: String
+email: String?
+type: String
+
+--- query
+query ids_of_person($slug: String) {
+    match {
+        $p: Person { slug: $slug }
+        $p identifies $e
+    }
+    return { $e.value as value }
+}
+
+--- params
+{"slug": "alice"}
+
+--- expect unordered
+{"value": "li:alice"}
+
+--- expect shape
+value: String
+
+--- query
+query ids_of_any_alice($slug: String) {
+    match {
+        $x: Identifiable { slug: $slug }
+        $x identifies $e
+    }
+    return { $x.@type as type, $e.value as value }
+}
+
+--- params
+{"slug": "alice"}
+
+--- expect unordered
+{"type": "Organization", "value": "web:alice"}
+{"type": "Person", "value": "li:alice"}
+
+--- expect shape
+type: String
+value: String
+
+--- query
+query bound_interface_destination($slug: String, $value: String) {
+    match {
+        $x: Identifiable { slug: $slug }
+        $e: ExternalID { value: $value }
+        $e identifies $x
+    }
+    return { $x.@type as type, $x.name as name }
+}
+
+--- params
+{"slug": "alice", "value": "li:alice"}
+
+--- expect unordered
+{"type": "Person", "name": "Alice Person"}
+
+--- expect shape
+type: String
+name: String
+
+--- query
+query not_identified_by($slug: String, $value: String) {
+    match {
+        $e: ExternalID { value: $value }
+        $x: Identifiable { slug: $slug }
+        not {
+            $e identifies $x
+        }
+    }
+    return { $x.@type as type }
+}
+
+--- params
+{"slug": "alice", "value": "li:alice"}
+
+--- expect unordered
+{"type": "Organization"}
+
+--- expect shape
+type: String
+
+--- query
+query unidentified_people() {
+    match {
+        $p: Person
+        not {
+            $p identifies $_
+        }
+    }
+    return { $p.slug as slug }
+}
+
+--- expect unordered
+{"slug": "acme"}
+{"slug": "bob"}
+
+--- expect shape
+slug: String
+
+--- query
+query member_only_property() {
+    match { $x: Identifiable }
+    return { $x.email }
+}
+
+--- expect error: has no property `email`
+
+--- mutate
+query delete_person($slug: String) {
+    delete Person where slug = $slug
+}
+
+--- params
+{"slug": "alice"}
+
+--- expect affected: nodes=1 edges=1
+
+--- query
+query identified_after_delete($value: String) {
+    match {
+        $e: ExternalID { value: $value }
+        $e identifies $x
+    }
+    return { $x.@type as type, $x.name as name }
+}
+
+--- params
+{"value": "web:alice"}
+
+--- expect unordered
+{"type": "Organization", "name": "Alice Org"}
+
+--- expect shape
+type: String
+name: String

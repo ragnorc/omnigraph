@@ -425,6 +425,7 @@ async fn persist_graph_index_artifact(
     let edge_types: std::collections::HashMap<String, (String, String)> = catalog
         .edge_types
         .iter()
+        .filter(|(_, et)| !et.is_polymorphic())
         .map(|(name, et)| (name.clone(), (et.from_type.clone(), et.to_type.clone())))
         .collect();
     let snapshot = db.snapshot_for_branch(None).await?;

@@ -140,8 +140,19 @@ pub struct CheckConstraint {
 #[derive(Debug, Clone)]
 pub struct EdgeType {
     pub name: String,
+    /// The declared endpoint: a node type or, under `polymorphic-endpoints`,
+    /// an interface. Use `from_members`/`to_members` for concrete tables.
     pub from_type: String,
     pub to_type: String,
+    /// The concrete node types an endpoint admits, sorted by name: the
+    /// declared node type alone, or every implementor of the declared
+    /// interface.
+    pub from_members: Vec<String>,
+    pub to_members: Vec<String>,
+    /// Whether a side stores the concrete endpoint type per row
+    /// (`__src_type`/`__dst_type`), true exactly when it names an interface.
+    pub src_tagged: bool,
+    pub dst_tagged: bool,
     pub cardinality: Cardinality,
     pub properties: HashMap<String, PropType>,
     /// Key column names (from `@key(@src, @dst, ...)`), always including both
@@ -160,7 +171,118 @@ pub struct EdgeType {
     pub arrow_schema: SchemaRef,
 }
 
+impl EdgeType {
+    /// True when either side names an interface.
+    pub fn is_polymorphic(&self) -> bool {
+        self.src_tagged || self.dst_tagged
+    }
+
+    /// True when `node_type` may stand at the source end.
+    pub fn admits_source(&self, node_type: &str) -> bool {
+        self.from_members.iter().any(|member| member == node_type)
+    }
+
+    /// True when `node_type` may stand at the destination end.
+    pub fn admits_destination(&self, node_type: &str) -> bool {
+        self.to_members.iter().any(|member| member == node_type)
+    }
+}
+
+/// The concrete members of a declared endpoint name: itself when it is a node
+/// type, else every node type implementing the interface it names.
+fn endpoint_members(
+    declared: &str,
+    node_implements: &[(String, Vec<String>)],
+    is_node: bool,
+) -> Vec<String> {
+    if is_node {
+        return vec![declared.to_string()];
+    }
+    let mut members = node_implements
+        .iter()
+        .filter(|(_, implements)| implements.iter().any(|name| name == declared))
+        .map(|(name, _)| name.clone())
+        .collect::<Vec<_>>();
+    members.sort();
+    members
+}
+
 impl Catalog {
+    /// Concrete node types bound by a type name in a query: the node type
+    /// itself, or every implementor of an interface. `None` when the name is
+    /// neither. A name declared as both resolves to the node type.
+    pub fn concrete_members(&self, type_name: &str) -> Option<Vec<String>> {
+        if self.node_types.contains_key(type_name) {
+            return Some(vec![type_name.to_string()]);
+        }
+        if !self.interfaces.contains_key(type_name) {
+            return None;
+        }
+        let mut members = self
+            .node_types
+            .values()
+            .filter(|node| node.implements.iter().any(|name| name == type_name))
+            .map(|node| node.name.clone())
+            .collect::<Vec<_>>();
+        members.sort();
+        Some(members)
+    }
+
+    /// The node type a query binding of `name` reads: the node type itself,
+    /// or for an interface a virtual node type holding exactly the
+    /// interface's declared properties, in name order after the id.
+    pub fn binding_node_type(&self, name: &str) -> Option<std::borrow::Cow<'_, NodeType>> {
+        if let Some(node) = self.node_types.get(name) {
+            return Some(std::borrow::Cow::Borrowed(node));
+        }
+        let interface = self.interfaces.get(name)?;
+        let mut names = interface.properties.keys().cloned().collect::<Vec<_>>();
+        names.sort();
+        let mut fields = vec![Field::new(self.system_columns.id, DataType::Utf8, false)];
+        fields.extend(names.iter().map(|property| {
+            let prop_type = &interface.properties[property];
+            Field::new(property, prop_type.to_arrow(), prop_type.nullable)
+        }));
+        let blob_properties = interface
+            .properties
+            .iter()
+            .filter(|(_, prop)| matches!(prop.scalar, ScalarType::Blob))
+            .map(|(name, _)| name.clone())
+            .collect();
+        Some(std::borrow::Cow::Owned(NodeType {
+            name: name.to_string(),
+            implements: Vec::new(),
+            properties: interface.properties.clone(),
+            key: None,
+            unique_constraints: Vec::new(),
+            indices: Vec::new(),
+            range_constraints: Vec::new(),
+            check_constraints: Vec::new(),
+            embed_sources: HashMap::new(),
+            blob_properties,
+            arrow_schema: Arc::new(Schema::new(fields)),
+        }))
+    }
+
+    /// True when `name` binds more than its own table: an interface.
+    pub fn is_abstract_type(&self, name: &str) -> bool {
+        !self.node_types.contains_key(name) && self.interfaces.contains_key(name)
+    }
+
+    /// `narrow` admits no node type `wide` does not: equal names, or a
+    /// nonempty member set contained in `wide`'s.
+    pub fn type_fits(&self, narrow: &str, wide: &str) -> bool {
+        if narrow == wide {
+            return true;
+        }
+        match (self.concrete_members(narrow), self.concrete_members(wide)) {
+            (Some(narrow), Some(wide)) => {
+                !narrow.is_empty() && narrow.iter().all(|member| wide.contains(member))
+            }
+            _ => false,
+        }
+    }
+
     pub fn lookup_edge_by_name(&self, name: &str) -> Option<&EdgeType> {
         if let Some(et) = self.edge_types.get(name) {
             return Some(et);
@@ -465,13 +587,13 @@ pub fn build_catalog(schema: &SchemaFile) -> Result<Catalog> {
                     edge.name
                 )));
             }
-            if !node_types.contains_key(&edge.from_type) {
+            if !node_types.contains_key(&edge.from_type) && !interfaces.contains_key(&edge.from_type) {
                 return Err(CompilerError::Catalog(format!(
                     "edge {} references unknown source type: {}",
                     edge.name, edge.from_type
                 )));
             }
-            if !node_types.contains_key(&edge.to_type) {
+            if !node_types.contains_key(&edge.to_type) && !interfaces.contains_key(&edge.to_type) {
                 return Err(CompilerError::Catalog(format!(
                     "edge {} references unknown target type: {}",
                     edge.name, edge.to_type
@@ -480,6 +602,15 @@ pub fn build_catalog(schema: &SchemaFile) -> Result<Catalog> {
 
             let mut properties = HashMap::new();
             let mut blob_properties = HashSet::new();
+            let node_implements = node_types
+                .values()
+                .map(|node: &NodeType| (node.name.clone(), node.implements.clone()))
+                .collect::<Vec<_>>();
+            let src_tagged = !node_types.contains_key(&edge.from_type);
+            refuse_polymorphic_source_card(&edge.name, src_tagged, &edge.cardinality)?;
+            let dst_tagged = !node_types.contains_key(&edge.to_type);
+            let from_members = endpoint_members(&edge.from_type, &node_implements, !src_tagged);
+            let to_members = endpoint_members(&edge.to_type, &node_implements, !dst_tagged);
             let mut fields = vec![
                 Field::new(system_columns.id, DataType::Utf8, false),
                 Field::new(system_columns.src, DataType::Utf8, false),
@@ -495,6 +626,15 @@ pub fn build_catalog(schema: &SchemaFile) -> Result<Catalog> {
                     prop.prop_type.to_arrow(),
                     prop.prop_type.nullable,
                 ));
+            }
+
+            // Tag columns follow every user property, so positional readers
+            // that treat columns 3.. as properties must skip them explicitly.
+            if src_tagged {
+                fields.push(Field::new(schema_ir::EDGE_SRC_TYPE_COLUMN, DataType::UInt64, true));
+            }
+            if dst_tagged {
+                fields.push(Field::new(schema_ir::EDGE_DST_TYPE_COLUMN, DataType::UInt64, true));
             }
 
             // Extract edge constraints
@@ -532,9 +672,15 @@ pub fn build_catalog(schema: &SchemaFile) -> Result<Catalog> {
                     name: edge.name.clone(),
                     from_type: edge.from_type.clone(),
                     to_type: edge.to_type.clone(),
+                    from_members,
+                    to_members,
+                    src_tagged,
+                    dst_tagged,
                     cardinality: edge.cardinality.clone(),
                     properties,
-                    key,
+                    key: key.map(|columns| {
+                        keyed_with_endpoint_types(columns, system_columns, src_tagged, dst_tagged)
+                    }),
                     unique_constraints,
                     indices: edge_indices,
                     blob_properties,
@@ -552,6 +698,46 @@ pub fn build_catalog(schema: &SchemaFile) -> Result<Catalog> {
         system_columns,
         identity: CatalogIdentity::SourceUnbound,
     })
+}
+
+/// `@card` counts edges per source id, and the validator reads deletions from
+/// the source's one node table: neither holds when the source is an
+/// interface, so the prototype refuses the combination.
+fn refuse_polymorphic_source_card(
+    edge_name: &str,
+    src_tagged: bool,
+    cardinality: &crate::schema::ast::Cardinality,
+) -> Result<()> {
+    if src_tagged && !cardinality.is_default() {
+        return Err(CompilerError::Catalog(format!(
+            "edge '{edge_name}': @card on an edge whose source is an interface is not supported"
+        )));
+    }
+    Ok(())
+}
+
+/// An edge key over a polymorphic endpoint: the endpoint id names a node only
+/// together with its concrete type, so the side's tag column follows the
+/// endpoint in the key (polymorphic types prototype).
+fn keyed_with_endpoint_types(
+    columns: Vec<String>,
+    system_columns: schema_ir::SystemColumns,
+    src_tagged: bool,
+    dst_tagged: bool,
+) -> Vec<String> {
+    let mut keyed = Vec::with_capacity(columns.len() + 2);
+    for column in columns {
+        let tag = if src_tagged && column == system_columns.src {
+            Some(schema_ir::EDGE_SRC_TYPE_COLUMN)
+        } else if dst_tagged && column == system_columns.dst {
+            Some(schema_ir::EDGE_DST_TYPE_COLUMN)
+        } else {
+            None
+        };
+        keyed.push(column);
+        keyed.extend(tag.map(str::to_string));
+    }
+    keyed
 }
 
 /// Build the runtime catalog directly from validated accepted identity
@@ -784,6 +970,16 @@ pub fn build_catalog_from_ir(ir: &schema_ir::SchemaIR) -> Result<Catalog> {
                 _ => {}
             }
         }
+        let node_implements = node_types
+            .values()
+            .map(|node: &NodeType| (node.name.clone(), node.implements.clone()))
+            .collect::<Vec<_>>();
+        let src_tagged = !node_types.contains_key(&edge.from_type.type_name);
+        refuse_polymorphic_source_card(&edge.name, src_tagged, &edge.cardinality)?;
+        let dst_tagged = !node_types.contains_key(&edge.to_type.type_name);
+        let from_members =
+            endpoint_members(&edge.from_type.type_name, &node_implements, !src_tagged);
+        let to_members = endpoint_members(&edge.to_type.type_name, &node_implements, !dst_tagged);
         let mut fields = vec![
             Field::new(system_columns.id, DataType::Utf8, false),
             Field::new(system_columns.src, DataType::Utf8, false),
@@ -796,6 +992,13 @@ pub fn build_catalog_from_ir(ir: &schema_ir::SchemaIR) -> Result<Catalog> {
                 property.prop_type.nullable,
             )
         }));
+        // Tag columns follow every user property (see build_catalog).
+        if src_tagged {
+            fields.push(Field::new(schema_ir::EDGE_SRC_TYPE_COLUMN, DataType::UInt64, true));
+        }
+        if dst_tagged {
+            fields.push(Field::new(schema_ir::EDGE_DST_TYPE_COLUMN, DataType::UInt64, true));
+        }
         let normalized_name = normalize_edge_name(&edge.name);
         if let Some(existing) = edge_name_index.get(&normalized_name)
             && existing != &edge.name
@@ -812,9 +1015,15 @@ pub fn build_catalog_from_ir(ir: &schema_ir::SchemaIR) -> Result<Catalog> {
                 name: edge.name.clone(),
                 from_type: edge.from_type.type_name.clone(),
                 to_type: edge.to_type.type_name.clone(),
+                from_members,
+                to_members,
+                src_tagged,
+                dst_tagged,
                 cardinality: edge.cardinality.clone(),
                 properties,
-                key,
+                key: key.map(|columns| {
+                    keyed_with_endpoint_types(columns, system_columns, src_tagged, dst_tagged)
+                }),
                 unique_constraints,
                 indices,
                 blob_properties,

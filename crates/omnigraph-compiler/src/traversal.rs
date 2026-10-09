@@ -8,6 +8,9 @@ use crate::types::{Direction, PropType};
 /// Query-only column carrying a bound edge's canonical schema type name.
 pub const EDGE_TYPE_COLUMN: &str = "~edge_type";
 
+/// Query-only column carrying an abstract node binding's concrete type name.
+pub const NODE_TYPE_COLUMN: &str = "~node_type";
+
 /// Read-only metadata spelling for a bound edge's concrete schema type.
 pub const EDGE_TYPE_META: &str = "@type";
 

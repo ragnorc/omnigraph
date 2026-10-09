@@ -90,7 +90,8 @@ impl PlanSource for Recorded<'_> {
 
     fn node_type(&self, type_name: &str) -> Result<NodeTypeSpec, PlanError> {
         let spec = self.source.node_type(type_name)?;
-        self.read.borrow_mut().datasets.insert(
+        let mut read = self.read.borrow_mut();
+        read.datasets.insert(
             spec.table.type_key.clone(),
             spec.version.map(|version| DatasetPin {
                 dataset_path: spec.table.dataset_path.clone(),
@@ -98,6 +99,18 @@ impl PlanSource for Recorded<'_> {
                 version,
             }),
         );
+        // An abstract binding reads every member table: pin each one.
+        for member in &spec.members {
+            read.datasets.insert(
+                member.table.type_key.clone(),
+                member.version.map(|version| DatasetPin {
+                    dataset_path: member.table.dataset_path.clone(),
+                    native_branch: member.table.native_branch.clone(),
+                    version,
+                }),
+            );
+        }
+        drop(read);
         Ok(spec)
     }
 
@@ -558,6 +571,7 @@ mod tests {
                 object_columns: vec!["__id".into()],
                 object_fields: vec![Field::new("@id", DataType::Utf8, false)].into(),
                 row_count: None,
+                members: vec![],
             },
         );
         let query = QueryIR {

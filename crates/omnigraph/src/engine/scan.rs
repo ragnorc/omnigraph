@@ -221,6 +221,21 @@ pub(super) async fn execute_node_scan(
     binding_columns: Option<&NeededColumns>,
     memory: &WorkMemory,
 ) -> Result<RecordBatch> {
+    if catalog.is_abstract_type(type_name) {
+        return Box::pin(execute_abstract_scan(
+            type_name,
+            variable,
+            filters,
+            params,
+            snapshot,
+            catalog,
+            search_mode,
+            scan_report,
+            binding_columns,
+            memory,
+        ))
+        .await;
+    }
     let read = NodeRead::resolve(
         type_name,
         filters,
@@ -673,6 +688,11 @@ pub(super) fn scan_output_schema(
     search_mode: &SearchMode,
     binding_columns: Option<&NeededColumns>,
 ) -> Result<SchemaRef> {
+    if catalog.is_abstract_type(type_name) {
+        let unprefixed = abstract_scan_schema(type_name, catalog, binding_columns)?;
+        let empty = RecordBatch::new_empty(unprefixed);
+        return Ok(prefix_batch(&empty, variable)?.schema());
+    }
     let node_type = catalog
         .node_types
         .get(type_name)
@@ -1154,4 +1174,120 @@ mod coercion_tests {
             .is_none()
         );
     }
+}
+
+
+/// The unprefixed columns an abstract (interface) binding's scan produces: the
+/// interface's virtual node columns under the demanded projection, then the
+/// query-only `~node_type` (polymorphic types prototype).
+pub(super) fn abstract_scan_schema(
+    type_name: &str,
+    catalog: &Catalog,
+    binding_columns: Option<&NeededColumns>,
+) -> Result<SchemaRef> {
+    let node_type = catalog
+        .binding_node_type(type_name)
+        .ok_or_else(|| OmniError::manifest(format!("unknown node type '{type_name}'")))?;
+    let columns = ScanColumns::new(&node_type, SearchColumns::default(), binding_columns);
+    if columns.has_blobs {
+        return Err(OmniError::manifest(format!(
+            "interface {type_name} declares a Blob property; Blob columns through an interface binding are not prototyped"
+        )));
+    }
+    let mut fields = columns
+        .empty_batch(&node_type)
+        .schema()
+        .fields()
+        .iter()
+        .cloned()
+        .collect::<Vec<_>>();
+    fields.push(Arc::new(arrow_schema::Field::new(
+        omnigraph_compiler::traversal::NODE_TYPE_COLUMN,
+        arrow_schema::DataType::Utf8,
+        false,
+    )));
+    Ok(Arc::new(arrow_schema::Schema::new(fields)))
+}
+
+/// Shape one member's batch as the abstract binding's: select the declared
+/// columns by name and append the member's type name as `~node_type`.
+pub(super) fn conform_member_batch(
+    batch: &RecordBatch,
+    member: &str,
+    declared: &SchemaRef,
+) -> Result<RecordBatch> {
+    let mut columns = Vec::with_capacity(declared.fields().len());
+    for field in declared.fields() {
+        if field.name() == omnigraph_compiler::traversal::NODE_TYPE_COLUMN {
+            columns.push(Arc::new(arrow_array::StringArray::from(vec![
+                member;
+                batch.num_rows()
+            ])) as arrow_array::ArrayRef);
+            continue;
+        }
+        let column = batch.column_by_name(field.name()).ok_or_else(|| {
+            OmniError::manifest_internal(format!(
+                "member {member} scan lacks interface column '{}'",
+                field.name()
+            ))
+        })?;
+        let column = if column.data_type() == field.data_type() {
+            Arc::clone(column)
+        } else {
+            arrow_cast::cast(column, field.data_type()).map_err(OmniError::arrow_internal)?
+        };
+        columns.push(column);
+    }
+    RecordBatch::try_new(Arc::clone(declared), columns).map_err(OmniError::arrow_internal)
+}
+
+/// An interface binding's table scan: every implementor's table read with the
+/// same pushed filters and projection, conformed and concatenated. Search
+/// modes rank within one table, so they are refused here (the RFC refuses
+/// BM25 across tables and merges per-member k-NN; neither is prototyped).
+#[allow(clippy::too_many_arguments)]
+async fn execute_abstract_scan(
+    type_name: &str,
+    variable: &str,
+    filters: &[IRExpr],
+    params: &ParamMap,
+    snapshot: &Snapshot,
+    catalog: &Catalog,
+    search_mode: &SearchMode,
+    scan_report: &mut ScanReport,
+    binding_columns: Option<&NeededColumns>,
+    memory: &WorkMemory,
+) -> Result<RecordBatch> {
+    if search_mode.nearest.is_some() || search_mode.bm25.is_some() {
+        return Err(OmniError::manifest(format!(
+            "search over interface binding `${variable}: {type_name}` is not prototyped"
+        )));
+    }
+    let declared = abstract_scan_schema(type_name, catalog, binding_columns)?;
+    let mut batches = Vec::new();
+    for member in catalog.concrete_members(type_name).unwrap_or_default() {
+        if snapshot.dataset(&format!("node:{member}")).is_none() {
+            continue;
+        }
+        let batch = Box::pin(execute_node_scan(
+            &member,
+            variable,
+            filters,
+            params,
+            snapshot,
+            catalog,
+            search_mode,
+            scan_report,
+            binding_columns,
+            memory,
+        ))
+        .await?;
+        batches.push(conform_member_batch(&batch, &member, &declared)?);
+    }
+    if batches.is_empty() {
+        return Ok(RecordBatch::new_empty(declared));
+    }
+    memory
+        .concat(&declared, &batches)
+        .map_err(|error| memory.error(error))
 }

@@ -865,6 +865,8 @@ impl From<PrefilterMirror> for Prefilter {
 pub struct ScanSpecMirror {
     pub side: SideId,
     pub table: TableRef,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub members: Vec<crate::logical::ScanMember>,
     pub version: Option<u64>,
     pub columns: SystemColumnsMirror,
     pub fragments: Option<Vec<u64>>,
@@ -880,6 +882,7 @@ impl From<&ScanSpec> for ScanSpecMirror {
         Self {
             side: spec.side,
             table: spec.table.clone(),
+            members: spec.members.clone(),
             version: spec.version,
             columns: SystemColumnsMirror::from(spec.columns),
             fragments: spec.fragments.clone(),
@@ -898,6 +901,7 @@ impl TryFrom<ScanSpecMirror> for ScanSpec {
         Ok(Self {
             side: mirror.side,
             table: mirror.table,
+            members: mirror.members,
             version: mirror.version,
             columns: SystemColumns::try_from(mirror.columns)?,
             fragments: mirror.fragments,

@@ -1572,26 +1572,55 @@ impl Omnigraph {
 
         let mut affected_edges = 0usize;
 
-        let edge_info: Vec<(String, String, String)> = txn
+        // Every edge whose endpoint set admits the deleted type. A polymorphic
+        // side also matches its tag, so deleting `Person "alice"` never
+        // removes an edge to `Organization "alice"`.
+        let deleted_type_tag = txn.catalog.node_type_id(type_name).map(|id| id.get());
+        let edge_info: Vec<(String, bool, bool, bool, bool)> = txn
             .catalog
             .edge_types
             .iter()
-            .map(|(name, et)| (name.clone(), et.from_type.clone(), et.to_type.clone()))
+            .map(|(name, et)| {
+                (
+                    name.clone(),
+                    et.admits_source(type_name),
+                    et.src_tagged,
+                    et.admits_destination(type_name),
+                    et.dst_tagged,
+                )
+            })
             .collect();
 
-        for (edge_name, from_type, to_type) in &edge_info {
+        for (edge_name, from_admits, src_tagged, to_admits, dst_tagged) in &edge_info {
             let mut cascade_filters = Vec::new();
-            if from_type == type_name {
-                cascade_filters.push(id_in_list_expr(
-                    &deleted_ids,
+            let side_filter = |column: &str, tagged: bool, tag_column: &str| -> Result<Expr> {
+                let ids = id_in_list_expr(&deleted_ids, column);
+                if !tagged {
+                    return Ok(ids);
+                }
+                let tag = deleted_type_tag.ok_or_else(|| {
+                    OmniError::manifest_internal(format!(
+                        "node type '{type_name}' has no stable identity for a cascade tag"
+                    ))
+                })?;
+                Ok(ids.and(
+                    datafusion::prelude::col(tag_column)
+                        .eq(datafusion::prelude::lit(tag)),
+                ))
+            };
+            if *from_admits {
+                cascade_filters.push(side_filter(
                     txn.catalog.system_columns.src,
-                ));
+                    *src_tagged,
+                    omnigraph_compiler::catalog::schema_ir::EDGE_SRC_TYPE_COLUMN,
+                )?);
             }
-            if to_type == type_name {
-                cascade_filters.push(id_in_list_expr(
-                    &deleted_ids,
+            if *to_admits {
+                cascade_filters.push(side_filter(
                     txn.catalog.system_columns.dst,
-                ));
+                    *dst_tagged,
+                    omnigraph_compiler::catalog::schema_ir::EDGE_DST_TYPE_COLUMN,
+                )?);
             }
             let Some(cascade_filter) = cascade_filters.into_iter().reduce(Expr::or) else {
                 continue;

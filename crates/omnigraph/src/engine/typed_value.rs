@@ -595,7 +595,10 @@ pub(super) fn validate_plan_values(
                 return Ok((DataType::Float32, false));
             }
             if let Some(type_name) = bindings.get(variable) {
-                let node = catalog.node_types.get(*type_name).ok_or_else(|| {
+                if property == omnigraph_compiler::traversal::NODE_TYPE_COLUMN {
+                    return Ok((DataType::Utf8, false));
+                }
+                let node = catalog.binding_node_type(type_name).ok_or_else(|| {
                     OmniError::manifest_internal(format!("unknown node type {type_name}"))
                 })?;
                 let field = node

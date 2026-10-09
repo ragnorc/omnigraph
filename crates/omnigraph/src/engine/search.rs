@@ -344,7 +344,7 @@ pub(super) fn nearest_property_dim_and_model(
     type_name: &str,
     property: &str,
 ) -> Result<(usize, Option<String>)> {
-    let node_type = catalog.node_types.get(type_name).ok_or_else(|| {
+    let node_type = catalog.binding_node_type(type_name).ok_or_else(|| {
         OmniError::manifest_internal(format!(
             "nearest() scan resolved unknown node type '{type_name}'"
         ))
@@ -766,6 +766,7 @@ pub(crate) fn referenced_edge_types(
             catalog
                 .edge_types
                 .get(&name)
+                .filter(|et| !et.is_polymorphic())
                 .map(|et| (name, (et.from_type.clone(), et.to_type.clone())))
         })
         .collect()

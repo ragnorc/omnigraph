@@ -17,8 +17,8 @@ use omnigraph_compiler::types::Direction;
 use omnigraph_planner::{
     AdjacencyProof, Bounds, DatasetPin, Decision, EXPAND_INDEXED_MAX_FRONTIER_ENV,
     EXPAND_INDEXED_MAX_HOPS_ENV, ExpandStatistics, Explain, FragmentStat, GatePolicy, NodeTypeSpec,
-    Operation, PhysicalPlan, PlanError, PlanSource, PrefilterMode, RouteOverride, SideId, TableRef,
-    Unrouted,
+    Operation, PhysicalPlan, PlanError, PlanSource, PrefilterMode, RouteOverride, ScanMember, SideId,
+    TableRef, Unrouted,
 };
 
 use super::ResolvedParams;
@@ -187,6 +187,33 @@ impl<'a> QuerySource<'a> {
         }
         Ok(())
     }
+
+    /// The table reference and pinned version of one table key.
+    fn table_pin(&self, type_key: &str) -> (TableRef, Option<u64>) {
+        match self.snapshot.dataset(type_key) {
+            Some(entry) => (
+                TableRef {
+                    type_key: type_key.to_string(),
+                    dataset_path: entry.dataset_path.clone(),
+                    native_branch: entry.native_dataset_branch.clone(),
+                },
+                Some(
+                    entry
+                        .version_metadata
+                        .staged_version()
+                        .unwrap_or(entry.published_dataset_version),
+                ),
+            ),
+            None => (
+                TableRef {
+                    type_key: type_key.to_string(),
+                    dataset_path: String::new(),
+                    native_branch: None,
+                },
+                None,
+            ),
+        }
+    }
 }
 
 impl PlanSource for QuerySource<'_> {
@@ -231,13 +258,32 @@ impl PlanSource for QuerySource<'_> {
     /// entry's own: a historical read view binds a renamed type's old dataset
     /// under its current name, and the old name is unknown to the catalog.
     fn node_type(&self, type_name: &str) -> std::result::Result<NodeTypeSpec, PlanError> {
-        let node_type =
+        let node_type = self
+            .catalog
+            .binding_node_type(type_name)
+            .ok_or_else(|| PlanError::Unresolved {
+                detail: format!("unknown node type `{type_name}`"),
+            })?;
+        // An interface binding scans each implementor's table under the
+        // interface's schema (polymorphic types prototype).
+        let members = if self.catalog.is_abstract_type(type_name) {
             self.catalog
-                .node_types
-                .get(type_name)
-                .ok_or_else(|| PlanError::Unresolved {
-                    detail: format!("unknown node type `{type_name}`"),
-                })?;
+                .concrete_members(type_name)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|member| {
+                    let type_key = format!("node:{member}");
+                    let (table, version) = self.table_pin(&type_key);
+                    ScanMember {
+                        type_name: member,
+                        table,
+                        version,
+                    }
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
         let type_key = format!("node:{type_name}");
         let (table, version, row_count) = match self.snapshot.dataset(&type_key) {
             Some(entry) => (
@@ -281,6 +327,7 @@ impl PlanSource for QuerySource<'_> {
                 })
                 .collect(),
             row_count,
+            members,
         })
     }
 

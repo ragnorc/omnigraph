@@ -54,6 +54,8 @@ pub struct NodeTypeSpec {
     /// The table's manifest-resident row count (`entity_count`); `None` when
     /// the table is absent from the pinned snapshot.
     pub row_count: Option<u64>,
+    /// The concrete member tables of an interface; empty for a node type.
+    pub members: Vec<crate::logical::ScanMember>,
 }
 
 /// The environment variable behind `ExpandStatistics::max_frontier_cap`,

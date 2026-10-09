@@ -52,6 +52,16 @@ pub const FEATURE_SYSTEM_COLUMNS: &str = "system-columns";
 /// the declarations at every accept.
 pub const FEATURE_EDGE_KEYS: &str = "edge-keys";
 
+/// Feature name: an edge endpoint names an interface, so the edge stores the
+/// concrete endpoint type per row (polymorphic types RFC). Derived from the
+/// declarations at every accept; requires `system-columns`.
+pub const FEATURE_POLYMORPHIC_ENDPOINTS: &str = "polymorphic-endpoints";
+
+/// System column holding a polymorphic source endpoint's `StableTypeId`.
+pub const EDGE_SRC_TYPE_COLUMN: &str = "__src_type";
+/// System column holding a polymorphic destination endpoint's `StableTypeId`.
+pub const EDGE_DST_TYPE_COLUMN: &str = "__dst_type";
+
 /// The per-graph spellings of the implicit stored columns. Resolved from the
 /// accepted IR's feature set; no other code path may assume a spelling
 /// (RFC 0040).
@@ -101,7 +111,9 @@ pub fn is_supported_ir_version(version: u32) -> bool {
 
 /// Every feature name this build knows; an IR naming any other is refused.
 pub fn is_known_feature(name: &str) -> bool {
-    name == FEATURE_SYSTEM_COLUMNS || name == FEATURE_EDGE_KEYS
+    name == FEATURE_SYSTEM_COLUMNS
+        || name == FEATURE_EDGE_KEYS
+        || name == FEATURE_POLYMORPHIC_ENDPOINTS
 }
 
 /// The feature set an accepted schema must carry: the names its declarations
@@ -119,6 +131,18 @@ pub fn required_features(ir: &SchemaIR) -> BTreeSet<String> {
     });
     if has_edge_key {
         features.insert(FEATURE_EDGE_KEYS.to_string());
+    }
+    let interface_ids = ir
+        .interfaces
+        .iter()
+        .map(|interface| interface.type_id)
+        .collect::<BTreeSet<_>>();
+    let has_polymorphic_endpoint = ir.edges.iter().any(|edge| {
+        interface_ids.contains(&edge.from_type.type_id)
+            || interface_ids.contains(&edge.to_type.type_id)
+    });
+    if has_polymorphic_endpoint {
+        features.insert(FEATURE_POLYMORPHIC_ENDPOINTS.to_string());
     }
     features
 }
@@ -881,8 +905,8 @@ fn resolve(
                 name: edge.name.clone(),
                 type_id: assigned.type_id,
                 table_incarnation_id: incarnation,
-                from_type: type_ref(TypeKind::Node, &edge.from_type, &assignments)?,
-                to_type: type_ref(TypeKind::Node, &edge.to_type, &assignments)?,
+                from_type: endpoint_type_ref(&edge.from_type, &assignments)?,
+                to_type: endpoint_type_ref(&edge.to_type, &assignments)?,
                 cardinality: edge.cardinality.clone(),
                 annotations: edge.annotations.clone(),
                 properties: build_properties(
@@ -998,6 +1022,19 @@ fn shape_properties(shape: &SchemaShape) -> Vec<(TypeKind, &str, &[PropertyShape
             )
         }))
         .collect()
+}
+
+/// An edge endpoint names a node type or, under `polymorphic-endpoints`, an
+/// interface. A name declared as both resolves to the node type.
+fn endpoint_type_ref(
+    name: &str,
+    assignments: &BTreeMap<(TypeKind, String), AssignedType>,
+) -> Result<TypeRefIR> {
+    if assignments.contains_key(&(TypeKind::Node, name.to_string())) {
+        type_ref(TypeKind::Node, name, assignments)
+    } else {
+        type_ref(TypeKind::Interface, name, assignments)
+    }
 }
 
 fn type_ref(
@@ -1406,6 +1443,12 @@ pub fn validate_schema_ir(ir: &SchemaIR) -> Result<()> {
         ));
     }
     let required = required_features(ir);
+    if required.contains(FEATURE_POLYMORPHIC_ENDPOINTS) && !required.contains(FEATURE_SYSTEM_COLUMNS) {
+        return invalid_ir(
+            "polymorphic edge endpoints require the system-columns feature; run the system-column upgrade first"
+                .to_string(),
+        );
+    }
     if ir.ir_version == SCHEMA_IR_VERSION_FEATURES {
         if ir.features.is_empty() {
             return invalid_ir(format!(
@@ -1691,8 +1734,8 @@ pub fn validate_schema_ir(ir: &SchemaIR) -> Result<()> {
                 ));
             }
         }
-        validate_type_ref(&edge.from_type, TypeKind::Node, &type_by_id)?;
-        validate_type_ref(&edge.to_type, TypeKind::Node, &type_by_id)?;
+        validate_endpoint_ref(&edge.from_type, &type_by_id)?;
+        validate_endpoint_ref(&edge.to_type, &type_by_id)?;
         validate_constraint_order(&edge.constraints, &edge.name, ir.system_columns())?;
         validate_constraints(
             TypeKind::Edge,
@@ -1766,6 +1809,16 @@ fn validate_type_refs(
         previous = Some(reference);
     }
     Ok(())
+}
+
+fn validate_endpoint_ref(
+    reference: &TypeRefIR,
+    types: &HashMap<StableTypeId, AcceptedType<'_>>,
+) -> Result<()> {
+    match types.get(&reference.type_id).map(|target| target.kind) {
+        Some(TypeKind::Interface) => validate_type_ref(reference, TypeKind::Interface, types),
+        _ => validate_type_ref(reference, TypeKind::Node, types),
+    }
 }
 
 fn validate_type_ref(

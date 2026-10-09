@@ -157,6 +157,9 @@ pub(crate) fn plan_edge_types(
             catalog
                 .edge_types
                 .get(name)
+                // The CSR keys ids by declared endpoint type; an edge whose
+                // endpoint is an interface has no single id space there.
+                .filter(|et| !et.is_polymorphic())
                 .map(|et| (name.clone(), (et.from_type.clone(), et.to_type.clone())))
         })
         .collect()
@@ -724,6 +727,7 @@ mod traversal_admission_tests {
                     dataset_path: "node_Person".into(),
                     native_branch: None,
                 },
+                members: vec![],
                 version: None,
                 columns: SystemColumns {
                     id: "__id",
