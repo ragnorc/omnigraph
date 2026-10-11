@@ -193,10 +193,18 @@ pub(crate) struct EndpointSpec {
     pub declared: String,
     pub members: Vec<String>,
     pub tag: Option<(&'static str, HashMap<u64, String>)>,
+    /// The type a null or absent tag names (a side generalized from it).
+    pub implicit: Option<String>,
 }
 
 impl EndpointSpec {
-    fn new(catalog: &Catalog, declared: &str, members: &[String], tag_column: Option<&'static str>) -> Self {
+    fn new(
+        catalog: &Catalog,
+        declared: &str,
+        members: &[String],
+        tag_column: Option<&'static str>,
+        implicit: Option<&String>,
+    ) -> Self {
         let tag = tag_column.map(|column| {
             let ids = members
                 .iter()
@@ -208,6 +216,7 @@ impl EndpointSpec {
             declared: declared.to_string(),
             members: members.to_vec(),
             tag,
+            implicit: implicit.cloned(),
         }
     }
 
@@ -217,14 +226,14 @@ impl EndpointSpec {
         match (&self.tag, tags) {
             (Some((_, ids)), Some(tags)) => {
                 if tags.is_null(row) {
-                    None
+                    self.implicit.as_deref()
                 } else {
                     ids.get(&tags.value(row)).map(String::as_str)
                 }
             }
-            // A polymorphic side whose batch lacks the tag column cannot name
-            // a concrete type (the generalization slice adds an implicit type).
-            (Some(_), None) => None,
+            // A table image older than the tag column: the side's implicit
+            // type, if it was generalized from one.
+            (Some(_), None) => self.implicit.as_deref(),
             (None, _) => Some(self.declared.as_str()),
         }
     }
@@ -308,6 +317,7 @@ pub(crate) fn constraints_for(catalog: &Catalog) -> Vec<Constraint> {
                 edge_type
                     .src_tagged
                     .then_some(omnigraph_compiler::catalog::schema_ir::EDGE_SRC_TYPE_COLUMN),
+                edge_type.src_implicit.as_ref(),
             ),
             destination: EndpointSpec::new(
                 catalog,
@@ -316,6 +326,7 @@ pub(crate) fn constraints_for(catalog: &Catalog) -> Vec<Constraint> {
                 edge_type
                     .dst_tagged
                     .then_some(omnigraph_compiler::catalog::schema_ir::EDGE_DST_TYPE_COLUMN),
+                edge_type.dst_implicit.as_ref(),
             ),
         });
         out.push(Constraint::Cardinality { table_key });

@@ -481,7 +481,8 @@ pub(super) struct PreparedEdge {
 /// column (a polymorphic side) or the side's declared node type.
 #[derive(Debug, Clone)]
 pub(super) enum SideType {
-    Tag(&'static str),
+    /// A tag column, and the type a null tag names (a generalized side).
+    Tag(&'static str, Option<String>),
     Fixed(String),
 }
 
@@ -542,14 +543,15 @@ impl TypedExpand {
     fn side_type<'b>(&'b self, side: &'b SideType, batch: &RecordBatch, row: usize) -> Result<Option<&'b str>> {
         match side {
             SideType::Fixed(name) => Ok(Some(name.as_str())),
-            SideType::Tag(column) => {
+            SideType::Tag(column, implicit) => {
                 let tags = batch
                     .column_by_name(column)
                     .and_then(|array| array.as_any().downcast_ref::<arrow_array::UInt64Array>())
                     .ok_or_else(|| OmniError::manifest_internal(format!("edge batch missing tag '{column}'")))?;
-                Ok((!tags.is_null(row))
-                    .then(|| self.tag_names.get(&tags.value(row)).map(String::as_str))
-                    .flatten())
+                if tags.is_null(row) {
+                    return Ok(implicit.as_deref());
+                }
+                Ok(self.tag_names.get(&tags.value(row)).map(String::as_str))
             }
         }
     }
@@ -559,12 +561,12 @@ impl TypedExpand {
 fn qualifier_for(edge: &omnigraph_compiler::catalog::EdgeType, probe: &EndpointColumns, system_columns: SystemColumns) -> Qualifier {
     use omnigraph_compiler::catalog::schema_ir::{EDGE_DST_TYPE_COLUMN, EDGE_SRC_TYPE_COLUMN};
     let src = if edge.src_tagged {
-        SideType::Tag(EDGE_SRC_TYPE_COLUMN)
+        SideType::Tag(EDGE_SRC_TYPE_COLUMN, edge.src_implicit.clone())
     } else {
         SideType::Fixed(edge.from_type.clone())
     };
     let dst = if edge.dst_tagged {
-        SideType::Tag(EDGE_DST_TYPE_COLUMN)
+        SideType::Tag(EDGE_DST_TYPE_COLUMN, edge.dst_implicit.clone())
     } else {
         SideType::Fixed(edge.to_type.clone())
     };
@@ -1788,7 +1790,7 @@ async fn scan_typed_neighbor_map(
         let qualifier = &typed.qualifiers[index][probe];
         let mut extras = Vec::new();
         for side in [&qualifier.key, &qualifier.opposite] {
-            if let SideType::Tag(column) = side {
+            if let SideType::Tag(column, _) = side {
                 extras.push(*column);
             }
         }

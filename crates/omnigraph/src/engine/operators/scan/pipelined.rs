@@ -37,7 +37,10 @@ impl ScanExec {
     /// under no search mode. A ranked scan stays a breaker: its overfetch
     /// ladder reruns it whole.
     pub(super) fn pipelines(&self) -> bool {
+        // An interface scan unions its member tables in `execute_node_scan`;
+        // the pipelined read opens one table (polymorphic types prototype).
         matches!(&self.source, ScanSource::Table { mode, .. } if streams(mode))
+            && !self.catalog.is_abstract_type(&self.type_name)
     }
 
     /// The table read as a pipeline over `stream_batches`, under the filter a

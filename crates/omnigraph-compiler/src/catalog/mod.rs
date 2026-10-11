@@ -153,6 +153,10 @@ pub struct EdgeType {
     /// (`__src_type`/`__dst_type`), true exactly when it names an interface.
     pub src_tagged: bool,
     pub dst_tagged: bool,
+    /// The node type a null (or absent) tag names on a side generalized from
+    /// it; `None` when every stored row of the side carries a tag.
+    pub src_implicit: Option<String>,
+    pub dst_implicit: Option<String>,
     pub cardinality: Cardinality,
     pub properties: HashMap<String, PropType>,
     /// Key column names (from `@key(@src, @dst, ...)`), always including both
@@ -694,6 +698,8 @@ pub fn build_catalog(schema: &SchemaFile) -> Result<Catalog> {
                     to_members,
                     src_tagged,
                     dst_tagged,
+                    src_implicit: None,
+                    dst_implicit: None,
                     cardinality: edge.cardinality.clone(),
                     properties,
                     key: key.map(|columns| {
@@ -1037,6 +1043,8 @@ pub fn build_catalog_from_ir(ir: &schema_ir::SchemaIR) -> Result<Catalog> {
                 to_members,
                 src_tagged,
                 dst_tagged,
+                src_implicit: edge.from_implicit_type.as_ref().map(|t| t.type_name.clone()),
+                dst_implicit: edge.to_implicit_type.as_ref().map(|t| t.type_name.clone()),
                 cardinality: edge.cardinality.clone(),
                 properties,
                 key: key.map(|columns| {

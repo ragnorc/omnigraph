@@ -1679,7 +1679,8 @@ impl Omnigraph {
         // side also matches its tag, so deleting `Person "alice"` never
         // removes an edge to `Organization "alice"`.
         let deleted_type_tag = txn.catalog.node_type_id(type_name).map(|id| id.get());
-        let edge_info: Vec<(String, bool, bool, bool, bool)> = txn
+        // A side generalized from `type_name` also matches its null tags.
+        let edge_info: Vec<(String, bool, bool, bool, bool, bool, bool)> = txn
             .catalog
             .edge_types
             .iter()
@@ -1688,15 +1689,19 @@ impl Omnigraph {
                     name.clone(),
                     et.admits_source(type_name),
                     et.src_tagged,
+                    et.src_implicit.as_deref() == Some(type_name),
                     et.admits_destination(type_name),
                     et.dst_tagged,
+                    et.dst_implicit.as_deref() == Some(type_name),
                 )
             })
             .collect();
 
-        for (edge_name, from_admits, src_tagged, to_admits, dst_tagged) in &edge_info {
+        for (edge_name, from_admits, src_tagged, src_implicit, to_admits, dst_tagged, dst_implicit) in
+            &edge_info
+        {
             let mut cascade_filters = Vec::new();
-            let side_filter = |column: &str, tagged: bool, tag_column: &str| -> Result<Expr> {
+            let side_filter = |column: &str, tagged: bool, tag_column: &str, implicit: bool| -> Result<Expr> {
                 let ids = id_in_list_expr(&deleted_ids, column);
                 if !tagged {
                     return Ok(ids);
@@ -1706,16 +1711,19 @@ impl Omnigraph {
                         "node type '{type_name}' has no stable identity for a cascade tag"
                     ))
                 })?;
-                Ok(ids.and(
-                    datafusion::prelude::col(tag_column)
-                        .eq(datafusion::prelude::lit(tag)),
-                ))
+                let mut tag_matches =
+                    datafusion::prelude::col(tag_column).eq(datafusion::prelude::lit(tag));
+                if implicit {
+                    tag_matches = tag_matches.or(datafusion::prelude::col(tag_column).is_null());
+                }
+                Ok(ids.and(tag_matches))
             };
             if *from_admits {
                 cascade_filters.push(side_filter(
                     txn.catalog.system_columns.src,
                     *src_tagged,
                     omnigraph_compiler::catalog::schema_ir::EDGE_SRC_TYPE_COLUMN,
+                    *src_implicit,
                 )?);
             }
             if *to_admits {
@@ -1723,6 +1731,7 @@ impl Omnigraph {
                     txn.catalog.system_columns.dst,
                     *dst_tagged,
                     omnigraph_compiler::catalog::schema_ir::EDGE_DST_TYPE_COLUMN,
+                    *dst_implicit,
                 )?);
             }
             let Some(cascade_filter) = cascade_filters.into_iter().reduce(Expr::or) else {

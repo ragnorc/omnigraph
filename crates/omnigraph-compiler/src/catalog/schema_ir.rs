@@ -442,6 +442,14 @@ pub struct EdgeIR {
     pub annotations: Vec<Annotation>,
     pub properties: Vec<PropertyIR>,
     pub constraints: Vec<ConstraintIR>,
+    /// The node type a source side named before it was generalized to an
+    /// interface: a stored row whose source tag is null (or absent, in a table
+    /// image older than the tag column) names this type.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub from_implicit_type: Option<TypeRefIR>,
+    /// As `from_implicit_type`, for the destination side.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub to_implicit_type: Option<TypeRefIR>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -895,18 +903,59 @@ fn resolve(
             })
         })
         .collect::<Result<Vec<_>>>()?;
+    // A side generalized from a node type keeps that type as its implicit
+    // type: stored rows written before the tag column existed read a null tag.
+    let node_names_by_id = assignments
+        .iter()
+        .filter(|((kind, _), _)| *kind == TypeKind::Node)
+        .map(|((_, name), assigned)| (assigned.type_id, name.clone()))
+        .collect::<HashMap<_, _>>();
+    let accepted_node_ids = accepted
+        .map(|ir| ir.nodes.iter().map(|node| node.type_id).collect::<HashSet<_>>())
+        .unwrap_or_default();
+    let implicit_type = |desired: &TypeRefIR,
+                         accepted_side: Option<&TypeRefIR>,
+                         accepted_implicit: Option<&TypeRefIR>|
+     -> Option<TypeRefIR> {
+        if node_names_by_id.contains_key(&desired.type_id) {
+            return None;
+        }
+        let carried = accepted_implicit.or_else(|| {
+            accepted_side.filter(|side| accepted_node_ids.contains(&side.type_id))
+        })?;
+        node_names_by_id.get(&carried.type_id).map(|name| TypeRefIR {
+            type_id: carried.type_id,
+            type_name: name.clone(),
+        })
+    };
     let edges = shape
         .edges
         .iter()
         .map(|edge| {
             let assigned = assignments[&(TypeKind::Edge, edge.name.clone())];
             let incarnation = assigned.incarnation.expect("edges receive incarnations");
+            let from_type = endpoint_type_ref(&edge.from_type, &assignments)?;
+            let to_type = endpoint_type_ref(&edge.to_type, &assignments)?;
+            let accepted_edge = accepted
+                .and_then(|ir| ir.edges.iter().find(|accepted| accepted.type_id == assigned.type_id));
+            let from_implicit_type = implicit_type(
+                &from_type,
+                accepted_edge.map(|edge| &edge.from_type),
+                accepted_edge.and_then(|edge| edge.from_implicit_type.as_ref()),
+            );
+            let to_implicit_type = implicit_type(
+                &to_type,
+                accepted_edge.map(|edge| &edge.to_type),
+                accepted_edge.and_then(|edge| edge.to_implicit_type.as_ref()),
+            );
             Ok(EdgeIR {
                 name: edge.name.clone(),
                 type_id: assigned.type_id,
                 table_incarnation_id: incarnation,
-                from_type: endpoint_type_ref(&edge.from_type, &assignments)?,
-                to_type: endpoint_type_ref(&edge.to_type, &assignments)?,
+                from_type,
+                to_type,
+                from_implicit_type,
+                to_implicit_type,
                 cardinality: edge.cardinality.clone(),
                 annotations: edge.annotations.clone(),
                 properties: build_properties(

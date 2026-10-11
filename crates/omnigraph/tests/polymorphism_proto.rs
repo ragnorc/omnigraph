@@ -353,6 +353,14 @@ async fn generalizing_an_endpoint_types_every_existing_row_as_the_old_node_type(
             if edge_name == "Identifies" && from == "Person" && to == "Identifiable"
     )), "{plan:?}");
     db.apply_schema(&desired).await.unwrap();
+    // Metadata-only: the existing row's tag column reads null, and the side
+    // records Person as its implicit type.
+    let batches = read_table(db.db(), "edge:Identifies").await;
+    let null_tags: usize = batches
+        .iter()
+        .map(|batch| batch.column_by_name("__dst_type").expect("tag column added").null_count())
+        .sum();
+    assert_eq!(null_tags, 1);
 
     // The old row reads as Person; a new row may now name Organization.
     let before = rows(
@@ -379,6 +387,24 @@ async fn generalizing_an_endpoint_types_every_existing_row_as_the_old_node_type(
             r#"{"type":"Person","value":"li:alice"}"#.to_string(),
         ]
     );
+
+    // Deleting Person "alice" cascades the null-tagged row (implicit Person),
+    // never Organization "alice"'s tagged one.
+    let result = mutate_main(
+        &db,
+        "query del($s: String) { delete Person where slug = $s }",
+        "del",
+        &value("s", "alice"),
+    )
+    .await
+    .unwrap();
+    assert_eq!((result.affected_nodes, result.affected_edges), (1, 1));
+    let org = rows(
+        &query_main(&db, QUERIES, "identified", &value("value", "web:alice"))
+            .await
+            .unwrap(),
+    );
+    assert_eq!(org, vec![r#"{"name":"Alice Org","type":"Organization"}"#.to_string()]);
 
     // Narrowing back is not a generalization.
     let narrowed = db.plan_schema(MONOMORPHIC).await.unwrap();

@@ -397,3 +397,147 @@ async fn q5_bare_count_over_interface() {
     let q = "query q() { match { $e: Schedulable\n $e.rank = 2 } return { count($e) as n } }";
     println!("PROBE q5.filtered_count: {}", run(&db, q, "q", &ParamMap::new()).await);
 }
+
+const VEC_SCHED: &str = r#"
+interface Schedulable {
+    slug: String @key
+    title: String
+    rank: I32 @index
+    embedding: Vector(3)?
+}
+node Meeting implements Schedulable {
+    room: String?
+}
+node Task implements Schedulable {
+    status: String?
+}
+"#;
+
+const VEC_DATA: &str = r#"{"type":"Meeting","data":{"slug":"m1","title":"Standup","rank":2,"embedding":[1.0,0.0,0.0]}}
+{"type":"Meeting","data":{"slug":"m2","title":"Review","rank":1,"embedding":[0.0,1.0,0.0]}}
+{"type":"Task","data":{"slug":"m1","title":"Ship","rank":3,"embedding":[0.0,0.0,1.0]}}
+{"type":"Task","data":{"slug":"t2","title":"Write","rank":0,"embedding":[1.0,1.0,0.0]}}
+"#;
+
+#[tokio::test]
+async fn q4_q6_rebase_only_paths() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = init(&dir, VEC_SCHED).await.unwrap();
+    db.load_jsonl(VEC_DATA, LoadMode::Overwrite).await.unwrap();
+    db.ensure_indices().await.unwrap();
+    // Late materialization by row address: ordered + limited, returning a vector.
+    let late = "query q() { match { $e: Schedulable } return { $e.@type as type, $e.slug as slug, $e.embedding as v } order { $e.rank asc } limit 2 }";
+    println!("PROBE q4.late_materialization: {}", run(&db, late, "q", &ParamMap::new()).await);
+    let single = "query q() { match { $e: Meeting } return { $e.slug as slug, $e.embedding as v } order { $e.rank asc } limit 1 }";
+    println!("PROBE q4.late_materialization_single_type: {}", run(&db, single, "q", &ParamMap::new()).await);
+    // Per-arm index use: explain an indexed equality over the interface and over one member.
+    for (label, q) in [
+        ("interface", "explain query q() { match { $e: Schedulable\n $e.rank = 2 } return { $e.slug as slug } }"),
+        ("member", "explain query q() { match { $e: Meeting\n $e.rank = 2 } return { $e.slug as slug } }"),
+    ] {
+        match query_main(&db, q, "q", &ParamMap::new()).await {
+            Ok(result) => {
+                let text = result.to_rust_json().unwrap().to_string();
+                let access: Vec<&str> = ["sequential", "Sequential", "indexed", "Indexed", "scalar_index", "ScalarIndex", "index"]
+                    .into_iter()
+                    .filter(|needle| text.contains(needle))
+                    .collect();
+                println!("PROBE q6.explain_{label}: access_words={access:?}");
+                let snippet: String = text.clone();
+                println!("PROBE q6.explain_{label}_text: {snippet}");
+            }
+            Err(e) => println!("PROBE q6.explain_{label}: ERROR {e}"),
+        }
+    }
+    let q = "query q() { match { $e: Schedulable\n $e.rank = 2 } return { $e.@type as type, $e.slug as slug } }";
+    println!("PROBE q6.indexed_equality_rows: {}", run(&db, q, "q", &ParamMap::new()).await);
+}
+
+#[tokio::test]
+async fn q8_request_counts() {
+    use helpers::cost::{cost_harness, measure};
+    for members in [60usize, 75] {
+        let mut schema = String::from("interface Entity {\n    slug: String @key\n    name: String?\n}\n");
+        let mut data = String::new();
+        for i in 0..members {
+            schema.push_str(&format!("node T{i:02} implements Entity {{\n    v{i}: I32?\n}}\n"));
+            data.push_str(&format!("{{\"type\":\"T{i:02}\",\"data\":{{\"slug\":\"k{i}\"}}}}\n"));
+        }
+        let dir = tempfile::tempdir().unwrap();
+        let uri = dir.path().to_str().unwrap().to_string();
+        {
+            let db = init(&dir, &schema).await.unwrap();
+            db.load_jsonl(&data, LoadMode::Overwrite).await.unwrap();
+            db.ensure_indices().await.unwrap();
+        }
+        let wide = "query q($s: String) { match { $x: Entity { slug: $s } } return { $x.@type as type } }";
+        let narrow = "query q($s: String) { match { $x: T40 { slug: $s } } return { $x.slug as slug } }";
+        for (label, q) in [("entity_wide", wide), ("one_type", narrow)] {
+            let uri = uri.clone();
+            let (cold, warm) = cost_harness(async move {
+                let db = session(Omnigraph::open(&uri).await.unwrap());
+                let (r, cold) = measure(query_main(&db, q, "q", &p("s", "k40"))).await;
+                r.unwrap();
+                let (r, warm) = measure(query_main(&db, q, "q", &p("s", "k40"))).await;
+                r.unwrap();
+                (cold, warm)
+            })
+            .await;
+            println!(
+                "PROBE q8.requests members={members} {label}: cold data_open={} data_reads={} opener={} scan={} manifest={} | warm data_open={} data_reads={} opener={} scan={} manifest={}",
+                cold.data_open_count, cold.data_reads, cold.data_opener_reads, cold.data_scan_reads, cold.manifest_reads,
+                warm.data_open_count, warm.data_reads, warm.data_opener_reads, warm.data_scan_reads, warm.manifest_reads
+            );
+        }
+    }
+}
+
+/// Two-process cold measurement: `PROTO_SETUP=1` builds the graph at
+/// `PROTO_GRAPH_DIR`; a later process without it measures a truly cold read.
+#[tokio::test]
+#[ignore]
+async fn q8_cold_process_requests() {
+    use helpers::cost::{cost_harness, measure};
+    let root = std::env::var("PROTO_GRAPH_DIR").expect("PROTO_GRAPH_DIR");
+    let uri = format!("{root}/graph");
+    if std::env::var("PROTO_SETUP").is_ok() {
+        let mut schema = String::from("interface Entity {\n    slug: String @key\n    name: String?\n}\n");
+        let mut data = String::new();
+        for i in 0..75 {
+            schema.push_str(&format!("node T{i:02} implements Entity {{\n    v{i}: I32?\n}}\n"));
+            for r in 0..200 {
+                data.push_str(&format!("{{\"type\":\"T{i:02}\",\"data\":{{\"slug\":\"k{i}-{r}\"}}}}\n"));
+            }
+        }
+        std::fs::create_dir_all(&uri).unwrap();
+        let db = session(Omnigraph::init(&uri, &schema).await.unwrap());
+        db.load_jsonl(&data, LoadMode::Overwrite).await.unwrap();
+        db.ensure_indices().await.unwrap();
+        println!("PROBE q8.cold_setup: done");
+        return;
+    }
+    let label = std::env::var("PROTO_LABEL").unwrap_or_default();
+    let q = if label == "one_type" {
+        "query q($s: String) { match { $x: T40 { slug: $s } } return { $x.slug as slug } }"
+    } else {
+        "query q($s: String) { match { $x: Entity { slug: $s } } return { $x.@type as type } }"
+    };
+    let (cold, warm, cold_t, warm_t) = cost_harness(async move {
+        let db = session(Omnigraph::open(&uri).await.unwrap());
+        let t = Instant::now();
+        let (r, cold) = measure(query_main(&db, q, "q", &p("s", "k40-7"))).await;
+        let cold_t = t.elapsed();
+        assert_eq!(r.unwrap().num_rows(), 1);
+        let t = Instant::now();
+        let (r, warm) = measure(query_main(&db, q, "q", &p("s", "k40-7"))).await;
+        let warm_t = t.elapsed();
+        r.unwrap();
+        (cold, warm, cold_t, warm_t)
+    })
+    .await;
+    println!(
+        "PROBE q8.cold_process {label}: cold {cold_t:?} data_open={} data_reads={} opener={} scan={} | warm {warm_t:?} data_open={} data_reads={} opener={} scan={}",
+        cold.data_open_count, cold.data_reads, cold.data_opener_reads, cold.data_scan_reads,
+        warm.data_open_count, warm.data_reads, warm.data_opener_reads, warm.data_scan_reads
+    );
+}

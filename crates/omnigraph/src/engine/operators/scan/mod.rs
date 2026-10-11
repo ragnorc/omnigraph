@@ -100,7 +100,7 @@ impl ScanExec {
                     mode,
                     projection.as_ref(),
                 )?;
-                if pipelined::streams(mode) {
+                if pipelined::streams(mode) && !catalog.is_abstract_type(&type_name) {
                     streaming_properties(schema)
                 } else {
                     breaker_properties(schema)
