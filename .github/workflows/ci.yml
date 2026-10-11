@@ -214,8 +214,11 @@ jobs:
       - name: Check required storage upgrade coverage
         run: python3 scripts/check-storage-upgrade-ci.py --self-test
 
-      - name: Check required contexts report on the merge queue
+      - name: Check required contexts report on the merge queue and the gate is wired
         run: python3 scripts/check-merge-group-triggers.py --self-test
+
+      - name: Check the CI Gate verdict
+        run: python3 scripts/ci_gate.py --self-test
 
       - name: Check required test cells exist in the sources
         run: python3 scripts/check-ci-cells.py --self-test
@@ -555,6 +558,9 @@ jobs:
       contents: read
     env:
       CARGO_TERM_COLOR: always
+      RUSTC_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_GHA_RW_MODE: ${{ github.ref == 'refs/heads/main' && 'READ_WRITE' || 'READ_ONLY' }}
     steps:
       - name: Checkout source
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
@@ -583,6 +589,13 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-on-failure: true
 
+      # sccache fetches unchanged dependency compiles when rust-cache misses
+      # (docs/dev/ci.md, Full correctness graphs).
+      - name: Run sccache
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
+        with:
+          version: "v0.16.0"
+
       - name: Clippy (default features)
         run: cargo clippy --workspace --all-targets --locked -- -D warnings -W clippy::dbg_macro
 
@@ -596,7 +609,7 @@ jobs:
   test:
     name: Test Workspace
     needs: classify_changes
-    # Required context (docs/dev/ci.md, Full correctness graphs): fail-fast on
+    # Blocks main through CI Gate (docs/dev/ci.md, Full correctness graphs): fail-fast on
     # pull requests and the merge queue, `--no-fail-fast` on main, tags and
     # dispatch (the run step below; the main run also seeds the cache).
     if: needs.classify_changes.outputs.run_full_ci == 'true'
@@ -621,6 +634,9 @@ jobs:
       # the source with `Box::pin` (see `helpers::cost::cost_harness`); this
       # keeps CI deterministic across runners while that work continues.
       RUST_MIN_STACK: 16777216
+      RUSTC_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_GHA_RW_MODE: ${{ github.ref == 'refs/heads/main' && 'READ_WRITE' || 'READ_ONLY' }}
     steps:
       - name: Checkout source
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
@@ -633,6 +649,13 @@ jobs:
       - name: Install pinned toolchain
         run: rustup toolchain install
 
+      # The run step schedules the test binaries through nextest; the binary
+      # version is pinned so the hosted scheduler matches a local run.
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@ab6895351a88b908e96a4697860d4ffea5e57dbe # v2.87.27
+        with:
+          tool: cargo-nextest@0.9.143
+
       - name: Cache Rust build data
         uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
@@ -642,13 +665,20 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-on-failure: true
 
+      # sccache fetches unchanged dependency compiles when rust-cache misses
+      # (docs/dev/ci.md, Full correctness graphs).
+      - name: Run sccache
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
+        with:
+          version: "v0.16.0"
+
       # GQ Logic Tests owns GQT in both build shapes, including its DST runtime;
       # dst.yml owns the DST suite (excluded by name: with the workspace
       # `--cfg tokio_unstable` it no longer compiles empty here).
       # The run step reuses these binaries (same flags, features, and env).
       - name: Compile the workspace and failpoint test graph
         run: |
-          cargo test --workspace --exclude omnigraph-gqt --exclude omnigraph-dst --locked --no-run \
+          cargo test --workspace --exclude omnigraph-gqt --exclude omnigraph-gqt-served --exclude omnigraph-dst --locked --no-run --timings \
             --features "$FAILPOINT_FEATURES"
 
       - name: Install genuine v0.9 release for upgrade regression
@@ -679,7 +709,6 @@ jobs:
       - name: Run workspace and failpoint tests once
         run: |
           set -euo pipefail
-          test_log="$RUNNER_TEMP/workspace-tests.log"
           # A pull request and a merge-queue entry are gates: stop at the
           # first red suite. Main, tag, and dispatch runs are detection
           # channels: --no-fail-fast, so every independent failure is reported.
@@ -687,27 +716,33 @@ jobs:
           if [[ "$GITHUB_EVENT_NAME" != "pull_request" && "$GITHUB_EVENT_NAME" != "merge_group" ]]; then
             no_fail_fast+=(--no-fail-fast)
           fi
-          cargo test --workspace --exclude omnigraph-gqt --exclude omnigraph-dst --locked ${no_fail_fast[@]+"${no_fail_fast[@]}"} \
-            --features "$FAILPOINT_FEATURES" \
-            -- --nocapture 2>&1 | tee "$test_log"
-          if grep -Fq "skipping v0.9 upgrade e2e:" "$test_log"; then
-            echo "::error::v0.9 upgrade regression skipped despite a configured release binary"
-            exit 1
-          fi
-          grep -Fq "v0.9 refusal and export/import rebuild completed" "$test_log" \
-            || { echo "::error::v0.9 upgrade regression did not complete"; exit 1; }
-          grep -Eq "test current_v10_refuses_and_rebuilds_genuine_v09_graph_end_to_end \\.\\.\\. ok" "$test_log" \
-            || { echo "::error::exact v0.9 refusal and rebuild regression did not pass"; exit 1; }
-          if grep -Fq "skipping immediate-predecessor v6 upgrade test" "$test_log"; then
-            echo "::error::v6 format fence skipped despite a configured 0.10 release binary"
-            exit 1
-          fi
-          grep -Eq "test current_v10_refuses_and_rebuilds_genuine_v6_and_v6_refuses_v10 \\.\\.\\. ok" "$test_log" \
-            || { echo "::error::exact v6 format fence did not pass"; exit 1; }
-          # These real CLI/server/proxy journeys must execute in the ordinary
-          # workspace gate. A removed, filtered or re-ignored owner is not green.
+          # nextest runs every test of every binary through one scheduler, a
+          # process per test, so the process-bound journeys overlap instead of
+          # draining one binary at a time. The `ci` profile
+          # (.config/nextest.toml) writes the JUnit report with captured
+          # output; the owner check below reads it in place of a log.
+          # Warm the executables built by the preceding debug test build.
+          target/debug/omnigraph-bench --version
+          target/debug/omnigraph --version
+          cargo nextest run --workspace --exclude omnigraph-gqt --exclude omnigraph-gqt-served --exclude omnigraph-dst --locked \
+            --profile ci ${no_fail_fast[@]+"${no_fail_fast[@]}"} \
+            --features "$FAILPOINT_FEATURES"
+          # nextest runs no doctest; `cargo test` did. Keep that owner on the
+          # same graph so a future doctest still runs here.
+          cargo test --workspace --exclude omnigraph-gqt --exclude omnigraph-gqt-served --exclude omnigraph-dst --locked --doc \
+            ${no_fail_fast[@]+"${no_fail_fast[@]}"} \
+            --features "$FAILPOINT_FEATURES"
+          # The two upgrade journeys and these real CLI/server/proxy journeys
+          # must execute in the ordinary workspace gate. A removed, filtered or
+          # re-ignored owner is not green, and a journey that skipped its
+          # released binary is not green either. The live-apply journey
+          # (`cluster_e2e_live_apply_changes_schema_queries_and_adds_graph_without_restart`)
+          # waits on the CLI's real 500 ms poll interval for about 30 s, so it
+          # is a `nightly:` owner of `tests-slow-nightly.yml` instead.
+          owners=()
           for test_name in \
-            cluster_e2e_live_apply_changes_schema_queries_and_adds_graph_without_restart \
+            current_v10_refuses_and_rebuilds_genuine_v09_graph_end_to_end \
+            current_v10_refuses_and_rebuilds_genuine_v6_and_v6_refuses_v10 \
             remote_server_and_cli_end_to_end_flow \
             remote_schema_apply_refuses_additive_change_for_cluster_backed_graph \
             remote_schema_apply_refuses_incompatible_change_for_cluster_backed_graph \
@@ -715,6 +750,7 @@ jobs:
             remote_read_preserves_projection_order_in_json_and_csv \
             remote_branch_create_list_merge_flow \
             remote_merge_delivery_loss_never_replays_committed_effect \
+            remote_merge_statement_delivery_loss_never_replays_committed_effect \
             remote_deployment_delivery_loss_preserves_owned_completion \
             remote_branch_delete_removes_branch \
             remote_export_round_trips_full_branch_graph \
@@ -725,9 +761,35 @@ jobs:
             graphs_list_against_multi_graph_server \
             mutate_if_commit_lost_cas_exits_4_issue_365
           do
-            grep -Fq "test ${test_name} ... ok" "$test_log" \
-              || { echo "::error::required server e2e case did not pass: $test_name"; exit 1; }
+            owners+=(--passed "$test_name")
           done
+          python3 scripts/check-workspace-test-owners.py target/nextest/ci/junit.xml \
+            "${owners[@]}" \
+            --output-lacks "current_v10_refuses_and_rebuilds_genuine_v09_graph_end_to_end=skipping v0.9 upgrade e2e:" \
+            --output-has "current_v10_refuses_and_rebuilds_genuine_v09_graph_end_to_end=v0.9 refusal and export/import rebuild completed" \
+            --output-lacks "current_v10_refuses_and_rebuilds_genuine_v6_and_v6_refuses_v10=skipping immediate-predecessor v6 upgrade test"
+
+      # Kept on every run, red or green: per-test durations and the compile's
+      # unit timings are what a change to this job's scheduling is sized from.
+      - name: Retain the nextest JUnit report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-workspace-junit
+          path: target/nextest/ci/junit.xml
+          if-no-files-found: warn
+          retention-days: 14
+          overwrite: true
+
+      - name: Retain Cargo build timings
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-workspace-build-timings
+          path: target/cargo-timings/*.html
+          if-no-files-found: warn
+          retention-days: 14
+          overwrite: true
 
 
 
@@ -750,6 +812,9 @@ jobs:
       # A missing predecessor binary fails the genuine journey instead of
       # skipping it: this context is required on every change.
       OMNIGRAPH_REQUIRE_STORAGE_UPGRADE_TESTS: '1'
+      RUSTC_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_GHA_RW_MODE: ${{ github.ref == 'refs/heads/main' && 'READ_WRITE' || 'READ_ONLY' }}
     steps:
       - name: Checkout source
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
@@ -770,6 +835,13 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-on-failure: true
 
+      # sccache fetches unchanged dependency compiles when rust-cache misses
+      # (docs/dev/ci.md, Full correctness graphs).
+      - name: Run sccache
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
+        with:
+          version: "v0.16.0"
+
       - name: Check storage compatibility gate configuration
         run: python3 scripts/check-storage-upgrade-ci.py --self-test
 
@@ -787,7 +859,7 @@ jobs:
           # The installer downloads the official archive and verifies its
           # SHA256 before extraction. An exact VERSION never falls back to edge.
           # A failed download leaves nothing behind, so each release gets three
-          # attempts before this required context goes red.
+          # attempts before this blocking job fails.
           install_release() {
             for attempt in 1 2 3; do
               REPO_SLUG=ModernRelay/omnigraph VERSION="$1" INSTALL_DIR="$2" \
@@ -843,28 +915,28 @@ jobs:
         run: |
           set -euo pipefail
           test_log="$RUNNER_TEMP/storage-upgrade-crossversion.log"
-          cargo test --workspace --exclude omnigraph-gqt --exclude omnigraph-dst --locked --test crossversion_upgrade --features "$FAILPOINT_FEATURES" storage_upgrade -- --test-threads=1 2>&1 | tee "$test_log"
+          cargo test --workspace --exclude omnigraph-gqt --exclude omnigraph-gqt-served --exclude omnigraph-dst --locked --test crossversion_upgrade --features "$FAILPOINT_FEATURES" storage_upgrade -- --test-threads=1 2>&1 | tee "$test_log"
           python3 scripts/check-storage-upgrade-ci.py --check-log crossversion "$test_log"
 
       - name: Run required storage upgrade engine tests
         run: |
           set -euo pipefail
           test_log="$RUNNER_TEMP/storage-upgrade-engine.log"
-          cargo test --workspace --exclude omnigraph-gqt --exclude omnigraph-dst --locked --lib --features "$FAILPOINT_FEATURES" db::upgrade::tests -- --test-threads=1 2>&1 | tee "$test_log"
+          cargo test --workspace --exclude omnigraph-gqt --exclude omnigraph-gqt-served --exclude omnigraph-dst --locked --lib --features "$FAILPOINT_FEATURES" db::upgrade::tests -- --test-threads=1 2>&1 | tee "$test_log"
           python3 scripts/check-storage-upgrade-ci.py --check-log engine "$test_log"
 
       - name: Run required storage upgrade lance tests
         run: |
           set -euo pipefail
           test_log="$RUNNER_TEMP/storage-upgrade-lance.log"
-          cargo test --workspace --exclude omnigraph-gqt --exclude omnigraph-dst --locked --test lance_version_columns --features "$FAILPOINT_FEATURES" -- --test-threads=1 2>&1 | tee "$test_log"
+          cargo test --workspace --exclude omnigraph-gqt --exclude omnigraph-gqt-served --exclude omnigraph-dst --locked --test lance_version_columns --features "$FAILPOINT_FEATURES" -- --test-threads=1 2>&1 | tee "$test_log"
           python3 scripts/check-storage-upgrade-ci.py --check-log lance "$test_log"
 
       - name: Run required storage upgrade protocol tests
         run: |
           set -euo pipefail
           test_log="$RUNNER_TEMP/storage-upgrade-protocol.log"
-          cargo test --workspace --exclude omnigraph-gqt --exclude omnigraph-dst --locked --test forbidden_apis --features "$FAILPOINT_FEATURES" -- --test-threads=1 2>&1 | tee "$test_log"
+          cargo test --workspace --exclude omnigraph-gqt --exclude omnigraph-gqt-served --exclude omnigraph-dst --locked --test forbidden_apis --features "$FAILPOINT_FEATURES" -- --test-threads=1 2>&1 | tee "$test_log"
           python3 scripts/check-storage-upgrade-ci.py --check-log protocol "$test_log"
 
   v5_v10_format_fence:
@@ -886,6 +958,9 @@ jobs:
     env:
       CARGO_TERM_COLOR: always
       RUST_MIN_STACK: 16777216
+      RUSTC_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_GHA_RW_MODE: ${{ github.ref == 'refs/heads/main' && 'READ_WRITE' || 'READ_ONLY' }}
     steps:
       - name: Checkout source
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
@@ -906,6 +981,13 @@ jobs:
           key: crossversion-v5-v10
           save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-on-failure: true
+
+      # sccache fetches unchanged dependency compiles when rust-cache misses
+      # (docs/dev/ci.md, Full correctness graphs).
+      - name: Run sccache
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
+        with:
+          version: "v0.16.0"
 
       # CI pins only the immediate predecessor. Older seams remain env-gated
       # and on-demand, per docs/dev/testing.md.
@@ -959,7 +1041,7 @@ jobs:
     name: Test omnigraph-server --features aws
     needs: classify_changes
     runs-on: ubuntu-latest
-    # Required context whose cache saves only from main: a cold main run
+    # Blocks main through CI Gate; its cache saves only from main: a cold main run
     # that outruns the ceiling is cancelled before the save and every PR
     # stays cold (the dst.yml lesson). Sized for a cold dependency graph.
     timeout-minutes: 60
@@ -967,6 +1049,9 @@ jobs:
       contents: read
     env:
       CARGO_TERM_COLOR: always
+      RUSTC_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_GHA_RW_MODE: ${{ github.ref == 'refs/heads/main' && 'READ_WRITE' || 'READ_ONLY' }}
     steps:
       - name: Skip when no engine input changed
         if: needs.classify_changes.outputs.run_full_ci != 'true'
@@ -996,6 +1081,14 @@ jobs:
           # Save only from main, red or green (same rule as `lint`).
           save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-on-failure: true
+
+      # sccache fetches unchanged dependency compiles when rust-cache misses
+      # (docs/dev/ci.md, Full correctness graphs).
+      - name: Run sccache
+        if: needs.classify_changes.outputs.run_full_ci == 'true'
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
+        with:
+          version: "v0.16.0"
 
       - name: Build omnigraph-server with aws feature
         if: needs.classify_changes.outputs.run_full_ci == 'true'
@@ -1047,6 +1140,9 @@ jobs:
       OMNIGRAPH_S3_TEST_PREFIX: github-actions
       CARGO_TERM_COLOR: always
       RUST_MIN_STACK: 16777216
+      RUSTC_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_GHA_RW_MODE: ${{ github.ref == 'refs/heads/main' && 'READ_WRITE' || 'READ_ONLY' }}
     steps:
       - name: Checkout source
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
@@ -1070,6 +1166,13 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
           # A red `main` run still seeds the cache pull requests restore.
           cache-on-failure: true
+
+      # sccache fetches unchanged dependency compiles when rust-cache misses
+      # (docs/dev/ci.md, Full correctness graphs).
+      - name: Run sccache
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
+        with:
+          version: "v0.16.0"
 
       - name: Start RustFS
         # Pinned to 1.0.0-beta.12 (2026-07-30). beta.8 carried hyper's short
@@ -1242,6 +1345,9 @@ jobs:
       OMNIGRAPH_AZURE_TEST_CONTAINER: omnigraph-tests
       CARGO_TERM_COLOR: always
       RUST_MIN_STACK: 16777216
+      RUSTC_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_GHA_RW_MODE: ${{ github.ref == 'refs/heads/main' && 'READ_WRITE' || 'READ_ONLY' }}
     steps:
       - name: Checkout source
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
@@ -1261,6 +1367,13 @@ jobs:
             . -> target
           key: azurite-azure
           save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      # sccache fetches unchanged dependency compiles when rust-cache misses
+      # (docs/dev/ci.md, Full correctness graphs).
+      - name: Run sccache
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad # v0.0.9
+        with:
+          version: "v0.16.0"
 
       - name: Start pinned Azurite Blob service
         # Azurite 3.35.0, pinned to the immutable multi-arch index digest.
@@ -1348,7 +1461,7 @@ jobs:
           # once; a per-owner `-p` resolved six graphs, four with the Lance
           # stack, 89 minutes on main (docs/dev/ci.md, cache rule). An owner
           # names only its target: `--lib`, or `--test <file>`.
-          selection=(--workspace --exclude omnigraph-gqt --exclude omnigraph-dst --features "$FAILPOINT_FEATURES")
+          selection=(--workspace --exclude omnigraph-gqt --exclude omnigraph-gqt-served --exclude omnigraph-dst --features "$FAILPOINT_FEATURES")
           require_cell() {
             grep -Eq "test (tests::)?${1} \.\.\. ok" "$test_log" \
               || { echo "::error::required Azure cell '${1}' did not execute normally"; exit 1; }
@@ -1461,3 +1574,27 @@ jobs:
       - name: Dump Azurite logs on failure
         if: failure()
         run: docker logs azurite
+
+  # The one verdict branch protection requires from this workflow: every job
+  # that blocks main is in `needs:`, and scripts/ci_gate.py accepts a skip
+  # only where the job's own `if:` was false (docs/dev/branch-protection.md).
+  ci_gate:
+    name: CI Gate
+    needs: [classify_changes, check_agents_md, workflow_action_pins, cargo_deny, graph_vocabulary_guard, fmt, lint, test, storage_upgrade_compatibility, test_aws_feature]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+
+      - name: Judge the blocking jobs
+        shell: bash
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_REF: ${{ github.ref }}
+          RUN_FULL_CI: ${{ needs.classify_changes.outputs.run_full_ci }}
+        run: python3 scripts/ci_gate.py

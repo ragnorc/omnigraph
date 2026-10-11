@@ -4,8 +4,8 @@
 //! of it. The mirror is the serialized form and the comparable form of a
 //! plan; nothing executes from it directly.
 
-use std::collections::{BTreeMap, HashMap, HashSet};
-use std::sync::{Arc, Mutex, OnceLock};
+use std::collections::{BTreeMap, HashMap};
+use std::sync::Arc;
 
 use arrow_schema::{DataType, Field, Schema, SchemaRef};
 use omnigraph_compiler::ir::{
@@ -23,11 +23,13 @@ use crate::aggregate::AggregateSpec;
 use crate::bound::{BoundPlan, ValueTable};
 use crate::cost::{AccessPath, ExpandMode, ExpandPolicy};
 use crate::error::PlanError;
-use crate::logical::{ColumnRef, GqFilter, KeyJoinKind, Predicate, RuntimeFilterSpec, ScanSpec};
+use crate::logical::{
+    ColumnRef, GqFilter, KeyJoinKind, Predicate, RuntimeFilterSpec, ScanAccess, ScanSpec,
+};
 use crate::operation::TableRef;
 use crate::physical::{
-    Assumptions, Estimate, Hop, NodeId, OverfetchRung, PhysicalNode, PhysicalPlan, Prefilter,
-    Properties, RankArm, RankKind, RankScope, RankedAccess, ScanInput, StatisticSource,
+    Assumptions, Estimate, Hop, HydratedBinding, NodeId, OverfetchRung, PhysicalNode, PhysicalPlan,
+    Prefilter, Properties, RankArm, RankKind, RankScope, RankedAccess, ScanInput, StatisticSource,
 };
 use crate::source::SideId;
 use omnigraph_compiler::types::{AggSignature, ExprType};
@@ -248,6 +250,10 @@ pub enum NodeMirror {
         input: NodeId,
         side: SideId,
     },
+    HydrateColumns {
+        input: NodeId,
+        bindings: Vec<HydratedBinding>,
+    },
     RowCompare {
         input: NodeId,
     },
@@ -398,6 +404,10 @@ impl From<&PhysicalNode> for NodeMirror {
             PhysicalNode::HydrateByAddress { input, side } => Self::HydrateByAddress {
                 input: *input,
                 side: *side,
+            },
+            PhysicalNode::HydrateColumns { input, bindings } => Self::HydrateColumns {
+                input: *input,
+                bindings: bindings.clone(),
             },
             PhysicalNode::RowCompare { input } => Self::RowCompare { input: *input },
             PhysicalNode::ClassifyThreeWay { input } => Self::ClassifyThreeWay { input: *input },
@@ -600,6 +610,9 @@ impl TryFrom<NodeMirror> for PhysicalNode {
                 fallback,
             },
             NodeMirror::HydrateByAddress { input, side } => Self::HydrateByAddress { input, side },
+            NodeMirror::HydrateColumns { input, bindings } => {
+                Self::HydrateColumns { input, bindings }
+            }
             NodeMirror::RowCompare { input } => Self::RowCompare { input },
             NodeMirror::ClassifyThreeWay { input } => Self::ClassifyThreeWay { input },
             NodeMirror::Limit { input, rows } => Self::Limit { input, rows },
@@ -863,6 +876,8 @@ impl From<PrefilterMirror> for Prefilter {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ScanSpecMirror {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub access: Option<ScanAccess>,
     pub side: SideId,
     pub table: TableRef,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -880,6 +895,7 @@ pub struct ScanSpecMirror {
 impl From<&ScanSpec> for ScanSpecMirror {
     fn from(spec: &ScanSpec) -> Self {
         Self {
+            access: spec.access.clone(),
             side: spec.side,
             table: spec.table.clone(),
             members: spec.members.clone(),
@@ -899,6 +915,7 @@ impl TryFrom<ScanSpecMirror> for ScanSpec {
 
     fn try_from(mirror: ScanSpecMirror) -> Result<Self, PlanError> {
         Ok(Self {
+            access: mirror.access,
             side: mirror.side,
             table: mirror.table,
             members: mirror.members,
@@ -1772,7 +1789,7 @@ impl From<&StatisticSource> for StatisticSourceMirror {
         Self {
             statistic: source.statistic.clone(),
             value: source.value.clone(),
-            origin: source.origin.to_string(),
+            origin: source.origin.clone(),
         }
     }
 }
@@ -1782,25 +1799,9 @@ impl From<StatisticSourceMirror> for StatisticSource {
         Self {
             statistic: mirror.statistic,
             value: mirror.value,
-            origin: intern_origin(mirror.origin),
+            origin: mirror.origin,
         }
     }
-}
-
-/// A statistic's origin is a `&'static str` in the plan and one of a few
-/// planner words; the process keeps each distinct one it reads back once.
-fn intern_origin(origin: String) -> &'static str {
-    static ORIGINS: OnceLock<Mutex<HashSet<&'static str>>> = OnceLock::new();
-    let mut origins = ORIGINS
-        .get_or_init(|| Mutex::new(HashSet::new()))
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-    if let Some(known) = origins.get(origin.as_str()) {
-        return known;
-    }
-    let leaked: &'static str = Box::leak(origin.into_boxed_str());
-    origins.insert(leaked);
-    leaked
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

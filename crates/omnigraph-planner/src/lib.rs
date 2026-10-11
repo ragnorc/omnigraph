@@ -14,7 +14,8 @@
 //! lowering and operator ownership").
 //!
 //! [`plan_query`] builds executable read plans. [`route`] returns routing
-//! decisions with explain diagnostics for an [`Operation`]. Traversals
+//! decisions for an [`Operation`]. A query decision stays pending until
+//! [`Decision::finalize`] awaits scan access and publishes its explain. Traversals
 //! resolve to topology-only `Expand` followed by a `Scan` restricted to input
 //! identities. The scan owns the pinned destination read, storage predicate,
 //! projection and, for a ranked binding, the [`RankedAccess`] the index
@@ -37,6 +38,7 @@ pub mod output;
 pub mod physical;
 pub mod registry;
 pub mod route;
+pub mod scan_access;
 pub mod source;
 mod typed;
 
@@ -46,16 +48,18 @@ pub use aggregate::{
 };
 pub use bound::{BOUND_PLAN_VERSION, BoundPlan, ValueTable};
 pub use cost::{
-    AccessPath, CSR_BUILD_FACTOR, ExpandCostInputs, ExpandMode, ExpandPolicy,
-    HASH_JOIN_POOL_DIVISOR, HASH_JOIN_RATIO, IndexCoverage, choose_access_path, choose_expand_mode,
-    direction_probe_factor, estimate_rows, executed_hops, scan_row_estimate, should_switch_to_csr,
+    AccessPath, CSR_BUILD_FACTOR, CoverageProvenance, ExpandCostInputs, ExpandMode, ExpandPolicy,
+    HASH_JOIN_POOL_DIVISOR, HASH_JOIN_RATIO, HYDRATE_ROW_RATIO, IndexCoverage, choose_access_path,
+    choose_expand_mode, direction_probe_factor, estimate_rows, executed_hops, hydrate_chunk_bytes,
+    scan_row_estimate, should_switch_to_csr,
 };
 pub use error::PlanError;
 pub use explain::Explain;
 pub use gate::{Decision, Unrouted, plan_query, route};
 pub use logical::{
-    Census, ColumnRef, JoinKind, KeyJoinKind, LogicalId, LogicalKind, LogicalNode, LogicalPlan,
-    Predicate, RuntimeFilterKind, RuntimeFilterSpec, ScanMember, ScanSpec, SearchArm,
+    Census, ColumnRef, IndexQuery, JoinKind, KeyJoinKind, LogicalId, LogicalKind, LogicalNode,
+    LogicalPlan, Predicate, RuntimeFilterKind, RuntimeFilterSpec, RuntimeInput, ScanAccess,
+    ScanMember, ScanSpec, SearchArm,
 };
 pub use lower::{
     AggregateFields, ContainsJoinFields, ExpandFields, HashJoinFields, Lower, RankFuseFields,
@@ -65,15 +69,16 @@ pub use operation::{Operation, PageBudgetSpec, ScopeSpec, Side, TableRef};
 pub use optimizer::{Bounds, physical_plan, rewrite};
 pub use output::{NodeObjectType, validate_output_schemas};
 pub use physical::{
-    Assumptions, DatasetPin, Estimate, GatePolicy, Hop, NodeId, OverfetchRung, PhysicalNode,
-    PhysicalPlan, Prefilter, PrefilterMode, Properties, RankArm, RankKind, RankScope, RankedAccess,
-    ScanInput, StatisticSource,
+    Assumptions, DatasetPin, Estimate, GatePolicy, Hop, HydratedBinding, HydratedColumn, NodeId,
+    OverfetchRung, PhysicalNode, PhysicalPlan, Prefilter, PrefilterMode, Properties,
+    ROW_ADDRESS_PREFIX, RankArm, RankKind, RankScope, RankedAccess, ScanInput, StatisticSource,
 };
 pub use registry::{Coverage, Entry, Route, Shape};
 pub use route::RouteOverride;
 pub use source::{
     AdjacencyProof, EXPAND_INDEXED_MAX_FRONTIER_ENV, EXPAND_INDEXED_MAX_HOPS_ENV, ExpandStatistics,
-    FragmentStat, MemorySource, NodeTypeSpec, PlanSource, SideId,
+    FragmentCoverage, FragmentStat, IndexFact, IndexKind, IndexSplitFuture, MemorySource,
+    NodeTypeSpec, PlanSource, SideId,
 };
 
 #[cfg(test)]

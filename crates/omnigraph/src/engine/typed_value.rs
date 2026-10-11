@@ -349,7 +349,13 @@ pub(super) fn check_output_schema(actual: &Schema, declared: &Schema, hidden: bo
     let visible = actual
         .fields()
         .iter()
-        .filter(|field| !hidden || !field.name().starts_with('~'))
+        .filter(|field| {
+            !hidden
+                || !(field.name().starts_with('~')
+                    || field
+                        .name()
+                        .starts_with(omnigraph_planner::ROW_ADDRESS_PREFIX))
+        })
         .count();
     if visible != declared.fields().len() {
         return Err(OmniError::manifest_internal(
@@ -486,7 +492,9 @@ pub(super) fn validate_plan_values(
         bindings: HashMap<&'a str, &'a str>,
         edge_bindings: HashMap<&'a str, &'a [omnigraph_compiler::traversal::EdgeMember]>,
         aliases: HashMap<&'a str, &'a ExprType>,
-        scores: HashSet<(&'a str, &'a str)>,
+        /// The score columns ranked scans and fusions append, by their
+        /// `(binding, column)`: `F32` from Lance, `F64` for the fused sum.
+        scores: HashMap<(&'a str, &'a str), DataType>,
     }
     let mut pipelines = vec![(plan.root(), Owners::default(), Vec::new())];
     while let Some((root, mut owners, mut pending)) = pipelines.pop() {
@@ -533,11 +541,21 @@ pub(super) fn validate_plan_values(
                             ));
                         }
                         if let Some(binding) = &spec.binding {
-                            owners
-                                .scores
-                                .insert((binding.as_str(), ranked.kind.score().0));
+                            owners.scores.insert(
+                                (binding.as_str(), ranked.kind.score().0),
+                                DataType::Float32,
+                            );
                         }
                     }
+                }
+                PhysicalNode::RankFuse { arms, .. } => {
+                    owners.scores.insert(
+                        (
+                            arms[0].binding.as_str(),
+                            omnigraph_compiler::query::ast::RRF_COLUMN,
+                        ),
+                        DataType::Float64,
+                    );
                 }
                 PhysicalNode::MetadataCount { spec, return_exprs } => {
                     if let (Some(binding), Some(type_name)) =
@@ -591,8 +609,8 @@ pub(super) fn validate_plan_values(
             scores,
         } = owners;
         let property_type = |variable: &str, property: &str| -> Result<(DataType, bool)> {
-            if scores.contains(&(variable, property)) {
-                return Ok((DataType::Float32, false));
+            if let Some(data_type) = scores.get(&(variable, property)) {
+                return Ok((data_type.clone(), false));
             }
             if let Some(type_name) = bindings.get(variable) {
                 if property == omnigraph_compiler::traversal::NODE_TYPE_COLUMN {
@@ -690,6 +708,7 @@ pub(super) fn validate_plan_values(
                 PhysicalNode::SortMergeJoin { .. }
                 | PhysicalNode::HashJoin { .. }
                 | PhysicalNode::HydrateByAddress { .. }
+                | PhysicalNode::HydrateColumns { .. }
                 | PhysicalNode::RowCompare { .. }
                 | PhysicalNode::ClassifyThreeWay { .. }
                 | PhysicalNode::Limit { .. }

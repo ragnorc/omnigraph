@@ -1,9 +1,8 @@
 //! The traversal-mode cost model and the row-count estimate behind it. The
 //! optimizer decides here, from `PlanSource` statistics, whether an `Expand`
 //! walks the BTREE-indexed edge scan or the in-memory CSR, and records the
-//! decision on `PhysicalNode::Expand`; the engine executes the recorded mode
-//! and keeps two runtime corrections (degraded index coverage, the mid-flight
-//! switch of issue #533), both computed with the functions below.
+//! decision on `PhysicalNode::Expand`. Execution adjusts for the observed
+//! frontier and warm CSR; only legacy plans probe index coverage again.
 
 use omnigraph_compiler::ir::IRExpr;
 use omnigraph_compiler::query::ast::{CompOp, Literal};
@@ -37,7 +36,7 @@ impl ExpandMode {
 /// What an `Expand` may do at run time beside the mode the plan recorded:
 /// nothing when budget admission or the session pinned the mode, or the source
 /// held no edge statistics, or re-decide with the recorded cost inputs (before the first
-/// hop against the probed index coverage, the observed frontier and a warm
+/// hop against recorded coverage, the observed frontier and a warm
 /// CSR; between input batches and at every later hop with
 /// `should_switch_to_csr`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -96,6 +95,20 @@ pub const HASH_JOIN_RATIO: u64 = 8;
 /// side may take at most one part in this many of the memory pool.
 pub const HASH_JOIN_POOL_DIVISOR: u64 = 4;
 
+/// A query's return-only columns are fetched by row address for the rows a
+/// root `limit` keeps once the binding's table holds more than this many
+/// rows per kept row: a take reads each kept row's pages apart, where the
+/// scan would read the column for every row it passes.
+pub const HYDRATE_ROW_RATIO: u64 = 4;
+
+/// The bytes one `HydrateColumns` chunk may retain under a query pool of
+/// `pool` bytes: an eighth, so the chunk, the rows it is re-attached to and
+/// the batches queued beside them fit the pool together. The planner
+/// declares it as the node's `retained_limit`; the operator enforces it.
+pub fn hydrate_chunk_bytes(pool: u64) -> u64 {
+    (pool / 8).max(1)
+}
+
 /// The access path of a dependent scan. `HashJoin` needs both: the table
 /// holds at most `HASH_JOIN_RATIO` rows per frontier row, and the build
 /// side's estimated bytes are known and at most `build_bytes_budget`.
@@ -117,12 +130,20 @@ pub fn choose_access_path(
 }
 
 /// Whether the per-hop `key_col IN (...)` scan is served by the BTREE
-/// (`Indexed`) or silently falls back to a full scan (`Degraded`). The planner
-/// assumes `Indexed`; the engine probes the dataset and corrects.
+/// (`Indexed`) or falls back to a full scan (`Degraded`). New plans derive this
+/// from pinned index facts; legacy plans retain the runtime coverage probe.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum IndexCoverage {
     Indexed,
     Degraded,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CoverageProvenance {
+    #[default]
+    LegacyAssumed,
+    PinnedIndexFacts,
 }
 
 /// Building the in-memory CSR costs more than a bare edge scan: it scans every
@@ -152,6 +173,8 @@ pub struct ExpandCostInputs {
     /// `OMNIGRAPH_EXPAND_INDEXED_MAX_FRONTIER`).
     pub max_frontier_cap: u64,
     pub coverage: IndexCoverage,
+    #[serde(default)]
+    pub coverage_provenance: CoverageProvenance,
     /// Whether the query's CSR is already realized (an earlier Expand or bulk
     /// AntiJoin built it), making the CSR path ≈ free.
     pub csr_cached: bool,
@@ -435,6 +458,7 @@ mod tests {
             max_hops_cap: 6,
             max_frontier_cap: 1024,
             coverage,
+            coverage_provenance: CoverageProvenance::PinnedIndexFacts,
             csr_cached: false,
             probe_factor: 1.0,
         }
