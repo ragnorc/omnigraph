@@ -26,6 +26,37 @@ Outputs below are quoted from `PROBE` lines. Claims marked *code* were read from
 executed. Four of them concern main features the prototype predates (`ScanAccess`,
 `materialize_returns_late`) and would surface only after a rebase.
 
+## Validation round, 2026-10-11
+
+The prototype was merged with main at `80b3cfeb` (`9d2a64b1`, `8f9f231d`) and the probes were
+rerun, so the claims marked *code* above now have running evidence:
+
+- **Late materialization (Q4): confirmed, and broader than predicted.** Every ordered, limited
+  interface query fails on main with "`HydrateColumns` reads `node:Schedulable`, which is no node
+  type". It is not limited to vector or struct columns. The same query on one member works.
+- **Index access per arm (Q6): confirmed.** `explain` records `"access":"sequential"` for the
+  interface scan; the same filter on `Meeting` records `"access":"index_probe"` on `rank_idx`.
+- **A new single-table shortcut (Q4/Q6).** On main, every unranked table scan takes the
+  pipelined read, which resolved `node:Identifiable` and failed. The prototype now keeps abstract
+  scans off that path. The RFC therefore requires a union-scan plan node, not interception.
+- **Generalization (P7): reversed.** Main's metadata-only evolution adds the tag column as nulls;
+  the RFC returns to null tags read through an implicit type, now proven end to end.
+- **Request counts (Q8), partly measured.** With the repo's cost harness, a cold 75-member lookup
+  made 75 table opens, and a warm repeat reopened 55 to 61 tables (none at 60 members): the
+  64-entry handle cache thrashes. Reads made inside the union arms are not attributed to the probe
+  scope (it counted 0 reads for a cold full scan), so per-arm read counts on S3 remain estimates.
+  A cold single-type keyed lookup in a fresh process: 1 open, 2 reads, 7.5 to 10 ms locally;
+  the 75-member lookup: 37 to 54 ms.
+- **Spot-checked on `origin/main`:** T54 taken (`codes.rs:71`); `search`/`fuzzy`/`match_text`
+  are scan membership filters (`engine/search.rs:690-744`); `rrf` has exactly two arms
+  (`optimizer.rs:2858`); `PolicyRequest` has no type field and `predicate_for` is planned
+  (`crates/omnigraph-policy/src/lib.rs:288-292`, `976-984`); cluster preflight validates queries
+  (`deployment/execution.rs:793`); mutations are lowered before parameters bind
+  (`exec/mutation.rs:1192`).
+- **Suites on the merged prototype:** compiler 471, planner 115, engine library 468, engine
+  integration 573 (with CI's `RUST_MIN_STACK=16777216`; without it one test overflows the default
+  stack, as it would on main), prototype 13, and all 333 GQT cases (two after a rerun at timeout).
+
 ## Summary
 
 | # | Question | Verdict | One line |

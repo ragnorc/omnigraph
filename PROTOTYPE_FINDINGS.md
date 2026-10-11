@@ -108,7 +108,19 @@ interface. A destination-polymorphic edge is fine, because the count is per conc
 **RFC:** the RFC specifies `@card` per `(src_type, src)`. Implementation must change both the
 grouping and the deletion lookup. The same applies to `@unique` tuples containing `@src` or `@dst`.
 
-## P7. Generalization fits the existing rewrite path (schema migration)
+## P7. Generalization (schema migration), superseded on 2026-10-11
+
+**Superseded.** Since this was written, main ships metadata-only schema evolution
+(`TableStore::plan_schema_evolution` / `stage_schema_evolution`: renames and drops as
+`Operation::Project`, additions as `Operation::Merge` over unchanged fragments). After merging
+main (`9d2a64b1`), `GeneralizeEndpoint` evolves the edge table instead of rewriting it, and
+existing rows read the tag column as null. `EdgeIR.from_implicit_type`/`to_implicit_type` records
+the type a side was generalized from, and validation, traversal and cascade read a null tag as that
+type (`8f9f231d`). The test `generalizing_an_endpoint_types_every_existing_row_as_the_old_node_type`
+now checks the null tag, the Person reading, a new Organization row, and the cascade of the
+null-tagged row. The original text follows for the record.
+
+### Original text: Generalization fits the existing rewrite path
 
 Generalizing an endpoint (`ExternalID -> Person` to `ExternalID -> Identifiable`, where Person
 implements Identifiable) now plans as a new `GeneralizeEndpoint` step, instead of "changing edge
