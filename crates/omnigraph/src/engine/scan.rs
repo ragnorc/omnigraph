@@ -1264,26 +1264,43 @@ async fn execute_abstract_scan(
         )));
     }
     let declared = abstract_scan_schema(type_name, catalog, binding_columns)?;
-    let mut batches = Vec::new();
-    for member in catalog.concrete_members(type_name).unwrap_or_default() {
-        if snapshot.dataset(&format!("node:{member}")).is_none() {
-            continue;
-        }
-        let batch = Box::pin(execute_node_scan(
-            &member,
-            variable,
-            filters,
-            params,
-            snapshot,
-            catalog,
-            search_mode,
-            scan_report,
-            binding_columns,
-            memory,
-        ))
+    // Arms open and scan concurrently, in member order (polymorphic types
+    // prototype; the RFC requires concurrent arms within resource bounds).
+    use futures::{StreamExt, TryStreamExt};
+    let _ = scan_report;
+    let members = catalog
+        .concrete_members(type_name)
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|member| snapshot.dataset(&format!("node:{member}")).is_some())
+        .collect::<Vec<_>>();
+    let concurrency = std::env::var("PROTO_ARM_CONCURRENCY")
+        .ok()
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(16)
+        .max(1);
+    let declared_ref = &declared;
+    let batches: Vec<RecordBatch> = futures::stream::iter(members)
+        .map(|member| async move {
+            let mut arm_report = ScanReport::default();
+            let batch = Box::pin(execute_node_scan(
+                &member,
+                variable,
+                filters,
+                params,
+                snapshot,
+                catalog,
+                search_mode,
+                &mut arm_report,
+                binding_columns,
+                memory,
+            ))
+            .await?;
+            conform_member_batch(&batch, &member, declared_ref)
+        })
+        .buffered(concurrency)
+        .try_collect()
         .await?;
-        batches.push(conform_member_batch(&batch, &member, &declared)?);
-    }
     if batches.is_empty() {
         return Ok(RecordBatch::new_empty(declared));
     }
