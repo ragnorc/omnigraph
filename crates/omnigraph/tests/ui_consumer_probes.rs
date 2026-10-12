@@ -541,3 +541,59 @@ async fn q8_cold_process_requests() {
         warm.data_open_count, warm.data_reads, warm.data_opener_reads, warm.data_scan_reads
     );
 }
+
+/// Today's write reads: what a keyed node insert and an edge insert between
+/// existing keyed nodes already read, the baseline for integer identity's key
+/// resolution.
+#[tokio::test]
+async fn write_path_reads_today() {
+    use helpers::cost::{cost_harness, measure};
+    let schema = "node Person {\n    name: String @key\n    age: I32?\n}\nedge Knows: Person -> Person\n";
+    let mut data = String::new();
+    for i in 0..500 {
+        data.push_str(&format!("{{\"type\":\"Person\",\"data\":{{\"name\":\"p{i}\"}}}}\n"));
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap().to_string();
+    {
+        let db = init(&dir, schema).await.unwrap();
+        db.load_jsonl(&data, LoadMode::Overwrite).await.unwrap();
+        db.ensure_indices().await.unwrap();
+    }
+    let node = "query q($n: String) { insert Person { name: $n } }";
+    let edge = "query q($a: String, $b: String) { insert Knows { from: $a, to: $b } }";
+    let update = "query q($n: String) { update Person set { age: 3 } where name = $n }";
+    let (node_io, edge_io, update_io) = cost_harness(async move {
+        let db = session(Omnigraph::open(&uri).await.unwrap());
+        // Warm the handles once so the counts are per-write, not per-open.
+        let _ = mutate_main(&db, node, "q", &p("n", "warm")).await.unwrap();
+        let (r, node_io) = measure(mutate_main(&db, node, "q", &p("n", "fresh"))).await;
+        r.unwrap();
+        let mut params = p("a", "p1");
+        params.extend(p("b", "p2"));
+        let (r, edge_io) = measure(mutate_main(&db, edge, "q", &params)).await;
+        r.unwrap();
+        let (r, update_io) = measure(mutate_main(&db, update, "q", &p("n", "p3"))).await;
+        r.unwrap();
+        (node_io, edge_io, update_io)
+    })
+    .await;
+    for (label, io) in [("keyed_node_insert", node_io), ("edge_insert", edge_io), ("keyed_update", update_io)] {
+        println!(
+            "PROBE writes.{label}: data_reads={} opener={} scan={} data_writes={} data_open={} manifest_reads={}",
+            io.data_reads, io.data_opener_reads, io.data_scan_reads, io.data_writes, io.data_open_count, io.manifest_reads
+        );
+    }
+}
+
+#[tokio::test]
+async fn q2_interface_enum_widening() {
+    let base = "interface Stateful {\n    slug: String @key\n    status: enum(todo, done)\n}\nnode Task implements Stateful {\n    x: I32?\n}\nnode Bug implements Stateful {\n    y: I32?\n}\n";
+    let dir = tempfile::tempdir().unwrap();
+    let db = init(&dir, base).await.unwrap();
+    let desired = base.replace("status: enum(todo, done)", "status: enum(todo, doing, done)");
+    match db.plan_schema(&desired).await {
+        Ok(plan) => println!("PROBE q2.widen_interface_enum: supported={} steps={:?}", plan.supported, plan.steps),
+        Err(e) => println!("PROBE q2.widen_interface_enum: ERROR {e}"),
+    }
+}
