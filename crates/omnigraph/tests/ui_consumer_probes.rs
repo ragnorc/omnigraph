@@ -597,3 +597,46 @@ async fn q2_interface_enum_widening() {
         Err(e) => println!("PROBE q2.widen_interface_enum: ERROR {e}"),
     }
 }
+
+/// Today's bulk-load reads: 1,000 keyed nodes (merge) and 1,000 edges between
+/// existing keyed nodes (append), the baseline for integer identity's batched
+/// key resolution.
+#[tokio::test]
+async fn bulk_load_reads_today() {
+    use helpers::cost::{cost_harness, measure};
+    let schema = "node Person {\n    name: String @key\n    age: I32?\n}\nedge Knows: Person -> Person\n";
+    let mut seed = String::new();
+    for i in 0..2000 {
+        seed.push_str(&format!("{{\"type\":\"Person\",\"data\":{{\"name\":\"p{i}\"}}}}\n"));
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap().to_string();
+    {
+        let db = init(&dir, schema).await.unwrap();
+        db.load_jsonl(&seed, LoadMode::Overwrite).await.unwrap();
+        db.ensure_indices().await.unwrap();
+    }
+    let mut nodes = String::new();
+    for i in 2000..3000 {
+        nodes.push_str(&format!("{{\"type\":\"Person\",\"data\":{{\"name\":\"p{i}\"}}}}\n"));
+    }
+    let mut edges = String::new();
+    for i in 0..1000 {
+        edges.push_str(&format!("{{\"edge\":\"Knows\",\"from\":\"p{i}\",\"to\":\"p{}\"}}\n", i + 1000));
+    }
+    let (node_io, edge_io) = cost_harness(async move {
+        let db = session(Omnigraph::open(&uri).await.unwrap());
+        let (r, node_io) = measure(db.load_jsonl(&nodes, LoadMode::Merge)).await;
+        r.unwrap();
+        let (r, edge_io) = measure(db.load_jsonl(&edges, LoadMode::Append)).await;
+        r.unwrap();
+        (node_io, edge_io)
+    })
+    .await;
+    for (label, io) in [("1000_keyed_nodes_merge", node_io), ("1000_edges_append", edge_io)] {
+        println!(
+            "PROBE bulk.{label}: data_reads={} opener={} scan={} data_writes={} data_open={} manifest_reads={}",
+            io.data_reads, io.data_opener_reads, io.data_scan_reads, io.data_writes, io.data_open_count, io.manifest_reads
+        );
+    }
+}
