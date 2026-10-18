@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use axum::body::{Bytes, to_bytes};
 use axum::extract::{Path, Request, State};
-use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
+use axum::http::{HeaderMap, HeaderValue, StatusCode, Uri, header};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
@@ -33,6 +33,32 @@ use crate::{ApiError, AppState, AuthenticatedActor, GraphId, GraphKey};
 pub(crate) const REQUEST_BYTES: usize = 64 * 1024;
 const RESULT_BYTES: usize = 1024 * 1024;
 const READ_DEADLINE: Duration = Duration::from_secs(30);
+const RESOURCE_METADATA_PATH: &str = "/.well-known/oauth-protected-resource";
+
+/// Whether `path` is protected-resource metadata: the root document or the
+/// path-suffixed location the challenge advertises.
+pub(crate) fn is_resource_metadata_path(path: &str) -> bool {
+    path.strip_prefix(RESOURCE_METADATA_PATH)
+        .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
+}
+
+/// The metadata URL a client derives from the resource identifier (RFC 9728
+/// §3.1): the well-known prefix inserted before the resource's path.
+fn advertised_metadata_url(resource: &str) -> Option<url::Url> {
+    let mut url = url::Url::parse(resource).ok()?;
+    let path = format!(
+        "{RESOURCE_METADATA_PATH}{}",
+        url.path().trim_end_matches('/')
+    );
+    url.set_path(&path);
+    url.set_query(None);
+    url.set_fragment(None);
+    Some(url)
+}
+
+/// The metadata path this server advertises, fixed by its boot binding.
+#[derive(Clone)]
+pub(crate) struct AdvertisedMetadataPath(Arc<str>);
 
 /// Mount only when an explicitly configured OIDC resource enables this surface.
 /// Every HTTP request authenticates again; no MCP session retains an actor.
@@ -75,13 +101,24 @@ pub(crate) fn router(state: AppState) -> Router<AppState> {
             state.clone(),
             handlers::require_bearer_auth,
         ))
-        .route_layer(middleware::from_fn_with_state(state, resource_challenge));
-    Router::new()
-        .route(
-            "/.well-known/oauth-protected-resource",
-            get(resource_metadata),
-        )
-        .merge(protected)
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            resource_challenge,
+        ));
+    // Computed once from the fixed binding. A wildcard route compared with the
+    // raw request path keeps the configured path out of the router's syntax.
+    let advertised = state
+        .oidc_resource_url()
+        .and_then(|resource| advertised_metadata_url(&resource))
+        .map(|url| AdvertisedMetadataPath(Arc::from(url.path())));
+    let mut discovery = Router::new().route(RESOURCE_METADATA_PATH, get(resource_metadata));
+    if let Some(advertised) = advertised {
+        discovery = discovery.route(
+            &format!("{RESOURCE_METADATA_PATH}/{{*resource_path}}"),
+            get(resource_metadata_at_resource_path).layer(Extension(advertised)),
+        );
+    }
+    discovery.merge(protected)
 }
 
 #[utoipa::path(get, path = "/.well-known/oauth-protected-resource", tag = "management",
@@ -95,6 +132,27 @@ pub(crate) async fn resource_metadata(State(state): State<AppState>) -> Response
     }
 }
 
+/// The same metadata at the location the `/mcp` challenge advertises for a
+/// resource identifier with a path: the well-known prefix followed by that
+/// path (`/.well-known/oauth-protected-resource/mcp` for `https://host/mcp`).
+/// Every other suffix is 404.
+#[utoipa::path(get, path = "/.well-known/oauth-protected-resource/{resource_path}", tag = "management",
+    operation_id = "oauthProtectedResourceMetadataAtResourcePath",
+    params(("resource_path" = String, Path, description = "The configured resource identifier's path, without its leading `/`")),
+    responses((status = 200, description = "Public OAuth protected resource metadata", body = Value),
+              (status = 404, description = "Not the configured resource's path, or OAuth resource identity is not configured")))]
+pub(crate) async fn resource_metadata_at_resource_path(
+    State(state): State<AppState>,
+    Extension(AdvertisedMetadataPath(advertised)): Extension<AdvertisedMetadataPath>,
+    uri: Uri,
+) -> Response {
+    if uri.path() == &*advertised {
+        resource_metadata(State(state)).await
+    } else {
+        StatusCode::NOT_FOUND.into_response()
+    }
+}
+
 async fn resource_challenge(
     State(state): State<AppState>,
     request: Request,
@@ -102,17 +160,10 @@ async fn resource_challenge(
 ) -> Response {
     let mut response = next.run(request).await;
     if response.status() == StatusCode::UNAUTHORIZED {
-        if let Some(mut url) = state
+        if let Some(url) = state
             .oidc_resource_url()
-            .and_then(|url| url::Url::parse(&url).ok())
+            .and_then(|resource| advertised_metadata_url(&resource))
         {
-            let path = format!(
-                "/.well-known/oauth-protected-resource{}",
-                url.path().trim_end_matches('/')
-            );
-            url.set_path(&path);
-            url.set_query(None);
-            url.set_fragment(None);
             if let Ok(value) = HeaderValue::from_str(&format!("Bearer resource_metadata=\"{url}\""))
             {
                 response

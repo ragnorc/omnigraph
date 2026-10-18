@@ -112,6 +112,7 @@ fn hash_bearer_token(token: &str) -> BearerTokenHash {
     ),
     paths(
         mcp::resource_metadata,
+        mcp::resource_metadata_at_resource_path,
         deployment::status,
         deployment::lookup,
         deployment::apply,

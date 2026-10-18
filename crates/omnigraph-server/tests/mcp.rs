@@ -357,6 +357,35 @@ async fn mcp_authenticates_every_request_and_enforces_resource_and_http_bounds()
         serde_json::from_slice(&to_bytes(response.into_body(), usize::MAX).await.unwrap()).unwrap();
     assert_eq!(metadata["resource"], RESOURCE);
     assert!(!metadata.to_string().contains("stable_alice"));
+    // The challenge's URL itself answers the same document, so a client
+    // probing the path-suffixed location first needs no proxy rewrite.
+    let advertised = "/.well-known/oauth-protected-resource/clusters/A/incarnations/one";
+    let response = app
+        .clone()
+        .oneshot(Request::get(advertised).body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers()["cache-control"], "no-store");
+    assert!(!response.headers().contains_key(HTTP_API_CONTRACT_HEADER));
+    let at_path: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), usize::MAX).await.unwrap()).unwrap();
+    assert_eq!(at_path, metadata);
+    for other in [
+        "/.well-known/oauth-protected-resource/clusters/A",
+        "/.well-known/oauth-protected-resource/clusters/A/incarnations/one/",
+        "/.well-known/oauth-protected-resource/clusters/A/incarnations/two",
+        "/.well-known/oauth-protected-resource/clusters/A/incarnations/one/extra",
+        "/.well-known/oauth-protected-resource/mcp",
+        "/.well-known/oauth-protected-resource/clusters/%41/incarnations/one",
+    ] {
+        let response = app
+            .clone()
+            .oneshot(Request::get(other).body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::NOT_FOUND, "{other}");
+    }
     let response = app
         .clone()
         .oneshot(Request::get("/no-such-route").body(Body::empty()).unwrap())
