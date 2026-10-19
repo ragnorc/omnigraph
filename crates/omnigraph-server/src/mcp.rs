@@ -35,6 +35,9 @@ use crate::workload::IngressLease;
 use crate::{ApiError, AppState, AuthenticatedActor, GraphId, GraphKey};
 
 pub(crate) const REQUEST_BYTES: usize = 64 * 1024;
+/// The most tool calls and graph resource reads `/mcp` runs at once, across
+/// all its clients. One past it is refused with `capacity_exceeded`.
+pub const MCP_CALLS_MAX: usize = 16;
 const RESULT_BYTES: usize = 1024 * 1024;
 const READ_DEADLINE: Duration = Duration::from_secs(30);
 /// How long a caller waits for a write. The write itself is owned by the
@@ -162,7 +165,7 @@ pub(crate) struct AdvertisedMetadataPath(Arc<str>);
 pub(crate) fn router(state: AppState) -> Router<AppState> {
     let handler = GraphTools {
         state: state.clone(),
-        slots: Arc::new(Semaphore::new(16)),
+        slots: Arc::new(Semaphore::new(MCP_CALLS_MAX)),
     };
     let mut config = StreamableHttpServerConfig::default();
     config.legacy_session_mode = false;

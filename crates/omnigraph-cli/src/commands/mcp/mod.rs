@@ -51,10 +51,12 @@ use crate::targets::TargetBinding;
 const LINE_MAX_BYTES: usize = 8 * 1024 * 1024;
 /// The most `tools/list` pages the bridge reads to learn the server's tools.
 const TOOL_PAGES_MAX: usize = 32;
-/// The most requests relayed at once. At the bound the bridge stops reading
-/// stdin until one completes, so the agent's writes wait instead of the
-/// bridge holding an unbounded queue.
-const IN_FLIGHT_MAX: usize = 32;
+/// The most requests relayed at once: the most tool calls and resource reads
+/// a server runs at once, so a bridge's own burst is never refused for
+/// capacity. At the bound the bridge stops reading stdin until one completes,
+/// so the agent's writes wait instead of the bridge holding an unbounded
+/// queue.
+const IN_FLIGHT_MAX: usize = omnigraph_server::MCP_CALLS_MAX;
 /// After stdin closes, how long the requests still in flight may take to be
 /// answered: one relayed request's own bound.
 const DRAIN_WAIT: Duration = upstream::RELAY_TIMEOUT;

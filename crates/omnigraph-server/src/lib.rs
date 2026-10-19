@@ -40,7 +40,7 @@ pub use local::with_local_read_write;
 pub use local::{
     LocalAccess, LocalBinding, LocalCredential, LocalOpenError, LocalOptions, LocalScope,
 };
-pub use mcp::McpSettings;
+pub use mcp::{MCP_CALLS_MAX, McpSettings};
 pub use registry::{
     BlockedGraph, GraphEntry, GraphHandle, GraphRegistry, InsertError, LoadingGraph,
     RegistryLookup, RegistrySnapshot, StartupFailure,

@@ -122,16 +122,19 @@ server's included, go to stderr. A batch, a JSON array, is answered with error
 `-32600`. Requests carry `MCP-Protocol-Version` with the version `initialize`
 negotiated, or the one the request names in its `_meta`.
 
-Requests are relayed concurrently, at most 32 at a time, and answered as they
-complete, so a fast request is not held behind a slow one. At 32 the bridge
-stops reading stdin until one completes. `initialize`, notifications and the
-agent's own responses keep their order: nothing after one is read until it is
-delivered, so the handshake and its protocol version precede every later
-request. `notifications/cancelled` drops the named request's exchange, which is
-how the stateless endpoint learns of a cancellation, and that request gets no
-answer; the notification itself is not forwarded, since the endpoint ignores
-it. When stdin closes, the requests in flight are answered, for up to 45
-seconds, before the bridge exits 0.
+Requests are relayed concurrently, at most 16 at a time, and answered as they
+complete, so a fast request is not held behind a slow one. 16 is the most tool
+calls and resource reads a server runs at once, so a bridge's own burst is not
+refused for capacity; other clients share those slots, so a call can still get
+the tool error `capacity_exceeded`. At 16 the bridge stops reading stdin until
+one completes. `initialize`, notifications and the agent's own responses keep
+their order: nothing after one is read until it is delivered, so the handshake
+and its protocol version precede every later request.
+`notifications/cancelled` drops the named request's exchange, which is how the
+stateless endpoint learns of a cancellation, and that request gets no answer;
+the notification itself is not forwarded, since the endpoint ignores it. When
+stdin closes, the requests in flight are answered, for up to 45 seconds, before
+the bridge exits 0.
 
 A request the server answers with no JSON-RPC message, such as a refusal
 before the MCP layer, or one that fails or runs past 45 seconds, is answered
