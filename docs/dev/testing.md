@@ -247,6 +247,14 @@ storage-fault paths. CI requires the local journey to execute successfully.
 
 CLI suites own their named planes: cluster lifecycle, data commands, stored queries, schema/config, cross-version rebuild, embedded/remote parity, and local/remote system journeys. Keep `OMNIGRAPH_HOME` hermetic by using `tests/support::cli()` or `cli_process()`.
 
+`cli_local_servers` owns `omnigraph serve`: its ready line, record, reuse and
+election, the loopback guard and access. `cli_mcp` owns `omnigraph mcp`, the
+stdio bridge: framing, the bound graph, read-only admission, concurrency and
+cancellation, resolving the target again, and the lifetime of a local server it
+hosts, through a stand-in endpoint where timing matters. Its in-source tests in
+`commands/mcp/binding.rs` and `commands/mcp/wire.rs` own admission, narrowing
+and framing. Both suites are Unix only, as local servers are.
+
 Deployment tests extend these owners: cluster `tests.rs` pins no-reset
 ledger conversion, captured source bytes, exact-ID lookup, bounded results and
 exact applied schema identity after receipt eviction; `admission.rs` pins lifetime

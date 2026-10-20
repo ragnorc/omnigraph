@@ -7,7 +7,7 @@ implementation: partial
 authors:
   - OmniGraph maintainers
 created: 2026-06-01
-updated: 2026-10-14
+updated: 2026-10-19
 discussion: https://github.com/ModernRelay/omnigraph/issues/991
 supersedes: []
 superseded_by: []
@@ -15,6 +15,16 @@ blocked_on: []
 ---
 
 # RFC 0003: MCP server surface
+
+> **Graph access disposition:** the draft RFC
+> [Graph access, serving and cross-process writes](https://github.com/ModernRelay/omnigraph/pull/1017),
+> still a draft, specifies the stdio bridge this RFC deferred, and
+> `omnigraph mcp` implements it in the Rust CLI as a relay to a target's
+> `/mcp`, so the server remains the only MCP implementation. Historical: the
+> stdio bridge "only if local desktop clients need it" in Rollout item 4, and
+> the `omnigraph mcp --server <url>` spelling under Alternatives; the bridge
+> names a target. Current: everything else, including the npm package's
+> retirement.
 **Tickets:** MR-969 (stored queries + MCP exposure), MR-956 (federated auth /
 WorkOS OAuth), MR-974 (agent setup surface), MR-668 (multi-graph server)
 **Builds on:** [RFC 0041](0041-inline-stored-queries.md) (stored-query registry,

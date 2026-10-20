@@ -297,6 +297,17 @@ Direct `init`/`load` and **`cluster apply`** write storage without an HTTP serve
   loopback server for this account alone over a direct target (a standalone
   graph or a cluster root), read-only for now; a deployment remains
   `omnigraph-server`.
+- **Which path an agent uses** — one per place it runs:
+
+  | Where the agent runs | Its path |
+  |---|---|
+  | A terminal, using the CLI | Commands with `--target`, beside any local server |
+  | A terminal, using MCP | `omnigraph mcp --target NAME`, which attaches to the destination's live local server or hosts one |
+  | Studio's agent panel | Studio's gateway, not `omnigraph mcp` |
+
+  Find live local servers and your own access with `omnigraph target list` and
+  `omnigraph access`, never by reading the records directory or by trying a
+  write.
 
 ### The two config surfaces
 
