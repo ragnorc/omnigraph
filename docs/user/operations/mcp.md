@@ -126,13 +126,18 @@ Requests are relayed concurrently, at most 16 at a time, and answered as they
 complete, so a fast request is not held behind a slow one. 16 is the most tool
 calls and resource reads a server runs at once, so a bridge's own burst is not
 refused for capacity; other clients share those slots, so a call can still get
-the tool error `capacity_exceeded`. At 16 the bridge stops reading stdin until
-one completes. `initialize`, notifications and the agent's own responses keep
-their order: nothing after one is read until it is delivered, so the handshake
-and its protocol version precede every later request.
+the tool error `capacity_exceeded`. At 16 the bridge relays nothing more until
+one completes, and the agent's further lines wait. `initialize`, notifications
+and the agent's own responses keep their order: nothing after one is read until
+it is delivered, so the handshake and its protocol version precede every later
+request.
+
 `notifications/cancelled` drops the named request's exchange, which is how the
 stateless endpoint learns of a cancellation, and that request gets no answer;
-the notification itself is not forwarded, since the endpoint ignores it. When
+the notification itself is not forwarded, since the endpoint ignores it. Before
+writing an answer, at 16 in flight too, the bridge applies a cancellation it has
+already read from stdin. An answer the server completed before the bridge read
+the cancellation may still be sent, as the MCP specification allows. When
 stdin closes, the requests in flight are answered, for up to 45 seconds, before
 the bridge exits 0.
 

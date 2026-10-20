@@ -15,6 +15,8 @@ pub(super) const SERVER_ERROR: i64 = -32000;
 
 /// The per-request protocol version a request names in `_meta`.
 const META_PROTOCOL_VERSION: &str = "io.modelcontextprotocol/protocolVersion";
+/// The notification that cancels a request.
+const CANCELLED: &str = "notifications/cancelled";
 
 /// One message the agent sent, by what it expects back.
 #[derive(Debug, PartialEq)]
@@ -73,6 +75,17 @@ pub(super) fn classify(line: &[u8]) -> Result<(Value, Inbound), Value> {
         }
     };
     Ok((message, kind))
+}
+
+/// For a `notifications/cancelled`, the request it cancels, if it names one;
+/// `None` for any other message.
+pub(super) fn cancellation(message: &Value, kind: &Inbound) -> Option<Option<Value>> {
+    match kind {
+        Inbound::Notification { method } if method == CANCELLED => {
+            Some(message.pointer("/params/requestId").cloned())
+        }
+        _ => None,
+    }
 }
 
 /// A JSON-RPC error response.
@@ -254,6 +267,27 @@ mod tests {
                 .as_str()
                 .unwrap()
                 .contains("batches")
+        );
+        let cancellation = |line: &[u8]| {
+            let (message, kind) = classify(line).unwrap();
+            super::cancellation(&message, &kind)
+        };
+        assert_eq!(
+            cancellation(
+                br#"{"jsonrpc":"2.0","method":"notifications/cancelled","params":{"requestId":"r1"}}"#
+            ),
+            Some(Some(json!("r1")))
+        );
+        assert_eq!(
+            cancellation(br#"{"jsonrpc":"2.0","method":"notifications/cancelled","params":{}}"#),
+            Some(None)
+        );
+        assert_eq!(
+            cancellation(
+                br#"{"jsonrpc":"2.0","id":2,"method":"notifications/cancelled","params":{"requestId":1}}"#
+            ),
+            None,
+            "a request is not a cancellation"
         );
         let refused = classify(br#"{"jsonrpc":"2.0","id":3,"method":4}"#).unwrap_err();
         assert_eq!(refused["id"], 3);

@@ -13,7 +13,10 @@
 //! delivered, so the handshake completes, with its protocol version, before
 //! a later request is sent. `notifications/cancelled` drops its request's
 //! exchange, which is how a stateless server learns of a cancellation, and
-//! the request gets no answer.
+//! the request gets no answer. A cancellation read from stdin before the
+//! answer is written drops it, at the bound as well, where no further line
+//! is relayed; an answer written before the cancellation was read stays
+//! sent.
 //!
 //! The bridge is bound to one graph and lists and admits only the tools the
 //! server annotates read-only. Every tool's logic and refusals stay the
@@ -24,7 +27,7 @@ mod upstream;
 mod wire;
 
 use std::cell::{Cell, RefCell};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::fmt::Display;
 use std::io::Write;
 use std::time::Duration;
@@ -80,6 +83,8 @@ enum Ended {
 
 /// What one relay produces: the lines it answers the agent with.
 type Answer = std::result::Result<Vec<String>, Ended>;
+/// One line from stdin, or the failure that ended reading it.
+type Read = std::io::Result<Line>;
 /// A concurrent relay's outcome, unless its request was cancelled.
 type Relayed = std::result::Result<Answer, Aborted>;
 
@@ -155,6 +160,9 @@ async fn bridge(
     let mut in_flight: FuturesUnordered<LocalBoxFuture<'_, (u64, Relayed)>> =
         FuturesUnordered::new();
     let mut pending: HashMap<u64, Pending> = HashMap::new();
+    // Lines taken from stdin before an answer was written, handled in order
+    // before stdin is read again.
+    let mut taken: VecDeque<Read> = VecDeque::new();
     // Requests that end the bridge unanswered, answered after the loop.
     let mut unanswered: Vec<Value> = Vec::new();
     let mut read = 0u64;
@@ -170,6 +178,7 @@ async fn bridge(
             biased;
             () = shutdown.received() => break Ended::Stopped,
             Some((seq, done)) = in_flight.next(), if !in_flight.is_empty() => {
+                take_read(&mut lines, &mut taken, &mut pending);
                 // A cancelled request is no longer pending, and gets no answer.
                 let Some(Pending { id, .. }) = pending.remove(&seq) else {
                     continue;
@@ -203,7 +212,12 @@ async fn bridge(
                     Err(ended) => break ended,
                 }
             }
-            line = lines.recv(), if reading && ordered.is_none() && in_flight.len() < IN_FLIGHT_MAX => {
+            line = async {
+                match taken.pop_front() {
+                    Some(line) => Some(line),
+                    None => lines.recv().await,
+                }
+            }, if reading && ordered.is_none() && in_flight.len() < IN_FLIGHT_MAX => {
                 let line = match line {
                     None => {
                         reading = false;
@@ -232,13 +246,7 @@ async fn bridge(
                         );
                     }
                     Dispatch::Ordered { id, future } => ordered = Some((id, future)),
-                    Dispatch::Cancel(cancelled) => pending.retain(|_, request| {
-                        let keep = request.id != cancelled;
-                        if !keep {
-                            request.abort.abort();
-                        }
-                        keep
-                    }),
+                    Dispatch::Cancel(cancelled) => cancel(&mut pending, &cancelled),
                     Dispatch::Skip => {}
                 }
             }
@@ -345,24 +353,22 @@ fn bound_graph(name: &str, binding: &TargetBinding, graph: Option<&str>) -> Resu
 }
 
 /// Lines from stdin, read on a thread of its own: a read blocked on an open
-/// stdin never holds the runtime, so the bridge can end on a signal.
-fn stdin_lines() -> Result<tokio::sync::mpsc::Receiver<std::io::Result<Line>>> {
+/// stdin never holds the runtime, so the bridge can end on a signal. The
+/// thread waits for room before it reads, so a line read from stdin is in
+/// the channel at once, where [`take_read`] finds it.
+fn stdin_lines() -> Result<tokio::sync::mpsc::Receiver<Read>> {
     let (sender, receiver) = tokio::sync::mpsc::channel(1);
     std::thread::Builder::new()
         .name("mcp-stdin".to_string())
         .spawn(move || {
             let stdin = std::io::stdin();
             let mut stdin = stdin.lock();
-            loop {
+            while let Ok(room) = futures::executor::block_on(sender.reserve()) {
                 match wire::read_line(&mut stdin, LINE_MAX_BYTES) {
-                    Ok(Some(line)) => {
-                        if sender.blocking_send(Ok(line)).is_err() {
-                            break;
-                        }
-                    }
+                    Ok(Some(line)) => room.send(Ok(line)),
                     Ok(None) => break,
                     Err(error) => {
-                        let _ = sender.blocking_send(Err(error));
+                        room.send(Err(error));
                         break;
                     }
                 }
@@ -370,6 +376,42 @@ fn stdin_lines() -> Result<tokio::sync::mpsc::Receiver<std::io::Result<Line>>> {
         })
         .wrap_err("could not start reading stdin")?;
     Ok(receiver)
+}
+
+/// Take the lines already read from stdin, kept in order in `taken`, and
+/// apply each cancellation among them to the pending requests now. Every
+/// pending request was read before these lines, so this is the
+/// cancellation's own effect, only before the answer it names is written;
+/// when its turn comes it is applied again, to a request taken before it.
+/// At most [`IN_FLIGHT_MAX`] lines wait in `taken`.
+fn take_read(
+    lines: &mut tokio::sync::mpsc::Receiver<Read>,
+    taken: &mut VecDeque<Read>,
+    pending: &mut HashMap<u64, Pending>,
+) {
+    while taken.len() < IN_FLIGHT_MAX {
+        let Ok(line) = lines.try_recv() else {
+            return;
+        };
+        if let Ok(Line::Message(raw)) = &line
+            && let Ok((message, kind)) = wire::classify(raw)
+            && let Some(Some(cancelled)) = wire::cancellation(&message, &kind)
+        {
+            cancel(pending, &cancelled);
+        }
+        taken.push_back(line);
+    }
+}
+
+/// Drop the exchange of every pending request with this id.
+fn cancel(pending: &mut HashMap<u64, Pending>, cancelled: &Value) {
+    pending.retain(|_, request| {
+        let keep = request.id != *cancelled;
+        if !keep {
+            request.abort.abort();
+        }
+        keep
+    });
 }
 
 /// `SIGTERM` and `SIGINT` end the bridge as a closed stdin does.
@@ -474,6 +516,11 @@ impl Relay<'_, '_> {
             Ok(classified) => classified,
             Err(answer) => return Dispatch::Answer(answer.to_string()),
         };
+        // A stateless server ignores `notifications/cancelled`: a request is
+        // cancelled by dropping its exchange, which the bridge does.
+        if let Some(cancelled) = wire::cancellation(&message, &kind) {
+            return cancelled.map_or(Dispatch::Skip, Dispatch::Cancel);
+        }
         match kind {
             Inbound::Request { id, method } if method == "initialize" => Dispatch::Ordered {
                 id: Some(id.clone()),
@@ -483,14 +530,6 @@ impl Relay<'_, '_> {
                 id: id.clone(),
                 future: self.request(id, method, message, raw).boxed_local(),
             },
-            // A stateless server ignores this notification: a request is
-            // cancelled by dropping its exchange, which the bridge does.
-            Inbound::Notification { method } if method == "notifications/cancelled" => {
-                match message.pointer("/params/requestId") {
-                    Some(id) => Dispatch::Cancel(id.clone()),
-                    None => Dispatch::Skip,
-                }
-            }
             Inbound::Notification { method } => Dispatch::Ordered {
                 id: None,
                 future: self.forward(Some(method), message, raw).boxed_local(),

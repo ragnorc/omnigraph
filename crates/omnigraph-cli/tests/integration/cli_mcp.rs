@@ -484,15 +484,31 @@ fn a_bridge_reuses_a_live_local_server_and_follows_its_restart() {
 
 /// How long the stand-in endpoint's `slow` tool takes to answer.
 const SLOW: Duration = Duration::from_secs(3);
+/// How many `held` calls the stand-in endpoint waits for: the bridge's bound.
+const HELD: usize = omnigraph_server::MCP_CALLS_MAX;
+/// Once every `held` call has arrived, how long the first one takes to be
+/// answered, and the others.
+const HELD_FIRST: Duration = Duration::from_millis(200);
+const HELD_REST: Duration = Duration::from_millis(1500);
 
 /// A stand-in MCP endpoint for timing: `slow` answers after [`SLOW`] and
-/// `fast` at once. It counts the `slow` calls it receives and those whose
-/// client hung up before the answer. Every answer closes its connection.
+/// `fast` at once. `held` answers once [`HELD`] calls of it have arrived, the
+/// one marked `first` before the others. Every answer closes its connection.
 struct McpEndpoint {
     url: String,
     stop: Arc<AtomicBool>,
-    slow_received: Arc<AtomicUsize>,
-    hung_up: Arc<AtomicUsize>,
+    received: Arc<Received>,
+}
+
+/// What the stand-in endpoint counts.
+#[derive(Default)]
+struct Received {
+    /// The `slow` calls received.
+    slow: AtomicUsize,
+    /// The `slow` calls whose client hung up before the answer.
+    hung_up: AtomicUsize,
+    /// The `held` calls received.
+    held: AtomicUsize,
 }
 
 impl McpEndpoint {
@@ -502,18 +518,16 @@ impl McpEndpoint {
         let endpoint = Self {
             url: format!("http://{}", listener.local_addr().unwrap()),
             stop: Arc::new(AtomicBool::new(false)),
-            slow_received: Arc::new(AtomicUsize::new(0)),
-            hung_up: Arc::new(AtomicUsize::new(0)),
+            received: Arc::default(),
         };
         let stop = Arc::clone(&endpoint.stop);
-        let slow = Arc::clone(&endpoint.slow_received);
-        let hung_up = Arc::clone(&endpoint.hung_up);
+        let received = Arc::clone(&endpoint.received);
         std::thread::spawn(move || {
             while !stop.load(Ordering::SeqCst) {
                 match listener.accept() {
                     Ok((stream, _)) => {
-                        let (slow, hung_up) = (Arc::clone(&slow), Arc::clone(&hung_up));
-                        std::thread::spawn(move || answer_one(stream, &slow, &hung_up));
+                        let received = Arc::clone(&received);
+                        std::thread::spawn(move || answer_one(stream, &received));
                     }
                     Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
                         std::thread::sleep(Duration::from_millis(5));
@@ -528,7 +542,7 @@ impl McpEndpoint {
     /// Wait until `count` slow calls have arrived.
     fn await_slow(&self, count: usize) {
         let deadline = Instant::now() + ANSWER_WAIT;
-        while self.slow_received.load(Ordering::SeqCst) < count {
+        while self.received.slow.load(Ordering::SeqCst) < count {
             assert!(Instant::now() < deadline, "the slow call did not arrive");
             std::thread::sleep(Duration::from_millis(10));
         }
@@ -541,7 +555,7 @@ impl Drop for McpEndpoint {
     }
 }
 
-fn answer_one(mut stream: TcpStream, slow: &AtomicUsize, hung_up: &AtomicUsize) {
+fn answer_one(mut stream: TcpStream, counts: &Received) {
     stream.set_nonblocking(false).unwrap();
     stream
         .set_read_timeout(Some(Duration::from_secs(10)))
@@ -600,7 +614,7 @@ fn answer_one(mut stream: TcpStream, slow: &AtomicUsize, hung_up: &AtomicUsize) 
             "serverInfo": {"name": "fixture", "version": "1"},
         }),
         "tools/list" => {
-            let tools: Vec<Value> = ["slow", "fast"]
+            let tools: Vec<Value> = ["slow", "fast", "held"]
                 .into_iter()
                 .map(|name| {
                     json!({
@@ -615,7 +629,7 @@ fn answer_one(mut stream: TcpStream, slow: &AtomicUsize, hung_up: &AtomicUsize) 
         "tools/call" => {
             let name = message["params"]["name"].as_str().unwrap().to_string();
             if name == "slow" {
-                slow.fetch_add(1, Ordering::SeqCst);
+                counts.slow.fetch_add(1, Ordering::SeqCst);
                 // Waiting, watch for the client hanging up.
                 stream
                     .set_read_timeout(Some(Duration::from_millis(20)))
@@ -623,10 +637,19 @@ fn answer_one(mut stream: TcpStream, slow: &AtomicUsize, hung_up: &AtomicUsize) 
                 let deadline = Instant::now() + SLOW;
                 while Instant::now() < deadline {
                     if let Ok(0) = stream.read(&mut chunk) {
-                        hung_up.fetch_add(1, Ordering::SeqCst);
+                        counts.hung_up.fetch_add(1, Ordering::SeqCst);
                         return;
                     }
                 }
+            }
+            if name == "held" {
+                counts.held.fetch_add(1, Ordering::SeqCst);
+                let deadline = Instant::now() + ANSWER_WAIT;
+                while counts.held.load(Ordering::SeqCst) < HELD && Instant::now() < deadline {
+                    std::thread::sleep(Duration::from_millis(5));
+                }
+                let first = message["params"]["arguments"]["first"] == true;
+                std::thread::sleep(if first { HELD_FIRST } else { HELD_REST });
             }
             json!({"content": [{"type": "text", "text": name}], "isError": false})
         }
@@ -641,8 +664,10 @@ fn answer_one(mut stream: TcpStream, slow: &AtomicUsize, hung_up: &AtomicUsize) 
 
 /// Requests are relayed concurrently and answered as they complete. A
 /// cancelled request's exchange is dropped, so the server sees its client
-/// hang up, and it gets no answer; the bridge keeps answering. A request
-/// still in flight when stdin closes is answered before the bridge exits.
+/// hang up, and it gets no answer; the bridge keeps answering. At the bound,
+/// where stdin is not read, a cancellation already in the bridge still drops
+/// the answer it names. A request still in flight when stdin closes is
+/// answered before the bridge exits.
 #[test]
 fn a_bridge_answers_requests_as_they_complete_and_drops_cancelled_ones() {
     let endpoint = McpEndpoint::start();
@@ -676,7 +701,7 @@ fn a_bridge_answers_requests_as_they_complete_and_drops_cancelled_ones() {
     );
     assert_eq!(bridge.call(call(5, "fast"))["id"], 5);
     let deadline = Instant::now() + ANSWER_WAIT;
-    while endpoint.hung_up.load(Ordering::SeqCst) < 1 {
+    while endpoint.received.hung_up.load(Ordering::SeqCst) < 1 {
         assert!(
             Instant::now() < deadline,
             "the cancelled call's client stayed"
@@ -692,6 +717,32 @@ fn a_bridge_answers_requests_as_they_complete_and_drops_cancelled_ones() {
         6
     );
 
+    // At the bound the bridge stops reading stdin, so the cancellation of
+    // the first held call waits in the bridge; that call is answered first,
+    // after every held call has arrived, and its answer is dropped.
+    let held: Vec<u64> = (10..10 + HELD as u64).collect();
+    for &id in &held {
+        bridge.send(&json!({"jsonrpc": "2.0", "id": id, "method": "tools/call",
+            "params": {"name": "held", "arguments": {"first": id == held[0]}}}));
+    }
+    bridge.send(
+        &json!({"jsonrpc": "2.0", "method": "notifications/cancelled",
+        "params": {"requestId": held[0], "reason": "test"}}),
+    );
+    let mut answered: Vec<u64> = (1..HELD)
+        .map(|_| bridge.answer()["id"].as_u64().unwrap())
+        .collect();
+    answered.sort_unstable();
+    assert_eq!(
+        answered,
+        held[1..],
+        "the cancelled held call is not answered"
+    );
+    assert_eq!(
+        bridge.call(json!({"jsonrpc": "2.0", "id": 8, "method": "ping"}))["id"],
+        8
+    );
+
     // A call in flight when stdin closes is still answered.
     bridge.send(&call(7, "slow"));
     endpoint.await_slow(3);
@@ -704,7 +755,8 @@ fn a_bridge_answers_requests_as_they_complete_and_drops_cancelled_ones() {
         .collect();
     assert!(ids.contains(&json!(7)), "{ids:?}");
     assert!(!ids.contains(&json!(4)), "{ids:?}");
-    assert_eq!(endpoint.hung_up.load(Ordering::SeqCst), 1);
+    assert!(!ids.contains(&json!(held[0])), "{ids:?}");
+    assert_eq!(endpoint.received.hung_up.load(Ordering::SeqCst), 1);
 }
 
 /// A server target is relayed to with its credential owner's token, which
