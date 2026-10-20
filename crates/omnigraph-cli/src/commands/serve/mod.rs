@@ -15,9 +15,7 @@ use std::time::Duration;
 use clap::Args;
 use color_eyre::Result;
 use color_eyre::eyre::WrapErr;
-use omnigraph_api_types::{
-    ErrorCode, OutcomeAction, OutcomeEffects, OutcomeExecution, OutcomeOutput,
-};
+use omnigraph_api_types::{DispositionEffects, DispositionOutput, ErrorCode};
 use omnigraph_server::{
     AppState, LocalAccess, LocalBinding, LocalOpenError, LocalOptions, LocalScope, LocalStop,
     ProcessDefaults, ServeOutcome,
@@ -187,23 +185,18 @@ fn check_reuse(record: &Record, args: &ServeArgs, scope: &str, actor: Option<&st
 
 /// Every refusal `serve` returns precedes any use of the local server: no
 /// client holds its token before its record is published, and a start that
-/// fails after the server started releases it first. So a refusal ran
-/// nothing and changed nothing, and only `local_server_starting` is worth
-/// repeating unchanged. A refusal wrapped by a release that was not clean is
-/// not the whole failure and states no outcome.
-fn with_refusal_outcome(mut error: color_eyre::Report) -> color_eyre::Report {
+/// fails after the server started releases it first. So a refusal changed
+/// nothing, and its code says what to do: only `local_server_starting` is
+/// worth repeating unchanged. A refusal wrapped by a release that was not
+/// clean is not the whole failure and states no disposition.
+fn with_refusal_disposition(mut error: color_eyre::Report) -> color_eyre::Report {
     if error.chain().nth(1).is_some() {
         return error;
     }
     if let Some(refusal) = error.downcast_mut::<CliRefusal>() {
-        refusal.outcome = Some(OutcomeOutput {
-            execution: OutcomeExecution::NotStarted,
-            effects: OutcomeEffects::None,
-            action: if refusal.code == ErrorCode::LocalServerStarting {
-                OutcomeAction::Retry
-            } else {
-                OutcomeAction::Refresh
-            },
+        refusal.disposition = Some(DispositionOutput {
+            effects: DispositionEffects::None,
+            action: refusal.code.action(),
         });
     }
     error
@@ -259,7 +252,7 @@ pub(crate) async fn run_serve(
 ) -> Result<Completion> {
     serve(input, as_actor, args, stdout_is_terminal, stdout, stderr)
         .await
-        .map_err(with_refusal_outcome)
+        .map_err(with_refusal_disposition)
 }
 
 async fn serve(
@@ -462,29 +455,31 @@ async fn serve(
 mod tests {
     use super::*;
 
-    /// A refusal ran nothing, and only a start still in progress is worth
+    /// A refusal changed nothing, and only a start still in progress is worth
     /// repeating unchanged. A refusal wrapped by an unclean release states no
-    /// outcome.
+    /// disposition.
     #[test]
     fn a_serve_refusal_states_that_nothing_ran() {
-        let outcome = |error: color_eyre::Report| {
-            crate::error_output_of(&with_refusal_outcome(error)).and_then(|output| output.outcome)
+        use omnigraph_api_types::DispositionAction;
+        let disposition = |error: color_eyre::Report| {
+            crate::error_output_of(&with_refusal_disposition(error))
+                .and_then(|output| output.disposition)
         };
         let refusal = |code| CliRefusal::report(code, "refused");
         assert_eq!(
-            outcome(refusal(ErrorCode::LocalServerExists)),
-            Some(OutcomeOutput {
-                execution: OutcomeExecution::NotStarted,
-                effects: OutcomeEffects::None,
-                action: OutcomeAction::Refresh,
+            disposition(refusal(ErrorCode::LocalServerExists)),
+            Some(DispositionOutput {
+                effects: DispositionEffects::None,
+                action: DispositionAction::Fix,
             })
         );
         assert_eq!(
-            outcome(refusal(ErrorCode::LocalServerStarting)).map(|outcome| outcome.action),
-            Some(OutcomeAction::Retry)
+            disposition(refusal(ErrorCode::LocalServerStarting))
+                .map(|disposition| disposition.action),
+            Some(DispositionAction::Retry)
         );
         assert_eq!(
-            outcome(
+            disposition(
                 refusal(ErrorCode::LocalServerRecordsUnsafe)
                     .wrap_err("the local server's start failed, and its admission was retained")
             ),

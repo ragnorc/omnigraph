@@ -136,9 +136,15 @@ with the target's token. For direct storage the CLI decides itself
   with `not_found`, and one it quarantined with `graph_unavailable`, as a server
   refuses them. A graph two bundles bind, a ledger no server starts from, also
   refuses with `graph_unavailable`.
+- The two addresses read the applied ledger from different places. The store
+  reads it at the `<root>` it sits under. `--cluster DIR` reads it where the
+  `storage:` of `DIR/cluster.yaml` points. The answers differ when that
+  `storage:` names another root, as an edit not yet applied does.
 - A standalone graph carries no policy, so once its store opens every action is
   allowed, as direct writes do; its `graph_id` is `default`. A store that holds
-  no graph refuses with `not_found`.
+  no graph refuses with `not_found`. A graph that fails to open for another
+  reason, such as a manifest that names a missing file, keeps that failure's
+  own code.
 
 An action listed for a branch is one the policy allows there, not one the
 branch supports: `schema_apply` on a branch other than `main` does not make
@@ -184,8 +190,8 @@ edit that way, such as one whose `targets` is a flow mapping or indented with
 tabs, refuses with `config_not_editable`; edit it by hand.
 
 Each refusal carries its `code`, and the `target` and `credential` commands
-report an `outcome` of `not_started`, except an edit that fails after it
-replaced the file, which reports `unknown`; see
+report a `disposition` with no effects, except an edit that fails after it
+replaced the file, which reports `unknown` effects; see
 [failed commands](../operations/troubleshooting.md#failed-data-write-commands).
 `omnigraph version --json` reports the output versions as `protocols.target`,
 `protocols.credential` and `protocols.access`. `target list` and `target show`
