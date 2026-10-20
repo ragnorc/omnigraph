@@ -423,6 +423,56 @@ fn a_bridge_hosts_a_local_server_and_admits_only_reads_of_its_graph() {
     assert!(!finished.stderr.contains(&token));
 }
 
+/// Whether process `pid` has exited: gone, or a zombie no one has reaped yet.
+fn exited(pid: i64) -> bool {
+    let output = std::process::Command::new("ps")
+        .args(["-o", "stat=", "-p", &pid.to_string()])
+        .output()
+        .unwrap();
+    let state = String::from_utf8_lossy(&output.stdout);
+    state.trim().is_empty() || state.trim_start().starts_with('Z')
+}
+
+/// A hosted local server ends with its bridge however the bridge ends.
+/// Killed, the bridge runs no cleanup, but the server's stdin, a pipe only
+/// the bridge held, reaches its end: the server stops gracefully, removes
+/// its record and exits, and the next bridge hosts its own.
+#[test]
+fn a_killed_bridge_takes_the_local_server_it_hosts_with_it() {
+    let fixture = Fixture::with_graph();
+    let mut bridge = fixture.bridge(&["--target", "local"], &[]);
+    bridge.initialize();
+    let live = fixture.local_servers();
+    assert_eq!(live.len(), 1, "{live:?}");
+    let id = live[0]["id"].as_str().unwrap().to_string();
+    let record = fixture.records.join(format!("{id}.json"));
+    let pid = serde_json::from_slice::<Value>(&std::fs::read(&record).unwrap()).unwrap()["pid"]
+        .as_i64()
+        .unwrap();
+
+    bridge.child.kill().unwrap();
+    bridge.child.wait().unwrap();
+    // It stops gracefully, as its log says, and exits.
+    let deadline = Instant::now() + EXIT_WAIT;
+    while record.exists() || !exited(pid) || !bridge.stderr().contains("shutdown requested") {
+        assert!(
+            Instant::now() < deadline,
+            "the hosted server outlived its bridge; stderr:\n{}",
+            bridge.stderr()
+        );
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    assert!(fixture.local_servers().is_empty());
+
+    let mut bridge = fixture.bridge(&["--target", "local"], &[]);
+    bridge.initialize();
+    let live = fixture.local_servers();
+    assert_eq!(live.len(), 1, "{live:?}");
+    assert_ne!(live[0]["id"], id.as_str(), "the next bridge hosts its own");
+    bridge.finish().assert_success();
+    assert!(fixture.local_servers().is_empty());
+}
+
 /// A live local server is reused and outlives the bridge. When it stops
 /// while a bridge relays to it, requests lost together resolve the target
 /// again once between them: the bridge hosts one server, and every request

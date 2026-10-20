@@ -600,7 +600,9 @@ and a signal in that window stops the server gracefully. Tokio keeps those
 handlers for the rest of the process, so after `start_local` a `SIGTERM` or
 `SIGINT` no longer ends it by default, even once `serve` returns or an
 unserved `LocalServing` is dropped; a caller that keeps running installs its
-own handling. `serve` writes
+own handling. `LocalServing::stop_handle` returns a `LocalStop` whose `stop`
+ends the server as a signal does, from any thread, before or while it serves;
+`omnigraph serve` uses it to stop when a parent's stdin pipe closes. `serve` writes
 nothing to stdout, disarms the watchdog when it returns, and reports
 `ServeOutcome::Uncertain` instead of exiting; the caller exits 2.
 `serve_local` is the two calls in one; both refuse a listener off loopback

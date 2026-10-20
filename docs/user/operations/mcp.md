@@ -88,9 +88,11 @@ target, and the token stays inside the bridge:
 For a direct target the bridge reuses the destination's live local server, or
 hosts one for as long as it runs. A hosted server is recorded like any other,
 so `target list` names it and another client can attach to it. Closing the
-bridge's stdin, `SIGTERM` or Ctrl-C stops it gracefully and removes its record;
-a reused server keeps running. `--as` names the local server's actor, as for
-`serve`, and a cluster root requires one.
+bridge's stdin, `SIGTERM` or Ctrl-C stops it gracefully and removes its record,
+and so does the bridge's end however it comes, `SIGKILL` included: the hosted
+server stops when its own stdin, a pipe only the bridge holds, closes. A reused
+server keeps running. `--as` names the local server's actor, as for `serve`,
+and a cluster root requires one.
 
 For a server target, `--as` is an assertion every relayed request carries as
 `omnigraph-expect-actor`: the server refuses a token that resolves to another

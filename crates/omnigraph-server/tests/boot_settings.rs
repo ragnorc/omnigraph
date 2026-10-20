@@ -3919,6 +3919,17 @@ mod local_serving {
             fs::write(root.join("outcome"), format!("{outcome:?}")).unwrap();
             std::process::exit(i32::from(outcome.is_err()));
         }
+        if mode == "requested" {
+            // The caller stops the server through its handle once asked to.
+            let stop = serving.stop_handle();
+            let asked = root.join("stop");
+            std::thread::spawn(move || {
+                while !asked.exists() {
+                    std::thread::sleep(Duration::from_millis(10));
+                }
+                stop.stop();
+            });
+        }
         fs::write(root.join("listening.tmp"), format!("{address}\n{token}")).unwrap();
         fs::rename(root.join("listening.tmp"), root.join("listening")).unwrap();
         println!("{BEGIN}");
@@ -4088,10 +4099,14 @@ mod local_serving {
         } else {
             let response = mutation(address, token, graph_id, "Settled");
             assert!(response.starts_with("HTTP/1.1 200"), "{response}");
-            assert_eq!(
-                unsafe { libc::kill(child.0.id() as libc::pid_t, libc::SIGTERM) },
-                0
-            );
+            if mode == "requested" {
+                fs::write(root.join("stop"), b"").unwrap();
+            } else {
+                assert_eq!(
+                    unsafe { libc::kill(child.0.id() as libc::pid_t, libc::SIGTERM) },
+                    0
+                );
+            }
         }
         let deadline = Instant::now() + Duration::from_secs(15);
         let status = loop {
@@ -4114,7 +4129,12 @@ mod local_serving {
         } else {
             assert_eq!(status.code(), Some(0), "{stderr}");
             assert_eq!(outcome, "Ok(Clean)");
-            assert!(stderr.contains("shutdown signal received"), "{stderr}");
+            let stopped = if mode == "requested" {
+                "shutdown requested"
+            } else {
+                "shutdown signal received"
+            };
+            assert!(stderr.contains(stopped), "{stderr}");
         }
         assert_eq!(commits().await, before + 1, "{stderr}");
         // A clean shutdown releases the admission, as a deployment's does.
@@ -4141,6 +4161,12 @@ mod local_serving {
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
     async fn serve_local_runs_the_lifecycle_and_leaves_stdout_to_its_caller_uncertain() {
         serve_local_runs_the_lifecycle_and_leaves_stdout_to_its_caller("uncertain").await;
+    }
+
+    /// A stop asked for through the handle drains as a signal does.
+    #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+    async fn a_requested_stop_stops_the_local_server_gracefully() {
+        serve_local_runs_the_lifecycle_and_leaves_stdout_to_its_caller("requested").await;
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

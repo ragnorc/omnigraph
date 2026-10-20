@@ -3351,6 +3351,8 @@ pub enum ServeOutcome {
 struct Lifecycle {
     operations: operations::OperationRuntime,
     listener_failed: Arc<tokio::sync::Notify>,
+    /// Notified when an embedder asks the server to stop.
+    stop_requested: Arc<tokio::sync::Notify>,
     shutdown_rx: tokio::sync::watch::Receiver<bool>,
     disarm: std::sync::mpsc::Sender<()>,
     listener_task: tokio::task::JoinHandle<()>,
@@ -3368,26 +3370,30 @@ impl Lifecycle {
     /// Install the shutdown listener before anything else (RFC 0049), so the
     /// shutdown bound covers startup. The signal handlers are registered
     /// before this returns, so a signal delivered after it is observed and
-    /// never meets the default disposition. The first of a signal, an
-    /// uncertain owner or a failed listener closes admission, sets
-    /// `draining`, arms the watchdog with `grace` and releases the graceful
-    /// shutdown.
+    /// never meets the default disposition. The first of a signal, a
+    /// requested stop, an uncertain owner or a failed listener closes
+    /// admission, sets `draining`, arms the watchdog with `grace` and
+    /// releases the graceful shutdown.
     fn start(
         operations: operations::OperationRuntime,
         draining: Arc<std::sync::atomic::AtomicBool>,
         grace: std::time::Duration,
     ) -> Self {
         let listener_failed = Arc::new(tokio::sync::Notify::new());
+        let stop_requested = Arc::new(tokio::sync::Notify::new());
         let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(false);
         let (disarm, disarmed) = std::sync::mpsc::channel();
         let signals = ShutdownSignals::register();
         let listener_task = {
             let operations = operations.clone();
             let listener_failed = Arc::clone(&listener_failed);
+            let stop_requested = Arc::clone(&stop_requested);
             tokio::spawn(async move {
-                // The first signal or uncertain owner fixes the one deadline.
+                // The first signal, requested stop or uncertain owner fixes the
+                // one deadline.
                 tokio::select! {
                     () = signals.received() => info!("shutdown signal received"),
+                    () = stop_requested.notified() => info!("shutdown requested"),
                     () = operations.fatal() => error!("owned completion uncertain; containing process"),
                     () = listener_failed.notified() => error!("listener or graph startup failed; containing admitted work"),
                 }
@@ -3400,6 +3406,7 @@ impl Lifecycle {
         Self {
             operations,
             listener_failed,
+            stop_requested,
             shutdown_rx,
             disarm,
             listener_task,
@@ -3460,6 +3467,20 @@ pub struct LocalServing {
     retained_admission: Option<omnigraph_cluster::ClusterAdmission>,
 }
 
+/// Stops a local server as a shutdown signal does, for a caller whose own
+/// lifetime ends it, such as one whose parent closed its stdin.
+#[derive(Clone, Debug)]
+pub struct LocalStop(Arc<tokio::sync::Notify>);
+
+impl LocalStop {
+    /// Close request admission, let admitted work drain within the shutdown
+    /// grace and end [`LocalServing::serve`]. Callable from any thread,
+    /// before or while the server serves; asking again changes nothing.
+    pub fn stop(&self) {
+        self.0.notify_one();
+    }
+}
+
 /// Install a local server's lifecycle over `state` and `listener`, inside a
 /// Tokio runtime.
 ///
@@ -3494,6 +3515,11 @@ pub fn start_local(
 }
 
 impl LocalServing {
+    /// A handle that stops this local server as a shutdown signal does.
+    pub fn stop_handle(&self) -> LocalStop {
+        LocalStop(Arc::clone(&self.lifecycle.stop_requested))
+    }
+
     /// Serve until shutdown. This runs the lifecycle the server binary runs,
     /// prints nothing to stdout, and returns an uncertain outcome instead of
     /// exiting the process.

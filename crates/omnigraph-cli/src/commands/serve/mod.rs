@@ -9,17 +9,18 @@
 
 mod guard;
 
-use std::io::Write;
+use std::io::{Read, Write};
 use std::time::Duration;
 
 use clap::Args;
 use color_eyre::Result;
+use color_eyre::eyre::WrapErr;
 use omnigraph_api_types::{
     ErrorCode, OutcomeAction, OutcomeEffects, OutcomeExecution, OutcomeOutput,
 };
 use omnigraph_server::{
-    AppState, LocalAccess, LocalBinding, LocalOpenError, LocalOptions, LocalScope, ProcessDefaults,
-    ServeOutcome,
+    AppState, LocalAccess, LocalBinding, LocalOpenError, LocalOptions, LocalScope, LocalStop,
+    ProcessDefaults, ServeOutcome,
 };
 use serde::Serialize;
 
@@ -53,6 +54,11 @@ pub(crate) struct ServeArgs {
     /// Print one ready line as JSON on stdout.
     #[arg(long)]
     pub(crate) json: bool,
+    /// Stop a hosted local server gracefully when stdin reaches its end, as
+    /// `SIGTERM` stops it. `omnigraph mcp` passes it with a pipe only it
+    /// holds, so the server it hosts ends with it, killed included.
+    #[arg(long, hide = true)]
+    pub(crate) stop_on_stdin_close: bool,
 }
 
 /// The ready line: one JSON object on stdout once the local server serves.
@@ -220,6 +226,29 @@ async fn release_unserved(
     }
 }
 
+/// Stop the local server once stdin reaches its end or fails, read on a
+/// thread of its own so a read blocked on an open stdin never holds the
+/// runtime. Whatever stdin carries is discarded.
+fn stop_when_stdin_closes(stop: LocalStop) -> Result<()> {
+    std::thread::Builder::new()
+        .name("serve-stdin".to_string())
+        .spawn(move || {
+            let mut stdin = std::io::stdin().lock();
+            let mut buffer = [0u8; 512];
+            loop {
+                match stdin.read(&mut buffer) {
+                    Ok(0) => break,
+                    Ok(_) => {}
+                    Err(error) if error.kind() == std::io::ErrorKind::Interrupted => {}
+                    Err(_) => break,
+                }
+            }
+            stop.stop();
+        })
+        .wrap_err("could not start watching stdin")?;
+    Ok(())
+}
+
 pub(crate) async fn run_serve(
     input: &InvocationConfig,
     as_actor: Option<&str>,
@@ -360,6 +389,11 @@ async fn serve(
     let serving = omnigraph_server::start_local(state, listener, move |router| {
         guard::loopback_only(router, port)
     })?;
+    if args.stop_on_stdin_close
+        && let Err(error) = stop_when_stdin_closes(serving.stop_handle())
+    {
+        return Err(release_unserved(serving, error).await);
+    }
     let id = ulid::Ulid::new().to_string();
     let liveness = match records.hold(&id) {
         Ok(liveness) => liveness,

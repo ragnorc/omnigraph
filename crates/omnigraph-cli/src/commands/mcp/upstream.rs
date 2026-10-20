@@ -4,10 +4,12 @@
 //! A direct target is reached through `omnigraph serve --target NAME --reuse
 //! --json`, run as a child: it prints the ready line of the destination's
 //! live local server and exits, or hosts one and prints its own. A hosted
-//! one serves until the bridge stops it with `SIGTERM`, the signal that stops
-//! any local server gracefully and removes its record. A server target's
-//! requests carry its credential owner's stored token, resolved as every
-//! served command resolves it.
+//! one serves until its stdin, a pipe only the bridge holds, reaches its
+//! end, and then stops as a shutdown signal stops any local server: it
+//! drains and removes its record. The bridge closes the pipe to stop it, and
+//! the system closes it when the bridge dies, killed included. A server
+//! target's requests carry its credential owner's stored token, resolved as
+//! every served command resolves it.
 
 use std::cell::RefCell;
 use std::process::{ExitStatus, Stdio};
@@ -43,8 +45,8 @@ const ANSWER_MAX_BYTES: usize = 4 * 1024 * 1024;
 const READY_WAIT: Duration = Duration::from_secs(90);
 /// How long a `serve` that reused or refused may take to exit.
 const EXIT_WAIT: Duration = Duration::from_secs(10);
-/// How long a hosted local server may take to stop after `SIGTERM`: its
-/// shutdown grace bounds its drain, and the margin its exit.
+/// How long a hosted local server may take to stop after its stdin closes:
+/// its shutdown grace bounds its drain, and the margin its exit.
 const STOP_WAIT: Duration =
     Duration::from_secs(omnigraph_server::DEFAULT_SHUTDOWN_GRACE.as_secs() + 10);
 /// The most a refused `serve` writes on stdout.
@@ -158,8 +160,10 @@ enum Http {
 /// A `serve` child that hosts a local server.
 struct Hosted {
     child: tokio::process::Child,
+    /// The child's stdin, held open for as long as it should serve.
+    stdin: tokio::process::ChildStdin,
     /// Held open until the child exits, so it never writes to a closed pipe.
-    _stdout: tokio::io::BufReader<tokio::process::ChildStdout>,
+    stdout: tokio::io::BufReader<tokio::process::ChildStdout>,
 }
 
 /// `serve --json`'s ready line, as far as the bridge reads it.
@@ -487,20 +491,29 @@ async fn attach_local(target: &str, actor: Option<&str>) -> Result<(Connection, 
     let executable = std::env::current_exe()
         .wrap_err("cannot locate this executable to run `omnigraph serve`")?;
     let mut command = tokio::process::Command::new(executable);
-    command.args(["serve", "--target", target, "--reuse", "--json"]);
+    command.args([
+        "serve",
+        "--target",
+        target,
+        "--reuse",
+        "--json",
+        "--stop-on-stdin-close",
+    ]);
     if let Some(actor) = actor {
         command.args(["--as", actor]);
     }
     // stdout carries only the bridge's JSON-RPC, so the child gets its own
-    // pipe; its logs go to the bridge's stderr; stdin stays the agent's.
+    // pipe; its logs go to the bridge's stderr; its stdin is a pipe whose
+    // end stops a server it hosts, and never the agent's.
     command
-        .stdin(Stdio::null())
+        .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit())
         .kill_on_drop(true);
     let mut child = command
         .spawn()
         .wrap_err("could not run `omnigraph serve`")?;
+    let stdin = child.stdin.take().expect("stdin is piped");
     let mut stdout = tokio::io::BufReader::new(child.stdout.take().expect("stdout is piped"));
     let mut first = String::new();
     match tokio::time::timeout(READY_WAIT, stdout.read_line(&mut first)).await {
@@ -574,7 +587,8 @@ async fn attach_local(target: &str, actor: Option<&str>) -> Result<(Connection, 
         connection,
         Some(Hosted {
             child,
-            _stdout: stdout,
+            stdin,
+            stdout,
         }),
     ))
 }
@@ -595,24 +609,22 @@ async fn wait_bounded(child: &mut tokio::process::Child, wait: Duration) -> Stri
     }
 }
 
-/// Stop a hosted local server as a shutdown signal does, then wait for it.
-async fn stop(mut hosted: Hosted) -> std::io::Result<ExitStatus> {
-    #[cfg(unix)]
-    {
-        if let Some(pid) = hosted.child.id() {
-            // SAFETY: the child is not reaped yet, so its pid still names it.
-            unsafe { libc::kill(pid as libc::pid_t, libc::SIGTERM) };
-        }
-    }
-    #[cfg(not(unix))]
-    {
-        hosted.child.start_kill()?;
-    }
-    match tokio::time::timeout(STOP_WAIT, hosted.child.wait()).await {
+/// Stop a hosted local server by closing its stdin, which stops it as a
+/// shutdown signal does, then wait for it.
+async fn stop(hosted: Hosted) -> std::io::Result<ExitStatus> {
+    let Hosted {
+        mut child,
+        stdin,
+        stdout,
+    } = hosted;
+    drop(stdin);
+    let status = match tokio::time::timeout(STOP_WAIT, child.wait()).await {
         Ok(status) => status,
         Err(_) => {
-            hosted.child.kill().await?;
-            hosted.child.wait().await
+            child.kill().await?;
+            child.wait().await
         }
-    }
+    };
+    drop(stdout);
+    status
 }
