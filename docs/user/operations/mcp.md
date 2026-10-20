@@ -147,9 +147,11 @@ with error `-32000` and its id; `data` carries the `http_status` and `body` the
 server answered with. After a 401 or a refused connection the bridge resolves
 its target once more, attaching to a restarted local server or reading the
 token again, and resends; requests lost together resolve once between them.
-When a resent request fails as well, the bridge answers every pending request
-with error `-32000` and exits 1 with `error[mcp_target_lost]` on stderr. A
-refusal before relaying exits 1 with `error[<code>]: <message>` on stderr.
+The server it reaches then may list other tools, so the bridge lists them
+again before it admits a call there, a resent one included. When a resent
+request fails as well, the bridge answers every pending request with error
+`-32000` and exits 1 with `error[mcp_target_lost]` on stderr. A refusal before
+relaying exits 1 with `error[<code>]: <message>` on stderr.
 
 ## Settings
 

@@ -26,6 +26,7 @@ mod binding;
 mod upstream;
 mod wire;
 
+use std::borrow::Cow;
 use std::cell::{Cell, RefCell};
 use std::collections::{HashMap, VecDeque};
 use std::fmt::Display;
@@ -545,7 +546,7 @@ impl Relay<'_, '_> {
     /// is only logged.
     async fn forward(&self, method: Option<String>, message: Value, raw: Vec<u8>) -> Answer {
         let routing = self.routing(method.as_deref(), &message);
-        let delivery = self.exchange(&raw, &routing).await?;
+        let (_, delivery) = self.exchange(&raw, &routing).await?;
         if !matches!(delivery, Delivery::Accepted | Delivery::Messages(_)) {
             self.log.line(format_args!(
                 "`{}` was not delivered: {}",
@@ -556,13 +557,40 @@ impl Relay<'_, '_> {
         Ok(Vec::new())
     }
 
+    /// Relay a request. One lost before anything ran it is admitted again,
+    /// by the tools of the server the target resolves to then, and sent once
+    /// more.
     async fn request(&self, id: Value, method: String, message: Value, raw: Vec<u8>) -> Answer {
-        let mut admitted = self.binding.borrow().admit(&method, &message);
+        let mut lost = None;
+        loop {
+            match self.request_once(&id, &method, &message, &raw).await? {
+                Attempt::Answered(lines) => return Ok(lines),
+                Attempt::Lost { generation, cause } => {
+                    lost = Some(self.recover(generation, cause, lost).await?);
+                }
+            }
+        }
+    }
+
+    /// Admit a request by the tools of the server the bridge reaches now,
+    /// then send it on that connection.
+    async fn request_once(
+        &self,
+        id: &Value,
+        method: &str,
+        message: &Value,
+        raw: &[u8],
+    ) -> std::result::Result<Attempt, Ended> {
+        let mut admitted = {
+            let mut binding = self.binding.borrow_mut();
+            binding.reached(self.upstream.connection().0);
+            binding.admit(method, message)
+        };
         if admitted == Admit::ListTools {
-            admitted = if self.list_tools(&message).await? {
+            admitted = if self.list_tools(message).await? {
                 let binding = self.binding.borrow();
-                match binding.admit(&method, &message) {
-                    Admit::ListTools => binding.unlisted(&message),
+                match binding.admit(method, message) {
+                    Admit::ListTools => binding.unlisted(message),
                     admitted => admitted,
                 }
             } else {
@@ -573,48 +601,53 @@ impl Relay<'_, '_> {
                 }
             };
         }
-        let (sent, body) = match admitted {
+        let answered = |line: Value| Ok(Attempt::Answered(vec![line.to_string()]));
+        let rewritten = match admitted {
             Admit::Refuse {
                 code,
                 message,
                 data,
-            } => {
-                return Ok(vec![
-                    wire::error(id, code, &message, Some(data)).to_string(),
-                ]);
-            }
-            Admit::Send(Some(rewritten)) => {
-                let body =
-                    serde_json::to_vec(&rewritten).map_err(|error| Ended::Failed(error.into()))?;
-                (rewritten, body)
-            }
-            Admit::Send(None) | Admit::ListTools => (message, raw),
+            } => return answered(wire::error(id.clone(), code, &message, Some(data))),
+            Admit::Send(rewritten) => rewritten,
+            Admit::ListTools => None,
         };
-        let routing = self.routing(Some(&method), &sent);
-        let messages = match self.exchange(&body, &routing).await? {
+        let body = match &rewritten {
+            Some(rewritten) => Cow::Owned(
+                serde_json::to_vec(rewritten).map_err(|error| Ended::Failed(error.into()))?,
+            ),
+            None => Cow::Borrowed(raw),
+        };
+        let sent = rewritten.as_ref().unwrap_or(message);
+        let routing = self.routing(Some(method), sent);
+        let (generation, connection) = self.upstream.connection();
+        let delivery = connection.post(&body, &routing).await;
+        if let Some(cause) = delivery.lost() {
+            return Ok(Attempt::Lost { generation, cause });
+        }
+        let messages = match delivery {
             Delivery::Messages(messages) => messages,
             Delivery::Refused { status, body } => {
-                return Ok(vec![
-                    wire::error(
-                        id,
-                        SERVER_ERROR,
-                        &format!("the server refused the request with HTTP {status}"),
-                        Some(json!({"http_status": status, "body": body})),
-                    )
-                    .to_string(),
-                ]);
+                return answered(wire::error(
+                    id.clone(),
+                    SERVER_ERROR,
+                    &format!("the server refused the request with HTTP {status}"),
+                    Some(json!({"http_status": status, "body": body})),
+                ));
             }
             other => {
-                return Ok(vec![
-                    wire::error(id, SERVER_ERROR, &other.describe(), None).to_string(),
-                ]);
+                return answered(wire::error(
+                    id.clone(),
+                    SERVER_ERROR,
+                    &other.describe(),
+                    None,
+                ));
             }
         };
         let mut lines = Vec::new();
-        let mut answered = false;
+        let mut responded = false;
         for (mut answer, text) in messages {
-            if wire::answers(&answer, &id) {
-                answered = true;
+            if wire::answers(&answer, id) {
+                responded = true;
                 if method == "initialize"
                     && let Some(version) = answer
                         .pointer("/result/protocolVersion")
@@ -622,11 +655,13 @@ impl Relay<'_, '_> {
                 {
                     *self.negotiated.borrow_mut() = Some(version.to_string());
                 }
-                if self
-                    .binding
-                    .borrow_mut()
-                    .narrow(&method, &sent, &mut answer)
+                let mut binding = self.binding.borrow_mut();
+                if method == "tools/list"
+                    && let Some(result) = answer.get("result")
                 {
+                    binding.learn_tools(generation, result);
+                }
+                if binding.narrow(method, sent, &mut answer) {
                     lines.push(answer.to_string());
                     continue;
                 }
@@ -638,10 +673,10 @@ impl Relay<'_, '_> {
                 text.trim().to_string()
             });
         }
-        if !answered {
+        if !responded {
             lines.push(
                 wire::error(
-                    id,
+                    id.clone(),
                     SERVER_ERROR,
                     "the server's answer carries no response to this request",
                     None,
@@ -649,7 +684,7 @@ impl Relay<'_, '_> {
                 .to_string(),
             );
         }
-        Ok(lines)
+        Ok(Attempt::Answered(lines))
     }
 
     /// The routing headers of one message. `initialize` names its version in
@@ -694,7 +729,7 @@ impl Relay<'_, '_> {
                 name: None,
                 protocol_version: version.clone(),
             };
-            let delivery = self.exchange(&body, &routing).await?;
+            let (generation, delivery) = self.exchange(&body, &routing).await?;
             let Delivery::Messages(messages) = delivery else {
                 self.log.line(format_args!(
                     "could not list the server's tools: {}",
@@ -709,7 +744,7 @@ impl Relay<'_, '_> {
             else {
                 return Ok(listed);
             };
-            self.binding.borrow_mut().learn_tools(result);
+            self.binding.borrow_mut().learn_tools(generation, result);
             listed = true;
             match result.get("nextCursor") {
                 Some(Value::String(cursor)) => {
@@ -721,30 +756,52 @@ impl Relay<'_, '_> {
         Ok(listed)
     }
 
-    /// POST one message. A delivery lost before anything ran it is resent
-    /// once on the target resolved again; losing it again ends the bridge.
-    /// Requests lost together resolve once between them.
+    /// POST one message, and say which connection delivered it. A delivery
+    /// lost before anything ran it is resent once on the target resolved
+    /// again.
     async fn exchange(
         &self,
         body: &[u8],
         routing: &Routing<'_>,
-    ) -> std::result::Result<Delivery, Ended> {
-        let (generation, connection) = self.upstream.connection();
-        let first = connection.post(body, routing).await;
-        let Some(cause) = first.lost() else {
-            return Ok(first);
-        };
+    ) -> std::result::Result<(u64, Delivery), Ended> {
+        let mut lost = None;
+        loop {
+            let (generation, connection) = self.upstream.connection();
+            let delivery = connection.post(body, routing).await;
+            match delivery.lost() {
+                None => return Ok((generation, delivery)),
+                Some(cause) => lost = Some(self.recover(generation, cause, lost).await?),
+            }
+        }
+    }
+
+    /// Resolve the target again after a message posted on connection
+    /// `generation` was lost for `cause`, before it is sent once more.
+    /// Requests lost together resolve once between them. `earlier` is why
+    /// the same message was lost before: losing it again ends the bridge.
+    async fn recover(
+        &self,
+        generation: u64,
+        cause: String,
+        earlier: Option<String>,
+    ) -> std::result::Result<String, Ended> {
+        if let Some(first) = earlier {
+            return Err(Ended::Lost(format!("{first}; resolved again, {cause}")));
+        }
         self.upstream
             .reresolve(generation, &cause, &self.log)
             .await
             .map_err(Ended::Lost)?;
-        let (_, connection) = self.upstream.connection();
-        let second = connection.post(body, routing).await;
-        match second.lost() {
-            Some(again) => Err(Ended::Lost(format!("{cause}; resolved again, {again}"))),
-            None => Ok(second),
-        }
+        Ok(cause)
     }
+}
+
+/// One attempt to relay a request.
+enum Attempt {
+    /// The lines the agent is answered with.
+    Answered(Vec<String>),
+    /// Lost on connection `generation` before anything ran it.
+    Lost { generation: u64, cause: String },
 }
 
 /// Write each line, whole and flushed. Nothing else writes stdout.

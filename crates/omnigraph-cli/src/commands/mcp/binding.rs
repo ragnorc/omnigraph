@@ -47,6 +47,10 @@ pub(super) enum Admit {
 pub(super) struct Binding {
     target: String,
     graph: String,
+    /// The generation of the connection whose server listed `tools`. A
+    /// target resolved again may reach another server, which may list or
+    /// annotate its tools otherwise.
+    listed_on: u64,
     tools: HashMap<String, ToolFacts>,
 }
 
@@ -55,7 +59,18 @@ impl Binding {
         Self {
             target,
             graph,
+            listed_on: 0,
             tools: HashMap::new(),
+        }
+    }
+
+    /// The bridge now reaches the server of connection `generation`: forget
+    /// the tools an earlier connection's server listed, so the next call
+    /// lists this one's.
+    pub(super) fn reached(&mut self, generation: u64) {
+        if generation > self.listed_on {
+            self.tools.clear();
+            self.listed_on = generation;
         }
     }
 
@@ -141,9 +156,14 @@ impl Binding {
         )
     }
 
-    /// Record the tools a `tools/list` result names, so a later call can be
-    /// admitted or refused by them.
-    pub(super) fn learn_tools(&mut self, result: &Value) {
+    /// Record the tools a `tools/list` result from connection `generation`
+    /// names, so a later call can be admitted or refused by them. A result
+    /// from a connection older than the one the tools describe is ignored.
+    pub(super) fn learn_tools(&mut self, generation: u64, result: &Value) {
+        self.reached(generation);
+        if generation < self.listed_on {
+            return;
+        }
         let Some(tools) = result.get("tools").and_then(Value::as_array) else {
             return;
         };
@@ -161,14 +181,13 @@ impl Binding {
 
     /// Narrow the server's answer to a request the bridge sent. Returns
     /// whether the answer changed.
-    pub(super) fn narrow(&mut self, method: &str, request: &Value, answer: &mut Value) -> bool {
+    pub(super) fn narrow(&self, method: &str, request: &Value, answer: &mut Value) -> bool {
         let Some(result) = answer.get_mut("result") else {
             return false;
         };
         match method {
             "initialize" | "server/discover" => self.describe(result),
             "tools/list" => {
-                self.learn_tools(result);
                 let Some(tools) = result.get_mut("tools").and_then(Value::as_array_mut) else {
                     return false;
                 };
@@ -315,7 +334,7 @@ mod tests {
 
     fn bound() -> Binding {
         let mut binding = Binding::new("local".into(), "knowledge".into());
-        binding.learn_tools(&listed());
+        binding.learn_tools(0, &listed());
         binding
     }
 
@@ -327,6 +346,7 @@ mod tests {
             binding.admit("tools/call", &call("schema", None)),
             Admit::ListTools
         );
+        binding.learn_tools(0, &listed());
         let mut answer = json!({"jsonrpc": "2.0", "id": 2, "result": listed()});
         assert!(binding.narrow("tools/list", &json!({}), &mut answer));
         let names: Vec<&str> = answer["result"]["tools"]
@@ -360,6 +380,44 @@ mod tests {
         ) else {
             panic!("a call without a tool name is refused");
         };
+    }
+
+    #[test]
+    fn tools_are_listed_again_for_the_server_a_new_connection_reaches() {
+        let mut binding = bound();
+        assert!(matches!(
+            binding.admit("tools/call", &call("schema", None)),
+            Admit::Send(Some(_))
+        ));
+        // The target was resolved again: its tools are not known there.
+        binding.reached(1);
+        assert_eq!(
+            binding.admit("tools/call", &call("schema", None)),
+            Admit::ListTools
+        );
+        // A listing the earlier connection answered late admits nothing.
+        binding.learn_tools(0, &listed());
+        assert_eq!(
+            binding.admit("tools/call", &call("schema", None)),
+            Admit::ListTools
+        );
+        // The new server's listing decides, here marking `schema` a write.
+        binding.learn_tools(
+            1,
+            &json!({"tools": [{"name": "schema", "inputSchema": {"type": "object"},
+                "annotations": {"readOnlyHint": false}}]}),
+        );
+        let Admit::Refuse { message, .. } = binding.admit("tools/call", &call("schema", None))
+        else {
+            panic!("the new server's write tool is refused");
+        };
+        assert!(message.contains("mcp --write"), "{message}");
+        // Reaching the same connection again keeps what it listed.
+        binding.reached(1);
+        assert!(matches!(
+            binding.admit("tools/call", &call("schema", None)),
+            Admit::Refuse { .. }
+        ));
     }
 
     #[test]
@@ -430,7 +488,7 @@ mod tests {
 
     #[test]
     fn listings_name_only_the_connections_graph() {
-        let mut binding = bound();
+        let binding = bound();
         let listing = json!({"graphs": [
             {"graph_id": "knowledge", "display_name": "knowledge"},
             {"graph_id": "other", "display_name": "other"},
@@ -480,7 +538,7 @@ mod tests {
 
     #[test]
     fn initialize_tells_the_agent_its_graph() {
-        let mut binding = bound();
+        let binding = bound();
         let mut answer = json!({"id": 0, "result": {"protocolVersion": "2025-11-25", "instructions": "Server."}});
         assert!(binding.narrow("initialize", &json!({}), &mut answer));
         let instructions = answer["result"]["instructions"].as_str().unwrap();
