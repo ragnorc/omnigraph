@@ -12,9 +12,7 @@ use axum::extract::Request;
 use axum::http::{HeaderValue, StatusCode, header};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
-use omnigraph_api_types::{
-    ErrorCode, ErrorOutput, OutcomeAction, OutcomeEffects, OutcomeExecution, OutcomeOutput,
-};
+use omnigraph_api_types::{DispositionEffects, DispositionOutput, ErrorCode, ErrorOutput};
 
 const CORP: &str = "cross-origin-resource-policy";
 
@@ -39,10 +37,9 @@ fn loopback_host(host: &str, port: u16) -> bool {
 fn refuse(message: &str) -> Response {
     let mut output = ErrorOutput::message(message.to_string());
     output.code = Some(ErrorCode::Forbidden);
-    output.outcome = Some(OutcomeOutput {
-        execution: OutcomeExecution::NotStarted,
-        effects: OutcomeEffects::None,
-        action: OutcomeAction::Refresh,
+    output.disposition = Some(DispositionOutput {
+        effects: DispositionEffects::None,
+        action: ErrorCode::Forbidden.action(),
     });
     let mut response = (StatusCode::FORBIDDEN, axum::Json(output)).into_response();
     response

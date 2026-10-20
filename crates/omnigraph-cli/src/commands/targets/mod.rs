@@ -568,10 +568,13 @@ fn snapshot_access(
 }
 
 /// A store's access, by the policy installed where it lives. A graph in a
-/// cluster's layout answers as `--cluster` answers for it. Any other store is
-/// a standalone graph, which carries no policy, and the engine allows every
-/// action on a handle without one; that answer holds only for a graph that
-/// opens, so the store opens first.
+/// cluster's layout answers by the ledger applied at the root it sits under.
+/// `--cluster DIR` reads the ledger where the `storage:` of `DIR/cluster.yaml`
+/// points, so the two answers differ when that `storage:` names another root,
+/// as an edit not yet applied does. Any other store is a standalone graph,
+/// which carries no policy, and the engine allows every action on a handle
+/// without one; that answer holds only for a graph that opens, so the store
+/// opens first.
 async fn store_access(
     uri: &str,
     actor: Option<String>,
@@ -587,7 +590,12 @@ async fn store_access(
             )
         })?;
     if let Some(member) = member {
-        return cluster_access(&member.root, &member.graph_id, actor, args).await;
+        // The member's root is its cluster's storage: the applied ledger
+        // there decides, whatever an unapplied `storage:` in its
+        // `cluster.yaml` names.
+        let snapshot =
+            crate::commands::control::read_storage_snapshot_or_report(&member.root).await?;
+        return snapshot_access(&snapshot, &member.graph_id, actor, args);
     }
     require_standalone_graph(uri).await?;
     omnigraph_api_types::AccessOutput::evaluate(
@@ -599,24 +607,22 @@ async fn store_access(
     )
 }
 
-/// Open a standalone graph read-only and let it go. Storage that reports
-/// what the open reads absent holds no graph, so that refuses as a missing
-/// graph; any other failure stays the open's own.
+/// Open a standalone graph read-only and let it go. A root where the engine
+/// finds no graph refuses as a missing graph. Every failure of the open
+/// itself stays the engine's own: a graph whose manifest names a missing
+/// object is damaged, not absent.
 async fn require_standalone_graph(uri: &str) -> Result<()> {
-    use omnigraph::error::{OmniError, StorageFailureKind};
-    match omnigraph::db::Omnigraph::open_read_only(uri).await {
-        Ok(_) => Ok(()),
-        Err(OmniError::Storage(failure)) if failure.kind == StorageFailureKind::NotFound => {
-            Err(CliRefusal::report(
-                ErrorCode::NotFound,
-                format!(
-                    "no graph at `{}`: {failure}",
-                    omnigraph::storage::redacted_storage_uri(uri)
-                ),
-            ))
-        }
-        Err(error) => Err(error.into()),
+    if !omnigraph::db::Omnigraph::exists(uri).await? {
+        return Err(CliRefusal::report(
+            ErrorCode::NotFound,
+            format!(
+                "no graph at `{}`",
+                omnigraph::storage::redacted_storage_uri(uri)
+            ),
+        ));
     }
+    omnigraph::db::Omnigraph::open_read_only(uri).await?;
+    Ok(())
 }
 
 /// `access`: who the caller is at a target and what it may do there. A

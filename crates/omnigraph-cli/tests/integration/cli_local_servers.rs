@@ -190,10 +190,10 @@ impl LocalServer {
     }
 }
 
-/// The outcome of every `serve` refusal but `local_server_starting`, which
-/// says to retry.
-fn not_started() -> Value {
-    json!({"execution": "not_started", "effects": "none", "action": "refresh"})
+/// The disposition of every `serve` refusal but `local_server_starting`,
+/// which says to retry: nothing changed, and the request must change.
+fn refused_to_fix() -> Value {
+    json!({"effects": "none", "action": "fix"})
 }
 
 fn json_of(output: &std::process::Output) -> Value {
@@ -283,7 +283,7 @@ fn a_read_only_local_server_serves_its_target_behind_the_loopback_guard() {
     assert_eq!(refused.status.code(), Some(1));
     let refused = json_of(&refused);
     assert_eq!(refused["code"], "local_server_exists");
-    assert_eq!(refused["outcome"], not_started());
+    assert_eq!(refused["disposition"], refused_to_fix());
     let reused = fixture.run(&["serve", "--target", "local", "--reuse", "--json"]);
     assert!(reused.status.success(), "{reused:?}");
     let reused = json_of(&reused);
@@ -325,7 +325,7 @@ fn a_read_only_local_server_serves_its_target_behind_the_loopback_guard() {
         assert_eq!(refused.status.code(), Some(1), "{field}: {refused:?}");
         let refused = json_of(&refused);
         assert_eq!(refused["code"], "local_server_cli_incompatible", "{field}");
-        assert_eq!(refused["outcome"], not_started(), "{field}");
+        assert_eq!(refused["disposition"], refused_to_fix(), "{field}");
     }
     std::fs::write(record_path(&server), &original).unwrap();
 
@@ -402,7 +402,11 @@ fn serve_refuses_what_it_cannot_serve_before_opening_anything() {
         assert_eq!(refused.status.code(), Some(1), "{args:?}: {refused:?}");
         let refused = json_of(&refused);
         assert_eq!(refused["code"], code, "{args:?}: {refused}");
-        assert_eq!(refused["outcome"], not_started(), "{args:?}: {refused}");
+        assert_eq!(
+            refused["disposition"],
+            refused_to_fix(),
+            "{args:?}: {refused}"
+        );
     }
     assert!(
         !Path::new(&fixture.records).exists()
@@ -440,7 +444,7 @@ fn serve_refuses_what_it_cannot_serve_before_opening_anything() {
     assert_eq!(refused.status.code(), Some(1), "{refused:?}");
     let refused = json_of(&refused);
     assert_eq!(refused["code"], "local_server_records_unsafe", "{refused}");
-    assert_eq!(refused["outcome"], not_started(), "{refused}");
+    assert_eq!(refused["disposition"], refused_to_fix(), "{refused}");
 }
 
 #[test]

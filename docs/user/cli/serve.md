@@ -58,9 +58,9 @@ absent). `binding` is the digest of the target's binding. `omnigraph version
 --json` reports this line's version as `protocols.serve`.
 
 A start that fails before its ready line leaves no record and exits 1. Under
-`--json` a refusal prints its `code` on stdout with an `outcome` of
-`not_started` and no effects; its `action` is `retry` for
-`local_server_starting` and `refresh` otherwise.
+`--json` a refusal prints its `code` on stdout with a `disposition` of no
+effects; its `action` is `retry` for `local_server_starting` and `fix`
+otherwise.
 
 ## Records and reuse
 
