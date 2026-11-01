@@ -8981,7 +8981,11 @@ async fn row_identity_discovery_stamps_row_ids_and_rewrites_lance_13() {
         );
     }
 
-    let stats = db.optimize().await.unwrap();
+    let stats = db
+        .optimize_as(None, omnigraph::db::OptimizeRequest::default())
+        .await
+        .unwrap()
+        .tables;
     let person = stats
         .iter()
         .find(|stat| stat.type_key == "node:Person")

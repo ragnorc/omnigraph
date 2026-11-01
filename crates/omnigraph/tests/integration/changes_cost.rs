@@ -754,7 +754,11 @@ async fn graph_diff_across_a_compaction_reads_data_flat_in_table_extent() {
                 from_commit = Some(receipt.commit.graph_commit_id.clone());
             }
             let from_commit = from_commit.unwrap();
-            let stats = db.optimize().await.unwrap();
+            let stats = db
+                .optimize_as(None, omnigraph::db::OptimizeRequest::default())
+                .await
+                .unwrap()
+                .tables;
             let person = stats
                 .iter()
                 .find(|stat| stat.type_key == "node:Person")

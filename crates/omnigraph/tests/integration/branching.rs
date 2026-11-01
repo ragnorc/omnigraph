@@ -475,10 +475,13 @@ async fn branch_list_detailed_reports_head_start_and_lifetime() {
     )
     .await
     .unwrap();
-    db.cleanup(omnigraph::db::CleanupPolicyOptions {
-        keep_versions: Some(1),
-        older_than: None,
-    })
+    db.cleanup_as(
+        omnigraph::db::CleanupPolicyOptions {
+            keep_versions: Some(1),
+            older_than: None,
+        },
+        None,
+    )
     .await
     .unwrap();
     let details = detailed_branches(&db).await;
