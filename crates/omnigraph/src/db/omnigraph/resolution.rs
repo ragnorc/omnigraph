@@ -24,9 +24,85 @@ pub enum PublicationLookup {
     /// The walk could not reach the input head's child, so nothing is proven
     /// either way; `reason` says where it stopped.
     Unproven { reason: String },
+    /// SPIKE: the walk read `resolution_walk_limit` commits without meeting
+    /// the input head's child. `next` is the first parent the page did not
+    /// visit (`FirstParentPage::next`); the next attempt starts there.
+    Walking { next: String, covered: u64 },
 }
 
 impl Omnigraph {
+    /// SPIKE: one bounded resolution attempt. The graph-head test runs
+    /// first on a fresh read of main; then one `first_parent_page` of at
+    /// most `limit` commits, from `resume` (the `next` of the previous
+    /// attempt) or from the head. A page never skips a commit: `next` is the
+    /// parent it did not visit.
+    pub async fn resolve_publication_page(
+        &self,
+        nonce: &str,
+        input_commit: Option<&str>,
+        input_manifest_version: u64,
+        resume: Option<&str>,
+        covered: u64,
+        limit: usize,
+    ) -> Result<PublicationLookup> {
+        let coordinator = self.open_coordinator_for_branch(None).await?;
+        let head_id = coordinator.head_commit().graph_commit_id;
+        let (head, page) = coordinator
+            .first_parent_page(Some(resume.unwrap_or(&head_id)), limit.max(1))
+            .await?;
+        if Some(head.graph_commit_id.as_str()) == input_commit {
+            return Ok(PublicationLookup::HeadUnchanged);
+        }
+        let Some(page) = page else {
+            return Ok(PublicationLookup::Unproven {
+                reason: format!(
+                    "no commit {} is held or in __history",
+                    resume.unwrap_or(&head.graph_commit_id)
+                ),
+            });
+        };
+        let read = page.commits.len() as u64;
+        for commit in page.commits {
+            if commit.parent_commit_id.as_deref() == input_commit {
+                return Ok(
+                    match omnigraph_core::graph_commit_id::commit_id_answers(
+                        &commit.graph_commit_id,
+                        nonce,
+                    ) {
+                        Ok(true) => PublicationLookup::Committed {
+                            commit_id: commit.graph_commit_id,
+                        },
+                        Ok(false) => PublicationLookup::NotCommitted,
+                        Err(error) => PublicationLookup::Unproven {
+                            reason: format!(
+                                "the input head's child {} has no readable id: {error}",
+                                commit.graph_commit_id
+                            ),
+                        },
+                    },
+                );
+            }
+            if commit.graph_manifest_version <= input_manifest_version {
+                return Ok(PublicationLookup::Unproven {
+                    reason: format!(
+                        "the walk passed the input head's version at {}",
+                        commit.graph_commit_id
+                    ),
+                });
+            }
+        }
+        Ok(match page.next {
+            Some(next) => PublicationLookup::Walking {
+                next,
+                covered: covered + read,
+            },
+            None => PublicationLookup::Unproven {
+                reason: "the walk reached the first commit without meeting the input head"
+                    .to_string(),
+            },
+        })
+    }
+
     /// Walk main's `parent_commit_id` chain from the head of a fresh read of
     /// its `__manifest` back to the child of `input_commit`, and judge that
     /// child against `nonce`. Each step looks its parent up where a

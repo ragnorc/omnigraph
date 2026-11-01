@@ -54,6 +54,11 @@ pub struct MaintenanceSettings {
     pub max_gate_hold: Duration,
     /// The adjacency artifact bound every served run applies.
     pub artifact_write_limit: u64,
+    /// SPIKE: resource ceilings and the run budget are serve settings alone.
+    pub table_ceilings: TableCeilings,
+    pub run_source_bytes: Option<u64>,
+    /// SPIKE: commits one resolution attempt reads before it stores its cursor.
+    pub resolution_walk_limit: usize,
 }
 
 impl Default for MaintenanceSettings {
@@ -63,6 +68,9 @@ impl Default for MaintenanceSettings {
             default_gate_hold: Duration::from_secs(60),
             max_gate_hold: Duration::from_secs(300),
             artifact_write_limit: 512 * 1024 * 1024,
+            table_ceilings: TableCeilings::default(),
+            run_source_bytes: None,
+            resolution_walk_limit: 256,
         }
     }
 }
@@ -106,6 +114,27 @@ impl MaintenanceSettings {
         }
         if let Some(bytes) = number("OMNIGRAPH_MAINTENANCE_ARTIFACT_WRITE_LIMIT_BYTES")? {
             settings.artifact_write_limit = bytes;
+        }
+        let mut ceilings = TableCeilings::default();
+        if let Some(v) = number("OMNIGRAPH_MAINTENANCE_MAX_SOURCE_FRAGMENTS")? {
+            ceilings = ceilings.with_source_fragments(v);
+        }
+        if let Some(v) = number("OMNIGRAPH_MAINTENANCE_MAX_SOURCE_ROWS")? {
+            ceilings = ceilings.with_source_rows(v);
+        }
+        if let Some(v) = number("OMNIGRAPH_MAINTENANCE_MAX_SOURCE_BYTES")? {
+            ceilings = ceilings.with_source_bytes(v);
+        }
+        if let Some(v) = number("OMNIGRAPH_MAINTENANCE_MAX_BLOB_BYTES")? {
+            ceilings = ceilings.with_blob_bytes(v);
+        }
+        if let Some(v) = number("OMNIGRAPH_MAINTENANCE_MAX_INDEX_ROWS")? {
+            ceilings = ceilings.with_index_rows(v);
+        }
+        settings.table_ceilings = ceilings;
+        settings.run_source_bytes = number("OMNIGRAPH_MAINTENANCE_RUN_SOURCE_BYTES")?;
+        if let Some(v) = number("OMNIGRAPH_MAINTENANCE_RESOLUTION_WALK_LIMIT")? {
+            settings.resolution_walk_limit = v.max(1) as usize;
         }
         if settings.default_gate_hold > settings.max_gate_hold {
             return Err("the default maintenance gate hold exceeds its ceiling".to_string());
@@ -213,18 +242,6 @@ pub(crate) struct StartOptimizeRequest {
     tables: Option<Vec<String>>,
     #[serde(default)]
     max_gate_hold_ms: Option<u64>,
-    #[serde(default)]
-    max_source_fragments: Option<u64>,
-    #[serde(default)]
-    max_source_rows: Option<u64>,
-    #[serde(default)]
-    max_source_bytes: Option<u64>,
-    #[serde(default)]
-    max_blob_bytes: Option<u64>,
-    #[serde(default)]
-    max_index_rows: Option<u64>,
-    #[serde(default)]
-    run_source_bytes: Option<u64>,
 }
 
 impl StartOptimizeRequest {
@@ -232,12 +249,6 @@ impl StartOptimizeRequest {
         OptimizeOptions {
             tables: self.tables.clone(),
             max_gate_hold_ms: self.max_gate_hold_ms,
-            max_source_fragments: self.max_source_fragments,
-            max_source_rows: self.max_source_rows,
-            max_source_bytes: self.max_source_bytes,
-            max_blob_bytes: self.max_blob_bytes,
-            max_index_rows: self.max_index_rows,
-            run_source_bytes: self.run_source_bytes,
         }
     }
 }
@@ -385,9 +396,19 @@ async fn resolve(state: &AppState, ledger: &mut MaintenanceLedger) -> bool {
             continue;
         };
         let resolution = match engine
-            .resolve_publication(nonce, operation.input_commit.as_deref(), version)
+            .resolve_publication_page(
+                nonce,
+                operation.input_commit.as_deref(),
+                version,
+                operation.resolution_next.as_deref(),
+                operation.resolution_covered,
+                state.maintenance.settings.resolution_walk_limit,
+            )
             .await
         {
+            Ok(PublicationLookup::Walking { next, covered }) => {
+                Resolution::Walking { next, covered }
+            }
             Ok(PublicationLookup::Committed { commit_id }) => Resolution::Committed {
                 published_commit: commit_id,
             },
@@ -484,13 +505,6 @@ fn validate(settings: &MaintenanceSettings, input: &StartOptimizeRequest) -> Res
             ),
         ));
     }
-    if let (Some(table), Some(budget)) = (input.max_source_bytes, input.run_source_bytes)
-        && table > budget
-    {
-        return Err(ApiError::bad_request(
-            "max_source_bytes may not exceed run_source_bytes",
-        ));
-    }
     Ok(())
 }
 
@@ -577,11 +591,13 @@ pub(crate) async fn start_optimize(
             ));
         }
     }
-    match owner
+    omnigraph::spike::pause("server.before_accept_write").await;
+    let accept_write = owner
         .write_maintenance(&loaded.ledger, loaded.version.as_deref())
         .await
-        .map_err(refusal)?
-    {
+        .map_err(refusal)?;
+    omnigraph::spike::pause("server.after_accept_write").await;
+    match accept_write {
         MaintenanceWrite::Written { .. } => {}
         MaintenanceWrite::Conflict => {
             return Err(ApiError::conflict(
@@ -708,6 +724,7 @@ async fn run(
         return Ok(()).into();
     }
 
+    omnigraph::spike::pause("server.after_running_write").await;
     // Shutdown and containment close admission; the run stops at its next
     // safe boundary.
     let watch = {
@@ -747,6 +764,7 @@ async fn run(
                 {
                     Ok(()) => {
                         landed.store(true, std::sync::atomic::Ordering::SeqCst);
+                        omnigraph::spike::pause("server.after_publishing_write").await;
                         Ok(())
                     }
                     Err(error) => {
@@ -769,8 +787,8 @@ async fn run(
                 .map_or(settings.default_gate_hold, Duration::from_millis),
         )
         .with_artifact_bytes(settings.artifact_write_limit)
-        .with_table_ceilings(table_ceilings(options));
-    let limits = match options.run_source_bytes {
+        .with_table_ceilings(settings.table_ceilings);
+    let limits = match settings.run_source_bytes {
         Some(budget) => limits.with_run_source_bytes(budget),
         None => limits,
     };
@@ -821,6 +839,7 @@ async fn run(
             (ending, Some(ApiError::from_omni(error)))
         }
     };
+    omnigraph::spike::pause("server.before_terminal_write").await;
     {
         let mut record = state.maintenance.record.lock().await;
         let written = async {
@@ -857,26 +876,6 @@ async fn run(
         Some(error) if error.contains_process() => Err(error).into(),
         _ => Ok(()).into(),
     }
-}
-
-fn table_ceilings(options: &OptimizeOptions) -> TableCeilings {
-    let mut ceilings = TableCeilings::default();
-    if let Some(value) = options.max_source_fragments {
-        ceilings = ceilings.with_source_fragments(value);
-    }
-    if let Some(value) = options.max_source_rows {
-        ceilings = ceilings.with_source_rows(value);
-    }
-    if let Some(value) = options.max_source_bytes {
-        ceilings = ceilings.with_source_bytes(value);
-    }
-    if let Some(value) = options.max_blob_bytes {
-        ceilings = ceilings.with_blob_bytes(value);
-    }
-    if let Some(value) = options.max_index_rows {
-        ceilings = ceilings.with_index_rows(value);
-    }
-    ceilings
 }
 
 fn table_outcome(stat: &omnigraph::db::DatasetOptimizeStats) -> MaintenanceTableOutcome {

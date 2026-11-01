@@ -42,6 +42,7 @@ pub(crate) mod ordered_cursor;
 pub(crate) mod runtime_cache;
 pub mod seams;
 pub mod session;
+pub mod spike;
 pub mod storage;
 pub(crate) mod storage_layer;
 pub(crate) mod table_store;

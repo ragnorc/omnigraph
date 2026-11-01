@@ -20,6 +20,10 @@ use serde::{Deserialize, Serialize};
 use crate::Diagnostic;
 use crate::deployment::canonical_ulid;
 
+fn is_zero(value: &u64) -> bool {
+    *value == 0
+}
+
 pub const CLUSTER_MAINTENANCE_FILE: &str = "__cluster/maintenance.json";
 
 /// Terminal operations kept, newest first; the oldest is evicted first.
@@ -90,18 +94,6 @@ pub struct OptimizeOptions {
     pub tables: Option<Vec<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub max_gate_hold_ms: Option<u64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub max_source_fragments: Option<u64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub max_source_rows: Option<u64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub max_source_bytes: Option<u64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub max_blob_bytes: Option<u64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub max_index_rows: Option<u64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub run_source_bytes: Option<u64>,
 }
 
 /// One table's outcome, as the engine reported it.
@@ -186,6 +178,12 @@ pub struct MaintenanceOperation {
     pub artifact: Option<MaintenanceTailOutcome>,
     #[serde(default)]
     pub timings: MaintenanceTimings,
+    /// SPIKE: where a bounded resolution walk stopped: the first parent its
+    /// last page did not visit, and how many commits it has covered.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resolution_next: Option<String>,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub resolution_covered: u64,
     /// Why a terminal operation ended as it did, or where an unresolved
     /// publication's resolution stopped.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -223,6 +221,8 @@ pub enum Resolution {
     Committed { published_commit: String },
     /// The input head's child does not answer the nonce.
     NotCommitted,
+    /// SPIKE: a bounded walk stopped; the next attempt resumes at `next`.
+    Walking { next: String, covered: u64 },
 }
 
 /// Whether `id` is a canonical ULID, the only spelling a maintenance id has.
@@ -273,6 +273,8 @@ impl MaintenanceOperation {
             configuration_clear: None,
             artifact: None,
             timings: MaintenanceTimings::default(),
+            resolution_next: None,
+            resolution_covered: 0,
             reason: None,
         }
     }
@@ -421,6 +423,14 @@ impl MaintenanceLedger {
                     return false;
                 }
                 operation.reason = Some(reason);
+            }
+            Resolution::Walking { next, covered } => {
+                let operation = &mut self.unresolved[index];
+                operation.reason = Some(format!(
+                    "resolution: walking; stopped before {next} after {covered} commits"
+                ));
+                operation.resolution_next = Some(next);
+                operation.resolution_covered = covered;
             }
             Resolution::Committed { published_commit } => {
                 let mut operation = self.unresolved.remove(index);
@@ -645,6 +655,8 @@ mod tests {
             configuration_clear: None,
             artifact: None,
             timings: MaintenanceTimings::default(),
+            resolution_next: None,
+            resolution_covered: 0,
             reason: None,
         }
     }

@@ -677,6 +677,9 @@ pub struct OptimizeRequest {
     pub concurrency: Option<OptimizeConcurrency>,
     pub before_publish: Option<OptimizeBeforePublish>,
     pub cancellation: Option<OptimizeCancellation>,
+    /// SPIKE: when the pre-gate authority moved before the gates were held,
+    /// capture it once more under the gates instead of refusing.
+    pub spike_recapture_under_gates: bool,
 }
 
 impl OptimizeRequest {
@@ -711,6 +714,11 @@ impl OptimizeRequest {
 
     pub fn with_cancellation(mut self, cancellation: OptimizeCancellation) -> Self {
         self.cancellation = Some(cancellation);
+        self
+    }
+
+    pub fn with_spike_recapture_under_gates(mut self, on: bool) -> Self {
+        self.spike_recapture_under_gates = on;
         self
     }
 
@@ -869,7 +877,7 @@ pub async fn optimize_all_datasets(
     // revalidate it after schema -> main -> table acquisition. A concurrent
     // graph or schema publish therefore refuses this attempt before any
     // physical maintenance effect.
-    let authority_txn = db.open_write_txn(None).await?;
+    let mut authority_txn = db.open_write_txn(None).await?;
     fail(&OPTIMIZE_POST_AUTHORITY_CAPTURE_PRE_GATES)?;
 
     // Canonical writer order: schema -> branch -> sorted tables. Planning reads
@@ -894,7 +902,23 @@ pub async fn optimize_all_datasets(
     let table_guards = db.write_queue().acquire_many(&queue_keys).await;
     let gates_acquired = Instant::now();
 
-    let snapshot = db.revalidate_write_txn(&authority_txn).await?;
+    let snapshot = match db.revalidate_write_txn(&authority_txn).await {
+        Ok(snapshot) => snapshot,
+        Err(OmniError::Manifest(ref manifest))
+            if request.spike_recapture_under_gates
+                && matches!(
+                    manifest.details,
+                    Some(crate::error::ManifestConflictDetails::ReadSetChanged { .. })
+                ) =>
+        {
+            // Every in-process writer of main waits on the gates now held,
+            // so a capture made here cannot be moved by one of them.
+            authority_txn = db.open_write_txn(None).await?;
+            db.revalidate_write_txn(&authority_txn).await?
+        }
+        // SPIKE: the refusal is before any effect; label it.
+        Err(error) => return Err(error.before_effect()),
+    };
     let input_commit = authority_txn.authority.graph_head.clone();
     let input_manifest_version = authority_txn.base.graph_manifest_version();
 
@@ -991,6 +1015,7 @@ pub async fn optimize_all_datasets(
         )
         .await?;
         graph_commit_id = Some(commit.graph_commit_id);
+        crate::spike::pause("optimize.after_publication").await;
         db.runtime_cache.invalidate_all().await;
         if edge_tables_committed {
             db.invalidate_graph_index().await;
@@ -1022,6 +1047,7 @@ pub async fn optimize_all_datasets(
             &catalog,
             edge_tables_committed,
             request.limits.artifact_bytes,
+            request.cancellation.as_ref(),
         )
         .await
         {
@@ -1109,6 +1135,7 @@ async fn run_table_pipeline(
         let catalog = std::sync::Arc::clone(catalog);
         async move {
             let result = apply_optimize_table_effects(db, catalog.as_ref(), work).await;
+            crate::spike::pause("optimize.after_table_effect").await;
             (index, started, result)
         }
     };
@@ -1299,6 +1326,7 @@ async fn persist_graph_index_artifact(
     catalog: &omnigraph_compiler::catalog::Catalog,
     edge_tables_committed: bool,
     limit: Option<u64>,
+    cancellation: Option<&OptimizeCancellation>,
 ) -> Result<ArtifactRefresh> {
     if catalog.edge_types.is_empty() {
         return Ok(ArtifactRefresh::Skipped(ArtifactSkip::NoEdgeTypes));
@@ -1360,14 +1388,25 @@ async fn persist_graph_index_artifact(
             &edge_types,
         ));
     }
-    let Some(index) = crate::graph_index::GraphIndex::build_counted(
+    // SPIKE: the scan reads only, so a cancellation (shutdown, deployment
+    // drain) abandons it where it stands.
+    let build = crate::graph_index::GraphIndex::build_counted(
         &snapshot,
         &edge_types,
         db.catalog().system_columns,
         count.as_mut(),
-    )
-    .await?
-    else {
+    );
+    let built = match cancellation {
+        Some(cancellation) => tokio::select! {
+            biased;
+            () = cancellation.cancelled() => {
+                return Ok(ArtifactRefresh::Skipped(ArtifactSkip::Cancelled));
+            }
+            built = build => built,
+        },
+        None => build.await,
+    };
+    let Some(index) = built? else {
         let counted = count.as_ref().map_or(0, |count| count.counted());
         return Ok(ArtifactRefresh::Skipped(ArtifactSkip::SizeLimit {
             counted,
@@ -1380,6 +1419,12 @@ async fn persist_graph_index_artifact(
         return Ok(ArtifactRefresh::Skipped(ArtifactSkip::IncompleteEdgeTables));
     };
     drop(index);
+    // SPIKE: the write is issued only if no shutdown or cancellation is
+    // pending at this moment; once issued it is awaited, never dropped.
+    crate::spike::pause("optimize.before_artifact_write").await;
+    if cancellation.is_some_and(OptimizeCancellation::is_cancelled) {
+        return Ok(ArtifactRefresh::Skipped(ArtifactSkip::Cancelled));
+    }
     // The artifact key is mutable, so a write dropped mid-request would leave
     // its outcome unknown: once issued, the write runs to its end even when
     // this run is dropped.
