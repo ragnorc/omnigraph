@@ -1050,6 +1050,7 @@ const EXPECTED_SCHEMAS: &[&str] = &[
     "BranchCreateOutput",
     "BranchCreateRequest",
     "BranchDeleteOutput",
+    "BranchDetailOutput",
     "BranchListOutput",
     "BranchMergeOutcome",
     "BranchMergeOutput",
