@@ -2554,7 +2554,7 @@ impl Omnigraph {
     async fn resolve_target_inner(&self, target: &ReadTarget) -> Result<ResolvedTarget> {
         if let ReadTarget::Branch(branch) = target {
             let normalized = normalize_branch_name(branch)?;
-            {
+            let stale = {
                 let coord = self.coordinator.read().await;
                 if normalized.as_deref() != coord.current_branch() {
                     drop(coord);
@@ -2571,14 +2571,19 @@ impl Omnigraph {
                     return warm_resolved_target(&coord, target).await;
                 }
                 // Stale: refresh under the write lock below.
-            }
+                held
+            };
             let mut coord = self.coordinator.write().await;
             if normalized.as_deref() == coord.current_branch() {
-                // Re-check after taking the write lock; another writer may have
-                // refreshed (tokio RwLock has no read->write upgrade).
+                // tokio's RwLock has no read->write upgrade, so another task
+                // may have refreshed or published through this handle while
+                // the lock was free. A held incarnation that is still the one
+                // the probe found stale needs no second probe: the refresh
+                // reads the branch's latest version itself. A changed one is
+                // probed again.
                 let held = coord.manifest_incarnation();
                 let mut refreshed = false;
-                if !coord.probe_latest_incarnation().await?.matches(&held) {
+                if held == stale || !coord.probe_latest_incarnation().await?.matches(&held) {
                     coord.refresh().await?;
                     refreshed = true;
                 }

@@ -1114,8 +1114,8 @@ async fn warm_read_on_recreated_branch_observes_new_incarnation() {
         "recreated branch must re-read the manifest after the incarnation probe"
     );
     assert_eq!(
-        io.version_probes, 2,
-        "the stale branch probes once under each read and write lock"
+        io.version_probes, 1,
+        "the stale branch probes once; the write lock reuses that verdict"
     );
     assert_eq!(
         served_head.as_deref(),
@@ -1258,8 +1258,8 @@ async fn recreated_branch_owned_table_handle_uses_table_etag() {
         "recreated branch must refresh the manifest"
     );
     assert_eq!(
-        io.version_probes, 2,
-        "the stale branch probes once under each read and write lock"
+        io.version_probes, 1,
+        "the stale branch probes once; the write lock reuses that verdict"
     );
 
     let stale_old_person = reader
@@ -1283,7 +1283,7 @@ async fn recreated_branch_owned_table_handle_uses_table_etag() {
 /// `(table_key, version, table_branch, e_tag)`; on local FS the e_tag is `None`,
 /// so a recreated branch at the same version has the same key — the stale topology
 /// is instead evicted by the same-branch manifest refresh (`invalidate_all` on the
-/// `version_probes == 2` stale path), the documented e_tag-less fallback. This
+/// `version_probes == 1` stale path), the documented e_tag-less fallback. This
 /// traversal takes the indexed path (single-source frontier), so it also exercises
 /// the table-handle cache incarnation; the assertion is that recreated-branch
 /// topology is never stale regardless of path.
@@ -1387,8 +1387,8 @@ async fn recreated_branch_traversal_uses_graph_index_incarnation() {
             "recreated branch traversal must refresh the manifest"
         );
         assert_eq!(
-            io.version_probes, 2,
-            "the stale branch probes once under each read and write lock"
+            io.version_probes, 1,
+            "the stale branch probes once; the write lock reuses that verdict"
         );
 
         let stale_old_friends = reader
@@ -1454,8 +1454,8 @@ async fn stale_read_refreshes_manifest_only_when_exact_head_exists() {
         "stale read must re-read the manifest"
     );
     assert_eq!(
-        io.version_probes, 2,
-        "stale same-branch read probes once under the read lock and once under the write lock"
+        io.version_probes, 1,
+        "a stale same-branch read probes once under the read lock; the write lock reuses its verdict"
     );
 }
 
