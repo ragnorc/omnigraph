@@ -965,6 +965,8 @@ mod tests {
             },
         );
         let query = QueryIR {
+            having: None,
+            limit_param: None,
             name: "documents".into(),
             params: vec![],
             pipeline: vec![IROp::NodeScan {

@@ -11,7 +11,7 @@ use super::diagnostic::{Applicability, Position, QueryDiagnostic, Suggestion, Te
 
 #[derive(Parser)]
 #[grammar = "query/query.pest"]
-struct QueryParser;
+pub(crate) struct QueryParser;
 
 /// What a bare name in operand position means.
 #[derive(Clone, Copy)]
@@ -85,6 +85,17 @@ fn skip_trivia(mut input: &str) -> &str {
 
 /// Parse `input` into its file body, refusing with a positioned diagnostic.
 pub fn parse_query_diagnostic(input: &str) -> std::result::Result<QueryFile, QueryDiagnostic> {
+    // SPIKE (RFC PR #1202): a source opening with `gq N;` selects its edition.
+    if let Some(parsed) = crate::gq3::dispatch(input) {
+        return parsed;
+    }
+    parse_query_diagnostic_edition2(input)
+}
+
+/// The edition-2 grammar, unchanged.
+pub fn parse_query_diagnostic_edition2(
+    input: &str,
+) -> std::result::Result<QueryFile, QueryDiagnostic> {
     let pairs = QueryParser::parse(Rule::query_file, input)
         .map_err(|error| pest_error_to_diagnostic(input, error))?;
 
@@ -854,6 +865,7 @@ fn parse_query_decl(pair: pest::iterators::Pair<Rule>) -> Result<QueryDecl> {
         limit,
         mutations,
         write_mode,
+        gq3: None,
     })
 }
 

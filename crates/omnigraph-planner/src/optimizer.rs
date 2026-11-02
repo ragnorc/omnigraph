@@ -410,6 +410,8 @@ fn resolve_query(
         distinct,
         order_by,
         limit,
+        having,
+        limit_param: _,
     } = ir;
     let mut next_binding = 0u16;
     let mut current = resolve_pipeline(plan, pipeline, source, &mut next_binding, None)?;
@@ -503,8 +505,24 @@ fn resolve_query(
                 input: current,
                 keys,
                 order_by: bound,
-                fetch: limit.and_then(|limit| usize::try_from(limit).ok()),
+                // SPIKE: with `having`, `limit` applies after the filter.
+                fetch: limit
+                    .filter(|_| having.is_none())
+                    .and_then(|limit| usize::try_from(limit).ok()),
                 tiebreak,
+            },
+            schema.clone(),
+        );
+    }
+    // SPIKE (RFC PR #1202): `having` is one `Filter` above the aggregate (or
+    // above the retrieval's projection) and its sort, below `limit`; its
+    // leaves are the return columns it repeats.
+    if let Some(having) = having {
+        let conjunct = bind_having(having, return_exprs, grouped)?;
+        current = plan.add(
+            LogicalNode::Filter {
+                input: current,
+                conjuncts: vec![conjunct],
             },
             schema.clone(),
         );
@@ -1000,6 +1018,58 @@ pub(crate) fn bind_order_key(key: &IRExpr, return_exprs: &[IRProjection], groupe
             || key.clone(),
             |projection| IRExpr::AliasRef(result_column(projection), projection.ty.clone()),
         )
+}
+
+/// SPIKE: `having` over the projected rows. A sub-expression equal to a
+/// return item reads that item's column; any other read of a binding, an
+/// aggregate or a score is refused, since the rows above the projection no
+/// longer carry it.
+fn bind_having(
+    expr: &IRExpr,
+    return_exprs: &[IRProjection],
+    grouped: bool,
+) -> Result<IRExpr, PlanError> {
+    if let Some(projection) = return_exprs.iter().find(|p| p.expr == *expr) {
+        return Ok(IRExpr::AliasRef(
+            result_column(projection),
+            projection.ty.clone(),
+        ));
+    }
+    let _ = grouped;
+    match expr {
+        IRExpr::Binary {
+            left,
+            op,
+            right,
+            ty,
+        } => Ok(IRExpr::Binary {
+            left: Box::new(bind_having(left, return_exprs, grouped)?),
+            op: *op,
+            right: Box::new(bind_having(right, return_exprs, grouped)?),
+            ty: ty.clone(),
+        }),
+        IRExpr::Not(inner, ty) => Ok(IRExpr::Not(
+            Box::new(bind_having(inner, return_exprs, grouped)?),
+            ty.clone(),
+        )),
+        IRExpr::IsNull {
+            expr: inner,
+            negated,
+            ty,
+        } => Ok(IRExpr::IsNull {
+            expr: Box::new(bind_having(inner, return_exprs, grouped)?),
+            negated: *negated,
+            ty: ty.clone(),
+        }),
+        IRExpr::Cast { expr: inner, ty } => Ok(IRExpr::Cast {
+            expr: Box::new(bind_having(inner, return_exprs, grouped)?),
+            ty: ty.clone(),
+        }),
+        IRExpr::Literal(..) | IRExpr::Param(..) | IRExpr::AliasRef(..) => Ok(expr.clone()),
+        other => Err(PlanError::Internal(format!(
+            "SPIKE: `having` reads `{other:?}`, which `return` does not project; project it (the spike binds having to return columns only)"
+        ))),
+    }
 }
 
 /// The compiler-owned executed name of a return item.

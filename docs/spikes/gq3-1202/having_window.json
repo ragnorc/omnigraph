@@ -1,0 +1,38 @@
+{
+  "limit_3_post_window": [
+    {
+      "d.slug": "d2",
+      "dist": 0.020000005
+    },
+    {
+      "d.slug": "d3",
+      "dist": 0.18
+    },
+    {
+      "d.slug": "d5",
+      "dist": 0.5
+    }
+  ],
+  "passing_population": [
+    {
+      "d.slug": "d2",
+      "dist": 0.020000005
+    },
+    {
+      "d.slug": "d3",
+      "dist": 0.18
+    },
+    {
+      "d.slug": "d5",
+      "dist": 0.5
+    },
+    {
+      "d.slug": "d6",
+      "dist": 1.2800001
+    },
+    {
+      "d.slug": "d4",
+      "dist": 2.0
+    }
+  ]
+}

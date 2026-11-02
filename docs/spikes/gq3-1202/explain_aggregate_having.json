@@ -1,0 +1,670 @@
+{
+  "explain_version": 7,
+  "route": "engine",
+  "override": "registry",
+  "operation": {
+    "kind": "query",
+    "tables": []
+  },
+  "logical_plan_initial": {
+    "node": "Limit",
+    "rows": 5,
+    "bytes": 0,
+    "resume": null,
+    "inputs": [
+      {
+        "node": "Filter",
+        "conjuncts": [
+          {
+            "kind": "gq",
+            "reads": [],
+            "text": "docs > 1"
+          }
+        ],
+        "typed_filters": [
+          {
+            "op": "compare",
+            "gq": "docs > 1",
+            "type": "Bool?",
+            "args": [
+              {
+                "op": "alias",
+                "gq": "docs",
+                "type": "I64?",
+                "args": []
+              },
+              {
+                "op": "literal",
+                "gq": "1",
+                "type": "I64",
+                "args": []
+              }
+            ]
+          }
+        ],
+        "inputs": [
+          {
+            "node": "Sort",
+            "keys": [
+              "alias:docs"
+            ],
+            "typed_keys": [
+              {
+                "op": "alias",
+                "gq": "docs",
+                "type": "I64?",
+                "args": []
+              }
+            ],
+            "fetch": null,
+            "tiebreak": [],
+            "inputs": [
+              {
+                "node": "Aggregate",
+                "reads": [
+                  "p.name",
+                  "d.@id"
+                ],
+                "typed_exprs": [
+                  {
+                    "op": "property",
+                    "gq": "$p.name",
+                    "type": "String",
+                    "args": []
+                  },
+                  {
+                    "op": "aggregate",
+                    "gq": "count($d)",
+                    "type": "I64?",
+                    "args": [
+                      {
+                        "op": "variable",
+                        "gq": "$d",
+                        "type": "Doc",
+                        "args": []
+                      }
+                    ]
+                  }
+                ],
+                "inputs": [
+                  {
+                    "node": "TableScan",
+                    "binding": "d",
+                    "table": "node:Doc",
+                    "source": "dataset",
+                    "version": 17847037161101414135,
+                    "projection": null,
+                    "filter": null,
+                    "typed_filter": null,
+                    "id_restriction": "input",
+                    "inputs": [
+                      {
+                        "node": "Expand",
+                        "src": "p",
+                        "dst": "d",
+                        "edges": {
+                          "kind": "named",
+                          "members": [
+                            {
+                              "edge_type": "Wrote",
+                              "direction": "out"
+                            }
+                          ]
+                        },
+                        "src_type": "Person",
+                        "dst_type": "Doc",
+                        "min_hops": 1,
+                        "max_hops": 1,
+                        "edge_binding": null,
+                        "inputs": [
+                          {
+                            "node": "TableScan",
+                            "binding": "p",
+                            "table": "node:Person",
+                            "source": "dataset",
+                            "version": 17397389955932446477,
+                            "projection": null,
+                            "filter": null,
+                            "typed_filter": null
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "logical_plan": {
+    "node": "Limit",
+    "rows": 5,
+    "bytes": 0,
+    "resume": null,
+    "inputs": [
+      {
+        "node": "Filter",
+        "conjuncts": [
+          {
+            "kind": "gq",
+            "reads": [],
+            "text": "docs > 1"
+          }
+        ],
+        "typed_filters": [
+          {
+            "op": "compare",
+            "gq": "docs > 1",
+            "type": "Bool?",
+            "args": [
+              {
+                "op": "alias",
+                "gq": "docs",
+                "type": "I64?",
+                "args": []
+              },
+              {
+                "op": "literal",
+                "gq": "1",
+                "type": "I64",
+                "args": []
+              }
+            ]
+          }
+        ],
+        "inputs": [
+          {
+            "node": "Sort",
+            "keys": [
+              "alias:docs"
+            ],
+            "typed_keys": [
+              {
+                "op": "alias",
+                "gq": "docs",
+                "type": "I64?",
+                "args": []
+              }
+            ],
+            "fetch": null,
+            "tiebreak": [],
+            "inputs": [
+              {
+                "node": "Aggregate",
+                "reads": [
+                  "p.name",
+                  "d.@id"
+                ],
+                "typed_exprs": [
+                  {
+                    "op": "property",
+                    "gq": "$p.name",
+                    "type": "String",
+                    "args": []
+                  },
+                  {
+                    "op": "aggregate",
+                    "gq": "count($d)",
+                    "type": "I64?",
+                    "args": [
+                      {
+                        "op": "variable",
+                        "gq": "$d",
+                        "type": "Doc",
+                        "args": []
+                      }
+                    ]
+                  }
+                ],
+                "inputs": [
+                  {
+                    "node": "TableScan",
+                    "binding": "d",
+                    "table": "node:Doc",
+                    "source": "dataset",
+                    "version": 17847037161101414135,
+                    "projection": [
+                      "__id",
+                      "slug"
+                    ],
+                    "filter": null,
+                    "typed_filter": null,
+                    "id_restriction": "input",
+                    "inputs": [
+                      {
+                        "node": "Expand",
+                        "src": "p",
+                        "dst": "d",
+                        "edges": {
+                          "kind": "named",
+                          "members": [
+                            {
+                              "edge_type": "Wrote",
+                              "direction": "out"
+                            }
+                          ]
+                        },
+                        "src_type": "Person",
+                        "dst_type": "Doc",
+                        "min_hops": 1,
+                        "max_hops": 1,
+                        "edge_binding": null,
+                        "inputs": [
+                          {
+                            "node": "TableScan",
+                            "binding": "p",
+                            "table": "node:Person",
+                            "source": "dataset",
+                            "version": 17397389955932446477,
+                            "projection": [
+                              "__id",
+                              "name"
+                            ],
+                            "filter": null,
+                            "typed_filter": null
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "logical_hash": "1213240b6822fbc3",
+  "physical_plan": {
+    "node": "Page",
+    "rows": 5,
+    "bytes": 0,
+    "resume": null,
+    "id": 7,
+    "properties": {
+      "ordering": [
+        "docs desc"
+      ],
+      "rows": {
+        "known": 5
+      },
+      "work_bytes": "unknown",
+      "retained_limit": null,
+      "sources": []
+    },
+    "inputs": [
+      {
+        "node": "Filter",
+        "filters": [
+          "docs > 1"
+        ],
+        "typed_filters": [
+          {
+            "op": "compare",
+            "gq": "docs > 1",
+            "type": "Bool?",
+            "args": [
+              {
+                "op": "alias",
+                "gq": "docs",
+                "type": "I64?",
+                "args": []
+              },
+              {
+                "op": "literal",
+                "gq": "1",
+                "type": "I64",
+                "args": []
+              }
+            ]
+          }
+        ],
+        "id": 6,
+        "properties": {
+          "ordering": [
+            "docs desc"
+          ],
+          "rows": "unknown",
+          "work_bytes": "unknown",
+          "retained_limit": null,
+          "sources": []
+        },
+        "inputs": [
+          {
+            "node": "Sort",
+            "keys": [
+              "docs desc"
+            ],
+            "typed_keys": [
+              {
+                "op": "alias",
+                "gq": "docs",
+                "type": "I64?",
+                "args": []
+              }
+            ],
+            "fetch": null,
+            "tiebreak": [],
+            "id": 5,
+            "properties": {
+              "ordering": [
+                "docs desc"
+              ],
+              "rows": "unknown",
+              "work_bytes": "unknown",
+              "retained_limit": null,
+              "sources": []
+            },
+            "inputs": [
+              {
+                "node": "Aggregate",
+                "exprs": [
+                  "$p.name",
+                  "count($d)"
+                ],
+                "columns": [
+                  "p.name: String",
+                  "docs: I64?"
+                ],
+                "typed_exprs": [
+                  {
+                    "op": "property",
+                    "gq": "$p.name",
+                    "type": "String",
+                    "args": []
+                  },
+                  {
+                    "op": "aggregate",
+                    "gq": "count($d)",
+                    "type": "I64?",
+                    "args": [
+                      {
+                        "op": "variable",
+                        "gq": "$d",
+                        "type": "Doc",
+                        "args": []
+                      }
+                    ]
+                  }
+                ],
+                "aggregates": [
+                  null,
+                  {
+                    "column": "docs",
+                    "func": "count",
+                    "distinct": false,
+                    "input": "Doc",
+                    "accumulator": "count",
+                    "overflow": "error",
+                    "result": "I64?"
+                  }
+                ],
+                "id": 4,
+                "properties": {
+                  "ordering": null,
+                  "rows": "unknown",
+                  "work_bytes": "unknown",
+                  "retained_limit": null,
+                  "sources": []
+                },
+                "inputs": [
+                  {
+                    "node": "HashJoin",
+                    "binding": "d",
+                    "fallback": "id_lookup",
+                    "id": 3,
+                    "properties": {
+                      "ordering": null,
+                      "rows": "unknown",
+                      "work_bytes": "unknown",
+                      "retained_limit": null,
+                      "sources": []
+                    },
+                    "inputs": [
+                      {
+                        "node": "Expand",
+                        "src": "p",
+                        "dst": "d",
+                        "edges": {
+                          "kind": "named",
+                          "members": [
+                            {
+                              "edge_type": "Wrote",
+                              "direction": "out"
+                            }
+                          ]
+                        },
+                        "src_type": "Person",
+                        "dst_type": "Doc",
+                        "min_hops": 1,
+                        "max_hops": 1,
+                        "edge_binding": null,
+                        "mode": "indexed_scan",
+                        "alternatives": [
+                          "csr"
+                        ],
+                        "frontier_estimate": 3,
+                        "versions": {
+                          "Wrote": 11383064304351929668
+                        },
+                        "id": 1,
+                        "properties": {
+                          "ordering": null,
+                          "rows": "unknown",
+                          "work_bytes": "unknown",
+                          "retained_limit": null,
+                          "sources": []
+                        },
+                        "inputs": [
+                          {
+                            "node": "Scan",
+                            "binding": "p",
+                            "table": "node:Person",
+                            "source": "dataset",
+                            "version": 17397389955932446477,
+                            "projection": [
+                              "__id",
+                              "name"
+                            ],
+                            "filter": null,
+                            "typed_filter": null,
+                            "access": "sequential",
+                            "ordered": false,
+                            "keys_only": false,
+                            "id": 0,
+                            "properties": {
+                              "ordering": null,
+                              "rows": {
+                                "known": 3
+                              },
+                              "work_bytes": "unknown",
+                              "retained_limit": null,
+                              "sources": [
+                                {
+                                  "statistic": "scan_row_estimate(node:Person)",
+                                  "value": "3",
+                                  "origin": "manifest row count, at most one row under a key equality"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "node": "Scan",
+                        "binding": "d",
+                        "table": "node:Doc",
+                        "source": "dataset",
+                        "version": 17847037161101414135,
+                        "projection": [
+                          "__id",
+                          "slug"
+                        ],
+                        "filter": null,
+                        "typed_filter": null,
+                        "access": "sequential",
+                        "ordered": false,
+                        "keys_only": false,
+                        "id": 2,
+                        "properties": {
+                          "ordering": null,
+                          "rows": {
+                            "known": 6
+                          },
+                          "work_bytes": "unknown",
+                          "retained_limit": null,
+                          "sources": [
+                            {
+                              "statistic": "scan_row_estimate(node:Doc)",
+                              "value": "6",
+                              "origin": "manifest row count, at most one row under a key equality"
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "pipelines": [
+    {
+      "id": 0,
+      "source": {
+        "node": "Scan",
+        "side": {
+          "binding": 1
+        },
+        "ordered": false,
+        "id": 2
+      },
+      "partitions": 1,
+      "operators": [],
+      "sink": {
+        "id": 3,
+        "name": "HashJoin(build)"
+      },
+      "depends_on": []
+    },
+    {
+      "id": 1,
+      "source": {
+        "node": "Scan",
+        "side": {
+          "binding": 0
+        },
+        "ordered": false,
+        "id": 0
+      },
+      "partitions": 1,
+      "operators": [
+        {
+          "id": 1,
+          "name": "Expand"
+        },
+        {
+          "id": 3,
+          "name": "HashJoin(probe)"
+        }
+      ],
+      "sink": {
+        "id": 4,
+        "name": "Aggregate"
+      },
+      "depends_on": [
+        0
+      ]
+    },
+    {
+      "id": 2,
+      "source": {
+        "node": "Aggregate",
+        "id": 4
+      },
+      "partitions": 1,
+      "operators": [],
+      "sink": {
+        "id": 5,
+        "name": "Sort"
+      },
+      "depends_on": [
+        1
+      ]
+    },
+    {
+      "id": 3,
+      "source": {
+        "node": "Sort",
+        "id": 5
+      },
+      "partitions": 1,
+      "operators": [
+        {
+          "id": 6,
+          "name": "Filter"
+        },
+        {
+          "id": 7,
+          "name": "Page"
+        }
+      ],
+      "sink": {
+        "name": "consumer"
+      },
+      "depends_on": [
+        2
+      ]
+    }
+  ],
+  "statistics": [
+    {
+      "statistic": "hash_join_build_bytes(node:Doc)",
+      "value": "1917 estimated, budget 39321600",
+      "origin": "projected widths and storage statistics"
+    },
+    {
+      "statistic": "scan_row_estimate(node:Person)",
+      "value": "3",
+      "origin": "manifest row count, at most one row under a key equality"
+    },
+    {
+      "statistic": "scan_row_estimate(node:Doc)",
+      "value": "6",
+      "origin": "manifest row count, at most one row under a key equality"
+    },
+    {
+      "statistic": "index_facts(edge:Wrote)",
+      "value": "[{\"name\":\"__dst_idx\",\"column\":\"__dst\",\"kind\":\"btree\",\"usable\":true,\"coverage\":{\"covered\":1,\"total\":1}},{\"name\":\"__id_idx\",\"column\":\"__id\",\"kind\":\"btree\",\"usable\":true,\"coverage\":{\"covered\":1,\"total\":1}},{\"name\":\"__src_idx\",\"column\":\"__src\",\"kind\":\"btree\",\"usable\":true,\"coverage\":{\"covered\":1,\"total\":1}}]",
+      "origin": "edges/0000000000000005-0000000000000011 at version 11383064304351929668"
+    },
+    {
+      "statistic": "index_facts(node:Doc)",
+      "value": "[{\"name\":\"__id_idx\",\"column\":\"__id\",\"kind\":\"btree\",\"usable\":true,\"coverage\":{\"covered\":1,\"total\":1}},{\"name\":\"body_idx\",\"column\":\"body\",\"kind\":\"inverted\",\"coverage\":{\"covered\":1,\"total\":1}},{\"name\":\"embedding_idx\",\"column\":\"embedding\",\"kind\":\"vector\",\"coverage\":{\"covered\":1,\"total\":1}},{\"name\":\"slug_idx\",\"column\":\"slug\",\"kind\":\"inverted\",\"coverage\":{\"covered\":1,\"total\":1}}]",
+      "origin": "nodes/0000000000000002-000000000000000e at version 17847037161101414135"
+    },
+    {
+      "statistic": "index_facts(node:Person)",
+      "value": "[{\"name\":\"__id_idx\",\"column\":\"__id\",\"kind\":\"btree\",\"usable\":true,\"coverage\":{\"covered\":1,\"total\":1}},{\"name\":\"name_idx\",\"column\":\"name\",\"kind\":\"inverted\",\"coverage\":{\"covered\":1,\"total\":1}}]",
+      "origin": "nodes/0000000000000003-000000000000000f at version 17397389955932446477"
+    }
+  ],
+  "passes": [
+    "resolve",
+    "projection_pushdown",
+    "expand_mode",
+    "access_path",
+    "scan_access"
+  ],
+  "validation": {
+    "scope": "invariants_only"
+  }
+}

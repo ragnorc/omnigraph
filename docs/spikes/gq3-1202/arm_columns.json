@@ -1,0 +1,16 @@
+{
+  "nearest": [
+    [
+      "d.slug",
+      "Utf8"
+    ],
+    [
+      "d._distance",
+      "Float32"
+    ]
+  ],
+  "bm25": [
+    "d._score",
+    "Float32"
+  ]
+}

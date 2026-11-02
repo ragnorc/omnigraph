@@ -193,7 +193,9 @@ impl Fragment<'_> {
 /// outside the fragment.
 pub(crate) fn membership(input: &AcceptInput<'_>) -> Option<Member> {
     let ir = input.ir;
-    if ir.distinct {
+    // SPIKE (RFC PR #1202): the exact fragment is closed and versioned; an
+    // edition-3 `having` or `limit $k` is outside it until it is amended.
+    if ir.distinct || ir.having.is_some() || ir.limit_param.is_some() {
         return None;
     }
     let mut pipeline = ir.pipeline.iter();

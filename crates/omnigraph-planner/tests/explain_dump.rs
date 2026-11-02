@@ -49,6 +49,8 @@ fn dump_failure_child() {
         return;
     };
     let query = Operation::Query(Box::new(QueryIR {
+        having: None,
+        limit_param: None,
         name: "unresolved".into(),
         params: vec![],
         pipeline: vec![],

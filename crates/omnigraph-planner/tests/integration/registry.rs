@@ -333,6 +333,8 @@ fn doc_source() -> MemorySource {
 
 fn documents_query() -> Operation {
     Operation::Query(Box::new(QueryIR {
+        having: None,
+        limit_param: None,
         name: "documents".to_string(),
         params: Vec::new(),
         pipeline: vec![IROp::NodeScan {

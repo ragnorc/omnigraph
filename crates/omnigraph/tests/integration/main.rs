@@ -46,6 +46,7 @@ mod repro_issue_723;
 mod rrf_prefilter_gate;
 mod s3_storage;
 mod scalar_indexes;
+mod spike_gq3;
 mod traversal_adaptive;
 mod traversal_indexed;
 mod validators;

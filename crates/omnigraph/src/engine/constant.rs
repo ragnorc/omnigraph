@@ -136,6 +136,21 @@ fn literal_list(values: &ArrayRef) -> Result<Literal> {
 pub(crate) fn fold_query_constants(ir: &QueryIR, params: &ParamMap) -> Result<QueryIR> {
     let mut folded = ir.clone();
     fold_pipeline(&mut folded.pipeline, params)?;
+    // SPIKE (RFC PR #1202): `limit $k` binds to the same `Limit` a literal
+    // does; a null or negative value is a bind-time refusal.
+    if let Some(name) = &folded.limit_param {
+        let k = match params.get(name) {
+            Some(omnigraph_compiler::query::ast::Literal::Integer(k)) if *k >= 0 => {
+                u64::try_from(*k).unwrap_or(u64::MAX)
+            }
+            other => {
+                return Err(crate::error::OmniError::manifest(format!(
+                    "`limit ${name}` needs a non-null, non-negative I64; got {other:?}"
+                )));
+            }
+        };
+        folded.limit = Some(k);
+    }
     Ok(folded)
 }
 

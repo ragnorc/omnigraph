@@ -16,6 +16,8 @@ impl QueryIR {
             distinct: _,
             order_by,
             limit,
+            having: _,
+            limit_param: _,
         } = self;
         untyped::QueryIR {
             name: name.clone(),
@@ -546,6 +548,8 @@ mod tests {
             ),
         ] {
             let source = QueryIR {
+                having: None,
+                limit_param: None,
                 name: "all_fields".into(),
                 params: vec![IRParam {
                     declaration: Param {

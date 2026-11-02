@@ -471,6 +471,8 @@ pub struct QueryDecl {
     /// The clause before the body. Only `Publish` on a read declaration (the
     /// parser refuses the other two there).
     pub write_mode: MutationWriteMode,
+    /// SPIKE (RFC PR #1202): what an edition-3 source adds; `None` for edition 2.
+    pub gq3: Option<Box<crate::gq3::Gq3Extras>>,
 }
 
 /// Where a mutation's result goes: the branch head (`Publish`), an

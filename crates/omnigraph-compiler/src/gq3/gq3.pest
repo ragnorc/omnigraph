@@ -1,0 +1,247 @@
+// SPIKE (throwaway): the GQ edition-3 grammar of RFC PR #1202, written from
+// the RFC's freeze list and Design section. Where the RFC's pest sketch is
+// incomplete or does not parse what the RFC says it parses, the deviation is
+// marked `SPIKE-DEVIATION` and reported in docs/spikes/gq3-1202.md.
+
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+COMMENT = _{ LINE_COMMENT | BLOCK_COMMENT }
+LINE_COMMENT = _{ "//" ~ (!"\n" ~ ANY)* }
+BLOCK_COMMENT = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+
+// SPIKE-DEVIATION: the RFC's `file` is `edition? ~ setting_stmt* ~ (statement
+// | declaration*)` with `statement` undefined. Today's statements are kept
+// (review finding 4) and `missing_param_list` stays.
+file = { SOI ~ edition? ~ setting_stmt* ~ (show_stmt ~ statement_trailer? | branch_stmt ~ ";"? ~ statement_trailer? | commit_stmt ~ ";"? ~ statement_trailer? | load_stmt ~ ";"? ~ statement_trailer? | explain_stmt ~ statement_trailer? | declaration* ~ misplaced_edition? ~ missing_param_list?) ~ EOI }
+edition = { kw_gq ~ integer ~ ";" }
+// `gq N;` after another statement: recognised so the refusal names it.
+misplaced_edition = { edition ~ ANY* }
+missing_param_list = { (kw_query | kw_mutation) ~ ident ~ !"(" ~ ANY* }
+
+declaration = { schema_decl | query_decl | mutation_decl | view_decl | batch_decl }
+
+// ---------------------------------------------------------------------------
+// Statements: copied from edition 2 unchanged (the RFC keeps them).
+setting_stmt  = { set_stmt | reset_stmt }
+set_stmt      = { kw_set ~ setting_name ~ "=" ~ setting_value ~ ";" }
+reset_stmt    = { kw_reset ~ (kw_all | setting_name) ~ ";" }
+show_stmt     = { kw_show ~ (kw_all | setting_name) ~ ";" }
+setting_name  = @{ ident ~ ("." ~ ident)* }
+setting_value = { integer | ident | string_lit }
+branch_stmt   = { kw_branch ~ (!";" ~ ANY)+ }
+commit_stmt   = { kw_commit ~ (!";" ~ ANY)+ }
+load_stmt     = { kw_load ~ kw_csv ~ (string_lit | !";" ~ ANY)+ }
+explain_stmt  = { kw_explain ~ (query_decl | mutation_decl | load_stmt) }
+statement_trailer = { (setting_stmt | show_stmt | branch_stmt | commit_stmt | load_stmt | explain_stmt | declaration)+ }
+
+// ---------------------------------------------------------------------------
+// Declarations
+query_decl    = { kw_query    ~ ident ~ param_list ~ annotation* ~ write_clause? ~ "{" ~ decl_body ~ "}" }
+mutation_decl = { kw_mutation ~ ident ~ param_list ~ annotation* ~ write_clause? ~ "{" ~ decl_body ~ "}" }
+view_decl     = { kw_view     ~ type_ref ~ param_list ~ annotation* ~ "{" ~ read_body ~ "}" }
+batch_decl    = { kw_batch    ~ ident ~ annotation* ~ "{" ~ declaration* ~ "}" }
+// Both bodies parse under both keywords so the refusal names the construct.
+decl_body     = { read_body | mutation_body }
+write_clause  = { as_commit_clause | as_unattached_clause }
+as_commit_clause     = { kw_as ~ kw_commit }
+as_unattached_clause = { kw_as ~ kw_unattached ~ kw_branch ~ (kw_on ~ (string_lit | variable))? }
+
+param_list = { "(" ~ (param ~ ("," ~ param)*)? ~ ")" }
+param      = { variable ~ ":" ~ param_type ~ ("=" ~ literal)? }
+param_type = { (list_type | vector_type | base_type | kind_type) ~ "?"? }
+kind_type  = @{ ("Branch" | "Commit") ~ !(ASCII_ALPHANUMERIC | "_") }
+list_type  = { "[" ~ base_type ~ "]" }
+// `Vector(n, distance="cosine")`: the schema role, admitted in both places.
+vector_type = { "Vector" ~ "(" ~ integer ~ ("," ~ annotation_kwarg)* ~ ")" }
+base_type  = @{ ("String" | "Blob" | "Bool" | "I32" | "I64" | "U32" | "U64" | "F32" | "F64" | "DateTime" | "Date") ~ !(ASCII_ALPHANUMERIC | "_") }
+
+// SPIKE-DEVIATION: `annotation_args` has no production in the RFC. Defined
+// with `=` for named arguments (the `.pg` spelling), plus `0..1` ranges and
+// meta-fields so the schema's body constraints share the rule.
+annotation      = { "@" ~ ident ~ ("(" ~ annotation_args? ~ ")")? }
+annotation_args = { annotation_item ~ ("," ~ annotation_item)* }
+annotation_item = { annotation_kwarg | range_bound | literal | meta_field | variable | ident }
+annotation_kwarg = { ident ~ "=" ~ literal }
+
+// ---------------------------------------------------------------------------
+// Read body
+read_body       = { match_clause ~ retrieve_clause? ~ return_clause ~ having_clause? ~ order_clause? ~ limit_clause? }
+match_clause    = { kw_match ~ "{" ~ clause+ ~ "}" }
+retrieve_clause = { kw_retrieve ~ "{" ~ retrieve_arm+ ~ "}" }
+retrieve_arm    = { variable ~ "." ~ ident ~ ":" ~ call ~ ","? }
+return_clause   = { kw_return ~ kw_distinct? ~ "{" ~ projection+ ~ "}" }
+projection      = { expr ~ (kw_as ~ (reserved_alias | expr_ident))? ~ ","? }
+having_clause   = { kw_having ~ "{" ~ expr ~ "}" }
+order_clause    = { kw_order ~ "{" ~ ordering ~ ("," ~ ordering)* ~ "}" }
+ordering        = { expr ~ order_dir? }
+order_dir       = @{ ("asc" | "desc") ~ !(ASCII_ALPHANUMERIC | "_") }
+limit_clause    = { kw_limit ~ (integer | variable) }
+
+// Mutation body: statements, then the reserved `returning`.
+mutation_body = { mutation_stmt+ ~ returning_clause? }
+mutation_stmt = { insert_stmt | update_stmt | delete_stmt }
+insert_stmt   = { kw_insert ~ type_ref ~ "{" ~ mutation_assignment+ ~ "}" }
+update_stmt   = { kw_update ~ type_ref ~ kw_set ~ "{" ~ mutation_assignment+ ~ "}" ~ kw_where ~ expr }
+delete_stmt   = { kw_delete ~ type_ref ~ kw_where ~ expr }
+// `null` is legal as the whole value of an assignment.
+mutation_assignment = { ident ~ ":" ~ (null_value | expr) ~ ","? }
+null_value    = { kw_null ~ &("," | "}" | ident ~ ":") }
+returning_clause = { kw_returning ~ "{" ~ projection+ ~ "}" }
+
+// ---------------------------------------------------------------------------
+// Clauses. The arrow recognizer is tried first (review finding: a rule the
+// start rule never reaches recognises nothing).
+clause = { arrow_traversal | negation | optional_block | subquery_predicate | exists_block | binding | traversal | filter }
+negation       = { kw_not ~ "{" ~ clause+ ~ "}" }
+optional_block = { kw_optional ~ "{" ~ clause+ ~ "}" }
+exists_block   = { kw_exists ~ subquery_block }
+subquery_predicate = { agg_name ~ ("(" ~ expr ~ ")")? ~ subquery_block ~ comp_op ~ expr }
+subquery_block = { "{" ~ clause+ ~ "}" }
+
+// RFC: `binding = variable ~ ":" ~ type_ref ~ ("(" ~ args ~ ")")? ~ ("{" … "}")?`.
+// As written, `binding_args` would take a parenthesised filter on the next
+// line. `binding_args_tight` below is the variant the spike uses; the RFC's
+// own spelling is kept as `binding_rfc` for the test that shows the clash.
+binding      = { variable ~ ":" ~ binding_type ~ ("{" ~ prop_match_list ~ "}")? }
+// SPIKE-DEVIATION: the argument list must touch the name (`Name(`), so a
+// parenthesised filter on the next line stays a filter.
+binding_type = ${ type_ref ~ binding_args? }
+binding_args = !{ "(" ~ (expr ~ ("," ~ expr)*)? ~ ")" }
+binding_rfc  = { variable ~ ":" ~ type_ref ~ ("(" ~ (expr ~ ("," ~ expr)*)? ~ ")")? ~ ("{" ~ prop_match_list ~ "}")? }
+prop_match_list = { prop_match ~ ("," ~ prop_match)* ~ ","? }
+prop_match   = { ident ~ ":" ~ expr }
+
+traversal       = { variable ~ edge_binding? ~ (undirected_edge | edge_sel) ~ traversal_bounds? ~ variable }
+edge_binding    = { variable ~ ":" }
+// SPIKE-DEVIATION: the RFC's `"<" ~ edge_sel ~ ">"` drops today's
+// unparenthesised `<knows | likes>` (typed edge alternation RFC).
+undirected_edge = { "<" ~ (edge_alternatives | edge_sel) ~ ">" }
+undirected_edge_rfc = { "<" ~ edge_sel ~ ">" }
+edge_sel        = { edge_alternation | edge_wildcard | catalogue_edge | edge_ident | string_lit }
+edge_alternation = { "(" ~ edge_alternatives ~ ")" }
+edge_alternatives = { (catalogue_edge | edge_ident | string_lit) ~ ("|" ~ (catalogue_edge | edge_ident | string_lit))+ }
+edge_wildcard   = { "*" }
+catalogue_edge  = @{ "@" ~ ident }
+traversal_bounds = { "{" ~ integer ~ "," ~ integer? ~ "}" }
+// Recognised only to print the fix: `-e->`, `<-e-`, `-e-`.
+arrow_traversal = { variable ~ arrow_open ~ edge_binding? ~ edge_sel ~ traversal_bounds? ~ arrow_close ~ variable }
+arrow_open      = { "<-" | "-" }
+arrow_close     = { "->" | "-" }
+
+filter = { expr }
+
+// ---------------------------------------------------------------------------
+// Expressions (the edition-2 ladder; operand gains calls and block values).
+expr        = { or_expr }
+or_expr     = { and_expr ~ (kw_or ~ and_expr)* }
+and_expr    = { not_expr ~ (kw_and ~ not_expr)* }
+not_expr    = { (kw_not ~ not_expr) | comparison }
+comparison  = { operand ~ ((infix_string_op ~ operand) | (comp_op ~ operand) | (kw_in ~ operand) | null_test)? }
+null_test   = { kw_is ~ kw_not? ~ kw_null }
+// Recognised only to print the call form as the fix.
+infix_string_op = @{ ("contains" | "starts_with") ~ !(ASCII_ALPHANUMERIC | "_") }
+operand     = { "(" ~ expr ~ ")" | block_value | count_call | call | prop_access | meta_field | variable | literal | reserved_property | expr_ident }
+block_value = { (agg_name ~ ("(" ~ expr ~ ")")? | kw_exists) ~ subquery_block }
+agg_name    = @{ ("count" | "sum" | "avg" | "min" | "max") ~ !(ASCII_ALPHANUMERIC | "_") }
+// SPIKE-DEVIATION: the RFC's `count_call` takes `distinct` after `count`
+// only, so `sum(distinct $x)` (today's T57) becomes a parse error. Any
+// aggregate admits it here and the type checker keeps T57.
+count_call  = { agg_name ~ "(" ~ kw_distinct ~ expr ~ ")" }
+count_call_rfc = { "count" ~ "(" ~ kw_distinct ~ expr ~ ")" }
+call        = { call_name ~ "(" ~ call_args? ~ ")" }
+call_name   = @{ !reserved ~ ident }
+// SPIKE-DEVIATION: the RFC's `positional ~ ("," ~ positional)* ~ ("," ~ option)*`
+// never parses an option after a positional: PEG repetition takes `k` as a
+// bare-name positional and does not backtrack at `:`. `positional` needs the
+// `!(ident ~ ":")` lookahead. `call_args_rfc` is the RFC's rule, kept for the test.
+call_args   = { positional ~ ("," ~ positional)* ~ ("," ~ option)* | option ~ ("," ~ option)* }
+positional  = { !(ident ~ ":") ~ expr }
+option      = { ident ~ ":" ~ expr }
+call_args_rfc = { expr ~ ("," ~ expr)* ~ ("," ~ option)* | option ~ ("," ~ option)* }
+call_rfc    = { call_name ~ "(" ~ call_args_rfc? ~ ")" }
+// SPIKE-DEVIATION: the RFC keeps `prop_access` one level deep, so the meta-
+// fields `@distance` / `@score` of an arm column (`$d.vec.@distance`) have no
+// production. Admitted here as a path and refused as a slot.
+prop_access = { variable ~ ("." ~ (meta_field | ident))+ }
+meta_field  = @{ "@" ~ ident }
+
+kw_and  = @{ "and" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_or   = @{ "or" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_not  = @{ "not" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_is   = @{ "is" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_null = @{ "null" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_in   = @{ "in" ~ !(ASCII_ALPHANUMERIC | "_") }
+reserved          = { kw_and | kw_or | kw_not | kw_is | kw_null | kw_in }
+reserved_property = { reserved }
+reserved_alias    = { reserved }
+expr_ident        = @{ !reserved ~ ident }
+comp_op = { ">=" | "<=" | "!=" | ">" | "<" | "=" }
+
+// Contextual keywords: word-bounded, never reserved.
+kw_gq        = @{ "gq" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_query     = @{ "query" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_mutation  = @{ "mutation" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_view      = @{ "view" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_batch     = @{ "batch" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_match     = @{ "match" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_retrieve  = @{ "retrieve" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_return    = @{ "return" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_returning = @{ "returning" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_having    = @{ "having" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_order     = @{ "order" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_limit     = @{ "limit" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_optional  = @{ "optional" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_exists    = @{ "exists" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_distinct  = @{ "distinct" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_insert    = @{ "insert" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_update    = @{ "update" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_delete    = @{ "delete" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_where     = @{ "where" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_set       = @{ "set" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_reset     = @{ "reset" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_show      = @{ "show" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_all       = @{ "all" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_as        = @{ "as" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_commit    = @{ "commit" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_branch    = @{ "branch" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_unattached = @{ "unattached" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_on        = @{ "on" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_load      = @{ "load" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_csv       = @{ "csv" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_explain   = @{ "explain" ~ !(ASCII_ALPHANUMERIC | "_") }
+
+// ---------------------------------------------------------------------------
+// Schema declarations, moved from schema.pest (one grammar for both).
+schema_decl    = { interface_decl | node_decl | edge_decl }
+interface_decl = { "interface" ~ type_ref ~ annotation* ~ "{" ~ prop_decl* ~ "}" }
+node_decl      = { "node" ~ type_ref ~ annotation* ~ implements_clause? ~ annotation* ~ "{" ~ (prop_decl | body_constraint)* ~ "}" }
+implements_clause = { "implements" ~ type_ref ~ ("," ~ type_ref)* }
+edge_decl      = { "edge" ~ type_ref ~ ":" ~ type_ref ~ "->" ~ type_ref ~ annotation* ~ ("{" ~ (prop_decl | body_constraint)* ~ "}")? }
+prop_decl      = { ident ~ ":" ~ schema_type ~ annotation* }
+body_constraint = { annotation }
+schema_type    = { (list_type | enum_type | vector_type | base_type) ~ "?"? }
+enum_type      = { "enum" ~ "(" ~ enum_value ~ ("," ~ enum_value)* ~ ")" }
+enum_value     = @{ (ASCII_ALPHANUMERIC | "_" | "-")+ }
+range_bound    = { signed_number ~ ".." ~ signed_number? | ".." ~ signed_number }
+signed_number  = @{ "-"? ~ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? }
+
+// ---------------------------------------------------------------------------
+// Terminals
+variable = @{ "$" ~ (ident_chars | "_") }
+ident_chars = @{ (ASCII_ALPHA_LOWER | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
+edge_ident = @{ !reserved ~ (ASCII_ALPHA_LOWER | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
+// `a::b::C`, and `@Name` for an engine catalogue type.
+type_ref = @{ (ident ~ "::")* ~ "@"? ~ ASCII_ALPHA_UPPER ~ (ASCII_ALPHANUMERIC | "_")* }
+ident = @{ (ASCII_ALPHA_LOWER | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
+
+// `date("…")` and `datetime("…")` are calls folded to literals.
+literal = { list_lit | string_lit | float_lit | integer | bool_lit }
+// SPIKE-DEVIATION: `date("…")` and `datetime("…")` are calls folded to
+// literals (the RFC deletes `date_lit`), so a list literal admits them.
+list_lit = { "[" ~ (list_item ~ ("," ~ list_item)*)? ~ "]" }
+list_item = { literal | call }
+list_lit_rfc = { "[" ~ (literal ~ ("," ~ literal)*)? ~ "]" }
+string_lit = @{ "\"" ~ string_char* ~ "\"" }
+string_char = @{ !("\"" | "\\") ~ ANY | "\\" ~ ANY }
+float_lit = @{ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ }
+integer = @{ ASCII_DIGIT+ }
+bool_lit = @{ ("true" | "false") ~ !(ASCII_ALPHANUMERIC | "_") }

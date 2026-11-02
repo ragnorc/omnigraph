@@ -22,6 +22,11 @@ codes! {
     Q003 = "a settings statement is refused";
     Q004 = "a branch, commit, show or explain statement is misplaced or malformed";
     Q005 = "a declaration body is refused";
+    // SPIKE (RFC PR #1202): edition-3 parse codes.
+    Q006 = "unknown edition";
+    Q007 = "an edition line after another statement";
+    Q008 = "an arrow traversal; GQ writes the triple";
+    Q009 = "an infix string operator; edition 3 writes the call";
 
     // Typechecker.
     T1 = "unknown node type";
@@ -75,6 +80,16 @@ codes! {
     T57 = "distinct applies only to count";
     T58 = "a Boolean return item compares aggregates with constants only";
     T59 = "an rrf() ranks two bindings one traversal connects";
+    // SPIKE (RFC PR #1202): edition-3 type codes.
+    T60 = "a reserved construct is not yet served";
+    T61 = "a call argument is in the wrong form or unknown";
+    T62 = "the declaration keyword does not match its body";
+    T63 = "a retrieve arm name collides with a property";
+    T64 = "a retrieve arm is read in match";
+    T65 = "a ranking is not bound as a retrieve arm, or an arm is not read by order";
+    T66 = "unknown function";
+    T67 = "a having expression is invalid";
+    T68 = "a triple is written against the edge's declared orientation";
 
     // Planner. P001 and P005 are withdrawn: a ranking roots its traversal at
     // the binding it ranks, and `rrf()` arms one traversal connects are T59.

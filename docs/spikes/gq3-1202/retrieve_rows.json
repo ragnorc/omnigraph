@@ -1,0 +1,87 @@
+[
+  {
+    "edition2": "query q($v: Vector(2), $t: String) { match { $d: Doc } return { $d.slug, nearest($d.embedding, $v) as score } order { nearest($d.embedding, $v) } limit 3 }",
+    "edition3": "gq 3;\nquery q($v: Vector(2), $t: String) { match { $d: Doc } retrieve { $d.vec: nearest($d.embedding, $v) } return { $d.slug, $d.vec as score } order { $d.vec } limit 3 }",
+    "rows": [
+      {
+        "d.slug": "d1",
+        "score": 0.0
+      },
+      {
+        "d.slug": "d2",
+        "score": 0.020000005
+      },
+      {
+        "d.slug": "d3",
+        "score": 0.18
+      }
+    ]
+  },
+  {
+    "edition2": "query q($v: Vector(2), $t: String) { match { $d: Doc } return { $d.slug, bm25($d.body, $t) as score } order { bm25($d.body, $t) desc } limit 4 }",
+    "edition3": "gq 3;\nquery q($v: Vector(2), $t: String) { match { $d: Doc } retrieve { $d.lex: bm25($d.body, $t) } return { $d.slug, $d.lex as score } order { $d.lex desc } limit 4 }",
+    "rows": [
+      {
+        "d.slug": "d1",
+        "score": 1.318853
+      },
+      {
+        "d.slug": "d5",
+        "score": 1.0608166
+      },
+      {
+        "d.slug": "d6",
+        "score": 0.7721133
+      },
+      {
+        "d.slug": "d2",
+        "score": 0.6594265
+      }
+    ]
+  },
+  {
+    "edition2": "query q($v: Vector(2), $t: String) { match { $d: Doc } return { $d.slug } order { rrf(nearest($d.embedding, $v), bm25($d.body, $t), 60) } limit 4 }",
+    "edition3": "gq 3;\nquery q($v: Vector(2), $t: String) { match { $d: Doc } retrieve { $d.vec: nearest($d.embedding, $v), $d.lex: bm25($d.body, $t) } return { $d.slug } order { rrf($d.vec, $d.lex, k: 60) } limit 4 }",
+    "rows": [
+      {
+        "d.slug": "d1"
+      },
+      {
+        "d.slug": "d2"
+      },
+      {
+        "d.slug": "d5"
+      },
+      {
+        "d.slug": "d3"
+      }
+    ]
+  },
+  {
+    "edition2": "query q($v: Vector(2), $t: String) { match { $d: Doc { topic: \"db\" } } return { $d.slug } order { nearest($d.embedding, $v) } limit 2 }",
+    "edition3": "gq 3;\nquery q($v: Vector(2), $t: String) { match { $d: Doc { topic: \"db\" } } retrieve { $d.vec: nearest($d.embedding, $v) } return { $d.slug } order { $d.vec } limit 2 }",
+    "rows": [
+      {
+        "d.slug": "d1"
+      },
+      {
+        "d.slug": "d3"
+      }
+    ]
+  },
+  {
+    "edition2": "query q($v: Vector(2), $t: String) { match { $p: Person { name: \"alice\" } $p wrote $d } return { $d.slug } order { bm25($d.body, $t) desc } limit 5 }",
+    "edition3": "gq 3;\nquery q($v: Vector(2), $t: String) { match { $p: Person { name: \"alice\" } $p wrote $d } retrieve { $d.lex: bm25($d.body, $t) } return { $d.slug } order { $d.lex desc } limit 5 }",
+    "rows": [
+      {
+        "d.slug": "d1"
+      },
+      {
+        "d.slug": "d2"
+      },
+      {
+        "d.slug": "d3"
+      }
+    ]
+  }
+]

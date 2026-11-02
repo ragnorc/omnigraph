@@ -1377,3 +1377,41 @@ graphs:
     assert_eq!(body["row_count"], 1, "body: {body}");
     assert_eq!(body["rows"][0]["conj"], 0, "body: {body}");
 }
+
+/// SPIKE (RFC PR #1202): an edition-3 stored read boots and serves through
+/// HTTP with today's envelope; `retrieve`, `limit $k` and `having` included.
+#[tokio::test(flavor = "multi_thread")]
+async fn spike_gq3_edition_3_stored_read_boots_and_serves() {
+    const RANKED3: &str = "gq 3;\nquery ranked_people($q: String, $k: I64) { match { $p: Person } retrieve { $p.lex: bm25($p.name, $q) } return { $p.name, $p.lex as relevance } having { $p.lex > 0.0 } order { $p.lex desc } limit $k }";
+    let (_temp, app) = app_with_stored_queries(
+        &[("ranked_people", RANKED3, false)],
+        &[("act-invoke", "t-invoke")],
+        INVOKE_POLICY_YAML,
+    )
+    .await;
+    let (status, body) = json_response(
+        &app,
+        invoke_request(
+            "ranked_people",
+            "t-invoke",
+            json!({ "params": { "q": "Alice", "k": 2 } }),
+        ),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "body: {body}");
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/spike-gq3");
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(
+        dir.join("server_envelope.json"),
+        serde_json::to_string_pretty(&body).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        body["ranking"],
+        json!({
+            "by": "bm25", "order": "descending", "exhaustive": true,
+            "score_columns": ["relevance"]
+        })
+    );
+    assert!(body["row_count"].as_u64().unwrap() >= 1, "{body}");
+}

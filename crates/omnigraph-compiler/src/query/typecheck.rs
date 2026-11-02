@@ -81,6 +81,10 @@ pub struct CheckedReadQuery {
     pub(crate) distinct: bool,
     pub(crate) orders: Vec<CheckedOrder>,
     pub(crate) limit: Option<u64>,
+    /// SPIKE (RFC PR #1202): `having`, typed as a Boolean return item.
+    pub(crate) having: Option<TypedExpr>,
+    /// SPIKE: `limit $k`, bound before planning.
+    pub(crate) limit_param: Option<String>,
 }
 
 impl CheckedReadQuery {
@@ -93,6 +97,17 @@ impl CheckedReadQuery {
     /// a correlated block's traversals belong to its own scope.
     pub fn traversals(&self) -> impl Iterator<Item = &ResolvedTraversal> {
         self.scope.traversals()
+    }
+
+    /// SPIKE: traversals inside correlated blocks, at any depth.
+    pub fn nested_traversals(&self) -> Vec<&ResolvedTraversal> {
+        let mut out = Vec::new();
+        let mut pending: Vec<&CheckedBlock> = self.scope.blocks().collect();
+        while let Some(block) = pending.pop() {
+            out.extend(block.inner.traversals());
+            pending.extend(block.inner.blocks());
+        }
+        out
     }
 }
 
@@ -704,6 +719,7 @@ pub enum CheckedQuery {
 }
 
 pub fn typecheck_query_decl(catalog: &Catalog, query: &QueryDecl) -> Result<CheckedQuery> {
+    gq3_refusals(query)?;
     if !query.mutations.is_empty() {
         let (params, param_types) = checked_params(&query.params)?;
         typecheck_unattached_base(&query.write_mode, &param_types)?;
@@ -842,7 +858,89 @@ fn refuse_reserved_variable_names(clauses: &[Clause]) -> Result<()> {
     Ok(())
 }
 
+/// SPIKE (RFC PR #1202): an edition-3 slot or spelling refusal, raised
+/// before anything else the type checker says.
+fn gq3_refusals(query: &QueryDecl) -> Result<()> {
+    if let Some(first) = query.gq3.as_ref().and_then(|x| x.refusals.first()) {
+        return Err(CompilerError::query(first.clone()));
+    }
+    Ok(())
+}
+
+/// SPIKE: an edition-3 read's extra checks after `match` is typed: a retrieve
+/// arm may not shadow a property of its binding (T63), and a triple written
+/// against an asymmetric edge's declared orientation is refused with the
+/// swapped clause (the RFC's `T5`; spike code T68), unless the environment
+/// variable `GQ3_ALLOW_INCOMING_TRIPLE` is set.
+fn gq3_scope_checks(
+    catalog: &Catalog,
+    query: &QueryDecl,
+    bindings: &HashMap<String, BoundVariable>,
+    clauses: &[CheckedClause],
+) -> Result<()> {
+    let Some(x) = &query.gq3 else { return Ok(()) };
+    for arm in &x.arms {
+        if let Some(BoundVariable::Node { type_name }) = bindings.get(&arm.variable)
+            && catalog
+                .node_types
+                .get(type_name)
+                .is_some_and(|node| node.properties.contains_key(&arm.name))
+        {
+            return Err(CompilerError::query(
+                QueryDiagnostic::typecheck(
+                    T63,
+                    format!(
+                        "the retrieve arm `${}.{}` collides with the property `{type_name}.{}`",
+                        arm.variable, arm.name, arm.name
+                    ),
+                )
+                .with_fix("give the arm a name that is not a property of its binding"),
+            ));
+        }
+    }
+    if std::env::var_os("GQ3_ALLOW_INCOMING_TRIPLE").is_some() {
+        return Ok(());
+    }
+    let mut pending: Vec<&CheckedClause> = clauses.iter().collect();
+    while let Some(clause) = pending.pop() {
+        if let CheckedClause::Block(block) = clause {
+            pending.extend(block.inner.clauses.iter());
+            continue;
+        }
+        let CheckedClause::Traversal(t) = clause else {
+            continue;
+        };
+        let members = t.edges.members();
+        let incoming = !members.is_empty()
+            && members
+                .iter()
+                .all(|m| m.direction == crate::types::Direction::In);
+        let named = matches!(t.edges, EdgeSelection::Named(_));
+        if incoming && named && t.src_type != t.dst_type {
+            let edge = &members[0].edge_type;
+            let lower = {
+                let mut c = edge.chars();
+                c.next()
+                    .map(|f| f.to_ascii_lowercase().to_string() + c.as_str())
+                    .unwrap_or_default()
+            };
+            return Err(CompilerError::query(
+                QueryDiagnostic::typecheck(
+                    T68,
+                    format!(
+                        "`${} {lower} ${}` is written against `{edge}: {} -> {}`",
+                        t.src, t.dst, t.dst_type, t.src_type
+                    ),
+                )
+                .with_fix(format!("write `${} {lower} ${}`", t.dst, t.src)),
+            ));
+        }
+    }
+    Ok(())
+}
+
 fn typecheck_read_query(catalog: &Catalog, query: &QueryDecl) -> Result<CheckedReadQuery> {
+    gq3_refusals(query)?;
     let mut ctx = TypeContext::empty();
     let (checked_params, params) = checked_params(&query.params)?;
 
@@ -856,6 +954,7 @@ fn typecheck_read_query(catalog: &Catalog, query: &QueryDecl) -> Result<CheckedR
         &params,
         &mut HashSet::new(),
     )?;
+    gq3_scope_checks(catalog, query, &ctx.bindings, &clauses)?;
 
     // Typecheck return projections
     let mut result_columns: HashSet<String> = HashSet::new();
@@ -1004,7 +1103,72 @@ fn typecheck_read_query(catalog: &Catalog, query: &QueryDecl) -> Result<CheckedR
         distinct: query.distinct,
         orders,
         limit: query.limit,
+        having: gq3_having(catalog, query)?,
+        limit_param: query.gq3.as_ref().and_then(|x| x.limit_param.clone()),
     })
+}
+
+/// SPIKE: `having` is typed as one more Boolean return item over the same
+/// scope (aggregates, group keys, arms), after replacing an alias by the
+/// expression it names; the hidden item never reaches the result.
+fn gq3_having(catalog: &Catalog, query: &QueryDecl) -> Result<Option<TypedExpr>> {
+    let Some(having) = query.gq3.as_ref().and_then(|x| x.having.clone()) else {
+        return Ok(None);
+    };
+    fn unalias(expr: Expr, returns: &[Projection]) -> Expr {
+        match expr {
+            Expr::AliasRef(name) => returns
+                .iter()
+                .find(|p| p.alias.as_deref() == Some(name.as_str()))
+                .map_or(Expr::AliasRef(name), |p| p.expr.clone()),
+            Expr::Binary { left, op, right } => Expr::Binary {
+                left: Box::new(unalias(*left, returns)),
+                op,
+                right: Box::new(unalias(*right, returns)),
+            },
+            Expr::Not(inner) => Expr::Not(Box::new(unalias(*inner, returns))),
+            Expr::IsNull { expr, negated } => Expr::IsNull {
+                expr: Box::new(unalias(*expr, returns)),
+                negated,
+            },
+            other => other,
+        }
+    }
+    let having = unalias(having, &query.return_clause);
+    let mut hidden = query.clone();
+    if let Some(x) = hidden.gq3.as_mut() {
+        x.having = None;
+    }
+    hidden.return_clause.push(Projection {
+        expr: having,
+        alias: Some("__having".to_string()),
+    });
+    let checked = typecheck_read_query(catalog, &hidden).map_err(|error| {
+        CompilerError::query(
+            QueryDiagnostic::typecheck(
+                T67,
+                format!("`having` is not a valid Boolean item over the return scope: {error}"),
+            )
+            .with_fix(
+                "compare aggregates, group keys or retrieve arms with constants or parameters",
+            ),
+        )
+    })?;
+    let typed = checked.returns.last().expect("hidden").expr.clone();
+    if !matches!(
+        typed.expr_type(),
+        crate::types::ExprType::Value {
+            scalar: ScalarType::Bool,
+            list: false,
+            ..
+        }
+    ) {
+        return Err(CompilerError::query(QueryDiagnostic::typecheck(
+            T67,
+            "`having` must be Boolean",
+        )));
+    }
+    Ok(Some(typed))
 }
 
 /// T59: a leading `rrf()` whose arms rank two bindings one traversal

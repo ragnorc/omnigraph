@@ -220,6 +220,8 @@ mod tests {
             ty: typed(ScalarType::F32, nullable),
         };
         let query = QueryIR {
+            having: None,
+            limit_param: None,
             name: "q".to_string(),
             params: vec![],
             pipeline: vec![IROp::NodeScan {

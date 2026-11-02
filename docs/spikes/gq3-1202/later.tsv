@@ -1,0 +1,61 @@
+owner	capability	expected	got	detail
+derived	view declaration	Slot	Slot	T60: a `view` declaration is a reserved GQ 3 construct, not yet served in this release
+derived	view binding with arguments	Slot	Slot	T60: the view binding `Busy(2)` is a reserved GQ 3 construct, not yet served in this release
+derived	optional pattern	Slot	Slot	T60: `optional { … }` is a reserved GQ 3 construct, not yet served in this release
+derived	block aggregate as a value	Slot	Slot	T60: the block value `count` is a reserved GQ 3 construct, not yet served in this release
+derived	post-group filter	Works	Works	ok
+derived	collect()	Row	Row	T66: `collect` is not a function in the registry
+derived	partial object in return	New	New	Q001: expected not_expr, infix_string_op, kw_and, kw_or, kw_is, kw_in, comp_op, kw_as
+derived	collect of a partial object	New	New	Q001: expected infix_string_op, kw_and, kw_or, kw_is, kw_in, comp_op
+derived	top-N per group	New	New	Q001: expected order_dir, infix_string_op, kw_and, kw_or, kw_is, kw_in, comp_op
+0048	candidates option on an arm	Row	Row	T61: `nearest` has no option `candidates`
+0048	exact search option	Row	Row	T61: `nearest` has no option `exact`
+0048	three rrf arms	Row	Row	T61: `rrf` takes 2 positional arguments; an optional argument is passed by name
+0048	rrf weights as an option	Row	Row	T61: `rrf` has no option `weights`
+0048	per-arm weight (PR #793's spelling)	Row	Row	T61: `nearest` has no option `weight`
+0048	score threshold as a value	Works	Works	ok
+0048	norm() of an arm	Row	Row	T66: `norm` is not a function in the registry
+0048	weighted sum of arms (arithmetic)	New	New	Q001: expected not_expr, infix_string_op, kw_and, kw_or, kw_is, kw_in, comp_op, kw_as
+0048	rerank as an arm	Row	Row	T66: `rerank` is not a function in the registry
+eval	rerank as a stage with a bare `k 50`	New	New	Q001: expected variable
+eval	arm window as a bare `k 200` suffix	New	New	Q001: expected variable
+1202	arm meta-field `$d.vec.@distance`	Slot	Slot	T60: the arm meta-field `$d.vec.@distance` is a reserved GQ 3 construct, not yet served in this release
+eval	arm struct field `$a.vec.distance`	Slot	Slot	T60: the path `$d.vec.distance` is a reserved GQ 3 construct, not yet served in this release
+792	terms() query value	Row	Row	T66: `terms` is not a function in the registry
+792	bm25 over terms() in an arm	Row	Row	T66: `terms` is not a function in the registry
+792	phrase search	Row	Row	T66: `phrase` is not a function in the registry
+792	search/match_text/fuzzy, which PR #792 removes at the next major	Works	Works	ok
+writes	returning	Slot	Slot	T60: `returning { … }` is a reserved GQ 3 construct, not yet served in this release
+writes	pattern-scoped update	New	New	Q001: expected type_ref
+writes	pattern-scoped delete of an edge	New	New	Q001: expected type_ref
+writes	invalidate	New	New	Q001: expected decl_body
+writes	computed assignment	New	New	Q001: expected infix_string_op, kw_and, kw_or, kw_is, kw_in, comp_op, ident
+writes	commit precondition annotation	Slot	Slot	T60: the annotation `@if_commit` is a reserved GQ 3 construct, not yet served in this release
+writes/Lance	insert-if-absent (WhenMatched::DoNothing)	New	New	Q001: expected mutation_stmt, kw_returning
+884	interface binding	Works	Works	parses
+884	union binding	New	New	Q001: expected clause
+884	type test `is`	New	New	Q001: expected clause, infix_string_op, kw_and, kw_or, kw_not, kw_is, kw_null, kw_in, comp_op
+884	@type_id	Slot	Slot	T60: the meta-field `@type_id` is a reserved GQ 3 construct, not yet served in this release
+884	typed endpoint value `Person($id)`	New	New	Q001: expected not_expr, kw_null
+884	wildcard binding `$x: *`	New	New	Q001: expected type_ref
+884	type variable `$x: $t`	New	New	Q001: expected type_ref
+1015	namespaced binding	Slot	Slot	T60: the namespaced type reference `crm::Contact` is a reserved GQ 3 construct, not yet served in this release
+1015	namespaced edge	New	New	Q001: expected clause, traversal_bounds, infix_string_op, kw_and, kw_or, kw_is, kw_in, comp_op, variable
+1015	`use` line	New	New	Q001: expected EOI, missing_param_list, declaration, setting_stmt, kw_gq, kw_show, kw_commit, kw_branch, kw_load, kw_explain
+1015	namespace block	New	New	Q001: expected EOI, missing_param_list, declaration, setting_stmt, kw_gq, kw_show, kw_commit, kw_branch, kw_load, kw_explain
+catalogue	catalogue type binding	Slot	Slot	T60: the catalogue type `@Type` is a reserved GQ 3 construct, not yet served in this release
+catalogue	catalogue edge	Slot	Slot	T60: the catalogue edge `@property` is a reserved GQ 3 construct, not yet served in this release
+catalogue	rank search over a catalogue type	Slot	Slot	T60: the catalogue type `@Type` is a reserved GQ 3 construct, not yet served in this release
+branch	Branch / Commit parameter kinds	Slot	Slot	T60: a `Branch` parameter is a reserved GQ 3 construct, not yet served in this release
+eval	read target `at $commit` on a declaration	New	New	Q001: expected write_clause, annotation
+eval	`at date(…)` on a binding	Misparse	Misparse	T41: a filter must be Boolean, got aggregate
+batch	batch of declarations	Slot	Slot	T60: a `batch` declaration is a reserved GQ 3 construct, not yet served in this release
+batch	@budget with `=`	Slot	Slot	T60: the annotation `@budget` is a reserved GQ 3 construct, not yet served in this release
+eval	@budget with `:` (the evaluation's spelling)	New	New	Q001: expected annotation_kwarg, meta_field, signed_number, variable, literal
+eval	an unknown annotation is metadata	Works	Works	ok
+Lance	nulls placement in order	New	New	Q001: expected infix_string_op, kw_and, kw_or, kw_is, kw_in, comp_op
+Lance	offset	New	New	Q001: expected order_dir, infix_string_op, kw_and, kw_or, kw_is, kw_in, comp_op
+Lance	vector search tuning options	Row	Row	T61: `nearest` has no option `nprobes`
+Lance	full-text operator and boost options	Row	Row	T61: `search` has no option `operator`
+Lance	list membership index functions	Row	Row	T66: `has_any` is not a function in the registry
+Lance	multivector parameter	New	New	Q001: expected base_type

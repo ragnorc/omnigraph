@@ -241,7 +241,10 @@ impl Requirements {
                 ));
             }
         }
-        if ir.limit != decl.limit {
+        // SPIKE (RFC PR #1202): `limit $k` is required to be the bound value.
+        let limit_param_bound = ir.limit_param.is_some()
+            && decl.limit == Some(omnigraph_compiler::gq3::LIMIT_PARAM_PLACEHOLDER);
+        if ir.limit != decl.limit && !limit_param_bound {
             return Err(ValidationError::violated(
                 "lowering",
                 format!(

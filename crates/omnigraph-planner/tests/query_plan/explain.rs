@@ -234,6 +234,8 @@ fn physical_anti_join_predicate_reads_back_equal() {
 #[test]
 fn the_physical_document_prints_gq_orderings_and_no_query_schema() {
     let op = Operation::Query(Box::new(QueryIR {
+        having: None,
+        limit_param: None,
         name: "q".to_string(),
         params: vec![],
         pipeline: vec![scan("c")],

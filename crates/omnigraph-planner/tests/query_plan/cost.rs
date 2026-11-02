@@ -1007,6 +1007,8 @@ fn a_limit_hydrates_every_large_scan_but_not_a_key_lookup() {
 #[test]
 fn hydration_keeps_every_column_something_besides_the_output_reads() {
     let op = Operation::Query(Box::new(QueryIR {
+        having: None,
+        limit_param: None,
         name: "q".to_string(),
         params: vec![],
         pipeline: vec![IROp::NodeScan {

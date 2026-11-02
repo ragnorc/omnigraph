@@ -140,6 +140,8 @@ fn query(two: bool) -> QueryIR {
         )],
     };
     QueryIR {
+        having: None,
+        limit_param: None,
         name: "probe".into(),
         params: vec![],
         pipeline: if two {

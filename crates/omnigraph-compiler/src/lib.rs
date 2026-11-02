@@ -1,5 +1,6 @@
 pub mod catalog;
 pub mod error;
+pub mod gq3;
 pub mod ir;
 pub mod json_output;
 pub mod lint;

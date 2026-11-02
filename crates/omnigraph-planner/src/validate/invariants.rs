@@ -434,6 +434,7 @@ impl Requirements {
         for (id, conjunct) in &placed {
             if constant_true(conjunct)
                 || required.contains(conjunct)
+                || (input.ir.having.is_some() && spike_having_conjunct(conjunct))
                 || self.narrowed_key(plan, *id, conjunct, &required, input)
             {
                 continue;
@@ -1029,6 +1030,10 @@ impl Requirements {
             match plan.node(id) {
                 Some(PhysicalNode::Sort { .. }) => break,
                 Some(PhysicalNode::Projection { input, .. }) => id = *input,
+                // SPIKE (RFC PR #1202): `having` sits between the sort and the cut.
+                Some(PhysicalNode::Filter { input: below, .. }) if input.ir.having.is_some() => {
+                    id = *below
+                }
                 _ => {
                     return Err(ValidationError::violated(
                         "order",
@@ -1053,7 +1058,11 @@ impl Requirements {
                 "the plan's root does not leave its rows in the final sort's order",
             ));
         }
-        let expected_fetch = self.limit.and_then(|limit| usize::try_from(limit).ok());
+        // SPIKE (RFC PR #1202): with `having`, the cut follows the filter.
+        let expected_fetch = self
+            .limit
+            .filter(|_| input.ir.having.is_none())
+            .and_then(|limit| usize::try_from(limit).ok());
         if *fetch != expected_fetch {
             return Err(ValidationError::violated(
                 "row cut",
@@ -1389,5 +1398,21 @@ fn projected_retrieval(expr: &Expr) -> Option<(RankKind, &str, &str)> {
             _ => None,
         },
         _ => None,
+    }
+}
+
+/// SPIKE (RFC PR #1202): a `having` conjunct reads only return columns (the
+/// planner binds it to them); acceptance would derive it from the checked
+/// query's `having` in a real implementation.
+fn spike_having_conjunct(expr: &IRExpr) -> bool {
+    match expr {
+        IRExpr::AliasRef(..) | IRExpr::Literal(..) | IRExpr::Param(..) => true,
+        IRExpr::Binary { left, right, .. } => {
+            spike_having_conjunct(left) && spike_having_conjunct(right)
+        }
+        IRExpr::Not(inner, _)
+        | IRExpr::Cast { expr: inner, .. }
+        | IRExpr::IsNull { expr: inner, .. } => spike_having_conjunct(inner),
+        _ => false,
     }
 }

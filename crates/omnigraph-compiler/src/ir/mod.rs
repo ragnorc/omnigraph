@@ -36,6 +36,10 @@ pub struct QueryIR {
     pub distinct: bool,
     pub order_by: Vec<IROrdering>,
     pub limit: Option<u64>,
+    /// SPIKE (RFC PR #1202): `having`, a Boolean over the return scope.
+    pub having: Option<IRExpr>,
+    /// SPIKE: `limit $k`; `limit` holds a placeholder until it is bound.
+    pub limit_param: Option<String>,
 }
 
 impl QueryIR {

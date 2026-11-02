@@ -2181,6 +2181,7 @@ return { $d.name }
         limit: None,
         mutations: Vec::new(),
         write_mode: MutationWriteMode::Publish,
+        gq3: None,
     };
     let error = typecheck_query(&catalog, &direct_ast).unwrap_err();
     assert_eq!(

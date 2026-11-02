@@ -1,0 +1,13 @@
+sources: 2609
+      1    expect-error: code changes T32 -> T65
+      2    expect-error: code changes T33 -> T65
+    129    expect-error: same code in edition 3
+   1818  declaration, IR equal
+    132  declaration, edition 2 refuses (expect-error case)
+      4  declaration, edition 3 refuses the rewrite (T68 incoming triple)
+     43  declaration, parse-only (no schema)
+     11  edition-2 parse refused (expect-error case)
+    611  statement (unchanged)
+      2  result-column renames noted
+      0  T68 refusals whose swapped rewrite compiles to different IR
+cost over 1808 sources x 20 rounds (parse + check + lower): edition 2 5.951354256s, edition 3 8.114994438s (ratio 1.36)

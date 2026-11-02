@@ -1,0 +1,25 @@
+origin	outcome	detail
+crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#7	note	result column `p._distance` is renamed `p.nearest`
+crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#11	note	result column `p._score` is renamed `p.bm25`
+crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#23	code-change	nearest_projected_without_retrieval: T33 -> T65 | type error: T33: `nearest` in `return` must repeat the retrieval stated as the leading `order` key; the projection reads the score that ordering computed
+crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#26	code-change	nearest_projected_other_query: T33 -> T65 | type error: T33: `nearest` in `return` must repeat the retrieval stated as the leading `order` key; the projection reads the score that ordering computed
+crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#29	code-change	nearest_projected_under_aggregate: T32 -> T65 | type error: T32: `nearest` under `max` in `return`: a retrieval selects the rows an aggregate counts; state the filter instead
+crates/omnigraph-gqt/cases/issue_659_compiler_scopes.gqt#21	v3-refused	named_reverse_not: type error: T68: `$c worksAt $p` is written against `WorksAt: Person -> Company`
+crates/omnigraph-gqt/cases/issue_659_compiler_scopes.gqt#21	swap	named_reverse_not: Equal
+crates/omnigraph-gqt/cases/issue_659_compiler_scopes.gqt#24	v3-refused	named_reverse_exists: type error: T68: `$c worksAt $p` is written against `WorksAt: Person -> Company`
+crates/omnigraph-gqt/cases/issue_659_compiler_scopes.gqt#24	swap	named_reverse_exists: Equal
+crates/omnigraph-gqt/cases/issue_659_compiler_scopes.gqt#27	v3-refused	named_reverse_count: type error: T68: `$c worksAt $p` is written against `WorksAt: Person -> Company`
+crates/omnigraph-gqt/cases/issue_659_compiler_scopes.gqt#27	swap	named_reverse_count: Equal
+crates/omnigraph-gqt/cases/issue_659_compiler_scopes.gqt#75	v3-refused	nested_local_names_remain_independent: type error: T68: `$x worksAt $q` is written against `WorksAt: Person -> Company`
+crates/omnigraph-gqt/cases/issue_659_compiler_scopes.gqt#75	swap	nested_local_names_remain_independent: Equal
+docs/user/branching/index.md#1	v2-parse-refused	
+docs/user/mutations/index.md#2	v2-parse-refused	
+docs/user/mutations/index.md#4	v2-parse-refused	
+docs/user/queries/index.md#2	v2-parse-refused	
+skills/omnigraph/references/queries.md#3	v2-parse-refused	
+skills/omnigraph/references/queries.md#9	v2-parse-refused	
+skills/omnigraph/references/queries.md#10	v2-parse-refused	
+skills/omnigraph/references/queries.md#11	v2-parse-refused	
+skills/omnigraph/references/queries.md#15	v2-parse-refused	
+skills/omnigraph/references/search.md#5	v2-parse-refused	
+docs/user/queries/catalogue.gq	v2-parse-refused	

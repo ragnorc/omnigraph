@@ -1,0 +1,39 @@
+$ omnigraph query --json -e "<edition-3 query>"
+target file:///tmp/spike/clidemo/g (inline): direct graph /tmp/spike/clidemo/g; requested=/tmp/spike/clidemo/g; provider=Local
+{
+  "query_name": "q",
+  "target": {
+    "branch": "main",
+    "snapshot": null
+  },
+  "row_count": 2,
+  "columns": [
+    "d.slug",
+    "dist"
+  ],
+  "rows": [{"d.slug":"d1","dist":0.0},{"d.slug":"d2","dist":0.020000005}],
+  "graph_commit_id": "hb1.01M6CT0H9CYZD7H7PH2ZNKYV1P.2.01M6CT0PAEVW5605YNXG937E03",
+  "ranking": {
+    "by": "nearest",
+    "order": "ascending",
+    "exhaustive": true,
+    "score_columns": [
+      "dist"
+    ]
+  }
+}
+
+$ omnigraph query -e "gq 3; ... $p -wrote-> $d ..."
+target file:///tmp/spike/clidemo/g (inline): direct graph /tmp/spike/clidemo/g; requested=/tmp/spike/clidemo/g; provider=Local
+error[Q008]: parse error: `$p -wrote-> $d` is an arrow traversal; GQ writes a traversal as a triple, source on the left
+  --> line 2, column 32
+  fix: write `$p wrote $d`
+disposition: {"effects":"none","action":"refresh"}
+
+$ omnigraph mutate -e "gq 3; query add(...) { insert ... }"
+target file:///tmp/spike/clidemo/g (inline): direct graph /tmp/spike/clidemo/g; requested=/tmp/spike/clidemo/g; provider=Local
+target write scope: branch=main
+error[T62]: type error: T62: `query add` writes; a write is declared with `mutation`
+  --> typecheck
+  fix: write `mutation add(…)`
+disposition: {"effects":"none","action":"fix"}

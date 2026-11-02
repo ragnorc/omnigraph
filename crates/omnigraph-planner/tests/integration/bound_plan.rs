@@ -71,6 +71,8 @@ fn prop(variable: &str, property: &str) -> IRExpr {
 
 fn query(order_by: IRExpr) -> QueryIR {
     QueryIR {
+        having: None,
+        limit_param: None,
         name: "q".to_string(),
         params: vec![],
         pipeline: vec![IROp::NodeScan {
@@ -422,6 +424,8 @@ fn two_docs(filter: Option<IRExpr>) -> PhysicalPlan {
     let mut pipeline = vec![doc_scan("d"), doc_scan("e")];
     pipeline.extend(filter.map(IROp::Filter));
     let query = QueryIR {
+        having: None,
+        limit_param: None,
         name: "q".to_string(),
         params: vec![],
         pipeline,

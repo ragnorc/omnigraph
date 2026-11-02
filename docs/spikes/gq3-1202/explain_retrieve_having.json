@@ -1,0 +1,596 @@
+{
+  "explain_version": 7,
+  "route": "engine",
+  "override": "registry",
+  "operation": {
+    "kind": "query",
+    "tables": []
+  },
+  "logical_plan_initial": {
+    "node": "Limit",
+    "rows": 2,
+    "bytes": 0,
+    "resume": null,
+    "inputs": [
+      {
+        "node": "Filter",
+        "conjuncts": [
+          {
+            "kind": "gq",
+            "reads": [],
+            "text": "dist < 0.5"
+          }
+        ],
+        "typed_filters": [
+          {
+            "op": "compare",
+            "gq": "dist < 0.5",
+            "type": "Bool",
+            "args": [
+              {
+                "op": "alias",
+                "gq": "dist",
+                "type": "F32",
+                "args": []
+              },
+              {
+                "op": "cast",
+                "gq": "0.5",
+                "type": "F32",
+                "args": [
+                  {
+                    "op": "literal",
+                    "gq": "0.5",
+                    "type": "F64",
+                    "args": []
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "inputs": [
+          {
+            "node": "Sort",
+            "keys": [],
+            "typed_keys": [],
+            "fetch": null,
+            "tiebreak": [
+              "$d.@id"
+            ],
+            "inputs": [
+              {
+                "node": "Projection",
+                "columns": [
+                  "d.slug",
+                  "d._distance"
+                ],
+                "typed_exprs": [
+                  {
+                    "op": "property",
+                    "gq": "$d.slug",
+                    "type": "String",
+                    "args": []
+                  },
+                  {
+                    "op": "property",
+                    "gq": "$d._distance",
+                    "type": "F32",
+                    "args": []
+                  }
+                ],
+                "inputs": [
+                  {
+                    "node": "Nearest",
+                    "binding": "d",
+                    "property": "embedding",
+                    "typed_query": {
+                      "op": "param",
+                      "gq": "$v",
+                      "type": "Vector(2)",
+                      "args": []
+                    },
+                    "k": 2,
+                    "reads": [],
+                    "inputs": [
+                      {
+                        "node": "Filter",
+                        "conjuncts": [
+                          {
+                            "kind": "gq",
+                            "reads": [
+                              {
+                                "binding": "d",
+                                "property": "topic"
+                              }
+                            ],
+                            "text": "$d.topic = \"db\""
+                          }
+                        ],
+                        "typed_filters": [
+                          {
+                            "op": "compare",
+                            "gq": "$d.topic = \"db\"",
+                            "type": "Bool?",
+                            "args": [
+                              {
+                                "op": "property",
+                                "gq": "$d.topic",
+                                "type": "String?",
+                                "args": []
+                              },
+                              {
+                                "op": "literal",
+                                "gq": "\"db\"",
+                                "type": "String",
+                                "args": []
+                              }
+                            ]
+                          }
+                        ],
+                        "inputs": [
+                          {
+                            "node": "TableScan",
+                            "binding": "d",
+                            "table": "node:Doc",
+                            "source": "dataset",
+                            "version": 17847037161101414135,
+                            "projection": null,
+                            "filter": null,
+                            "typed_filter": null
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "logical_plan": {
+    "node": "Limit",
+    "rows": 2,
+    "bytes": 0,
+    "resume": null,
+    "inputs": [
+      {
+        "node": "Filter",
+        "conjuncts": [
+          {
+            "kind": "gq",
+            "reads": [],
+            "text": "dist < 0.5"
+          }
+        ],
+        "typed_filters": [
+          {
+            "op": "compare",
+            "gq": "dist < 0.5",
+            "type": "Bool",
+            "args": [
+              {
+                "op": "alias",
+                "gq": "dist",
+                "type": "F32",
+                "args": []
+              },
+              {
+                "op": "cast",
+                "gq": "0.5",
+                "type": "F32",
+                "args": [
+                  {
+                    "op": "literal",
+                    "gq": "0.5",
+                    "type": "F64",
+                    "args": []
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "inputs": [
+          {
+            "node": "Sort",
+            "keys": [],
+            "typed_keys": [],
+            "fetch": null,
+            "tiebreak": [
+              "$d.@id"
+            ],
+            "inputs": [
+              {
+                "node": "Projection",
+                "columns": [
+                  "d.slug",
+                  "d._distance"
+                ],
+                "typed_exprs": [
+                  {
+                    "op": "property",
+                    "gq": "$d.slug",
+                    "type": "String",
+                    "args": []
+                  },
+                  {
+                    "op": "property",
+                    "gq": "$d._distance",
+                    "type": "F32",
+                    "args": []
+                  }
+                ],
+                "inputs": [
+                  {
+                    "node": "Nearest",
+                    "binding": "d",
+                    "property": "embedding",
+                    "typed_query": {
+                      "op": "param",
+                      "gq": "$v",
+                      "type": "Vector(2)",
+                      "args": []
+                    },
+                    "k": 2,
+                    "reads": [],
+                    "inputs": [
+                      {
+                        "node": "TableScan",
+                        "binding": "d",
+                        "table": "node:Doc",
+                        "source": "dataset",
+                        "version": 17847037161101414135,
+                        "projection": [
+                          "__id",
+                          "slug",
+                          "topic"
+                        ],
+                        "filter": {
+                          "kind": "gq",
+                          "reads": [
+                            {
+                              "binding": "d",
+                              "property": "topic"
+                            }
+                          ],
+                          "text": "$d.topic = \"db\""
+                        },
+                        "typed_filter": [
+                          {
+                            "op": "compare",
+                            "gq": "$d.topic = \"db\"",
+                            "type": "Bool?",
+                            "args": [
+                              {
+                                "op": "property",
+                                "gq": "$d.topic",
+                                "type": "String?",
+                                "args": []
+                              },
+                              {
+                                "op": "literal",
+                                "gq": "\"db\"",
+                                "type": "String",
+                                "args": []
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "logical_hash": "1876fb4a1b3ed16e",
+  "physical_plan": {
+    "node": "Page",
+    "rows": 2,
+    "bytes": 0,
+    "resume": null,
+    "id": 4,
+    "properties": {
+      "ordering": [
+        "$d._distance asc",
+        "$d.@id asc"
+      ],
+      "rows": {
+        "known": 2
+      },
+      "work_bytes": "unknown",
+      "retained_limit": null,
+      "sources": []
+    },
+    "inputs": [
+      {
+        "node": "Filter",
+        "filters": [
+          "dist < 0.5"
+        ],
+        "typed_filters": [
+          {
+            "op": "compare",
+            "gq": "dist < 0.5",
+            "type": "Bool",
+            "args": [
+              {
+                "op": "alias",
+                "gq": "dist",
+                "type": "F32",
+                "args": []
+              },
+              {
+                "op": "cast",
+                "gq": "0.5",
+                "type": "F32",
+                "args": [
+                  {
+                    "op": "literal",
+                    "gq": "0.5",
+                    "type": "F64",
+                    "args": []
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "id": 3,
+        "properties": {
+          "ordering": [
+            "$d._distance asc",
+            "$d.@id asc"
+          ],
+          "rows": "unknown",
+          "work_bytes": "unknown",
+          "retained_limit": null,
+          "sources": []
+        },
+        "inputs": [
+          {
+            "node": "Sort",
+            "keys": [
+              "$d._distance asc"
+            ],
+            "typed_keys": [
+              {
+                "op": "property",
+                "gq": "$d._distance",
+                "type": "F32",
+                "args": []
+              }
+            ],
+            "fetch": null,
+            "tiebreak": [
+              "$d.@id"
+            ],
+            "id": 2,
+            "properties": {
+              "ordering": [
+                "$d._distance asc",
+                "$d.@id asc"
+              ],
+              "rows": {
+                "known": 2
+              },
+              "work_bytes": "unknown",
+              "retained_limit": null,
+              "sources": []
+            },
+            "inputs": [
+              {
+                "node": "Projection",
+                "columns": [
+                  "d.slug: String",
+                  "dist: F32"
+                ],
+                "typed_exprs": [
+                  {
+                    "op": "property",
+                    "gq": "$d.slug",
+                    "type": "String",
+                    "args": []
+                  },
+                  {
+                    "op": "property",
+                    "gq": "$d._distance",
+                    "type": "F32",
+                    "args": []
+                  }
+                ],
+                "exprs": [
+                  "$d.slug",
+                  "$d._distance"
+                ],
+                "id": 1,
+                "properties": {
+                  "ordering": [
+                    "$d._distance asc"
+                  ],
+                  "rows": {
+                    "known": 2
+                  },
+                  "work_bytes": "unknown",
+                  "retained_limit": null,
+                  "sources": []
+                },
+                "inputs": [
+                  {
+                    "node": "Scan",
+                    "binding": "d",
+                    "table": "node:Doc",
+                    "source": "dataset",
+                    "version": 17847037161101414135,
+                    "projection": [
+                      "__id",
+                      "slug",
+                      "topic"
+                    ],
+                    "filter": {
+                      "kind": "gq",
+                      "reads": [
+                        {
+                          "binding": "d",
+                          "property": "topic"
+                        }
+                      ],
+                      "text": "$d.topic = \"db\""
+                    },
+                    "typed_filter": [
+                      {
+                        "op": "compare",
+                        "gq": "$d.topic = \"db\"",
+                        "type": "Bool?",
+                        "args": [
+                          {
+                            "op": "property",
+                            "gq": "$d.topic",
+                            "type": "String?",
+                            "args": []
+                          },
+                          {
+                            "op": "literal",
+                            "gq": "\"db\"",
+                            "type": "String",
+                            "args": []
+                          }
+                        ]
+                      }
+                    ],
+                    "access": "runtime",
+                    "reason": "nearest",
+                    "ordered": false,
+                    "keys_only": false,
+                    "ranked": {
+                      "kind": "nearest",
+                      "property": "embedding",
+                      "query": "$v",
+                      "typed_query": {
+                        "op": "param",
+                        "gq": "$v",
+                        "type": "Vector(2)",
+                        "args": []
+                      },
+                      "typed_score": {
+                        "op": "property",
+                        "gq": "$d._distance",
+                        "type": "F32",
+                        "args": []
+                      },
+                      "fetch": 2,
+                      "scope": "order",
+                      "nprobes": 20,
+                      "policy": {
+                        "probe_factor": 4,
+                        "flat_rescan_on_unreached": true,
+                        "uncapped_on_missing_counters": true,
+                        "flat_when_eligible_within_fetch": true
+                      }
+                    },
+                    "id": 0,
+                    "properties": {
+                      "ordering": [
+                        "$d._distance asc"
+                      ],
+                      "rows": {
+                        "known": 2
+                      },
+                      "work_bytes": "unknown",
+                      "retained_limit": null,
+                      "sources": [
+                        {
+                          "statistic": "scan_row_estimate(node:Doc)",
+                          "value": "6",
+                          "origin": "manifest row count, at most one row under a key equality"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "pipelines": [
+    {
+      "id": 0,
+      "source": {
+        "node": "Scan",
+        "side": {
+          "binding": 0
+        },
+        "ordered": false,
+        "id": 0
+      },
+      "partitions": 1,
+      "operators": [
+        {
+          "id": 1,
+          "name": "Projection"
+        }
+      ],
+      "sink": {
+        "id": 2,
+        "name": "Sort"
+      },
+      "depends_on": []
+    },
+    {
+      "id": 1,
+      "source": {
+        "node": "Sort",
+        "id": 2
+      },
+      "partitions": 1,
+      "operators": [
+        {
+          "id": 3,
+          "name": "Filter"
+        },
+        {
+          "id": 4,
+          "name": "Page"
+        }
+      ],
+      "sink": {
+        "name": "consumer"
+      },
+      "depends_on": [
+        0
+      ]
+    }
+  ],
+  "statistics": [
+    {
+      "statistic": "scan_row_estimate(node:Doc)",
+      "value": "6",
+      "origin": "manifest row count, at most one row under a key equality"
+    },
+    {
+      "statistic": "index_facts(node:Doc)",
+      "value": "[{\"name\":\"__id_idx\",\"column\":\"__id\",\"kind\":\"btree\",\"usable\":true,\"coverage\":{\"covered\":1,\"total\":1}},{\"name\":\"body_idx\",\"column\":\"body\",\"kind\":\"inverted\",\"coverage\":{\"covered\":1,\"total\":1}},{\"name\":\"embedding_idx\",\"column\":\"embedding\",\"kind\":\"vector\",\"coverage\":{\"covered\":1,\"total\":1}},{\"name\":\"slug_idx\",\"column\":\"slug\",\"kind\":\"inverted\",\"coverage\":{\"covered\":1,\"total\":1}}]",
+      "origin": "nodes/0000000000000002-000000000000000e at version 17847037161101414135"
+    }
+  ],
+  "passes": [
+    "resolve",
+    "predicate_pushdown",
+    "projection_pushdown",
+    "scan_access"
+  ],
+  "validation": {
+    "scope": "invariants_only"
+  }
+}

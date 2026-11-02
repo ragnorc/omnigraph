@@ -172,6 +172,8 @@ fn projection(expr: IRExpr, pipeline: &[IROp]) -> IRProjection {
 
 fn ir(pipeline: Vec<IROp>, returns: Vec<IRExpr>, order_by: Vec<IRExpr>) -> Operation {
     Operation::Query(Box::new(QueryIR {
+        having: None,
+        limit_param: None,
         name: "q".to_string(),
         params: vec![],
         return_exprs: returns

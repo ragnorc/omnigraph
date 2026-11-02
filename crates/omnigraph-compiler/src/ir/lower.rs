@@ -237,6 +237,12 @@ pub fn lower_query(catalog: &Catalog, query: &CheckedReadQuery) -> Result<QueryI
         distinct: query.distinct,
         order_by,
         limit: query.limit,
+        having: query
+            .having
+            .as_ref()
+            .map(|having| lower_projection(having, &ctx))
+            .transpose()?,
+        limit_param: query.limit_param.clone(),
     };
     super::validate::validate_query(&ir)?;
     Ok(ir)

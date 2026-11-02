@@ -1,0 +1,27 @@
+{
+  "query_name": "ranked_people",
+  "target": {
+    "branch": "main",
+    "snapshot": null
+  },
+  "row_count": 1,
+  "columns": [
+    "p.name",
+    "relevance"
+  ],
+  "rows": [
+    {
+      "p.name": "Alice",
+      "relevance": 1.2039728
+    }
+  ],
+  "graph_commit_id": "hb1.01M6CSV36T2719HP13BGQ3GSY0.1.01M6CSV36T2719HP13BGQ3GSY0",
+  "ranking": {
+    "by": "bm25",
+    "order": "descending",
+    "exhaustive": true,
+    "score_columns": [
+      "relevance"
+    ]
+  }
+}
