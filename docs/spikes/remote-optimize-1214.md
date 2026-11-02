@@ -1,6 +1,6 @@
 # Spike: remote optimize through the serving owner (RFC #1214)
 
-**Branch:** `spike/remote-optimize-1214` (throwaway code; the findings are the deliverable)
+**Branch:** [`ragnorc/omnigraph@spike/remote-optimize-1214`](https://github.com/ragnorc/omnigraph/tree/spike/remote-optimize-1214) (throwaway code; the findings are the deliverable). It is on the fork because `ModernRelay/omnigraph`'s `fork-only` ruleset refuses new branches.
 **RFC under test:** `docs/rfcs/2026-10-29-remote-optimize-through-the-serving-owner.md` at `ba6e2b4a`
 **Date:** 2026-11-01
 
