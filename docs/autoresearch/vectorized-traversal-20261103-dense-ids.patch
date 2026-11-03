@@ -1,0 +1,895 @@
+diff --git a/crates/omnigraph/src/engine/adapters.rs b/crates/omnigraph/src/engine/adapters.rs
+index 764505ef..d37996c1 100644
+--- a/crates/omnigraph/src/engine/adapters.rs
++++ b/crates/omnigraph/src/engine/adapters.rs
+@@ -136,7 +136,11 @@ impl PhysicalExpr for GqProjectionExpr {
+             let actual = input_schema
+                 .field_with_name(&name)
+                 .map_err(|error| external(crate::error::OmniError::arrow_internal(error)))?;
+-            if actual.data_type() != field.data_type() {
++            let decoded_type = match actual.data_type() {
++                arrow_schema::DataType::Dictionary(_, value) => value.as_ref(),
++                other => other,
++            };
++            if decoded_type != field.data_type() {
+                 return Err(external(crate::error::OmniError::manifest_internal(
+                     format!("property {name} disagrees with its input field"),
+                 )));
+diff --git a/crates/omnigraph/src/engine/expr.rs b/crates/omnigraph/src/engine/expr.rs
+index 7c8688bf..4b7bd68d 100644
+--- a/crates/omnigraph/src/engine/expr.rs
++++ b/crates/omnigraph/src/engine/expr.rs
+@@ -285,9 +285,9 @@ pub(super) fn evaluate_expr(
+             variable, property, ..
+         } => {
+             let col_name = format!("{variable}.{property}");
+-            Arc::clone(batch.column_by_name(&col_name).ok_or_else(|| {
++            decoded(batch.column_by_name(&col_name).ok_or_else(|| {
+                 OmniError::manifest(format!("column '{col_name}' not found in wide batch"))
+-            })?)
++            })?)?
+         }
+         IRExpr::Literal(lit, ty) => typed_literal_to_array(lit, ty, batch.num_rows())?,
+         IRExpr::Param(name, ty) => {
+@@ -314,6 +314,17 @@ pub(super) fn evaluate_expr(
+     Ok(values)
+ }
+ 
++/// `column` with a dictionary-encoded id column (an expand's destination,
++/// `operators::dense_id_type`) materialized as its strings; any other column
++/// as it is.
++fn decoded(column: &ArrayRef) -> Result<ArrayRef> {
++    if matches!(column.data_type(), DataType::Dictionary(_, _)) {
++        Ok(Arc::new(super::operators::id_strings(column, "id column")?))
++    } else {
++        Ok(Arc::clone(column))
++    }
++}
++
+ /// A result column of the input: an aggregate leaf or a group key the
+ /// `Aggregate` node below projected under this name.
+ fn alias_column(batch: &RecordBatch, name: &str) -> Result<ArrayRef> {
+@@ -423,11 +434,11 @@ pub(super) fn evaluate_projection(
+             ty,
+         } => {
+             let col_name = format!("{}.{}", variable, property);
+-            let col = wide_batch.column_by_name(&col_name).ok_or_else(|| {
++            let col = decoded(wide_batch.column_by_name(&col_name).ok_or_else(|| {
+                 OmniError::manifest(format!("column '{}' not found in wide batch", col_name))
+-            })?;
+-            check_array_type(col, ty, &col_name)?;
+-            Ok((col_name, col.clone()))
++            })?)?;
++            check_array_type(&col, ty, &col_name)?;
++            Ok((col_name, col))
+         }
+         IRExpr::Literal(lit, ty) => {
+             let arr = typed_literal_to_array(lit, ty, wide_batch.num_rows())?;
+@@ -465,7 +476,7 @@ pub(super) fn evaluate_projection(
+                             col_name
+                         ))
+                     })?;
+-                let col = wide_batch.column(idx).clone();
++                let col = decoded(wide_batch.column(idx))?;
+                 if col.data_type() != field.data_type()
+                     || !field.is_nullable() && col.null_count() != 0
+                 {
+@@ -516,8 +527,8 @@ pub(super) fn identity_column(
+         )));
+     }
+     let col_name = format!("{}.{}", variable, ctx.catalog.system_columns.id);
+-    let col = wide_batch.column_by_name(&col_name).ok_or_else(|| {
++    let col = decoded(wide_batch.column_by_name(&col_name).ok_or_else(|| {
+         OmniError::manifest(format!("column '{}' not found in wide batch", col_name))
+-    })?;
+-    Ok((variable.to_string(), col.clone()))
++    })?)?;
++    Ok((variable.to_string(), col))
+ }
+diff --git a/crates/omnigraph/src/engine/graph.rs b/crates/omnigraph/src/engine/graph.rs
+index 9fc87449..4600b233 100644
+--- a/crates/omnigraph/src/engine/graph.rs
++++ b/crates/omnigraph/src/engine/graph.rs
+@@ -490,22 +490,45 @@ fn source_node_key(source: usize, node: u32) -> u64 {
+     ((source as u64) << 32) | u64::from(node)
+ }
+ 
+-/// The destination column of one chunk: `dense` resolved through `ids`, the
+-/// dictionary of the walk's destination space, charged to `memory` first.
+-fn destination_column(dense: &[u32], ids: &[String], memory: &WorkMemory) -> Result<ArrayRef> {
+-    let bytes = dense
+-        .iter()
+-        .map(|&d| ids[d as usize].len())
+-        .fold(0usize, usize::saturating_add);
++/// The destination column of one chunk as the dictionary-encoded id column:
++/// `dense` as keys over the graph index's shared dictionary when the walk
++/// reads the CSR, else the interner's strings for these rows cast into a
++/// chunk-local dictionary; charged to `memory` first.
++fn destination_column(
++    dense: &[u32],
++    source: &ActiveExpandSource<'_>,
++    memory: &WorkMemory,
++) -> Result<ArrayRef> {
++    let keys = UInt32Array::from(dense.to_vec());
+     memory
+-        .string(bytes)
++        .entries::<u32>(dense.len())
+         .map_err(|error| memory.error(error))?;
+-    memory
+-        .grow((dense.len() + 1).saturating_mul(std::mem::size_of::<i32>()))
+-        .map_err(|error| memory.error(error))?;
+-    Ok(Arc::new(StringArray::from_iter_values(
+-        dense.iter().map(|&d| ids[d as usize].as_str()),
+-    )))
++    match source {
++        ActiveExpandSource::Csr(CsrSource { dst_idx, .. }) => Ok(Arc::new(
++            arrow_array::DictionaryArray::<arrow_array::types::UInt32Type>::try_new(
++                keys,
++                Arc::clone(dst_idx.id_array()),
++            )
++            .map_err(OmniError::arrow_internal)?,
++        )),
++        ActiveExpandSource::Indexed(src) => {
++            let ids = src.interner.ids();
++            let bytes = dense
++                .iter()
++                .map(|&d| ids[d as usize].len())
++                .fold(0usize, usize::saturating_add);
++            memory
++                .string(bytes)
++                .map_err(|error| memory.error(error))?;
++            memory
++                .grow((dense.len() + 1).saturating_mul(std::mem::size_of::<i32>()))
++                .map_err(|error| memory.error(error))?;
++            let strings =
++                StringArray::from_iter_values(dense.iter().map(|&d| ids[d as usize].as_str()));
++            arrow_cast::cast(&strings, &super::operators::dense_id_type())
++                .map_err(OmniError::arrow_internal)
++        }
++    }
+ }
+ 
+ pub(super) struct PreparedEdge {
+@@ -876,12 +899,13 @@ where
+         .hold(wide)
+         .map_err(|error| memory.error(error))?;
+     let src_name = format!("{src_var}.{}", catalog.system_columns.id);
+-    let src_ids = wide
+-        .column_by_name(&src_name)
+-        .and_then(|column| column.as_any().downcast_ref::<StringArray>())
+-        .ok_or_else(|| {
+-            OmniError::manifest(format!("wide batch has no Utf8 '{src_name}' column"))
+-        })?;
++    let src_ids = super::operators::id_strings(
++        wide.column_by_name(&src_name).ok_or_else(|| {
++            OmniError::manifest(format!("wide batch has no '{src_name}' column"))
++        })?,
++        "bound expand source id",
++    )?;
++    let src_ids = &src_ids;
+     source_memory
+         .entries::<(&str, Vec<u32>, u32, String)>(src_ids.len())
+         .map_err(|error| memory.error(error))?;
+@@ -1189,15 +1213,12 @@ where
+     let memory = &work;
+     memory.check().map_err(|error| memory.error(error))?;
+     let src_id_col_name = format!("{}.{}", src_var, catalog.system_columns.id);
+-    let src_ids = wide
+-        .column_by_name(&src_id_col_name)
+-        .ok_or_else(|| {
++    let src_ids = super::operators::id_strings(
++        wide.column_by_name(&src_id_col_name).ok_or_else(|| {
+             OmniError::manifest(format!("wide batch missing '{}' column", src_id_col_name))
+-        })?
+-        .as_any()
+-        .downcast_ref::<StringArray>()
+-        .ok_or_else(|| OmniError::manifest(format!("'{}' column is not Utf8", src_id_col_name)))?
+-        .clone();
++        })?,
++        "expand source id",
++    )?;
+ 
+     let same_type = step.src_type == step.dst_type;
+     let csr_details = match &step.execution {
+@@ -1441,9 +1462,9 @@ where
+                         adj_rev.map(|a| a.neighbors(node)).unwrap_or(&[]),
+                     ),
+                 };
+-                let ids: &[String] = match &active {
+-                    ActiveExpandSource::Indexed(src) => src.interner.ids(),
+-                    ActiveExpandSource::Csr(CsrSource { dst_idx, .. }) => dst_idx.ids(),
++                let known = match &active {
++                    ActiveExpandSource::Indexed(src) => src.interner.len(),
++                    ActiveExpandSource::Csr(CsrSource { dst_idx, .. }) => dst_idx.len(),
+                 };
+                 // Admit what this node's neighbours can add before the walk.
+                 memory
+@@ -1463,7 +1484,7 @@ where
+                         next.push(neighbor);
+                     }
+                     if hop >= min_hops
+-                        && (neighbor as usize) < ids.len()
++                        && (neighbor as usize) < known
+                         && seen_dst.insert(source_node_key(i, neighbor))
+                     {
+                         emitted_src.push(i as u32);
+@@ -1477,7 +1498,7 @@ where
+                                 .map_err(|error| memory.error(error))?;
+                             memory.metric("expand_pairs", emitted_src.len());
+                             let destination =
+-                                destination_column(&emitted_dst, ids, &emission_memory)?;
++                                destination_column(&emitted_dst, &active, &emission_memory)?;
+                             emitted_dst.clear();
+                             emit(ExpandedPairs {
+                                 source_rows: std::mem::replace(
+@@ -1503,11 +1524,7 @@ where
+     let destination = if emitted_src.is_empty() {
+         None
+     } else {
+-        let ids: &[String] = match &active {
+-            ActiveExpandSource::Indexed(src) => src.interner.ids(),
+-            ActiveExpandSource::Csr(CsrSource { dst_idx, .. }) => dst_idx.ids(),
+-        };
+-        Some(destination_column(&emitted_dst, ids, &emission_memory)?)
++        Some(destination_column(&emitted_dst, &active, &emission_memory)?)
+     };
+     drop(active);
+     drop(frontiers);
+@@ -1561,10 +1578,9 @@ pub(super) fn bulk_anti_join_mask(
+         let type_idx = gi.type_index(src_type_name)?;
+ 
+         let id_col_name = format!("{}.{}", outer_var, catalog.system_columns.id);
+-        let outer_ids = wide
+-            .column_by_name(&id_col_name)?
+-            .as_any()
+-            .downcast_ref::<StringArray>()?;
++        let outer_ids =
++            super::operators::id_strings(wide.column_by_name(&id_col_name)?, "block outer id")
++                .ok()?;
+ 
+         Some((adj, adj_rev, type_idx, outer_ids))
+     })();
+diff --git a/crates/omnigraph/src/engine/operators/anti_join.rs b/crates/omnigraph/src/engine/operators/anti_join.rs
+index a8f10ec1..4d310bb7 100644
+--- a/crates/omnigraph/src/engine/operators/anti_join.rs
++++ b/crates/omnigraph/src/engine/operators/anti_join.rs
+@@ -455,17 +455,13 @@ async fn key_set_mask(
+ }
+ 
+ /// The correlation binding's identity column of a key-set batch.
+-fn key_array<'a>(batch: &'a RecordBatch, key_column: &str) -> Result<&'a StringArray> {
+-    batch
+-        .column_by_name(key_column)
+-        .ok_or_else(|| {
++fn key_array(batch: &RecordBatch, key_column: &str) -> Result<StringArray> {
++    super::id_strings(
++        batch.column_by_name(key_column).ok_or_else(|| {
+             OmniError::manifest_internal(format!(
+                 "key-set anti-join batch carries no '{key_column}' column"
+             ))
+-        })?
+-        .as_any()
+-        .downcast_ref::<StringArray>()
+-        .ok_or_else(|| {
+-            OmniError::manifest_internal(format!("'{key_column}' key column is not Utf8"))
+-        })
++        })?,
++        key_column,
++    )
+ }
+diff --git a/crates/omnigraph/src/engine/operators/expand.rs b/crates/omnigraph/src/engine/operators/expand.rs
+index c58e2199..cb620216 100644
+--- a/crates/omnigraph/src/engine/operators/expand.rs
++++ b/crates/omnigraph/src/engine/operators/expand.rs
+@@ -4,7 +4,7 @@ use datafusion::physical_plan::metrics::{ExecutionPlanMetricsSet, MetricsSet};
+ use std::fmt;
+ use std::sync::Arc;
+ 
+-use arrow_schema::{DataType, Field, Schema, SchemaRef};
++use arrow_schema::{Field, Schema, SchemaRef};
+ use datafusion::common::{Result as DfResult, internal_err};
+ use datafusion::execution::TaskContext;
+ use datafusion::physical_plan::{
+@@ -288,7 +288,7 @@ impl ExpandExec {
+ fn expand_output_schema(input: &Schema, catalog: &Catalog, step: &ExpandStep) -> Result<SchemaRef> {
+     let destination = Schema::new(vec![Field::new(
+         format!("{}.{}", step.dst, catalog.system_columns.id),
+-        DataType::Utf8,
++        super::dense_id_type(),
+         false,
+     )]);
+     let mut schema = joined_schema(input, &destination)?;
+diff --git a/crates/omnigraph/src/engine/operators/expand_stream.rs b/crates/omnigraph/src/engine/operators/expand_stream.rs
+index 2545b37c..78d65d38 100644
+--- a/crates/omnigraph/src/engine/operators/expand_stream.rs
++++ b/crates/omnigraph/src/engine/operators/expand_stream.rs
+@@ -501,6 +501,16 @@ pub(super) fn align_sources(
+ ) -> Result<RecordBatch> {
+     let aligned = memory.take(wide, source)?;
+     let mut columns = aligned.columns().to_vec();
++    let declared = schema.field(columns.len()).data_type();
++    let destination = if destination.data_type() == declared {
++        destination
++    } else {
++        // A bound edge's destination comes off the edge table as Utf8; the
++        // expand's column is dictionary-encoded, so this chunk is encoded.
++        memory.entries::<u32>(destination.len())?;
++        memory.hold_array_bytes(&destination)?;
++        arrow_cast::cast(destination.as_ref(), declared)?
++    };
+     columns.push(destination);
+     columns.extend(edges.iter().cloned());
+     let output = RecordBatch::try_new(Arc::clone(schema), columns)?;
+diff --git a/crates/omnigraph/src/engine/operators/hash_join.rs b/crates/omnigraph/src/engine/operators/hash_join.rs
+index 6d6cd55b..f4e001fc 100644
+--- a/crates/omnigraph/src/engine/operators/hash_join.rs
++++ b/crates/omnigraph/src/engine/operators/hash_join.rs
+@@ -11,7 +11,8 @@
+ use std::fmt;
+ use std::sync::Arc;
+ 
+-use arrow_array::{Array, ArrayRef, RecordBatch, StringArray, UInt32Array};
++use arrow_array::types::UInt32Type;
++use arrow_array::{Array, ArrayRef, DictionaryArray, RecordBatch, StringArray, UInt32Array};
+ use arrow_schema::SchemaRef;
+ use datafusion::common::hash_utils::{RandomState, create_hashes};
+ use datafusion::common::{DataFusionError, Result as DfResult};
+@@ -153,6 +154,45 @@ impl Built {
+     }
+ }
+ 
++/// The build row of every dense destination id of one shared dictionary:
++/// the probe's dictionary values looked up in the build table once, so a
++/// probe batch over that dictionary joins by array index without hashing.
++struct DenseRows {
++    values: ArrayRef,
++    rows: Vec<u32>,
++    _memory: WorkMemory,
++}
++
++/// No build row holds the id.
++const NO_ROW: u32 = u32::MAX;
++
++impl DenseRows {
++    fn build(built: &Built, values: &ArrayRef, memory: &WorkMemory) -> DfResult<Self> {
++        let work = memory.child("hash join dense rows")?;
++        work.entries::<u32>(values.len())?;
++        work.entries::<u64>(values.len())?;
++        let strings = super::id_strings(values, "destination dictionary").map_err(external)?;
++        let mut hashes = Vec::new();
++        hash_ids(values, &built.state, &mut hashes)?;
++        let rows = hashes
++            .iter()
++            .enumerate()
++            .map(|(dense, &hash)| {
++                if strings.is_null(dense) {
++                    NO_ROW
++                } else {
++                    built.row_of(hash, strings.value(dense)).unwrap_or(NO_ROW)
++                }
++            })
++            .collect();
++        Ok(Self {
++            values: Arc::clone(values),
++            rows,
++            _memory: work,
++        })
++    }
++}
++
+ /// `hashes` filled with the hash of every value of `ids` (nulls included,
+ /// which the callers skip) under `state`.
+ fn hash_ids(ids: &ArrayRef, state: &RandomState, hashes: &mut Vec<u64>) -> DfResult<()> {
+@@ -280,6 +320,7 @@ impl ExecutionPlan for HashJoinExec {
+             switch: Switch::gauge(&self.metrics),
+             fallbacks: MetricBuilder::new(&self.metrics).counter("hash_build_fallbacks", 0),
+             side: Side::Pending,
++            dense: None,
+         };
+         Ok(self
+             .shape
+@@ -298,6 +339,8 @@ struct Probe {
+     switch: Gauge,
+     fallbacks: Count,
+     side: Side,
++    /// The dense-row table of the last probe dictionary seen.
++    dense: Option<DenseRows>,
+ }
+ 
+ /// How the probe reaches the destination rows, once the build was tried.
+@@ -340,45 +383,64 @@ impl Probe {
+     }
+ 
+     async fn hashed(
+-        &self,
++        lookup: &LookupSpec,
++        declared: &SchemaRef,
+         built: &Built,
++        dense: &mut Option<DenseRows>,
+         batch: RecordBatch,
+         memory: &Arc<WorkMemory>,
+         sender: &BatchSender,
+     ) -> DfResult<()> {
+-        let id_column = self.lookup.id_column();
++        let id_column = lookup.id_column();
+         let id_index = batch
+             .schema()
+             .index_of(&id_column)
+             .map_err(|error| external(OmniError::manifest_internal(error.to_string())))?;
+-        let ids = batch
+-            .column(id_index)
+-            .as_any()
+-            .downcast_ref::<StringArray>()
+-            .ok_or_else(|| {
+-                external(OmniError::manifest_internal(
+-                    "traversal output IDs must be Utf8",
+-                ))
+-            })?;
++        let column = batch.column(id_index);
++        let rows = column.len();
+         let work = Arc::new(memory.child(OUTPUT)?);
+-        work.entries::<u32>(ids.len().saturating_mul(2))?;
+-        work.entries::<u64>(ids.len())?;
+-        u32::try_from(ids.len()).map_err(|_| {
++        work.entries::<u32>(rows.saturating_mul(2))?;
++        u32::try_from(rows).map_err(|_| {
+             external(OmniError::manifest_internal(
+                 "traversal batch exceeds row index range",
+             ))
+         })?;
+-        let mut hashes = Vec::new();
+-        hash_ids(batch.column(id_index), &built.state, &mut hashes)?;
+-        let mut probe_rows = Vec::with_capacity(ids.len());
+-        let mut build_rows = Vec::with_capacity(ids.len());
+-        for (row, &hash) in hashes.iter().enumerate() {
+-            if ids.is_null(row) {
+-                continue;
++        let mut probe_rows = Vec::with_capacity(rows);
++        let mut build_rows = Vec::with_capacity(rows);
++        if let Some(dictionary) = column.as_any().downcast_ref::<DictionaryArray<UInt32Type>>() {
++            // Dense ids over a shared dictionary: one lookup table per
++            // dictionary, then an array index per probe row.
++            if !dense
++                .as_ref()
++                .is_some_and(|dense| Arc::ptr_eq(&dense.values, dictionary.values()))
++            {
++                *dense = Some(DenseRows::build(built, dictionary.values(), memory)?);
+             }
+-            if let Some(build_row) = built.row_of(hash, ids.value(row)) {
+-                probe_rows.push(row as u32);
+-                build_rows.push(build_row);
++            let table = &dense.as_ref().expect("dense rows were just built").rows;
++            let keys = dictionary.keys();
++            for (row, &key) in keys.values().iter().enumerate() {
++                if keys.is_null(row) {
++                    continue;
++                }
++                let build_row = table.get(key as usize).copied().unwrap_or(NO_ROW);
++                if build_row != NO_ROW {
++                    probe_rows.push(row as u32);
++                    build_rows.push(build_row);
++                }
++            }
++        } else {
++            let ids = super::id_strings(column, "traversal output id").map_err(external)?;
++            work.entries::<u64>(rows)?;
++            let mut hashes = Vec::new();
++            hash_ids(column, &built.state, &mut hashes)?;
++            for (row, &hash) in hashes.iter().enumerate() {
++                if ids.is_null(row) {
++                    continue;
++                }
++                if let Some(build_row) = built.row_of(hash, ids.value(row)) {
++                    probe_rows.push(row as u32);
++                    build_rows.push(build_row);
++                }
+             }
+         }
+         if probe_rows.is_empty() {
+@@ -391,7 +453,7 @@ impl Probe {
+         let probe_side = work.take_once(&probe_side, &UInt32Array::from(probe_rows), OUTPUT)?;
+         let build_side = work.take_once(&built.batch, &UInt32Array::from(build_rows), OUTPUT)?;
+         let output = hconcat_batches(&probe_side, &build_side).map_err(external)?;
+-        let output = declared_columns(&output, &self.declared).map_err(external)?;
++        let output = declared_columns(&output, declared).map_err(external)?;
+         work.hold(&output)?;
+         sender.send_bounded(output, work).await
+     }
+@@ -412,9 +474,16 @@ impl Streamed for Probe {
+             if let Side::Pending = self.side {
+                 self.drain_build(&batch, memory).await?;
+             }
+-            match &self.side {
++            let Self {
++                lookup,
++                declared,
++                side,
++                dense,
++                ..
++            } = self;
++            match side {
+                 Side::Hashed(built) => {
+-                    self.hashed(built, batch, memory, sender).await?;
++                    Self::hashed(lookup, declared, built, dense, batch, memory, sender).await?;
+                     Ok(Flow::Continue)
+                 }
+                 Side::Lookup(lookup) => {
+diff --git a/crates/omnigraph/src/engine/operators/memory.rs b/crates/omnigraph/src/engine/operators/memory.rs
+index 2ba073b4..a6511694 100644
+--- a/crates/omnigraph/src/engine/operators/memory.rs
++++ b/crates/omnigraph/src/engine/operators/memory.rs
+@@ -5,7 +5,7 @@ use std::num::NonZeroU64;
+ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+ use std::sync::{Arc, Mutex, MutexGuard, OnceLock, PoisonError, Weak};
+ 
+-use arrow_array::{Array, RecordBatch, RecordBatchOptions, UInt32Array};
++use arrow_array::{Array, ArrayRef, RecordBatch, RecordBatchOptions, UInt32Array};
+ use arrow_schema::{DataType, SchemaRef};
+ use datafusion::arrow::array::ArrayData;
+ use datafusion::arrow::buffer::Buffer;
+@@ -872,6 +872,11 @@ impl WorkMemory {
+     /// row for fixed-width columns, the offset deltas for variable-width ones,
+     /// children summed for structs) instead of one `ArrayData` slice per row
+     /// per column.
++    /// Hold one array's buffers (a cast's output) under this work.
++    pub(in crate::engine) fn hold_array_bytes(&self, array: &ArrayRef) -> DfResult<()> {
++        self.grow(array.get_array_memory_size())
++    }
++
+     pub(in crate::engine) fn row_bytes(&self, batch: &RecordBatch) -> DfResult<Vec<usize>> {
+         let mut rows = vec![0usize; batch.num_rows()];
+         for column in batch.columns() {
+@@ -1212,6 +1217,14 @@ fn add_row_bytes(data: &ArrayData, rows: &mut [usize]) -> DfResult<()> {
+                 *bytes = bytes.saturating_add(validity);
+             }
+         }
++        DataType::Dictionary(key, _) => {
++            // A row of a dictionary-encoded column is its key; the shared
++            // value array is held once by allocation identity.
++            let each = key.primitive_width().unwrap_or(4).saturating_add(validity);
++            for bytes in rows.iter_mut() {
++                *bytes = bytes.saturating_add(each);
++            }
++        }
+         DataType::List(_)
+         | DataType::LargeList(_)
+         | DataType::Map(_, _)
+@@ -1281,6 +1294,7 @@ fn slice_memory_size(data: &ArrayData, offset: usize, len: usize) -> DfResult<us
+         DataType::Struct(_) => data.child_data().iter().try_fold(0usize, |size, child| {
+             Ok::<_, DataFusionError>(size.saturating_add(slice_memory_size(child, 0, len)?))
+         })?,
++        DataType::Dictionary(key, _) => len.saturating_mul(key.primitive_width().unwrap_or(4)),
+         _ => return Ok(data.get_slice_memory_size()?),
+     };
+     Ok(bytes.saturating_add(validity))
+diff --git a/crates/omnigraph/src/engine/operators/mod.rs b/crates/omnigraph/src/engine/operators/mod.rs
+index f4bbaee9..07243299 100644
+--- a/crates/omnigraph/src/engine/operators/mod.rs
++++ b/crates/omnigraph/src/engine/operators/mod.rs
+@@ -13,8 +13,8 @@ use std::sync::Arc;
+ 
+ use self::memory::WorkMemory;
+ use self::shape::{DRAINED, POLLS};
+-use arrow_array::RecordBatch;
+-use arrow_schema::{Field, Schema, SchemaRef};
++use arrow_array::{ArrayRef, RecordBatch, StringArray};
++use arrow_schema::{DataType, Field, Schema, SchemaRef};
+ use datafusion::common::{DataFusionError, Result as DfResult};
+ use datafusion::physical_plan::SendableRecordBatchStream;
+ use datafusion::physical_plan::metrics::{
+@@ -209,6 +209,35 @@ pub(super) async fn drain_one(
+ /// by name, types exact, nothing missing or extra. A zero-row batch carries
+ /// no data, so it is re-declared without a check (v1 shapes an empty
+ /// hydration and an empty scan differently).
++/// The Arrow type of a traversal destination's id column between an expand
++/// and the operator that reaches the destination rows: dense ids over the
++/// expand's shared id dictionary. A consumer that needs the strings takes
++/// them through [`id_strings`].
++pub(in crate::engine) fn dense_id_type() -> DataType {
++    DataType::Dictionary(Box::new(DataType::UInt32), Box::new(DataType::Utf8))
++}
++
++/// An id column as `Utf8`: the column itself when it is one, else the
++/// dictionary-encoded column materialized (one cast per batch).
++pub(in crate::engine) fn id_strings(column: &ArrayRef, what: &str) -> Result<StringArray> {
++    if let Some(strings) = column.as_any().downcast_ref::<StringArray>() {
++        return Ok(strings.clone());
++    }
++    if matches!(column.data_type(), DataType::Dictionary(_, _)) {
++        let cast = arrow_cast::cast(column.as_ref(), &DataType::Utf8)
++            .map_err(OmniError::arrow_internal)?;
++        return cast
++            .as_any()
++            .downcast_ref::<StringArray>()
++            .cloned()
++            .ok_or_else(|| OmniError::manifest_internal(format!("{what} did not cast to Utf8")));
++    }
++    Err(OmniError::manifest_internal(format!(
++        "{what} is {:?}, not an id column",
++        column.data_type()
++    )))
++}
++
+ pub(super) fn conform(batch: RecordBatch, schema: &SchemaRef) -> Result<RecordBatch> {
+     if batch.num_rows() == 0 {
+         return Ok(RecordBatch::new_empty(Arc::clone(schema)));
+diff --git a/crates/omnigraph/src/engine/operators/scan/input.rs b/crates/omnigraph/src/engine/operators/scan/input.rs
+index f871e097..36f38403 100644
+--- a/crates/omnigraph/src/engine/operators/scan/input.rs
++++ b/crates/omnigraph/src/engine/operators/scan/input.rs
+@@ -154,13 +154,8 @@ async fn read_candidates(
+         .schema()
+         .index_of(&id_name)
+         .map_err(|error| OmniError::manifest_internal(error.to_string()))?;
+-    let ids = candidates
+-        .column(id_index)
+-        .as_any()
+-        .downcast_ref::<StringArray>()
+-        .ok_or_else(|| {
+-            OmniError::manifest_internal("scan candidate IDs must be Utf8".to_string())
+-        })?;
++    let ids = crate::engine::operators::id_strings(candidates.column(id_index), "scan candidate id")?;
++    let ids = &ids;
+     memory
+         .entries::<(&str, String)>(ids.len())
+         .map_err(|error| memory.error(error))?;
+diff --git a/crates/omnigraph/src/engine/operators/shape.rs b/crates/omnigraph/src/engine/operators/shape.rs
+index da88b59d..f66cd1c8 100644
+--- a/crates/omnigraph/src/engine/operators/shape.rs
++++ b/crates/omnigraph/src/engine/operators/shape.rs
+@@ -13,7 +13,7 @@ use std::sync::Arc;
+ use std::task::{Context, Poll};
+ 
+ use arrow_array::{RecordBatch, UInt32Array};
+-use arrow_schema::SchemaRef;
++use arrow_schema::{DataType, SchemaRef};
+ use datafusion::common::{DataFusionError, Result as DfResult};
+ use datafusion::execution::TaskContext;
+ use datafusion::physical_expr::{EquivalenceProperties, Partitioning};
+@@ -553,7 +553,7 @@ impl BatchSender {
+         let input = Arc::new(memory.child("producer batch input")?);
+         input.hold(&batch)?;
+         let target = memory.batch_bytes();
+-        if batch.get_array_memory_size() <= target {
++        if own_bytes(&batch, &memory)? <= target {
+             return self.send(batch, memory).await;
+         }
+         let mut offset = 0;
+@@ -574,7 +574,7 @@ impl BatchSender {
+                         DataFusionError::Execution("expand batch exceeds row index range".into())
+                     })?;
+                 let output = work.take(&batch, &UInt32Array::from(indices))?;
+-                if output.get_array_memory_size() <= target || rows == 1 {
++                if own_bytes(&output, &work)? <= target || rows == 1 {
+                     self.send(output, work).await?;
+                     offset += rows;
+                     break;
+@@ -586,6 +586,21 @@ impl BatchSender {
+     }
+ }
+ 
++/// The bytes a batch carries of its own: every buffer for an ordinary batch,
++/// but only the keys of a dictionary-encoded id column, whose value array is
++/// shared by every chunk of a traversal and charged once by identity.
++fn own_bytes(batch: &RecordBatch, memory: &WorkMemory) -> DfResult<usize> {
++    if batch
++        .columns()
++        .iter()
++        .any(|column| matches!(column.data_type(), DataType::Dictionary(_, _)))
++    {
++        memory.slice_bytes(batch, 0, batch.num_rows())
++    } else {
++        Ok(batch.get_array_memory_size())
++    }
++}
++
+ fn cancelled() -> DataFusionError {
+     DataFusionError::Execution("query batch receiver closed".into())
+ }
+diff --git a/crates/omnigraph/src/engine/operators/single_hop.rs b/crates/omnigraph/src/engine/operators/single_hop.rs
+index e3378b10..4cbd33ad 100644
+--- a/crates/omnigraph/src/engine/operators/single_hop.rs
++++ b/crates/omnigraph/src/engine/operators/single_hop.rs
+@@ -4,7 +4,9 @@
+ use std::collections::HashMap;
+ use std::sync::Arc;
+ 
+-use arrow_array::{Array, RecordBatch, StringArray, UInt32Array};
++use arrow_array::types::UInt32Type;
++use arrow_array::{Array, ArrayRef, DictionaryArray, RecordBatch, StringArray, UInt32Array};
++use arrow_schema::DataType;
+ use arrow_schema::SchemaRef;
+ use datafusion::common::{DataFusionError, Result};
+ use datafusion::physical_plan::metrics::{ExecutionPlanMetricsSet, Gauge};
+@@ -191,15 +193,11 @@ impl SingleHop {
+         }
+         let input_memory = memory.child("expand input batch")?;
+         input_memory.hold(&batch)?;
+-        let src_ids = batch
+-            .column_by_name(&started.src_column)
+-            .and_then(|column| column.as_any().downcast_ref::<StringArray>())
+-            .ok_or_else(|| {
+-                DataFusionError::Internal(format!(
+-                    "expand input has no Utf8 '{}'",
+-                    started.src_column
+-                ))
+-            })?;
++        let src_column = batch.column_by_name(&started.src_column).ok_or_else(|| {
++            DataFusionError::Internal(format!("expand input has no '{}'", started.src_column))
++        })?;
++        let src_ids = super::id_strings(src_column, "expand source id").map_err(external)?;
++        let src_ids = &src_ids;
+         let hop_memory = memory.child("expand hop")?;
+         hop_memory.entries::<usize>(batch.num_rows())?;
+         let row_bytes = memory.row_bytes(&batch)?;
+@@ -244,7 +242,7 @@ impl SingleHop {
+             );
+             started
+                 .walk
+-                .flush(&batch, ids.as_slice(), memory, sender, schema)
++                .flush(&batch, &ids, memory, sender, schema)
+                 .await?;
+             match stop {
+                 Stop::Full => {}
+@@ -318,7 +316,7 @@ impl<'g> Source<'g> {
+                 walk.size_stamps(csr.dst_idx.len(), walk_memory)?;
+                 Ok((
+                     src_dense,
+-                    DestinationIds::Borrowed(csr.dst_idx.ids()),
++                    DestinationIds::Borrowed(csr.dst_idx),
+                     Neighbours::Csr {
+                         adj: csr.adj,
+                         adj_rev: csr.adj_rev,
+@@ -358,17 +356,49 @@ impl<'g> Source<'g> {
+ }
+ 
+ enum DestinationIds<'g> {
+-    Borrowed(&'g [String]),
++    /// The graph index's dictionary, shared by every emitted chunk.
++    Borrowed(&'g TypeIndex),
++    /// This batch's interner, which grows while the batch is walked.
+     Owned(TypeIndex),
+ }
+ 
+ impl DestinationIds<'_> {
+     fn as_slice(&self) -> &[String] {
+         match self {
+-            Self::Borrowed(ids) => ids,
++            Self::Borrowed(index) => index.ids(),
+             Self::Owned(index) => index.ids(),
+         }
+     }
++
++    /// `dense` as the dictionary-encoded id column: the keys over the shared
++    /// dictionary when it is borrowed, else the interner's strings for these
++    /// rows cast into a chunk-local dictionary.
++    fn column(&self, dense: UInt32Array, work: &WorkMemory) -> Result<ArrayRef> {
++        match self {
++            Self::Borrowed(index) => {
++                work.entries::<u32>(dense.len())?;
++                Ok(Arc::new(
++                    DictionaryArray::<UInt32Type>::try_new(dense, Arc::clone(index.id_array()))
++                        .map_err(|error| external(OmniError::arrow_internal(error)))?,
++                ))
++            }
++            Self::Owned(index) => {
++                let ids = index.ids();
++                let bytes = dense
++                    .values()
++                    .iter()
++                    .map(|&d| ids[d as usize].len())
++                    .sum::<usize>();
++                work.string(bytes)?;
++                work.grow((dense.len() + 1).saturating_mul(std::mem::size_of::<i32>()))?;
++                let strings = StringArray::from_iter_values(
++                    dense.values().iter().map(|&d| ids[d as usize].as_str()),
++                );
++                arrow_cast::cast(&strings, &super::dense_id_type())
++                    .map_err(|error| external(OmniError::arrow_internal(error)))
++            }
++        }
++    }
+ }
+ 
+ /// The slice being built (`ordinals` into the input batch, `dst` dense) and
+@@ -472,7 +502,7 @@ impl Walk {
+     async fn flush(
+         &mut self,
+         batch: &RecordBatch,
+-        ids: &[String],
++        ids: &DestinationIds<'_>,
+         memory: &Arc<WorkMemory>,
+         sender: &BatchSender,
+         schema: &SchemaRef,
+@@ -481,7 +511,6 @@ impl Walk {
+             return Ok(());
+         }
+         let work = Arc::new(memory.child("expand output chunk")?);
+-        let rows = self.ordinals.len();
+         work.entries::<u32>(self.ordinals.capacity() + self.dst.capacity())?;
+         let ordinals = UInt32Array::from(std::mem::replace(
+             &mut self.ordinals,
+@@ -491,18 +520,8 @@ impl Walk {
+             &mut self.dst,
+             Vec::with_capacity(self.capacity),
+         ));
+-        let bytes = dst
+-            .values()
+-            .iter()
+-            .map(|&dense| ids[dense as usize].len())
+-            .sum::<usize>();
+-        work.string(bytes)?;
+-        work.grow((rows + 1).saturating_mul(std::mem::size_of::<i32>()))?;
+-        let destination = Arc::new(StringArray::from_iter_values(
+-            dst.values()
+-                .iter()
+-                .map(|&dense| ids[dense as usize].as_str()),
+-        ));
++        let destination = ids.column(dst, &work)?;
++        debug_assert_eq!(destination.data_type(), &DataType::Dictionary(Box::new(DataType::UInt32), Box::new(DataType::Utf8)));
+         let output = align_sources(batch, &ordinals, destination, &[], schema, &work)?;
+         sender.send_bounded(output, work).await
+     }
+diff --git a/crates/omnigraph/src/graph_index/mod.rs b/crates/omnigraph/src/graph_index/mod.rs
+index 5971116b..f8c9011a 100644
+--- a/crates/omnigraph/src/graph_index/mod.rs
++++ b/crates/omnigraph/src/graph_index/mod.rs
+@@ -1,8 +1,9 @@
+ pub(crate) mod persist;
+ 
+ use std::collections::HashMap;
++use std::sync::{Arc, OnceLock};
+ 
+-use arrow_array::StringArray;
++use arrow_array::{ArrayRef, StringArray};
+ use futures::TryStreamExt;
+ use omnigraph_compiler::SystemColumns;
+ 
+@@ -14,6 +15,10 @@ use crate::error::{OmniError, Result};
+ pub struct TypeIndex {
+     id_to_dense: HashMap<String, u32>,
+     dense_to_id: Vec<String>,
++    /// `dense_to_id` as one Arrow `Utf8` array, built on first use and shared
++    /// by every dictionary-encoded id column an expand emits over this type;
++    /// an insert clears it.
++    id_array: OnceLock<ArrayRef>,
+ }
+ 
+ impl TypeIndex {
+@@ -21,6 +26,7 @@ impl TypeIndex {
+         Self {
+             id_to_dense: HashMap::new(),
+             dense_to_id: Vec::new(),
++            id_array: OnceLock::new(),
+         }
+     }
+ 
+@@ -32,9 +38,20 @@ impl TypeIndex {
+         let idx = self.dense_to_id.len() as u32;
+         self.dense_to_id.push(id.to_string());
+         self.id_to_dense.insert(id.to_string(), idx);
++        self.id_array = OnceLock::new();
+         idx
+     }
+ 
++    /// The ids in dense order as one shared `Utf8` array: the value array of
++    /// a dictionary-encoded id column whose keys are dense ids.
++    pub(crate) fn id_array(&self) -> &ArrayRef {
++        self.id_array.get_or_init(|| {
++            Arc::new(StringArray::from_iter_values(
++                self.dense_to_id.iter().map(String::as_str),
++            )) as ArrayRef
++        })
++    }
++
+     pub fn to_dense(&self, id: &str) -> Option<u32> {
+         self.id_to_dense.get(id).copied()
+     }
+@@ -69,6 +86,7 @@ impl TypeIndex {
+         Ok(Self {
+             id_to_dense,
+             dense_to_id: ids,
++            id_array: OnceLock::new(),
+         })
+     }
+ }
