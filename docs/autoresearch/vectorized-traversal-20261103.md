@@ -50,7 +50,11 @@ Counters, baseline → final, medians of 20 back-to-back runs on a quiet box
 
 On the skewed fixture (10k people, 16 edges each, Zipf destinations) the
 same changes give −30% to −70% allocations on the traversals and −56% on
-bound edges; the non-traversal queries are unchanged on every fixture.
+bound edges; the non-traversal queries are unchanged on every fixture. The
+final binary (after the pushdown rule the DST golden required) reproduces
+the 10k numbers within 0.1% (`results/final.jsonl`); on the 1k fixture, whose
+key lists stay under the 1,024-key pushdown threshold, the traversal gains
+are those of H1–H3 alone (−12% to −40% allocations).
 
 What the traversal's cost grows with now, against what it should:
 
@@ -226,7 +230,7 @@ scenario rose, and the gates passed.
 
 - Where: `graph.rs::scan_edges_stream` (bound-edge producer, indexed single hop, indexed BFS hops).
 - What: every edge probe pushed `key IN (keys)` into Lance. Lance 13 (`io/exec/filtered_read.rs`) clones that `Expr` for every fragment and plans it to a physical expression per fragment, so a scan over an edge table whose key column has no usable BTREE paid a copy and a hash set of every key per fragment: the bound-edge expand's allocations grew with keys × fragments (10 → 100 edge commits at 10k people: 1.66M → 8.15M; 1k → 100k people: 27 → 207 allocations per output row). A list longer than `PUSHDOWN_KEYS_MAX` (1,024, the indexed path's default frontier ceiling) over a column without usable index coverage is no longer pushed: the scan reads the projected columns unfiltered and the engine keeps the rows whose key is in one `HashSet` of the keys (null keys drop, as the `IN` list dropped them). A shorter list, or an indexed key column, still pushes: the index makes it lookups, and a pushed filter also lets Lance skip a fragment's other columns where no key matches, one read per such fragment, which the DST storage-cost golden showed (one more `l.get` on every hop read of its small graph in the first two builds of this change) and which a short list's cheap replan does not justify losing. The coverage verdict travels from the expand's start decision (`ExpandStart::Indexed { pushdown }`); only a long list nothing has judged (a bound edge) probes the index metadata itself.
-- Counters (H2 → H5): `bound_edge` 100k 82,880,858 → 17,777,858 allocations (−79%), 16.5 GB → 3.7 GB allocated (−77%); 10k fanout 4: −61% / −75%; wide rows −82% / −87%; 100 edge fragments at 10k: 1,764,746 → 768,538 (and 802,916 on the edge-fragment sweep fixture against 8,154,608 before, so the fragment term is gone); `hop1` on the 1k fixture, whose plan takes the indexed start, −61%; every other scenario unchanged.
+- Counters (H2 → H5): `bound_edge` 100k 82,880,858 → 17,777,858 allocations (−79%), 16.5 GB → 3.7 GB allocated (−77%); 10k fanout 4: −61% / −75%; wide rows −82% / −87%; 100 edge fragments at 10k: 1,764,746 → 768,538 (and 802,916 on the edge-fragment sweep fixture against 8,154,608 before, so the fragment term is gone); `hop1` on the 1k fixture, whose plan takes the indexed start, −61% under the unconditional sieve of the first build; under the final cost-based rule that fixture's 1,000 keys are pushed again (its `bound_edge` and `hop1` return to their H1–H3 levels, −1% and −12% against the baseline), while every 10k and 100k number above is reproduced by the final binary (`results/final.jsonl`, `summarize.py baseline final`); every other scenario unchanged.
 - CPU and wall: `bound_edge` 100k 28.3 → 8.8 s CPU, 13.1 → 5.7 s wall; 10k 675 → 250 ms CPU.
 - Gates: the traversal integration tests (36) ran on the tree with H5 and H3 applied; the rest in the Gates section.
 - Source: Lance 13.0.0 `filtered_read.rs` (read at the pinned version); the per-fragment sweep fixture `n10k_f4_efrag100`.
@@ -360,8 +364,20 @@ run-to-run range of several hundred milliseconds); the largest wall gains are
 
 ## Gates
 
-Run on the final kept tree (every commit up to the rustfmt and clippy
-fixes), logs under `/tmp/gate-*.log` on the box:
+Final state, on the branch head (every kept change, the pushdown rule
+included), re-run after the last code change:
+
+| Gate | Result |
+|---|---|
+| DST storage-cost golden, `dst_bench_cost_count_golden` | passed, golden unchanged |
+| GQT corpus, `cargo test -p omnigraph-gqt --locked` | passed, 0 failed |
+| Engine integration `traversal_` | 36 passed |
+| `cargo clippy --workspace --all-targets --locked -- -D warnings -W clippy::dbg_macro` | clean |
+| `cargo fmt --all --check` | clean |
+| `bash scripts/check-agents-md.sh`, `python3 scripts/check-docs.py` | passed |
+
+The full first pass (before the pushdown rule's last revision), logs under
+`/tmp/gate-*.log` on the box:
 
 | Gate | Result |
 |---|---|
@@ -373,10 +389,10 @@ fixes), logs under `/tmp/gate-*.log` on the box:
 | Engine integration `branching::` | the test binary aborted with a stack overflow in `branch_delete_retires_native_parent_and_cleanup_preserves_live_child` (debug profile); see below |
 | `omnigraph-planner`, `omnigraph-seams` (the seam catalogue and arming guard) | passed |
 | `cargo fmt --all --check` | passed after `cargo fmt` (two call chains the patches left unformatted; committed) |
-| `cargo clippy --workspace --all-targets --locked -- -D warnings -W clippy::dbg_macro` | one `needless_range_loop` in the H3 loop, fixed and committed; the engine crate is clean; the workspace pass result is below |
+| `cargo clippy --workspace --all-targets --locked -- -D warnings -W clippy::dbg_macro` | one `needless_range_loop` in the H3 loop and one `type_complexity` in the coverage carry, both fixed and committed; the final workspace pass is clean |
 | `bash scripts/check-agents-md.sh`, `python3 scripts/check-docs.py` | passed after linking the report from `docs/dev/index.md` and shortening the release note to the 200-character limit |
 | `typos` | not installed on the box; not run |
-| DST storage-cost golden, `dst_bench_cost_count_golden` | (result below) |
+| DST storage-cost golden, `dst_bench_cost_count_golden` | failed on the first two builds of H5 (one more get per hop read), passed unchanged under the final pushdown rule; see below |
 | S3, Azure suites | not configured on the box; nothing here changes a storage call |
 
 The two failures were checked against the base commit `36d3ea08` in a
