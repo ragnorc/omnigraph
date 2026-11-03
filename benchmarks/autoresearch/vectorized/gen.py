@@ -24,11 +24,11 @@ edge Knows: Person -> Person {
 """
 
 
-def fixture(name, nodes, fanout, bio_count=1, node_commits=None, dist="uniform", batch_rows=4096):
+def fixture(name, nodes, fanout, bio_count=1, node_commits=None, dist="uniform", batch_rows=4096, edge_commits=None):
     edges = nodes * fanout
     width = 6
     node_commits = node_commits or max(1, -(-nodes // batch_rows))
-    edge_commits = max(1, -(-edges // batch_rows))
+    edge_commits = edge_commits or max(1, -(-edges // batch_rows))
     if dist == "uniform":
         to = f"{{kind: endpoint, prefix: p, width: {width}, population: {nodes}, distribution: {{kind: uniform}}}}"
     else:
@@ -75,9 +75,10 @@ fixture("n10k_f4", 10_000, 4)
 fixture("n100k_f4", 100_000, 4)
 fixture("n10k_f1", 10_000, 1)
 fixture("n10k_f16", 10_000, 16)
-fixture("n10k_f4_wide", 10_000, 4, bio_count=40)
+fixture("n10k_f4_wide", 10_000, 4, bio_count=40, batch_rows=1000)
 fixture("n10k_f4_frag100", 10_000, 4, node_commits=100)
 fixture("n10k_f16_zipf", 10_000, 16, dist="zipf")
+fixture("n10k_f4_efrag100", 10_000, 4, edge_commits=100)
 
 QUERIES = """=== scan_name
 query scan_name() { match { $p: Person } return { $p.name } }

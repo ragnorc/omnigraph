@@ -1,5 +1,5 @@
 # issue: none
-# notes: autoresearch vectorized-execution fixture: 10000 people, 40000 edges (fanout 4, uniform), bio x40, 3 node commits.
+# notes: autoresearch vectorized-execution fixture: 10000 people, 40000 edges (fanout 4, uniform), bio x40, 10 node commits.
 
 --- runner
 timeout_ms: 10000
@@ -24,7 +24,7 @@ tables:
   - kind: node
     name: Person
     rows: 10000
-    commits: 3
+    commits: 10
     columns:
       name: {kind: key, prefix: p, width: 6}
       age: {kind: modulo, modulus: 100}
@@ -34,7 +34,7 @@ tables:
   - kind: edge
     name: Knows
     rows: 40000
-    commits: 10
+    commits: 40
     id: {kind: key, prefix: e, width: 8}
     from: {kind: endpoint, prefix: p, width: 6, population: 10000, distribution: {kind: uniform}}
     to: {kind: endpoint, prefix: p, width: 6, population: 10000, distribution: {kind: uniform}}
