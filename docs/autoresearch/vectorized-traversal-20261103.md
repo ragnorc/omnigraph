@@ -360,7 +360,48 @@ run-to-run range of several hundred milliseconds); the largest wall gains are
 
 ## Gates
 
-(filled in from the gate run)
+Run on the final kept tree (every commit up to the rustfmt and clippy
+fixes), logs under `/tmp/gate-*.log` on the box:
+
+| Gate | Result |
+|---|---|
+| GQT corpus, `cargo test -p omnigraph-gqt --locked` (every case on engine v2, the `expect same as v1` steps against the frozen reference engine, ordered and unordered rows, types, nulls) | passed: 446 cases, 0 failed |
+| GQT runner dispatch, `--lib --test runner_dispatch` | passed |
+| `omnigraph-gqt-core` | passed (14 + 27) |
+| Engine integration `engine_v2::`, `traversal_`, `engine_v2_plan_replay::`, `engine_v2_memory::`, `engine_v2_scrubbed_replay`, `writes`, `forbidden_apis` | passed |
+| Engine in-source tests (`--lib`) | 632 passed, 1 failed: `db::upgrade::tests::interrupted::unreadable_legacy_object_asks_for_a_rerun`, the storage-upgrade recovery path; see below |
+| Engine integration `branching::` | the test binary aborted with a stack overflow in `branch_delete_retires_native_parent_and_cleanup_preserves_live_child` (debug profile); see below |
+| `omnigraph-planner`, `omnigraph-seams` (the seam catalogue and arming guard) | passed |
+| `cargo fmt --all --check` | passed after `cargo fmt` (two call chains the patches left unformatted; committed) |
+| `cargo clippy --workspace --all-targets --locked -- -D warnings -W clippy::dbg_macro` | one `needless_range_loop` in the H3 loop, fixed and committed; the engine crate is clean; the workspace pass result is below |
+| `bash scripts/check-agents-md.sh`, `python3 scripts/check-docs.py` | passed after linking the report from `docs/dev/index.md` and shortening the release note to the 200-character limit |
+| `typos` | not installed on the box; not run |
+| DST storage-cost golden, `dst_bench_cost_count_golden` | (result below) |
+| S3, Azure suites | not configured on the box; nothing here changes a storage call |
+
+The two failures were checked against the base commit `36d3ea08` in a
+worktree sharing the warm target:
+
+- `unreadable_legacy_object_asks_for_a_rerun` fails identically on the base
+  commit (`Completed` where `RecoveryRequired` is expected). The test fakes an
+  *unreadable* legacy object, and this box runs as root, for whom no file is
+  unreadable: an environment failure, not a change of behaviour.
+- The `branching::` overflow (`branch_delete_retires_native_parent_and_cleanup_preserves_live_child`,
+  a debug-build stack depth in branch deletion and cleanup, code none of the
+  changes touch) was not confirmed on the base commit: the worktree build
+  thrashed the shared target with the branch's own builds and was stopped to
+  keep the run inside its budget. It is listed as unconfirmed.
+
+DST storage-cost golden: the first run of `dst_bench_cost_count_golden`
+failed on exactly one kind of line, one more `l.get` on every hop read
+(`ReadColdHop*` 8 → 9, `ReadWarmHop*` 5 → 6, `ReadStaleHop*` 8 → 9, and the
+`_verify`/`_audit` totals accordingly). That was H5's own index-coverage
+probe (`load_indices`, one metadata read per edge scan) on a single hop whose
+plan already carries the coverage as pinned index facts. The probe's verdict
+is now carried from the expand's start decision into the edge scan
+(`ExpandStart::Indexed { pushdown }`, `IndexedExpandSource::pushdown`), and
+only a scan nothing has judged (a bound edge, a budgeted selection) probes
+for itself; the golden result after that change is recorded below.
 
 ## Not attempted, with the reason
 
