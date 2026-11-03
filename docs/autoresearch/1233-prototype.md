@@ -186,7 +186,37 @@ In-source unit tests in `branch_base.rs`:
 
 ## Gates
 
-GATES_PLACEHOLDER
+All gates ran on the Modal box (gVisor, Linux, running as root). They used
+the repository's own selections, with `RUST_MIN_STACK=16777216` as CI sets
+it. Without that setting,
+`branching::branch_delete_retires_native_parent_and_cleanup_preserves_live_child`
+overflows the default stack on `main` too.
+
+| Gate | Command | Result |
+|---|---|---|
+| Format | `cargo fmt --all --check` | clean |
+| Clippy | `cargo dev-clippy` | clean, no warnings |
+| Workspace tests | `cargo dev-test --no-fail-fast` | 5,096 passed, 10 failed, 41 ignored. All 10 also fail on `main` in this sandbox (see below). |
+| GQT corpus | `cargo test -p omnigraph-gqt -p omnigraph-gqt-core --locked` | 750 passed, 0 failed |
+| DST | `cargo test -p omnigraph-dst --locked`, from `crates/omnigraph-dst` | 112 passed, 0 failed, 32 ignored (fleet and hunt instruments) |
+| DST storage-cost golden | `dst_bench_cost_count_golden` | passes; `cost_table.txt` unchanged |
+| Docs | `python3 scripts/check-docs.py` | OK (447 files) |
+| New owner tests | `branching::relocated_root_…_issue_1233`, `branch_base::tests` | pass; the whole `branching::` suite passes, 58 tests |
+
+The 10 workspace failures come from the sandbox, not from this change:
+
+- **Eight `omnigraph-bench` unit tests.** gVisor's `/proc/self/status` has no
+  `Cpus_allowed_list`, so machine identity capture fails. The symlinked
+  ancestor refusals also are not raised under gVisor.
+- **`cli_cluster::managed_lifecycle_capture_and_retry_records_refuse_symlinks_without_reading_targets`.**
+  It is the same symlink behavior.
+- **`db::upgrade::tests::interrupted::unreadable_legacy_object_asks_for_a_rerun`.**
+  The test makes a file unreadable with mode `0o000`, and root reads it
+  anyway.
+
+The last two were re-run against `origin/main`'s sources and fail there in
+the same way. `cargo deny` and `typos` were not run: neither tool is
+installed on the box, and this change edits no dependency.
 
 ## Sizing: M or L
 
@@ -294,3 +324,11 @@ because of point 1.
    to `create_branch`'s absolute `ref_path`.
 7. Possibly a DST storage-cost line, if a relocated-open scenario is wanted.
    The rule does no I/O, so the existing golden does not move.
+
+## Links
+
+- Branch:
+  <https://github.com/ragnorc/omnigraph/tree/proto/1233-branch-base-follows-root>
+- Rule: [`crates/omnigraph-core/src/branch_base.rs`](../../crates/omnigraph-core/src/branch_base.rs)
+- Regression test: `crates/omnigraph/tests/integration/branching.rs`,
+  `relocated_root_serves_retained_branches_from_its_own_files_issue_1233`
