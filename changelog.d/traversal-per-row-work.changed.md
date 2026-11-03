@@ -1,0 +1,3 @@
+- Traversals do less work per row: a single-hop expand sizes its input rows in one pass per column, the destination hash join hashes ids in bulk and keeps its build side without copying ids, a multi-hop walk keeps one visited table instead of one per source and emits dense ids until a chunk is built, a bound or unindexed edge probe keeps its keys in the engine instead of pushing an `IN` list that Lance plans per fragment, and a correlated block's predicate runs once over all outer rows. Results are unchanged. The `profile` rows of an inspected run carry `output_batches` beside `actual_rows`; see [Profile][profile-guide].
+
+[profile-guide]: ../docs/user/queries/explain.md#profile

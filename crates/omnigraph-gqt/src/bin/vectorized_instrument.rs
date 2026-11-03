@@ -181,7 +181,11 @@ async fn run() -> Result<(), String> {
     let queries = parse_queries(&queries);
 
     let dir = tempfile::tempdir().map_err(|e| format!("tempdir: {e}"))?;
-    let uri = dir.path().to_str().ok_or("temp path is not utf-8")?.to_string();
+    let uri = dir
+        .path()
+        .to_str()
+        .ok_or("temp path is not utf-8")?
+        .to_string();
     eprintln!("[instrument] loading {stem} into {uri}");
     let load_started = Instant::now();
     let db = Omnigraph::init(&uri, &fixture.schema)

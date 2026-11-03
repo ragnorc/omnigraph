@@ -75,7 +75,12 @@ not force a graph-wide scan and a lazy branch may reuse an identical inherited
 table view.
 
 An explicitly bound edge must scan its edge table because topology alone does
-not contain edge properties. It preserves incoming row/rank order and carries a
+not contain edge properties. Every edge probe (`graph.rs::scan_edges_stream`:
+the bound-edge producer, an indexed hop) pushes its `key IN (keys)` list into
+Lance only when the key column has usable BTREE coverage, which turns it into
+index lookups; otherwise Lance 13 would clone and plan the list again for
+every fragment, so the scan reads unfiltered and the engine keeps the rows
+whose key is in one set of the keys. It preserves incoming row/rank order and carries a
 deterministic edge tie-break. A correlated block (`not { ... }`,
 `exists { ... }`, `count { ... } > 2`, `sum($d.size) { ... } > 100`) is one
 anti-join over its typed inner pipeline, keeping each outer row by a
@@ -805,7 +810,7 @@ plan's, and writes one report row per node from the node's operator's own
 | `operator` | `ScanExec`, `HashJoinExec`, … | The one operator the node built. |
 | `status` | `executed` | A stream of the operator was polled. |
 | `status` | `skipped` | The operator is in the tree and no stream of it was polled: the build scan of a hash join behind an empty probe, the right subtree of a cross join behind an empty left, everything under a `Limit` of zero rows or a `Sort` with a fetch of zero, an `AntiJoin` inner tree the bulk check answered without. |
-| `attempts` | `rung`, `ran`, `actual_rows`, `drained` | One entry per pass: `rung` 0 is the first pass and each rerun of the overfetch ladder appends one whose `rung` names the declared rung it took (`RankedAccess.overfetch[rung - 1]`); `ran` is `true` / `false` (polled or not), or on the operator of a declared switch the side that ran (`hash_join`, `id_lookup`, `csr`, `indexed_scan`); `actual_rows` is the operator's `output_rows` metric; `drained` is `true` or `false` for an omnigraph operator (its stream reached its end or not) and `null` for a DataFusion operator (`AggregateExec`), whose end no counter observes; `actual_rows` is complete only when `drained` is `true`, a lower bound otherwise. |
+| `attempts` | `rung`, `ran`, `actual_rows`, `drained` | One entry per pass: `rung` 0 is the first pass and each rerun of the overfetch ladder appends one whose `rung` names the declared rung it took (`RankedAccess.overfetch[rung - 1]`); `ran` is `true` / `false` (polled or not), or on the operator of a declared switch the side that ran (`hash_join`, `id_lookup`, `csr`, `indexed_scan`); `actual_rows` is the operator's `output_rows` metric; `drained` is `true` or `false` for an omnigraph operator (its stream reached its end or not) and `null` for a DataFusion operator (`AggregateExec`), whose end no counter observes; `actual_rows` is complete only when `drained` is `true`, a lower bound otherwise; `output_batches` is the batches those rows left in (an omnigraph operator's `output_batches` counter, counted on every stream it hands out), absent on a DataFusion operator. |
 
 Polled is read off the operator's metrics: omnigraph's operators count a
 `polls` metric on every poll of the streams they hand out (`operators::polled`),
