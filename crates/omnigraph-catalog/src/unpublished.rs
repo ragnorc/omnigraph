@@ -516,7 +516,11 @@ pub(crate) async fn resolve_recorded_target(
         (None, None) => Ok(Some(main.clone())),
         (Some(logical), Some(native)) => {
             match crate::branch_control::resolve_live_native_branch(main, logical).await? {
-                Some(live) if live == native => match main.checkout_branch(native).await {
+                Some(live) if live == native => match main
+                    .checkout_branch(native)
+                    .await
+                    .and_then(crate::branch_base::follow_opened_root)
+                {
                     Ok(dataset) => Ok(Some(dataset)),
                     Err(lance::Error::RefNotFound { .. }) => Ok(None),
                     Err(error) => Err(OmniError::storage(error)),
@@ -647,6 +651,7 @@ impl ManifestCoordinator {
         let detached = main
             .checkout_version(Ref::Version(tag.branch.clone(), Some(tag.version)))
             .await
+            .and_then(crate::branch_base::follow_opened_root)
             .map_err(OmniError::storage)?;
         let stamp = read_stamp(&detached).ok_or_else(|| {
             OmniError::manifest_internal(format!("the version tag '{name}' names carries no stamp"))
@@ -800,6 +805,7 @@ impl ManifestCoordinator {
                 Some(merge.source_manifest_version),
             ))
             .await
+            .and_then(crate::branch_base::follow_opened_root)
             .map_err(OmniError::storage)?;
         let rows = read_manifest_rows_projected(&source).await?;
         if rows.head.graph_commit_id != merge.source_head_commit_id {

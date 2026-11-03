@@ -709,6 +709,7 @@ impl ManifestCoordinator {
         let detached = main
             .checkout_version(Ref::Version(tag.branch.clone(), Some(tag.version)))
             .await
+            .and_then(crate::branch_base::follow_opened_root)
             .map_err(OmniError::storage)?;
         let stamp = read_stamp(&detached).ok_or_else(|| {
             OmniError::manifest_internal(format!("the version tag '{name}' names carries no stamp"))

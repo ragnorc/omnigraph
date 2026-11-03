@@ -79,6 +79,7 @@ pub async fn open_manifest_dataset_with_session(
             dataset
                 .checkout_branch(&native)
                 .await
+                .and_then(crate::branch_base::follow_opened_root)
                 .map_err(|error| branch_ref_error(error, branch))
         }
         _ => Ok(dataset),
@@ -102,11 +103,13 @@ pub async fn open_manifest_dataset_native_with_session(
     )
     .await?;
     match native {
-        Some(native) if native != "main" => {
-            dataset.checkout_branch(native).await.map_err(|error| {
+        Some(native) if native != "main" => dataset
+            .checkout_branch(native)
+            .await
+            .and_then(crate::branch_base::follow_opened_root)
+            .map_err(|error| {
                 branch_ref_error(error, crate::branch_names::logical_branch_name(native))
-            })
-        }
+            }),
         _ => Ok(dataset),
     }
 }
@@ -146,6 +149,7 @@ pub(crate) async fn open_manifest_branch_with_identifier(
         let branch_dataset = dataset
             .checkout_branch(&native)
             .await
+            .and_then(crate::branch_base::follow_opened_root)
             .map_err(|error| branch_ref_error(error, branch))?;
         let after = crate::branch_control::get_branch_identifier(&dataset, &native)
             .await

@@ -1543,6 +1543,7 @@ pub mod write {
             let forked = dataset
                 .checkout_branch(native)
                 .await
+                .and_then(crate::branch_base::follow_opened_root)
                 .map_err(OmniError::storage)?;
             self.heads.insert(Some(native.to_string()), forked);
             Ok(version)

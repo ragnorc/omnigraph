@@ -577,6 +577,7 @@ async fn run(
             let version = intent.branches.last().map_or(0, |main| main.version);
             main.checkout_version(version)
                 .await
+                .and_then(omnigraph_core::branch_base::follow_opened_root)
                 .map_err(OmniError::storage)?
         }
         None => main.clone(),
@@ -860,6 +861,7 @@ async fn run(
         let pinned = current
             .checkout_version(branch.version)
             .await
+            .and_then(omnigraph_core::branch_base::follow_opened_root)
             .map_err(OmniError::storage)?;
         let head = converted_head(root, &session, branch, None).await?;
         equivalent_to_source(reader, &pinned, &current, native, &head).await?;
@@ -1318,6 +1320,7 @@ async fn inventory(main: &Dataset) -> Result<Vec<SourceBranch>> {
         let head = main
             .checkout_branch(&native)
             .await
+            .and_then(omnigraph_core::branch_base::follow_opened_root)
             .map_err(OmniError::storage)?;
         branches.push(SourceBranch {
             identity: crate::branch_control::dataset_branch_identifier(&head)
@@ -1392,6 +1395,7 @@ async fn census_input(
         let head = main
             .checkout_version(Ref::Version(Some(native.clone()), None))
             .await
+            .and_then(omnigraph_core::branch_base::follow_opened_root)
             .map_err(OmniError::storage)?;
         retired.push(CensusRef {
             native: Some(native),
@@ -1529,6 +1533,7 @@ async fn preflight_refs(
             .await?
             .checkout_version(branch.version)
             .await
+            .and_then(omnigraph_core::branch_base::follow_opened_root)
             .map_err(OmniError::storage)?;
         let key: Vec<&str> = head
             .schema()
@@ -1580,6 +1585,7 @@ async fn bounded_input(
         let head = main
             .checkout_version(Ref::Version(source.native.clone(), Some(source.version)))
             .await
+            .and_then(omnigraph_core::branch_base::follow_opened_root)
             .map_err(OmniError::storage)?;
         if let Some(held) = metadata_over_budget(&head, bounds).await? {
             over.push(format!(
@@ -1949,6 +1955,7 @@ async fn publish_conversion(
     let source = current
         .checkout_version(branch.version)
         .await
+        .and_then(omnigraph_core::branch_base::follow_opened_root)
         .map_err(OmniError::storage)?;
     let mut metadata = source.schema().metadata.clone();
     metadata.insert(

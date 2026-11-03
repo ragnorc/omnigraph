@@ -273,6 +273,7 @@ impl ManifestTagInventory {
             .dataset
             .checkout_version(Ref::Version(tag.branch.clone(), Some(tag.version)))
             .await
+            .and_then(crate::branch_base::follow_opened_root)
             .map_err(OmniError::storage)?;
         PinnedGraphManifest::from_dataset(root_uri, dataset).await
     }
@@ -361,6 +362,7 @@ impl ManifestCoordinator {
             let dataset = match main
                 .checkout_version(Ref::Version(native, Some(commit.graph_manifest_version)))
                 .await
+                .and_then(crate::branch_base::follow_opened_root)
             {
                 Ok(dataset) => dataset,
                 Err(lance::Error::DatasetNotFound { .. }) => continue,
@@ -427,6 +429,7 @@ impl ManifestCoordinator {
             let dataset = main
                 .checkout_version(Ref::Version(Some(native.clone()), None))
                 .await
+                .and_then(crate::branch_base::follow_opened_root)
                 .map_err(OmniError::storage)?;
             let session = dataset.session();
             let (head, buffer, registry) =

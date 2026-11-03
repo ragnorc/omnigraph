@@ -178,6 +178,7 @@ async fn read_branch(
     let branch = main
         .checkout_branch(native)
         .await
+        .and_then(crate::branch_base::follow_opened_root)
         .map_err(OmniError::storage)?;
     let head = read_manifest_rows_projected(&branch).await?.head;
     if exact_head(&head, Some(native)).is_none() {
@@ -187,6 +188,7 @@ async fn read_branch(
     let created = branch
         .checkout_version(contents.parent_version)
         .await
+        .and_then(crate::branch_base::follow_opened_root)
         .map_err(OmniError::storage)?;
     let started_at =
         match crate::legacy::at_version(root, &created.session(), legacy, &created).await? {

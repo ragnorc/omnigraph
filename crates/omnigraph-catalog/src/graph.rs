@@ -357,6 +357,7 @@ pub(crate) async fn snapshot_state_at(
     let dataset = dataset
         .checkout_version(version)
         .await
+        .and_then(crate::branch_base::follow_opened_root)
         .map_err(OmniError::storage)?;
     let state = match crate::legacy::at_version(root, control_session, history, &dataset).await? {
         None => VersionState::Rows(read_manifest_state(&dataset).await?),

@@ -1744,7 +1744,11 @@ impl GraphNamespacePublisher {
                             readback_err,
                         ));
                     }
-                    match dataset.checkout_version(new_manifest_version).await {
+                    match dataset
+                        .checkout_version(new_manifest_version)
+                        .await
+                        .and_then(crate::branch_base::follow_opened_root)
+                    {
                         Ok(reloaded) => match read_manifest_rows(&reloaded).await {
                             Ok(rows) => {
                                 // Read the attempted immutable version on the captured
@@ -1888,6 +1892,7 @@ impl GraphNamespacePublisher {
                 let detached = dataset
                     .checkout_version(Ref::Version(native_branch.clone(), Some(*detached_version)))
                     .await
+                    .and_then(crate::branch_base::follow_opened_root)
                     .map_err(OmniError::storage)?;
                 let rows = read_manifest_rows(&detached).await?;
                 if rows.head.graph_commit_id != *base_commit_id {
@@ -2029,6 +2034,7 @@ impl GraphNamespacePublisher {
                     Some(latest.version),
                 ))
                 .await
+                .and_then(crate::branch_base::follow_opened_root)
                 .map_err(OmniError::storage)?;
             let head = read_manifest_rows_projected(&current).await?.head;
             if head.graph_commit_id != captured_head_commit_id {
