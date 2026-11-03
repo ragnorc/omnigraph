@@ -219,7 +219,7 @@ and its operator's JSON report in `detail`:
 | `id` | the node's `id`, the same integer the physical explain row carries |
 | `operator` | the operator's name (`ScanExec`, `HashJoinExec`, `SortExec`, …) |
 | `status` | `executed` (a stream of the operator was polled) or `skipped` (in the tree, never polled) |
-| `attempts` | one entry per pass: `rung` (0 the first pass, then the overfetch rung taken), `ran`, `actual_rows` (the operator's output rows) and `drained` (whether `actual_rows` is complete, defined in [execution.md](../../dev/execution.md#v2-plan-lowering-one-node-one-operator)) |
+| `attempts` | one entry per pass: `rung` (0 the first pass, then the overfetch rung taken), `ran`, `actual_rows` (the operator's output rows), `drained` (whether `actual_rows` is complete, defined in [execution.md](../../dev/execution.md#v2-plan-lowering-one-node-one-operator)) and, on an omnigraph operator, `output_batches` (the batches those rows left in, so `actual_rows / output_batches` is its rows per batch; absent on `AggregateExec`, which counts none) |
 
 `ran` is `true` or `false` on an operator without a choice, and on the
 operator of a declared switch it is the side that ran: `hash_join` or

@@ -5827,6 +5827,7 @@ dependencies = [
  "async-trait",
  "datatest-stable",
  "futures",
+ "libc",
  "object_store 0.14.2",
  "omnigraph-compiler",
  "omnigraph-dst",

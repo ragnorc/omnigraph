@@ -4,7 +4,7 @@
 //! each operator's metrics into that pass's report rows.
 
 use super::operators::memory::WorkMemory;
-use super::operators::{CsvSourceExec, Switch, was_drained, was_polled};
+use super::operators::{CsvSourceExec, Switch, output_batches, was_drained, was_polled};
 use datafusion::physical_plan::ExecutionPlan;
 use datafusion::physical_plan::metrics::{MetricValue, MetricsSet};
 use futures::StreamExt;
@@ -133,6 +133,7 @@ pub(super) fn pass_rows(
             ran,
             actual_rows,
             drained,
+            output_batches(&metrics),
         ));
     }
     Ok(rows)

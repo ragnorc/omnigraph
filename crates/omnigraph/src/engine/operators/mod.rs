@@ -151,6 +151,14 @@ pub(in crate::engine) fn was_polled(metrics: &MetricsSet) -> bool {
 /// stream to its end. Only an omnigraph operator counts that; a DataFusion
 /// operator records its end timestamp on drop as well, which observes
 /// nothing, so it reads `None`.
+/// The batches the operator's streams handed out, from its `output_batches`
+/// counter; `None` on a DataFusion operator, which counts none.
+pub(in crate::engine) fn output_batches(metrics: &MetricsSet) -> Option<u64> {
+    metrics
+        .sum_by_name(shape::OUTPUT_BATCHES)
+        .map(|metric| metric.as_usize() as u64)
+}
+
 pub(in crate::engine) fn was_drained(metrics: &MetricsSet) -> Option<bool> {
     let mut counts_polls = false;
     let mut drained = false;

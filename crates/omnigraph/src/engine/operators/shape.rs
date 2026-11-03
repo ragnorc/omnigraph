@@ -44,6 +44,11 @@ pub(super) const POLLS: &str = "polls";
 /// is set.
 pub(super) const DRAINED: &str = "drained";
 
+/// The `output_batches` counter: one per batch the operator's streams handed
+/// to their consumer, so `output_rows / output_batches` is the operator's
+/// rows per batch.
+pub(super) const OUTPUT_BATCHES: &str = "output_batches";
+
 /// The pool reservation of one execution, named after its operator and
 /// carrying the operator's metrics.
 pub(super) fn work(
@@ -475,6 +480,7 @@ fn polled(
         stream,
         polls: MetricBuilder::new(metrics).counter(POLLS, 0),
         drained: MetricBuilder::new(metrics).counter(DRAINED, 0),
+        batches: MetricBuilder::new(metrics).counter(OUTPUT_BATCHES, 0),
         start: MetricBuilder::new(metrics).start_timestamp(0),
         end: MetricBuilder::new(metrics).end_timestamp(0),
     })
@@ -484,6 +490,7 @@ struct Polled {
     stream: SendableRecordBatchStream,
     polls: Count,
     drained: Count,
+    batches: Count,
     start: Timestamp,
     end: Timestamp,
 }
@@ -503,7 +510,8 @@ impl Stream for Polled {
                 self.end.record();
             }
             Poll::Ready(Some(Err(_))) => self.end.record(),
-            _ => {}
+            Poll::Ready(Some(Ok(_))) => self.batches.add(1),
+            Poll::Pending => {}
         }
         polled
     }
@@ -646,7 +654,7 @@ where
     let baseline = metrics.map(|(metrics, partition)| BaselineMetrics::new(metrics, partition));
     let counts = metrics.map(|(metrics, partition)| {
         datafusion::physical_plan::metrics::MetricBuilder::new(metrics)
-            .counter("output_batches", partition)
+            .counter("producer_batches", partition)
     });
     let stream = futures::stream::try_unfold(
         (builder.build(), receiver, None::<Arc<WorkMemory>>),

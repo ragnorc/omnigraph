@@ -13,6 +13,8 @@ publish = false
 doctest = false
 
 [dependencies]
+# The vectorized-execution instrument (`src/bin/vectorized_instrument.rs`) reads process CPU time.
+libc = "0.2"
 omnigraph-gqt-core = { path = "../omnigraph-gqt-core", version = "0.14.1" }
 async-trait = { workspace = true }
 futures = { workspace = true }

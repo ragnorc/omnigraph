@@ -52,6 +52,11 @@ pub(crate) struct Attempt {
     /// Whether the consumer pulled the operator's stream to its end; `None`
     /// on a DataFusion operator, whose end no counter observes.
     pub(crate) drained: Option<bool>,
+    /// The batches the operator's consumer received, so `actual_rows /
+    /// output_batches` is its rows per batch; `None` on a DataFusion
+    /// operator, which counts none.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) output_batches: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -70,6 +75,7 @@ impl ReportRow {
         ran: Ran,
         actual_rows: u64,
         drained: Option<bool>,
+        output_batches: Option<u64>,
     ) -> Self {
         Self {
             id,
@@ -84,6 +90,7 @@ impl ReportRow {
                 ran,
                 actual_rows,
                 drained,
+                output_batches,
             }],
         }
     }

@@ -1,0 +1,42 @@
+# issue: none
+# notes: autoresearch vectorized-execution fixture: 10000 people, 10000 edges (fanout 1, uniform), bio x1, 3 node commits.
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+    name: String @key
+    age: I64
+    team: String
+    bio: String
+    score: I64
+}
+edge Knows: Person -> Person {
+    weight: I64
+}
+
+--- seed generate: v1 seed: 42
+tables:
+  - kind: node
+    name: Person
+    rows: 10000
+    commits: 3
+    columns:
+      name: {kind: key, prefix: p, width: 6}
+      age: {kind: modulo, modulus: 100}
+      team: {kind: key, prefix: g, width: 0, modulo: 10}
+      bio: {kind: repeat, text: "synthetic person biography ", count: 1}
+      score: {kind: ordinal, start: 0, step: 7}
+  - kind: edge
+    name: Knows
+    rows: 10000
+    commits: 3
+    id: {kind: key, prefix: e, width: 8}
+    from: {kind: endpoint, prefix: p, width: 6, population: 10000, distribution: {kind: uniform}}
+    to: {kind: endpoint, prefix: p, width: 6, population: 10000, distribution: {kind: uniform}}
+    columns:
+      weight: {kind: modulo, modulus: 1000}
