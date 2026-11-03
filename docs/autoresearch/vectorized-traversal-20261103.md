@@ -225,7 +225,7 @@ scenario rose, and the gates passed.
 ### H5. Sieve an unindexed edge scan's keys in the engine — kept
 
 - Where: `graph.rs::scan_edges_stream` (bound-edge producer, indexed single hop, indexed BFS hops).
-- What: every edge probe pushed `key IN (keys)` into Lance. Lance 13 (`io/exec/filtered_read.rs`) clones that `Expr` for every fragment and plans it to a physical expression per fragment, so a scan over an edge table whose key column has no usable BTREE paid a copy and a hash set of every key per fragment: the bound-edge expand's allocations grew with keys × fragments (10 → 100 edge commits at 10k people: 1.66M → 8.15M; 1k → 100k people: 27 → 207 allocations per output row). Where `key_column_index_coverage` reports no usable index the scan now reads the projected columns unfiltered and the engine keeps the rows whose key is in one `HashSet` of the keys (null keys drop, as the `IN` list dropped them); an indexed key column still pushes the list, which is what makes it index lookups.
+- What: every edge probe pushed `key IN (keys)` into Lance. Lance 13 (`io/exec/filtered_read.rs`) clones that `Expr` for every fragment and plans it to a physical expression per fragment, so a scan over an edge table whose key column has no usable BTREE paid a copy and a hash set of every key per fragment: the bound-edge expand's allocations grew with keys × fragments (10 → 100 edge commits at 10k people: 1.66M → 8.15M; 1k → 100k people: 27 → 207 allocations per output row). A list longer than `PUSHDOWN_KEYS_MAX` (1,024, the indexed path's default frontier ceiling) over a column without usable index coverage is no longer pushed: the scan reads the projected columns unfiltered and the engine keeps the rows whose key is in one `HashSet` of the keys (null keys drop, as the `IN` list dropped them). A shorter list, or an indexed key column, still pushes: the index makes it lookups, and a pushed filter also lets Lance skip a fragment's other columns where no key matches, one read per such fragment, which the DST storage-cost golden showed (one more `l.get` on every hop read of its small graph in the first two builds of this change) and which a short list's cheap replan does not justify losing. The coverage verdict travels from the expand's start decision (`ExpandStart::Indexed { pushdown }`); only a long list nothing has judged (a bound edge) probes the index metadata itself.
 - Counters (H2 → H5): `bound_edge` 100k 82,880,858 → 17,777,858 allocations (−79%), 16.5 GB → 3.7 GB allocated (−77%); 10k fanout 4: −61% / −75%; wide rows −82% / −87%; 100 edge fragments at 10k: 1,764,746 → 768,538 (and 802,916 on the edge-fragment sweep fixture against 8,154,608 before, so the fragment term is gone); `hop1` on the 1k fixture, whose plan takes the indexed start, −61%; every other scenario unchanged.
 - CPU and wall: `bound_edge` 100k 28.3 → 8.8 s CPU, 13.1 → 5.7 s wall; 10k 675 → 250 ms CPU.
 - Gates: the traversal integration tests (36) ran on the tree with H5 and H3 applied; the rest in the Gates section.
@@ -401,7 +401,12 @@ plan already carries the coverage as pinned index facts. The probe's verdict
 is now carried from the expand's start decision into the edge scan
 (`ExpandStart::Indexed { pushdown }`, `IndexedExpandSource::pushdown`), and
 only a scan nothing has judged (a bound edge, a budgeted selection) probes
-for itself; the golden result after that change is recorded below.
+for itself. The golden still showed the extra get: without a pushed filter
+Lance reads a fragment's second column even where no key matches, so the
+sieve itself costs one read per such fragment. The final rule is cost-based
+(a list of at most 1,024 keys is pushed, a longer one sieved), under which
+the hop scenarios push again; the golden result under that rule is recorded
+below.
 
 ## Not attempted, with the reason
 
