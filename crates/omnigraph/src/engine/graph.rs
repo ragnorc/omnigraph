@@ -1422,8 +1422,8 @@ where
             }
         }
 
-        for i in 0..n {
-            let cur = std::mem::take(&mut frontiers[i]);
+        for (i, frontier) in frontiers.iter_mut().enumerate() {
+            let cur = std::mem::take(frontier);
             let mut next: Vec<u32> = Vec::new();
             for &node in &cur {
                 let (fwd, rev): (&[u32], &[u32]) = match &active {
@@ -1491,7 +1491,7 @@ where
                 }
                 memory.check().map_err(|error| memory.error(error))?;
             }
-            frontiers[i] = next;
+            *frontier = next;
         }
         drop(std::mem::replace(&mut frontier_memory, next_memory));
         if let ActiveExpandSource::Indexed(src) = &mut active {
