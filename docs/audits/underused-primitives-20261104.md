@@ -130,6 +130,8 @@ Ranked by expected gain against cost and risk. IDs: L = Lance, D = DataFusion, A
 
 ### 1. A1: change-feed and merge row equality is per row and per column (Arrow) — M
 
+**Issue: [#1247](https://github.com/ModernRelay/omnigraph/issues/1247).**
+
 - **Now.** `rows_equal_by_column` (`engine-src/changes/row_compare.rs:528-562`) compares each
   non-Blob column with `column.to_data() != other.to_data()` on one-row slices, and it builds a
   `HashSet` of Blob names on every call. Callers: branch merge classification (three compares per
@@ -167,6 +169,8 @@ Ranked by expected gain against cost and risk. IDs: L = Lance, D = DataFusion, A
 
 ### 2. L2: keyed updates force Lance's full-scan merge-insert route (Lance) — S for updates
 
+**Issue: [#1248](https://github.com/ModernRelay/omnigraph/issues/1248).**
+
 - **Now.** `stage_keyed_write_from_stream` calls `builder.use_index(false)` for every write that
   can insert (`engine-src/table_store.rs:4014-4020`). The comment gives the reason: Lance's
   indexed route does not return the inserted-row key filter. `.gq update`
@@ -200,6 +204,8 @@ Ranked by expected gain against cost and risk. IDs: L = Lance, D = DataFusion, A
 
 ### 3. D1: the plan's `Sort` node should run DataFusion's `SortExec` inside Omnigraph's operator (DataFusion) — S to M
 
+**Issue: [#1249](https://github.com/ModernRelay/omnigraph/issues/1249).**
+
 - **Now.** `engine-src/engine/operators/sort.rs`. Without a fetch it drains the input,
   concatenates it, runs `lexsort_to_indices` and permutes; nothing spills, so an unbounded
   `order by` is refused at the pool limit (the regression PR #769 admitted). With a fetch,
@@ -223,6 +229,8 @@ Ranked by expected gain against cost and risk. IDs: L = Lance, D = DataFusion, A
 - **Evidence.** Code inspection.
 
 ### 4. L1: pinned table opens throw away the manifest location the pin records (Lance) — M
+
+**Issue: [#1250](https://github.com/ModernRelay/omnigraph/issues/1250).**
 
 - **Now.** Each registration row stores the pinned version's manifest path, size and ETag
   (`crates/omnigraph-core/src/metadata.rs:106-160`). No open path reads them;
@@ -249,6 +257,8 @@ Ranked by expected gain against cost and risk. IDs: L = Lance, D = DataFusion, A
 
 ### 5. A3: the bounded edge expand sizes rows with Arrow's `get_slice_memory_size`, which over-counts list columns (Arrow) — S
 
+**Issue: [#1251](https://github.com/ModernRelay/omnigraph/issues/1251).**
+
 - **Now.** `engine-src/engine/graph.rs:1090-1097` computes
   `column.slice(row, 1).get_slice_memory_size()` for every edge row and attached column. PR #1241
   replaced this pattern elsewhere with `WorkMemory::row_bytes`
@@ -264,6 +274,8 @@ Ranked by expected gain against cost and risk. IDs: L = Lance, D = DataFusion, A
 - **Evidence.** Code inspection of both sides; verified against the arrow-data source.
 
 ### 6. L4: cleanup sends a HEAD before every file it deletes, and deletes one at a time (Lance) — S
+
+**Issue: [#1252](https://github.com/ModernRelay/omnigraph/issues/1252).**
 
 - **Now.** `delete_paths` (`engine-src/db/omnigraph/collector.rs:361-385`) calls
   `delete_object(.., None)`, which HEADs for the size before the DELETE (`:389-409`). The plan's
@@ -282,6 +294,8 @@ Ranked by expected gain against cost and risk. IDs: L = Lance, D = DataFusion, A
   20 deletes, every other row unchanged. Concurrency not measured.
 
 ### 7. A2: in-memory `contains` and constants (Arrow and DataFusion) — S for `contains`, M for constants
+
+**Issue: [#1253](https://github.com/ModernRelay/omnigraph/issues/1253).**
 
 - **Now.** `evaluate_contains_filter` (`engine-src/engine/expr.rs:329-409`) loops over rows and
   list items, slicing both sides and calling a comparison kernel per element. Every literal and
@@ -303,6 +317,8 @@ Ranked by expected gain against cost and risk. IDs: L = Lance, D = DataFusion, A
 
 ### 8. L5: filtered `count(...)` reads the matching rows; Lance can count from the index (Lance) — M
 
+**Issue: [#1254](https://github.com/ModernRelay/omnigraph/issues/1254).**
+
 - **Now.** The planner turns `count(binding)` into `MetadataCount` only without a filter
   (`crates/omnigraph-planner/src/optimizer.rs:2156`). A filtered count scans and projects the key
   columns of every match.
@@ -320,6 +336,8 @@ Ranked by expected gain against cost and risk. IDs: L = Lance, D = DataFusion, A
 
 ### 9. L6: a BM25 scan's full-text filter travels as an `id IN (...)` string list (Lance) — S to M
 
+**Issue: [#1255](https://github.com/ModernRelay/omnigraph/issues/1255).**
+
 - **Now.** `search_filter_member_ids` (`engine-src/engine/scan.rs:645-696`) runs a first
   full-text pass, collects every member id as a `String`, and ANDs `id IN (members)` into the
   ranking scan. Lance then searches the id BTREE again to recover row ids it already had.
@@ -334,6 +352,8 @@ Ranked by expected gain against cost and risk. IDs: L = Lance, D = DataFusion, A
 
 ### 10. L9: `stage_delete_rows` extends deletion files one fragment at a time (Lance) — S
 
+**Issue: [#1256](https://github.com/ModernRelay/omnigraph/issues/1256).**
+
 - **Now.** `engine-src/table_store.rs:3358-3378` awaits `extend_deletions` serially per fragment.
 - **Upstream.** The private `apply_deletions` it copies
   (`lance-13.0.0/src/dataset/write/delete.rs:52-96`) runs the same calls with
@@ -344,6 +364,8 @@ Ranked by expected gain against cost and risk. IDs: L = Lance, D = DataFusion, A
 - **Evidence.** Code inspection.
 
 ### 11. L8: three read paths still build SQL filter strings (Lance) — S
+
+**Issue: [#1257](https://github.com/ModernRelay/omnigraph/issues/1257).**
 
 - **Now.** Export entity lookup (`engine-src/db/omnigraph/export.rs:374`, `format!` with quote
   escaping, no limit); vector trainability check (`engine-src/db/omnigraph/table_ops.rs:808-819`,
@@ -361,6 +383,8 @@ Ranked by expected gain against cost and risk. IDs: L = Lance, D = DataFusion, A
 
 ### 12. L7: `cleanup --older-than` sends HEAD + GET for each manifest whose size the listing already gave (Lance) — S
 
+**Covered by open issue [#1095](https://github.com/ModernRelay/omnigraph/issues/1095) (cleanup planning time); added as [a comment](https://github.com/ModernRelay/omnigraph/issues/1095#issuecomment-6643212028).**
+
 - **Now.** `read_versions` (`crates/omnigraph-catalog/src/lib.rs:1224-1250`) calls
   `checkout_version` per undecided version. `version_refs` drops the listed size
   (`lance-13.0.0/src/dataset.rs:2664-2678`).
@@ -372,6 +396,8 @@ Ranked by expected gain against cost and risk. IDs: L = Lance, D = DataFusion, A
 - **Evidence.** Code inspection.
 
 ### 13. L14: branch merge does not use the row-identity rule change discovery already has (Lance) — M
+
+**Issue: [#1258](https://github.com/ModernRelay/omnigraph/issues/1258). Builds on open PR [#1229](https://github.com/ModernRelay/omnigraph/pull/1229), which scopes merge reads to changed fragments but does not cover a compaction.**
 
 - **Now.** `lineage_side_candidates` (`engine-src/exec/merge.rs:2098-2215`) makes every live row
   of a rewritten fragment a candidate, so a merge across an `optimize` falls back to the full
@@ -389,6 +415,8 @@ Ranked by expected gain against cost and risk. IDs: L = Lance, D = DataFusion, A
 
 ### 14. L10: index kinds Lance's filter planner serves are never built (Lance) — M to L
 
+**Issue: [#1259](https://github.com/ModernRelay/omnigraph/issues/1259). PR [#358](https://github.com/ModernRelay/omnigraph/pull/358) had deferred a BTREE beside the full-text index over lance#7840 and lance#7841; #7841 is now closed, and graph tables are no longer cloned.**
+
 - **Now.** `PropType::index_kind` (`crates/omnigraph-compiler/src/types.rs:242-261`) gives a
   free-text `String` only an inverted index, lists none. So `=`, `starts_with` and `contains` on
   free-text strings and `contains` on lists are full column scans, as the user guide says
@@ -405,6 +433,8 @@ Ranked by expected gain against cost and risk. IDs: L = Lance, D = DataFusion, A
 
 ### 15. D3: correlated block aggregates hand-roll grouped accumulators (DataFusion) — M, decision first
 
+**Issue: [#1260](https://github.com/ModernRelay/omnigraph/issues/1260).**
+
 - **Now.** `engine-src/engine/operators/subquery_aggregate.rs:24-356` folds row by row; `min` and
   `max` build a `ScalarValue` per row.
 - **Upstream.** `create_groups_accumulator` on the same UDAFs the outer `Aggregate` uses; the
@@ -417,6 +447,8 @@ Ranked by expected gain against cost and risk. IDs: L = Lance, D = DataFusion, A
 
 ### 16. Hygiene: dead strict-insert branch and stale "Lance key fence" wording (Lance) — S
 
+**Issue: [#1261](https://github.com/ModernRelay/omnigraph/issues/1261).**
+
 - `stage_keyed_write` returns for `StrictInsert` before the merge-insert
   (`engine-src/table_store.rs:3563-3577`), so the `WhenMatched::Fail` arm (`:4003`) and the
   strict call to `validate_strict_insert_merge_stats` (`:4033`) cannot run. `docs/dev/merge.md:176`,
@@ -428,6 +460,8 @@ Ranked by expected gain against cost and risk. IDs: L = Lance, D = DataFusion, A
 - **Evidence.** Code inspection (the early return was checked by hand).
 
 ### 17. Small items — S each
+
+**Issue: [#1262](https://github.com/ModernRelay/omnigraph/issues/1262) (all five items).**
 
 - **L12.** Schema-apply drops could use Lance's public `plan_drop_columns`
   (`lance-13.0.0/src/dataset/schema_evolution.rs:1168`) instead of computing the projected schema
@@ -447,6 +481,8 @@ Ranked by expected gain against cost and risk. IDs: L = Lance, D = DataFusion, A
 
 ### 18. Decide before wiring: the dormant push executor (DataFusion and Lance) — L
 
+**Issues: [#1263](https://github.com/ModernRelay/omnigraph/issues/1263) (push executor, D4) and [#1264](https://github.com/ModernRelay/omnigraph/issues/1264) (L13).**
+
 - `engine-src/engine/push/` (about 3,000 lines) is a second execution model for change-feed and
   merge plans, with its own full-outer join that holds the whole build side, refuses above
   4M keys and cannot spill (`push/join.rs`). Its `mod.rs:1-6` says no caller is wired. It also
@@ -458,6 +494,35 @@ Ranked by expected gain against cost and risk. IDs: L = Lance, D = DataFusion, A
   property leave Blob and vector columns unread and external Blob references intact
   (`engine-src/exec/mutation.rs:1753-1866`). It costs per-fragment index coverage and the change
   feed's fast path for that commit. Worth an experiment, not a direct change.
+
+## Filed issues
+
+Filed on ModernRelay/omnigraph on 2026-11-04 (UTC). Each finding was rechecked against `main` at
+`e750a6be`; the only change since the audited commit ([#1246](https://github.com/ModernRelay/omnigraph/pull/1246)) moved Lance commit construction into
+`lance_commit::commit_builder` and shifts `table_store.rs` lines after 3253 by 7, without
+changing any finding. Issue links point at the audited commit.
+
+| Finding ID | Entry | Action | Link |
+|---|---|---|---|
+| A1 | 1 | filed | [#1247](https://github.com/ModernRelay/omnigraph/issues/1247) |
+| L2 | 2 | filed | [#1248](https://github.com/ModernRelay/omnigraph/issues/1248) |
+| D1 | 3 | filed | [#1249](https://github.com/ModernRelay/omnigraph/issues/1249) |
+| L1 | 4 | filed | [#1250](https://github.com/ModernRelay/omnigraph/issues/1250) |
+| A3 | 5 | filed | [#1251](https://github.com/ModernRelay/omnigraph/issues/1251) |
+| L4 | 6 | filed | [#1252](https://github.com/ModernRelay/omnigraph/issues/1252) |
+| A2 | 7 | filed | [#1253](https://github.com/ModernRelay/omnigraph/issues/1253) |
+| L5 | 8 | filed | [#1254](https://github.com/ModernRelay/omnigraph/issues/1254) |
+| L6 | 9 | filed | [#1255](https://github.com/ModernRelay/omnigraph/issues/1255) |
+| L9 | 10 | filed | [#1256](https://github.com/ModernRelay/omnigraph/issues/1256) |
+| L8 | 11 | filed | [#1257](https://github.com/ModernRelay/omnigraph/issues/1257) |
+| L7 | 12 | commented | [#1095](https://github.com/ModernRelay/omnigraph/issues/1095#issuecomment-6643212028) |
+| L14 | 13 | filed | [#1258](https://github.com/ModernRelay/omnigraph/issues/1258) |
+| L10 | 14 | filed | [#1259](https://github.com/ModernRelay/omnigraph/issues/1259) |
+| D3 | 15 | filed | [#1260](https://github.com/ModernRelay/omnigraph/issues/1260) |
+| hygiene | 16 | filed | [#1261](https://github.com/ModernRelay/omnigraph/issues/1261) |
+| L12, L11, A4, A5, helper | 17 | filed (one issue) | [#1262](https://github.com/ModernRelay/omnigraph/issues/1262) |
+| D4 | 18 | filed | [#1263](https://github.com/ModernRelay/omnigraph/issues/1263) |
+| L13 | 18 | filed | [#1264](https://github.com/ModernRelay/omnigraph/issues/1264) |
 
 ## Deliberate workarounds kept
 
