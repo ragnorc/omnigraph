@@ -952,6 +952,10 @@ pub struct SchemaEvolution {
     /// The `(field id, name)` columns, in order, of the dataset the next step
     /// must be staged against: the planned base, then each step's result.
     expected: Vec<(i32, String)>,
+    /// #721: a column goes from nullable to required, so the `Project` commit
+    /// must not preserve nullability. The caller has judged that no row holds
+    /// a null.
+    tightens: bool,
 }
 
 /// A schema's columns as `(field id, name)` in pre-order: the identity a
@@ -4923,6 +4927,7 @@ impl TableStore {
         let mut consumed = HashSet::<&str>::new();
         let mut renamed = false;
         let mut added = false;
+        let mut tightens = false;
         for target_field in target.fields() {
             let name = target_field.name().as_str();
             let source = match source_of.get(name) {
@@ -4959,8 +4964,9 @@ impl TableStore {
                 .expect("the source column was found above");
             let desired = lance::datatypes::Field::try_from(target_field.as_ref())
                 .map_err(OmniError::lance_internal)?;
+            let tightening = existing.nullable && !desired.nullable;
             if existing.data_type() != desired.data_type()
-                || (existing.nullable != desired.nullable && !(existing.nullable && !desired.nullable))
+                || (existing.nullable != desired.nullable && !tightening)
             {
                 return Err(OmniError::manifest_internal(format!(
                     "column '{source}' cannot become '{name}' without a rewrite: {:?} (nullable {}) -> {:?} (nullable {})",
@@ -4971,6 +4977,10 @@ impl TableStore {
                 )));
             }
             let mut field = existing.clone();
+            if tightening {
+                field.nullable = false;
+                tightens = true;
+            }
             if source != name {
                 field.name = name.to_string();
                 renamed = true;
@@ -5032,6 +5042,7 @@ impl TableStore {
                 project,
                 merge: None,
                 expected,
+                tightens,
             });
         }
         let project = if renamed || dropped {
@@ -5052,6 +5063,7 @@ impl TableStore {
             project,
             merge: Some(evolved),
             expected,
+            tightens,
         })
     }
 
@@ -5083,7 +5095,7 @@ impl TableStore {
             evolution.expected = schema_columns(&schema);
             Operation::Project {
                 schema,
-                preserves_nullability: true,
+                preserves_nullability: !evolution.tightens,
             }
         } else if let Some(schema) = evolution.merge.take() {
             evolution.expected = schema_columns(&schema);

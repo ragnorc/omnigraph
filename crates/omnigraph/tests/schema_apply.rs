@@ -3885,3 +3885,40 @@ async fn issue_721_promoted_table_still_evolves_and_reopens() {
         .await
         .expect("a complete row loads");
 }
+
+#[tokio::test]
+#[cfg_attr(feature = "failpoints", serial_test::parallel)]
+async fn issue_721_promotion_tightens_the_lance_column() {
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap();
+    let db = helpers::session(Omnigraph::init(uri, ISSUE_721_V1).await.unwrap());
+    db.load_jsonl(
+        r#"{"type":"Decision","data":{"slug":"a","ref":"D-1"}}"#,
+        LoadMode::Merge,
+    )
+    .await
+    .unwrap();
+    let before = db.snapshot_of(ReadTarget::branch("main")).await.unwrap();
+    assert!(before
+        .open_dataset("node:Decision")
+        .await
+        .unwrap()
+        .schema()
+        .field("ref")
+        .unwrap()
+        .nullable);
+
+    db.apply_schema(ISSUE_721_V2).await.expect("promotion applies");
+
+    let after = db.snapshot_of(ReadTarget::branch("main")).await.unwrap();
+    let dataset = after.open_dataset("node:Decision").await.unwrap();
+    assert!(
+        !dataset.schema().field("ref").unwrap().nullable,
+        "the Lance column is required after promotion"
+    );
+    assert_eq!(
+        after.dataset("node:Decision").unwrap().published_dataset_version,
+        before.dataset("node:Decision").unwrap().published_dataset_version + 1,
+        "the tightening is one table commit"
+    );
+}
