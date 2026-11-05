@@ -3019,7 +3019,7 @@ impl TableStore {
 
     /// IVF partitions for a column of `rows` non-null vectors: `sqrt(rows)`,
     /// at most 4096 (Lance's k-means ceiling) and never more than the rows.
-    pub(crate) fn sqrt_vector_partitions(rows: usize) -> usize {
+    fn sqrt_vector_partitions(rows: usize) -> usize {
         ((rows as f64).sqrt().floor() as usize).clamp(1, 4096)
     }
 
