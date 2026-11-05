@@ -3762,3 +3762,87 @@ async fn prepared_schema_numeric_fence_rejects_metadata_interposed_after_effects
         }
     ));
 }
+
+// Issue #721: a nullable property that every row now fills can be promoted to
+// required and unique without rebuilding the graph. Promotion must refuse,
+// leaving the accepted schema in force, while a null or a duplicate remains.
+const ISSUE_721_V1: &str = "node Decision {\n    slug: String @key\n    ref: String?\n}\n";
+const ISSUE_721_V2: &str = "node Decision {\n    slug: String @key\n    ref: String @unique\n}\n";
+
+#[tokio::test]
+#[cfg_attr(feature = "failpoints", serial_test::parallel)]
+async fn issue_721_backfilled_nullable_property_promotes_to_required_unique() {
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap();
+    let db = helpers::session(Omnigraph::init(uri, ISSUE_721_V1).await.unwrap());
+    db.load_jsonl(
+        "{\"type\":\"Decision\",\"data\":{\"slug\":\"a\",\"ref\":\"D-1\"}}\n\
+         {\"type\":\"Decision\",\"data\":{\"slug\":\"b\",\"ref\":\"D-2\"}}",
+        LoadMode::Merge,
+    )
+    .await
+    .expect("backfilled rows load");
+
+    let result = db
+        .apply_schema(ISSUE_721_V2)
+        .await
+        .expect("promotion of a fully backfilled, distinct property must apply");
+    assert!(result.supported && result.applied);
+
+    db.load_jsonl(
+        r#"{"type":"Decision","data":{"slug":"c"}}"#,
+        LoadMode::Merge,
+    )
+    .await
+    .expect_err("a missing required value must be rejected after promotion");
+    db.load_jsonl(
+        r#"{"type":"Decision","data":{"slug":"d","ref":"D-1"}}"#,
+        LoadMode::Merge,
+    )
+    .await
+    .expect_err("a duplicate unique value must be rejected after promotion");
+    db.load_jsonl(
+        r#"{"type":"Decision","data":{"slug":"e","ref":"D-3"}}"#,
+        LoadMode::Merge,
+    )
+    .await
+    .expect("a distinct value is accepted");
+}
+
+#[tokio::test]
+#[cfg_attr(feature = "failpoints", serial_test::parallel)]
+async fn issue_721_promotion_refuses_while_a_null_or_duplicate_remains() {
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap();
+    let db = helpers::session(Omnigraph::init(uri, ISSUE_721_V1).await.unwrap());
+    db.load_jsonl(
+        "{\"type\":\"Decision\",\"data\":{\"slug\":\"a\",\"ref\":\"D-1\"}}\n\
+         {\"type\":\"Decision\",\"data\":{\"slug\":\"b\"}}",
+        LoadMode::Merge,
+    )
+    .await
+    .unwrap();
+    let error = db
+        .apply_schema(ISSUE_721_V2)
+        .await
+        .expect_err("a null remains");
+    assert!(error.to_string().contains("Decision.ref"), "{error}");
+
+    db.load_jsonl(
+        "{\"type\":\"Decision\",\"data\":{\"slug\":\"b\",\"ref\":\"D-1\"}}",
+        LoadMode::Merge,
+    )
+    .await
+    .unwrap();
+    db.apply_schema(ISSUE_721_V2)
+        .await
+        .expect_err("a duplicate remains");
+
+    // The previous schema stays usable: a null is still accepted.
+    db.load_jsonl(
+        r#"{"type":"Decision","data":{"slug":"z"}}"#,
+        LoadMode::Merge,
+    )
+    .await
+    .expect("failed validation leaves the accepted schema in force");
+}
