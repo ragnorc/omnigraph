@@ -3017,6 +3017,12 @@ impl TableStore {
         Ok(!Self::foldable_index_lag(ds).await?.is_empty())
     }
 
+    /// IVF partitions for a column of `rows` non-null vectors: `sqrt(rows)`,
+    /// at most 4096 (Lance's k-means ceiling) and never more than the rows.
+    pub(crate) fn sqrt_vector_partitions(rows: usize) -> usize {
+        ((rows as f64).sqrt().floor() as usize).clamp(1, 4096)
+    }
+
     /// The partition count Lance reports for a vector index, or one when the
     /// statistics do not name it.
     async fn vector_partition_count(ds: &Dataset, name: &str) -> usize {
@@ -5404,8 +5410,14 @@ impl TableStore {
                         .await
                 }
                 IndexBuildSpec::Vector { column } => {
-                    let params =
-                        lance::index::vector::VectorIndexParams::ivf_flat(1, MetricType::L2);
+                    let rows = ds_clone
+                        .count_rows(Some(format!("`{column}` IS NOT NULL")))
+                        .await
+                        .map_err(OmniError::storage)?;
+                    let params = lance::index::vector::VectorIndexParams::ivf_flat(
+                        Self::sqrt_vector_partitions(rows),
+                        MetricType::L2,
+                    );
                     let new_idx = ds_clone
                         .create_index_builder(&[column.as_str()], IndexType::Vector, &params)
                         .replace(true)
