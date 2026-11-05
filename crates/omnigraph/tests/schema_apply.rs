@@ -3922,3 +3922,39 @@ async fn issue_721_promotion_tightens_the_lance_column() {
         "the tightening is one table commit"
     );
 }
+
+// A deleted row keeps its null in the data file. The null check skips deleted
+// rows (as Lance's own `alter_columns` check did before lance#10557), so the
+// promotion succeeds; this test shows what a later schema change then does.
+#[tokio::test]
+#[cfg_attr(feature = "failpoints", serial_test::parallel)]
+async fn issue_721_deleted_null_row_before_promotion() {
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap();
+    let db = helpers::session(Omnigraph::init(uri, ISSUE_721_V1).await.unwrap());
+    db.load_jsonl(
+        "{\"type\":\"Decision\",\"data\":{\"slug\":\"a\",\"ref\":\"D-1\"}}\n\
+         {\"type\":\"Decision\",\"data\":{\"slug\":\"gone\"}}",
+        LoadMode::Merge,
+    )
+    .await
+    .unwrap();
+    mutate_main(
+        &db,
+        "query rm($slug: String) { delete Decision where slug = $slug }",
+        "rm",
+        &params(&[("slug", "gone")]),
+    )
+    .await
+    .unwrap();
+    db.apply_schema(ISSUE_721_V2).await.expect("promotion applies");
+    let v3 = "node Decision {\n    slug: String @key\n    ref: String @unique\n    note: String?\n}\n";
+    db.apply_schema(v3).await.expect("a later column addition applies");
+    db.optimize().await.expect("compaction rewrites the fragment holding the deleted null");
+    db.load_jsonl(
+        r#"{"type":"Decision","data":{"slug":"d","ref":"D-2","note":"n"}}"#,
+        LoadMode::Merge,
+    )
+    .await
+    .expect("a write after the later change succeeds");
+}
