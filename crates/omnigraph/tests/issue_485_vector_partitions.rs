@@ -64,3 +64,37 @@ async fn issue_485_vector_index_is_sized_from_the_table() {
         "{ROWS} vectors were indexed into {partitions} IVF partition(s); a pruning index needs about sqrt(rows) = {target}"
     );
 }
+
+/// A one-partition index (built while the table was small) is re-sized by the
+/// next optimize once the table has grown.
+#[tokio::test(flavor = "multi_thread")]
+async fn issue_485_optimize_resizes_an_undersized_vector_index() {
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap();
+    let schema = "node Doc {\n    slug: String @key\n    embedding: Vector(4) @index\n}\n";
+    let rows = |from: usize, to: usize| {
+        (from..to)
+            .map(|row| {
+                format!(
+                    r#"{{"type":"Doc","data":{{"slug":"n{row:05}","embedding":[{row}.0,{}.0,0.0,1.0]}}}}"#,
+                    row % 97
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+    let db = session(Omnigraph::init(uri, schema).await.unwrap());
+    db.load_jsonl(&rows(0, 50), LoadMode::Overwrite).await.unwrap();
+    db.ensure_indices().await.unwrap();
+    for from in (50..ROWS).step_by(6_000) {
+        db.load_jsonl(&rows(from, (from + 6_000).min(ROWS)), LoadMode::Merge)
+            .await
+            .unwrap();
+    }
+    db.optimize().await.unwrap();
+    let ds = open_pinned_dataset_for_test(&db, "main", "node:Doc").await;
+    let stats = ds.index_statistics("embedding_idx").await.unwrap();
+    let partitions = partitions_of(&stats);
+    eprintln!("ISSUE485 after-optimize rows={ROWS} num_partitions={partitions}");
+    assert!(partitions >= 70, "got {partitions} partitions after optimize");
+}

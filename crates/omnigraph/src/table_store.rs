@@ -3076,7 +3076,26 @@ impl TableStore {
             // A scalar index whose segments together cover every fragment
             // is current. A vector index split into segments (Lance's own
             // fold left deltas, or a partial rebuild) is collapsed into one.
-            if complete && !(vector && segments.len() > 1) {
+            // A vector index built when the table was small keeps its few
+            // partitions forever: flag one whose count is under half the
+            // current sqrt(rows) target so the next optimize re-sizes it.
+            let undersized = if vector && complete && segments.len() == 1 {
+                let rows = ds
+                    .count_rows(Some(format!(
+                        "`{}` IS NOT NULL",
+                        ds.schema()
+                            .field_by_id(segments[0].fields[0])
+                            .map(|f| f.name.clone())
+                            .unwrap_or_default()
+                    )))
+                    .await
+                    .map_err(OmniError::storage)?;
+                Self::vector_partition_count(ds, &name).await * 2
+                    < Self::sqrt_vector_partitions(rows)
+            } else {
+                false
+            };
+            if complete && !(vector && segments.len() > 1) && !undersized {
                 continue;
             }
             lag.push(IndexLag {
@@ -3164,7 +3183,13 @@ impl TableStore {
                 // Keep the index's partition count: the engine builds one
                 // partition, but a partitioned index (Lance's split, or an
                 // explicit build) keeps its shape across folds.
-                let partitions = Self::vector_partition_count(ds, &item.name).await;
+                let rows = ds
+                    .count_rows(Some(format!("`{column}` IS NOT NULL")))
+                    .await
+                    .map_err(OmniError::storage)?;
+                let partitions = Self::vector_partition_count(ds, &item.name)
+                    .await
+                    .max(Self::sqrt_vector_partitions(rows));
                 let params =
                     lance::index::vector::VectorIndexParams::ivf_flat(partitions, MetricType::L2);
                 ds_clone
