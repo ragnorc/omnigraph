@@ -5404,8 +5404,12 @@ impl TableStore {
                         .await
                 }
                 IndexBuildSpec::Vector { column } => {
-                    let params =
-                        lance::index::vector::VectorIndexParams::ivf_flat(1, MetricType::L2);
+                    // No explicit count: Lance sizes the index from the row
+                    // count and the index type's target partition size.
+                    let params = lance::index::vector::VectorIndexParams::with_ivf_flat_params(
+                        MetricType::L2,
+                        lance_index::vector::ivf::IvfBuildParams::default(),
+                    );
                     let new_idx = ds_clone
                         .create_index_builder(&[column.as_str()], IndexType::Vector, &params)
                         .replace(true)
