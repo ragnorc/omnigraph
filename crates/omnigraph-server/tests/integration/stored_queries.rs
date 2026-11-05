@@ -1377,3 +1377,36 @@ graphs:
     assert_eq!(body["row_count"], 1, "body: {body}");
     assert_eq!(body["rows"][0]["conj"], 0, "body: {body}");
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn invoke_stored_query_refuses_misspelled_behavior_keys_issue_528() {
+    let (_temp, app) = app_with_stored_queries(
+        &[
+            ("find_person", FIND_PERSON_GQ, false),
+            (
+                "opt_person",
+                "query opt_person($name: String?) { match { $p: Person { name: $name } } return { $p.name } }",
+                false,
+            ),
+        ],
+        &[("act-invoke", "t-invoke")],
+        INVOKE_POLICY_YAML,
+    )
+    .await;
+    // A misspelled `params` key must not leave `$name` unbound and widen the read.
+    for (query, body) in [
+        ("find_person", json!({ "paramz": { "name": "Alice" } })),
+        ("find_person", json!({ "name": "Alice" })),
+        ("find_person", json!({ "params": { "name": "Alice" }, "branchh": "main" })),
+        // An optional parameter binds null, so the misspelling answers 200 with no rows.
+        ("opt_person", json!({ "paramz": { "name": "Alice" } })),
+    ] {
+        let (status, resp) =
+            json_response(&app, invoke_request(query, "t-invoke", body.clone())).await;
+        assert_eq!(
+            status,
+            StatusCode::BAD_REQUEST,
+            "unknown key in {body} must be refused; got {resp}"
+        );
+    }
+}
