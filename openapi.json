@@ -15006,7 +15006,8 @@
             ],
             "description": "Snapshot id to read from (read queries only — rejected for a stored\nmutation). Mutually exclusive with `branch`."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "KeyConflictOutput": {
         "type": "object",

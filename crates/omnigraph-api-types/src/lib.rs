@@ -1796,6 +1796,7 @@ pub struct ChangeRequest {
 /// named in the path. The query source and name come from the registry,
 /// never the body; only the runtime inputs are supplied here.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 pub struct InvokeStoredQueryRequest {
     /// JSON object whose keys match the stored query's declared parameters.
     #[serde(default)]
