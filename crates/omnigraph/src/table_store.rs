@@ -4838,6 +4838,56 @@ impl TableStore {
         Ok(StagedWrite::new(transaction, Vec::new(), Vec::new()))
     }
 
+    /// #721 prototype: judge the committed rows of `ds` against the
+    /// constraints a schema promotion would add. Returns the first violation:
+    /// a null in a column about to become required, or a key held by two rows
+    /// of a group about to become unique. Reads only the named columns. The
+    /// duplicate check keeps every key in memory (prototype).
+    pub(crate) async fn promotion_violation(
+        ds: &Dataset,
+        required: &[String],
+        unique: &[Vec<String>],
+    ) -> Result<Option<String>> {
+        for column in required {
+            let nulls = ds
+                .count_rows(Some(format!("`{column}` IS NULL")))
+                .await
+                .map_err(OmniError::storage)?;
+            if nulls > 0 {
+                return Ok(Some(format!(
+                    "{nulls} row(s) hold a null in '{column}'; backfill them before making it required"
+                )));
+            }
+        }
+        for group in unique {
+            let mut scanner = ds.scan();
+            scanner.project(group).map_err(OmniError::storage)?;
+            let mut stream = scanner.try_into_stream().await.map_err(OmniError::storage)?;
+            let mut seen = HashSet::<Vec<String>>::new();
+            while let Some(batch) = stream.try_next().await.map_err(OmniError::storage)? {
+                let columns = group
+                    .iter()
+                    .map(|name| {
+                        batch.column_by_name(name).cloned().ok_or_else(|| {
+                            OmniError::manifest_internal(format!("scan lost column '{name}'"))
+                        })
+                    })
+                    .collect::<Result<Vec<_>>>()?;
+                for row in 0..batch.num_rows() {
+                    if let Some(key) = crate::loader::composite_unique_key(&columns, row)? {
+                        if !seen.insert(key.clone()) {
+                            return Ok(Some(format!(
+                                "value {key:?} of ({}) is held by more than one row; make the values distinct before adding @unique",
+                                group.join(", ")
+                            )));
+                        }
+                    }
+                }
+            }
+        }
+        Ok(None)
+    }
+
     /// Plan the metadata-only commits that move a table from its dataset
     /// schema to `target`, the desired physical schema in catalog order, with
     /// `renames` naming each renamed column as `(from, to)`. Reads only the
@@ -4909,7 +4959,8 @@ impl TableStore {
                 .expect("the source column was found above");
             let desired = lance::datatypes::Field::try_from(target_field.as_ref())
                 .map_err(OmniError::lance_internal)?;
-            if existing.data_type() != desired.data_type() || existing.nullable != desired.nullable
+            if existing.data_type() != desired.data_type()
+                || (existing.nullable != desired.nullable && !(existing.nullable && !desired.nullable))
             {
                 return Err(OmniError::manifest_internal(format!(
                     "column '{source}' cannot become '{name}' without a rewrite: {:?} (nullable {}) -> {:?} (nullable {})",

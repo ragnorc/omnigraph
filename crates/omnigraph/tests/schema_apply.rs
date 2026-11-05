@@ -3826,7 +3826,10 @@ async fn issue_721_promotion_refuses_while_a_null_or_duplicate_remains() {
         .apply_schema(ISSUE_721_V2)
         .await
         .expect_err("a null remains");
-    assert!(error.to_string().contains("Decision.ref"), "{error}");
+    assert!(
+        error.to_string().contains("Decision") && error.to_string().contains("'ref'"),
+        "{error}"
+    );
 
     db.load_jsonl(
         "{\"type\":\"Decision\",\"data\":{\"slug\":\"b\",\"ref\":\"D-1\"}}",
@@ -3845,4 +3848,40 @@ async fn issue_721_promotion_refuses_while_a_null_or_duplicate_remains() {
     )
     .await
     .expect("failed validation leaves the accepted schema in force");
+}
+
+#[tokio::test]
+#[cfg_attr(feature = "failpoints", serial_test::parallel)]
+async fn issue_721_promoted_table_still_evolves_and_reopens() {
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap();
+    let db = helpers::session(Omnigraph::init(uri, ISSUE_721_V1).await.unwrap());
+    db.load_jsonl(
+        r#"{"type":"Decision","data":{"slug":"a","ref":"D-1"}}"#,
+        LoadMode::Merge,
+    )
+    .await
+    .unwrap();
+    db.apply_schema(ISSUE_721_V2).await.expect("promotion applies");
+
+    // A later, unrelated change to the same table still plans and applies.
+    let v3 = "node Decision {\n    slug: String @key\n    ref: String @unique\n    note: String?\n}\n";
+    db.apply_schema(v3).await.expect("a later schema change applies");
+
+    // A fresh handle reads the promoted schema and keeps enforcing it.
+    let reopened = helpers::session(Omnigraph::open(uri).await.unwrap());
+    reopened
+        .load_jsonl(
+            r#"{"type":"Decision","data":{"slug":"c","note":"n"}}"#,
+            LoadMode::Merge,
+        )
+        .await
+        .expect_err("a reopened graph still requires ref");
+    reopened
+        .load_jsonl(
+            r#"{"type":"Decision","data":{"slug":"d","ref":"D-9","note":"n"}}"#,
+            LoadMode::Merge,
+        )
+        .await
+        .expect("a complete row loads");
 }
