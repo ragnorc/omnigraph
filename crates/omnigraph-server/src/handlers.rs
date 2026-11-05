@@ -2181,17 +2181,34 @@ pub(crate) struct QueryNamePath {
     pub(crate) query_name: String,
 }
 
+/// Body keys of `InvokeStoredQueryRequest`. Each changes what the call reads or
+/// writes, so an unknown key is refused rather than ignored.
+const INVOKE_BODY_KEYS: [&str; 4] = ["params", "branch", "snapshot", "expect_mutation"];
+
 pub(crate) fn parse_optional_invoke_body(
     body: Bytes,
 ) -> std::result::Result<InvokeStoredQueryRequest, ApiError> {
     if body.is_empty() {
         return Ok(InvokeStoredQueryRequest::default());
     }
-    serde_json::from_slice::<Option<InvokeStoredQueryRequest>>(&body)
+    let invalid =
+        |err: String| ApiError::bad_request(format!("invalid stored-query invocation body: {err}"));
+    let value: serde_json::Value =
+        serde_json::from_slice(&body).map_err(|e| invalid(e.to_string()))?;
+    if let Some(object) = value.as_object() {
+        if let Some(key) = object
+            .keys()
+            .find(|k| !INVOKE_BODY_KEYS.contains(&k.as_str()))
+        {
+            return Err(invalid(format!(
+                "unknown field `{key}`, expected one of {}",
+                INVOKE_BODY_KEYS.join(", ")
+            )));
+        }
+    }
+    serde_json::from_value::<Option<InvokeStoredQueryRequest>>(value)
         .map(|request| request.unwrap_or_default())
-        .map_err(|err| {
-            ApiError::bad_request(format!("invalid stored-query invocation body: {err}"))
-        })
+        .map_err(|e| invalid(e.to_string()))
 }
 
 #[utoipa::path(

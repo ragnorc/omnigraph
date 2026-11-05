@@ -1397,7 +1397,10 @@ async fn invoke_stored_query_refuses_misspelled_behavior_keys_issue_528() {
     for (query, body) in [
         ("find_person", json!({ "paramz": { "name": "Alice" } })),
         ("find_person", json!({ "name": "Alice" })),
-        ("find_person", json!({ "params": { "name": "Alice" }, "branchh": "main" })),
+        (
+            "find_person",
+            json!({ "params": { "name": "Alice" }, "branchh": "main" }),
+        ),
         // An optional parameter binds null, so the misspelling answers 200 with no rows.
         ("opt_person", json!({ "paramz": { "name": "Alice" } })),
     ] {
