@@ -4904,3 +4904,124 @@ query set_since() {
         err
     );
 }
+
+/// Issue 1274: a stored external Blob reference that an `update` does not
+/// assign must be kept as stored, whatever else the mutation writes to the
+/// type. The same row and assignment run alone and beside an unrelated
+/// insert on the same type, under a policy that admits the source (Allow)
+/// and under the default policy (Deny). In every case the update must
+/// succeed, read no payload and leave the cell external with the same URI.
+#[tokio::test]
+async fn update_keeps_unassigned_external_reference_in_every_mutation_shape_issue_1274() {
+    const SCHEMA: &str = r#"
+node Document {
+    title: String @key
+    content: Blob?
+    note: String?
+}
+"#;
+    const MUTATIONS: &str = r#"
+query alone($note: String) {
+    update Document set { note: $note } where title = "doc"
+}
+
+query beside($note: String) {
+    update Document set { note: $note } where title = "doc"
+    insert Document { title: "other", note: $note }
+}
+"#;
+
+    let mut outcomes = Vec::new();
+    for allow_policy in [true, false] {
+        for shape in ["alone", "beside"] {
+            let root = tempfile::tempdir().unwrap();
+            let source_dir = root.path().join("sources");
+            std::fs::create_dir(&source_dir).unwrap();
+            let source = source_dir.join("stored.bin");
+            std::fs::write(&source, b"stored external bytes").unwrap();
+            let source_uri = url::Url::from_file_path(&source).unwrap().to_string();
+            let allow = || {
+                ExternalBlobPolicy::allow(vec![
+                    ExternalBlobBase::new(
+                        url::Url::from_directory_path(&source_dir).unwrap(),
+                        ExternalBlobExecutionScope::EmbeddedOnly,
+                    )
+                    .unwrap(),
+                ])
+                .unwrap()
+            };
+            let uri = root.path().join("graph").to_str().unwrap().to_string();
+            {
+                let seeding = helpers::session(
+                    Omnigraph::init(&uri, SCHEMA)
+                        .await
+                        .unwrap()
+                        .with_external_blob_policy(allow())
+                        .unwrap(),
+                );
+                let row = serde_json::json!({"type": "Document",
+                    "data": {"title": "doc", "content": source_uri, "note": "before"}});
+                seeding
+                    .load_jsonl(&row.to_string(), LoadMode::Overwrite)
+                    .await
+                    .unwrap();
+            }
+            let opened = Omnigraph::open(&uri).await.unwrap();
+            let db = helpers::session(if allow_policy {
+                opened.with_external_blob_policy(allow()).unwrap()
+            } else {
+                opened
+            });
+            let cell = || node_blob_cell("Document", "doc", "content");
+            let probes = omnigraph::instrumentation::MergeWriteProbes::default();
+            let result = omnigraph::instrumentation::with_merge_write_probes(
+                probes.clone(),
+                db.mutate("main", MUTATIONS, shape, &params(&[("$note", "after")])),
+            )
+            .await;
+            let stored = match db.read_blob_at(ReadTarget::branch("main"), cell()).await {
+                Ok(read) => match read.content {
+                    omnigraph::BlobContent::External(reference) if reference.uri == source_uri => {
+                        "external (same uri)".to_string()
+                    }
+                    omnigraph::BlobContent::External(reference) => {
+                        format!("external (uri changed to {})", reference.uri)
+                    }
+                    omnigraph::BlobContent::Managed { length, .. } => {
+                        format!("managed bytes ({length} B)")
+                    }
+                },
+                Err(error) => format!("unreadable: {error}"),
+            };
+            let outcome = match &result {
+                Ok(result) => format!("ok, {} node(s)", result.affected_nodes),
+                Err(OmniError::StoredExternalBlobDenied { property, .. }) => {
+                    format!("StoredExternalBlobDenied on '{property}'")
+                }
+                Err(other) => format!("error: {other}"),
+            };
+            let policy = if allow_policy { "Allow" } else { "Deny" };
+            eprintln!(
+                "issue-1274 policy={policy} shape={shape}: write={outcome}; cell={stored}; \
+                 external probes={}, payload reads={}",
+                probes.external_blob_probe_calls(),
+                probes.external_blob_payload_read_calls(),
+            );
+            outcomes.push((
+                policy,
+                shape,
+                result.is_ok(),
+                stored == "external (same uri)",
+                probes.external_blob_payload_read_calls(),
+            ));
+        }
+    }
+    for (policy, shape, written, kept, payload_reads) in outcomes {
+        assert!(
+            written && kept && payload_reads == 0,
+            "policy={policy} shape={shape}: the update must succeed, keep the stored \
+             external reference and read no payload (written={written}, kept={kept}, \
+             payload reads={payload_reads})"
+        );
+    }
+}

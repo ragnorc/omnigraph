@@ -73,6 +73,158 @@ use crate::dataset_index::{
     is_full_text_index, validate_full_text_demand, validate_full_text_scan,
 };
 use crate::db::manifest::{TableVersionMetadata, open_dataset_entry};
+
+tokio::task_local! {
+    /// PROTOTYPE (issue 1274). Whole-object external Blob URIs that one
+    /// mutation carries unchanged from committed rows (cells the mutation does
+    /// not assign). They were admitted when first stored, so the keyed write
+    /// keeps them as references: no policy check, no payload read, no
+    /// materialization. The keyed write omits a Blob column whose
+    /// every cell is carried or null, so Lance 13's partial-schema merge fills
+    /// it from the target row as stored (lance#9532). A finished design
+    /// would carry this marker on the pending batch instead of a task-local.
+    pub(crate) static CARRIED_EXTERNAL_BLOB_URIS: std::cell::RefCell<HashSet<String>>;
+}
+
+/// PROTOTYPE (issue 1274): the carried URIs of the current mutation, empty
+/// outside one.
+pub(crate) fn carried_external_blob_uris() -> HashSet<String> {
+    CARRIED_EXTERNAL_BLOB_URIS
+        .try_with(|uris| uris.borrow().clone())
+        .unwrap_or_default()
+}
+
+fn carrying_external_blob_references() -> bool {
+    CARRIED_EXTERNAL_BLOB_URIS.try_with(|_| ()).is_ok()
+}
+
+/// One carried Blob column: per row, the whole-object external URI the row
+/// keeps, or `None` when the row goes through ordinary materialization.
+struct CarriedExternalColumn {
+    name: String,
+    uris: Vec<Option<String>>,
+}
+
+/// PROTOTYPE (issue 1274): null every whole-object external cell of a nullable
+/// carried Blob column so materialization neither authorizes nor reads it, and
+/// remember its URI for [`restore_carried_external_references`].
+fn split_carried_external_references(
+    carried: &LanceSchema,
+    descriptors: &RecordBatch,
+) -> Result<(RecordBatch, Vec<CarriedExternalColumn>)> {
+    if !carrying_external_blob_references() {
+        return Ok((descriptors.clone(), Vec::new()));
+    }
+    let schema = descriptors.schema();
+    let mut columns = descriptors.columns().to_vec();
+    let mut carried_columns = Vec::new();
+    for field in carried.fields.iter().filter(|field| field.is_blob() && field.nullable) {
+        let Ok(index) = schema.index_of(&field.name) else {
+            continue;
+        };
+        let Some(descriptions) = columns[index].as_any().downcast_ref::<StructArray>() else {
+            continue;
+        };
+        let decoder = BlobDescriptorDecoder::try_new(descriptions)?;
+        let mut uris = Vec::with_capacity(descriptions.len());
+        let mut validity = Vec::with_capacity(descriptions.len());
+        for row in 0..descriptions.len() {
+            match decoder.classify(row)? {
+                BlobDescriptor::External {
+                    uri,
+                    offset: 0,
+                    length: None,
+                } => {
+                    uris.push(Some(uri));
+                    validity.push(false);
+                }
+                BlobDescriptor::Null => {
+                    uris.push(None);
+                    validity.push(false);
+                }
+                _ => {
+                    uris.push(None);
+                    validity.push(true);
+                }
+            }
+        }
+        if uris.iter().all(Option::is_none) {
+            continue;
+        }
+        let (fields, children, _) = descriptions.clone().into_parts();
+        let nulled = StructArray::try_new(
+            fields,
+            children,
+            Some(datafusion::arrow::buffer::NullBuffer::from(validity)),
+        )
+        .map_err(OmniError::arrow_internal)?;
+        columns[index] = Arc::new(nulled);
+        carried_columns.push(CarriedExternalColumn {
+            name: field.name.clone(),
+            uris,
+        });
+    }
+    if carried_columns.is_empty() {
+        return Ok((descriptors.clone(), Vec::new()));
+    }
+    let batch = RecordBatch::try_new(schema, columns).map_err(OmniError::arrow_internal)?;
+    Ok((batch, carried_columns))
+}
+
+/// PROTOTYPE (issue 1274): put each carried external URI back into the
+/// materialized logical batch as a logical URI input and record it as carried.
+fn restore_carried_external_references(
+    materialized: RecordBatch,
+    carried_columns: &[CarriedExternalColumn],
+) -> Result<RecordBatch> {
+    if carried_columns.is_empty() {
+        return Ok(materialized);
+    }
+    let schema = materialized.schema();
+    let mut columns = materialized.columns().to_vec();
+    for carried in carried_columns {
+        let index = schema
+            .index_of(&carried.name)
+            .map_err(OmniError::arrow_internal)?;
+        let descriptions = columns[index]
+            .as_any()
+            .downcast_ref::<StructArray>()
+            .ok_or_else(|| OmniError::manifest("logical Blob output is not a struct"))?;
+        let input = logical_blob_input(descriptions, &carried.name)?;
+        let mut builder = BlobArrayBuilder::new(descriptions.len());
+        for row in 0..descriptions.len() {
+            if let Some(uri) = &carried.uris[row] {
+                builder
+                    .push_uri(uri.clone())
+                    .map_err(OmniError::lance_internal)?;
+                let _ = CARRIED_EXTERNAL_BLOB_URIS.try_with(|uris| {
+                    uris.borrow_mut().insert(uri.clone());
+                });
+            } else if descriptions.is_null(row) {
+                builder.push_null().map_err(OmniError::lance_internal)?;
+            } else if input.data.is_valid(row) {
+                builder
+                    .push_bytes(input.data.value(row))
+                    .map_err(OmniError::lance_internal)?;
+            } else {
+                builder
+                    .push_uri(input.uris.value(row))
+                    .map_err(OmniError::lance_internal)?;
+            }
+        }
+        columns[index] = builder.finish().map_err(OmniError::lance_internal)?;
+    }
+    RecordBatch::try_new(schema, columns).map_err(OmniError::arrow_internal)
+}
+
+/// PROTOTYPE (issue 1274): the URIs a keyed write must admit and materialize,
+/// leaving out the carried ones.
+fn uncarried_external_blob_uris(batch: &RecordBatch) -> Result<Vec<String>> {
+    let carried = carried_external_blob_uris();
+    let mut uris = collect_external_blob_uris(batch)?;
+    uris.retain(|uri| !carried.contains(uri));
+    Ok(uris)
+}
 use crate::db::{DatasetEntry, Snapshot};
 use crate::error::{OmniError, Result};
 use crate::seams::{decide_seam, skip};
@@ -3593,6 +3745,13 @@ impl TableStore {
                 .await;
         }
 
+        // PROTOTYPE (issue 1274): leave out a Blob column whose cells are all
+        // carried references or nulls the target already holds, so Lance
+        // keeps the stored references (partial-schema merge, lance#9532).
+        let batch = self
+            .omit_carried_blob_columns(&ds, batch, system_columns)
+            .await?;
+
         // MergeInsertBuilder does not expose WriteParams and therefore cannot
         // opt into Lance's `allow_external_blob_outside_bases` reference
         // policy. Materialize URI-bearing source cells under the same byte
@@ -3863,7 +4022,7 @@ impl TableStore {
         system_columns: SystemColumns,
         write_budget: WriteBudget,
     ) -> Result<RecordBatch> {
-        let external_uris = collect_external_blob_uris(&batch)?;
+        let external_uris = uncarried_external_blob_uris(&batch)?;
         let preflight = self.preflight_external_blob_uris(&external_uris).await?;
         self.prepare_keyed_write_batch_with_preflight(
             type_key,
@@ -3873,6 +4032,111 @@ impl TableStore {
             write_budget,
         )
         .await
+    }
+
+    /// PROTOTYPE (issue 1274): drop each Blob column of a keyed upsert batch
+    /// whose every non-null cell is a carried external reference, and whose
+    /// null cells belong to new rows or to rows whose committed cell is null.
+    /// Lance 13's partial-schema `merge_insert` then fills the column from the
+    /// target row (keeping a stored external descriptor unread) and inserts
+    /// null for new rows, which is exactly the batch's intended value.
+    async fn omit_carried_blob_columns(
+        &self,
+        ds: &Dataset,
+        batch: RecordBatch,
+        system_columns: SystemColumns,
+    ) -> Result<RecordBatch> {
+        let carried = carried_external_blob_uris();
+        if carried.is_empty() {
+            return Ok(batch);
+        }
+        let schema = batch.schema();
+        let ids = batch
+            .column_by_name(system_columns.id)
+            .and_then(|column| column.as_any().downcast_ref::<StringArray>())
+            .ok_or_else(|| OmniError::manifest_internal("keyed batch has no string id column"))?;
+        let mut omit = Vec::new();
+        for (index, field) in schema.fields().iter().enumerate() {
+            let lance_field = lance::datatypes::Field::try_from(field.as_ref())
+                .map_err(OmniError::lance_internal)?;
+            if !lance_field.is_blob() {
+                continue;
+            }
+            let descriptions = batch
+                .column(index)
+                .as_any()
+                .downcast_ref::<StructArray>()
+                .ok_or_else(|| OmniError::manifest("logical Blob input is not a struct"))?;
+            let input = logical_blob_input(descriptions, field.name())?;
+            let mut any_carried = false;
+            let mut omittable = true;
+            let mut null_ids = Vec::new();
+            for row in 0..descriptions.len() {
+                if descriptions.is_null(row) {
+                    null_ids.push(ids.value(row).to_string());
+                } else if !input.data.is_valid(row) && carried.contains(input.uris.value(row)) {
+                    any_carried = true;
+                } else {
+                    omittable = false;
+                    break;
+                }
+            }
+            if !omittable || !any_carried {
+                continue;
+            }
+            if !null_ids.is_empty()
+                && Self::any_committed_blob_cell(ds, field.name(), &null_ids, system_columns)
+                    .await?
+            {
+                continue;
+            }
+            omit.push(index);
+        }
+        if omit.is_empty() {
+            return Ok(batch);
+        }
+        let keep = (0..schema.fields().len())
+            .filter(|index| !omit.contains(index))
+            .collect::<Vec<_>>();
+        batch.project(&keep).map_err(OmniError::arrow_internal)
+    }
+
+    /// PROTOTYPE (issue 1274): whether any committed row among `ids` holds a
+    /// non-null cell in Blob column `column` (descriptors only, no payload).
+    async fn any_committed_blob_cell(
+        ds: &Dataset,
+        column: &str,
+        ids: &[String],
+        system_columns: SystemColumns,
+    ) -> Result<bool> {
+        use datafusion::prelude::{col, lit};
+        let filter = col(system_columns.id)
+            .in_list(ids.iter().map(|id| lit(id.clone())).collect(), false);
+        let mut stream = Self::scan_stream_with(
+            ds,
+            Some(&[system_columns.id, column]),
+            None,
+            None,
+            false,
+            |scanner| {
+                scanner.filter_expr(filter);
+                Ok(())
+            },
+        )
+        .await?;
+        while let Some(batch) = stream.try_next().await.map_err(OmniError::storage)? {
+            let descriptions = batch
+                .column_by_name(column)
+                .and_then(|column| column.as_any().downcast_ref::<StructArray>())
+                .ok_or_else(|| OmniError::manifest_internal("expected Blob descriptors"))?;
+            let decoder = BlobDescriptorDecoder::try_new(descriptions)?;
+            for row in 0..descriptions.len() {
+                if !matches!(decoder.classify(row)?, BlobDescriptor::Null) {
+                    return Ok(true);
+                }
+            }
+        }
+        Ok(false)
     }
 
     /// Operation-wide sibling of [`Self::prepare_keyed_write_batch`]. The
@@ -3887,7 +4151,7 @@ impl TableStore {
         write_budget: WriteBudget,
     ) -> Result<RecordBatch> {
         self.validate_keyed_write_batch(table_key, &batch, system_columns)?;
-        let external_uris = collect_external_blob_uris(&batch)?;
+        let external_uris = uncarried_external_blob_uris(&batch)?;
         let external_bytes = preflight.materialized_payload_bytes(&external_uris)?;
         write_budget.check("materialized external blob payload bytes", external_bytes)?;
         let usage = write_batch_bytes(&batch)?;
@@ -5852,11 +6116,13 @@ impl TableStore {
                 .take_rows(&row_ids, carried.clone())
                 .await
                 .map_err(OmniError::storage)?;
+            let (to_materialize, carried_external) =
+                split_carried_external_references(&carried, &descriptors)?;
             let materialized = match self
                 .materialize_blob_batch_with_row_ids(
                     committed_ds,
                     &carried,
-                    descriptors.clone(),
+                    to_materialize,
                     &row_ids,
                     Some(payload_budget),
                     None,
@@ -5889,7 +6155,9 @@ impl TableStore {
                     ));
                 }
                 Err(error) => return Err(error),
-                Ok(materialized) => materialized,
+                Ok(materialized) => {
+                    restore_carried_external_references(materialized, &carried_external)?
+                }
             };
             account.add_batch(&materialized)?;
             committed.push(materialized);
@@ -6787,7 +7055,8 @@ async fn materialize_external_blob_inputs(
     max_payload_bytes: u64,
     preflight: &ExternalBlobPreflight,
 ) -> Result<RecordBatch> {
-    let external_uris = collect_external_blob_uris(&batch)?;
+    let carried = carried_external_blob_uris();
+    let external_uris = uncarried_external_blob_uris(&batch)?;
     let materialized_payload_bytes = preflight.materialized_payload_bytes(&external_uris)?;
     if materialized_payload_bytes > max_payload_bytes {
         return Err(OmniError::resource_limit(
@@ -6822,6 +7091,10 @@ async fn materialize_external_blob_inputs(
             } else if input.data.is_valid(row) {
                 builder
                     .push_bytes(input.data.value(row))
+                    .map_err(OmniError::lance_internal)?;
+            } else if carried.contains(input.uris.value(row)) {
+                builder
+                    .push_uri(input.uris.value(row))
                     .map_err(OmniError::lance_internal)?;
             } else {
                 let uri = input.uris.value(row);

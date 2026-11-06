@@ -962,6 +962,32 @@ impl Session {
         actor_id: Option<&str>,
         expected_head: Option<&str>,
     ) -> Result<crate::MutationReceipt> {
+        // PROTOTYPE (issue 1274): collect the external references this
+        // mutation carries unchanged, so the keyed write keeps them as stored.
+        crate::table_store::CARRIED_EXTERNAL_BLOB_URIS
+            .scope(
+                std::cell::RefCell::new(std::collections::HashSet::new()),
+                self.mutate_as_with_optional_branch_receipt_inner(
+                    branch,
+                    query_source,
+                    query_name,
+                    params,
+                    actor_id,
+                    expected_head,
+                ),
+            )
+            .await
+    }
+
+    async fn mutate_as_with_optional_branch_receipt_inner(
+        &self,
+        branch: Option<&str>,
+        query_source: &str,
+        query_name: &str,
+        params: &ParamMap,
+        actor_id: Option<&str>,
+        expected_head: Option<&str>,
+    ) -> Result<crate::MutationReceipt> {
         let decl = omnigraph_compiler::find_named_query(query_source, query_name)
             .map_err(query_lookup_error)?;
         let (route, branch) = self
