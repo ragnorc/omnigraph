@@ -1054,7 +1054,95 @@ pub(crate) fn ir_expr_to_df_expr(
         return None;
     }
     expr.check_types().ok()?;
-    typed_expr_to_df_expr(expr, params)
+    let lowered = typed_expr_to_df_expr(expr, params)?;
+    Some(split_on_repeated_nullable_columns(lowered, _schema))
+}
+
+/// PROTOTYPE (issue 1277): Lance runs DataFusion's `ExprSimplifier` on every
+/// pushed filter. In DataFusion 54 and 55 its IN-list set rules
+/// (`x IN a AND x IN b`, `x IN a AND NOT x IN b`, `NOT x IN a OR NOT x IN b`)
+/// fold an empty result to a bare `true`/`false` and drop the NULL branch of a
+/// nullable `x` (fixed upstream in apache/datafusion#24258, not yet released).
+/// The rules need two equality or IN-list tests on one column. For each such
+/// nullable column, split the predicate on that column's nullness:
+/// `(x IS NOT NULL AND p) OR (x IS NULL AND p[x := NULL])`. The split is an
+/// identity in three-valued logic; the rewrite's non-null assumption then holds
+/// in the only branch that can select a row, and the NULL branch holds no test
+/// on `x` for the rule to match.
+fn split_on_repeated_nullable_columns(expr: Expr, schema: Option<&Schema>) -> Expr {
+    use datafusion::common::tree_node::{Transformed, TreeNode, TreeNodeRecursion};
+    use datafusion::logical_expr::{BinaryExpr, Operator};
+    use std::collections::BTreeMap;
+
+    let mut tests: BTreeMap<String, (usize, Option<arrow_schema::DataType>)> = BTreeMap::new();
+    let _ = expr.apply(|node| {
+        let tested = match node {
+            Expr::InList(list) => match list.expr.as_ref() {
+                Expr::Column(column) => Some((
+                    column.name.clone(),
+                    list.list.iter().find_map(|item| match item {
+                        Expr::Literal(value, _) => Some(value.data_type()),
+                        _ => None,
+                    }),
+                )),
+                _ => None,
+            },
+            Expr::BinaryExpr(BinaryExpr {
+                left,
+                op: Operator::Eq,
+                right,
+            }) => match (left.as_ref(), right.as_ref()) {
+                (Expr::Column(column), Expr::Literal(value, _))
+                | (Expr::Literal(value, _), Expr::Column(column)) => {
+                    Some((column.name.clone(), Some(value.data_type())))
+                }
+                _ => None,
+            },
+            _ => None,
+        };
+        if let Some((name, data_type)) = tested {
+            let entry = tests.entry(name).or_insert((0, None));
+            entry.0 += 1;
+            if entry.1.is_none() {
+                entry.1 = data_type;
+            }
+        }
+        Ok(TreeNodeRecursion::Continue)
+    });
+
+    let mut expr = expr;
+    for (name, (count, literal_type)) in tests {
+        if count < 2 {
+            continue;
+        }
+        let field = schema.and_then(|schema| schema.field_with_name(&name).ok());
+        if field.is_some_and(|field| !field.is_nullable()) {
+            continue;
+        }
+        let Some(data_type) = field.map(|field| field.data_type().clone()).or(literal_type) else {
+            continue;
+        };
+        let Ok(null) = ScalarValue::try_from(&data_type) else {
+            continue;
+        };
+        let column = datafusion::prelude::ident(&name);
+        let Ok(when_null) = expr.clone().transform(|node| {
+            Ok(match node {
+                Expr::Column(c) if c.name == name => {
+                    Transformed::yes(Expr::Literal(null.clone(), None))
+                }
+                other => Transformed::no(other),
+            })
+        }) else {
+            continue;
+        };
+        expr = column
+            .clone()
+            .is_not_null()
+            .and(expr)
+            .or(column.is_null().and(when_null.data));
+    }
+    expr
 }
 
 fn typed_expr_to_df_expr(expr: &IRExpr, params: &ParamMap) -> Option<datafusion::prelude::Expr> {
