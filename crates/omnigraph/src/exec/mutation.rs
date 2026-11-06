@@ -1572,6 +1572,30 @@ impl Omnigraph {
                     crate::dst_ids::new_ulid().to_string()
                 };
 
+                // #1278: a keyed insert whose key already exists changes only
+                // the properties it names; every other property keeps its value.
+                if node_type.key.is_some() {
+                    let table_key = format!("node:{}", type_name);
+                    let matched = self
+                        .update_matched_rows(
+                            &table_key,
+                            &schema,
+                            datafusion::prelude::col(catalog.system_columns.id)
+                                .eq(datafusion::prelude::lit(id.clone())),
+                            &resolved,
+                            &blob_props,
+                            branch,
+                            staging,
+                            txn,
+                        )
+                        .await?;
+                    if matched > 0 {
+                        return Ok(MutationResult {
+                            affected_nodes: 1,
+                            affected_edges: 0,
+                        });
+                    }
+                }
                 let batch = build_insert_batch(
                     &schema,
                     &id,
@@ -1661,6 +1685,31 @@ impl Omnigraph {
                     crate::dst_ids::new_ulid().to_string()
                 };
 
+                // #1278: as for a node, a keyed edge insert whose key exists
+                // changes only the properties it names.
+                if edge_type.key.is_some() {
+                    let table_key = format!("edge:{}", type_name);
+                    let matched = self
+                        .update_matched_rows(
+                            &table_key,
+                            &schema,
+                            datafusion::prelude::col(catalog.system_columns.id)
+                                .eq(datafusion::prelude::lit(id.clone())),
+                            &resolved,
+                            &blob_props,
+                            branch,
+                            staging,
+                            txn,
+                        )
+                        .await?;
+                    if matched > 0 {
+                        self.invalidate_graph_index().await;
+                        return Ok(MutationResult {
+                            affected_nodes: 0,
+                            affected_edges: 1,
+                        });
+                    }
+                }
                 let batch = build_insert_batch(
                     &schema,
                     &id,
@@ -1749,7 +1798,44 @@ impl Omnigraph {
         // property is refused even when the predicate matches no row.
         let resolved = resolve_assignments(type_name, &schema, assignments, params)?;
         let blob_props = node_type.blob_properties.clone();
-        preflight_blob_assignments(&resolved, &blob_props, 1, staging.write_budget())?;
+        let table_key = format!("node:{}", type_name);
+        let affected_count = self
+            .update_matched_rows(
+                &table_key,
+                &schema,
+                pred_expr,
+                &resolved,
+                &blob_props,
+                branch,
+                staging,
+                txn,
+            )
+            .await?;
+        Ok(MutationResult {
+            affected_nodes: affected_count,
+            affected_edges: 0,
+        })
+    }
+
+    /// Rewrite every row `pred_expr` matches (committed rows, and rows staged
+    /// earlier in this mutation) with `resolved` assigned and every other
+    /// property carried, and stage the rewritten rows as upserts. Shared by
+    /// `update` and by a keyed `insert` whose key already exists (#1278): an
+    /// insert changes only the properties it names.
+    #[allow(clippy::too_many_arguments)]
+    async fn update_matched_rows(
+        &self,
+        table_key: &str,
+        schema: &SchemaRef,
+        pred_expr: Expr,
+        resolved: &HashMap<String, Literal>,
+        blob_props: &HashSet<String>,
+        branch: Option<&str>,
+        staging: &mut MutationStaging,
+        txn: &crate::db::WriteTxn,
+    ) -> Result<usize> {
+        let catalog = &txn.catalog;
+        preflight_blob_assignments(resolved, blob_props, 1, staging.write_budget())?;
         // Catalog order is kept: `concat_match_batches_to_schema` binds by position.
         let assigned_blobs = schema
             .fields()
@@ -1776,12 +1862,11 @@ impl Omnigraph {
             )
         };
 
-        let table_key = format!("node:{}", type_name);
         let (handle, _full_path, _table_branch) = open_table_for_mutation(
             self,
             staging,
             branch,
-            &table_key,
+            table_key,
             crate::db::MutationOpKind::Update,
             Some(txn),
         )
@@ -1795,12 +1880,12 @@ impl Omnigraph {
         // this query). The pending side may include rows from earlier
         // `insert` / `update` ops on the same table.
         let scan_budget = PendingScanBudget::new(
-            &table_key,
-            staging.pending_resource_usage(&table_key)?,
+            table_key,
+            staging.pending_resource_usage(table_key)?,
             staging.write_budget(),
         );
-        let pending_batches = staging.pending_batches(&table_key);
-        let pending_schema = staging.pending_schema(&table_key);
+        let pending_batches = staging.pending_batches(table_key);
+        let pending_schema = staging.pending_schema(table_key);
         // Use merge semantics on the union: a committed row whose `id`
         // also appears in pending has been logically updated by an
         // earlier op in this query and is shadowed from the scan,
@@ -1840,10 +1925,7 @@ impl Omnigraph {
         };
 
         if batches.is_empty() || batches.iter().all(|b| b.num_rows() == 0) {
-            return Ok(MutationResult {
-                affected_nodes: 0,
-                affected_edges: 0,
-            });
+            return Ok(0);
         }
 
         let matched = concat_match_batches_to_schema(&scan_schema, batches)?;
@@ -1851,10 +1933,10 @@ impl Omnigraph {
         let affected_count = matched.num_rows();
 
         let updated = apply_assignments(
-            &schema,
+            schema,
             &matched,
-            &resolved,
-            &blob_props,
+            resolved,
+            blob_props,
             staging.write_budget(),
         )?;
         // Validation (value/enum/unique) runs end-of-query via the evaluator.
@@ -1865,12 +1947,9 @@ impl Omnigraph {
         // dedupes by id (last-occurrence wins) before issuing the single
         // `stage_keyed_write` call at end-of-query.
         let updated_schema = updated.schema();
-        staging.append_batch(&table_key, updated_schema, PendingMode::Upsert, updated)?;
+        staging.append_batch(table_key, updated_schema, PendingMode::Upsert, updated)?;
 
-        Ok(MutationResult {
-            affected_nodes: affected_count,
-            affected_edges: 0,
-        })
+        Ok(affected_count)
     }
 
     async fn execute_delete(
