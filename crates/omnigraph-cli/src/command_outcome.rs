@@ -407,7 +407,6 @@ impl Failure {
             action,
         });
         let exit = exit_for(&disposition, conditional);
-        let mut output = output;
         output.disposition = Some(disposition);
         Self {
             output,
