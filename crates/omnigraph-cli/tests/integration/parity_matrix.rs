@@ -1560,6 +1560,87 @@ fn parity_errors_share_exit_codes() {
     );
 }
 
+/// A refused request is a fault in the request on both arms: each arm answers
+/// a code, `effects: none` with `action: fix` and exit 1, and the embedded arm
+/// answers what the served arm answers, so an agent that follows
+/// `disposition.action` fixes the request instead of re-reading the graph and
+/// resending it. A parse error the CLI meets before the engine (issue 1281)
+/// is the case that diverged.
+#[test]
+fn parity_refusals_share_code_and_disposition_issue_1281() {
+    let p = parity();
+    let query = fixture("test.gq");
+    let query = query.to_str().unwrap();
+    let cases: &[(&str, &[&str])] = &[
+        (
+            "query parse error",
+            &[
+                "query",
+                "-e",
+                "query q() { match { $p: Person  $p.age < -1 } return { $p.name } }",
+                "--json",
+            ],
+        ),
+        (
+            "mutate parse error",
+            &[
+                "mutate",
+                "-e",
+                "query m() { insert Person { name: } }",
+                "--json",
+            ],
+        ),
+        (
+            "query type error",
+            &[
+                "query",
+                "-e",
+                "query q() { match { $p: Person  $p.nope = 1 } return { $p.name } }",
+                "--json",
+            ],
+        ),
+        (
+            "unknown query name",
+            &["query", "--query", query, "no_such_query", "--json"],
+        ),
+        (
+            "unbound required param",
+            &["query", "--query", query, "get_person", "--json"],
+        ),
+        (
+            "control write at the read door",
+            &["query", "-e", "branch create parity_refused", "--json"],
+        ),
+    ];
+    let mut diverged = Vec::new();
+    for (case, args) in cases {
+        let (l, r) = p.run(args);
+        let (local, remote) = (parse_stdout_json(&l), parse_stdout_json(&r));
+        let observed = |arm: &serde_json::Value, out: &std::process::Output| {
+            serde_json::json!({
+                "code": arm["code"],
+                "disposition": arm["disposition"],
+                "exit": out.status.code(),
+            })
+        };
+        let (local, remote) = (observed(&local, &l), observed(&remote, &r));
+        // Each case is a fault in the request: retrying it unchanged fails.
+        let fixable = |arm: &serde_json::Value| {
+            arm["disposition"] == serde_json::json!({"effects": "none", "action": "fix"})
+                && arm["code"].is_string()
+                && arm["exit"] == 1
+        };
+        if local != remote || !fixable(&local) || !fixable(&remote) {
+            diverged.push(format!("{case}: local {local} remote {remote}"));
+        }
+    }
+    assert!(
+        diverged.is_empty(),
+        "refusals are not coded request faults on both arms:\n{}",
+        diverged.join("\n")
+    );
+}
+
 // ---- documented exclusions (not bugs; the Phase 4 capability table) ----
 //
 // - `graphs list`: server-only today; becomes Both-capability when the
