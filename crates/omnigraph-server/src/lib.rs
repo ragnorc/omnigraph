@@ -2056,6 +2056,14 @@ pub fn engine_error_output_after(error: OmniError, after_write: bool) -> api::Er
     .into_judged_output()
 }
 
+/// The error body a server answers for a query source the compiler refuses:
+/// `bad_request` with the compiler's diagnostic. An embedded caller that
+/// parses the source itself reports the same refusal through this one
+/// projection.
+pub fn compiler_error_output(error: &omnigraph_compiler::error::CompilerError) -> api::ErrorOutput {
+    ApiError::from_compiler(error).into_judged_output()
+}
+
 /// The error body of an embedded read's engine failure: a read writes
 /// nothing, so it did not start and keeps its own code.
 pub fn engine_read_error_output(error: OmniError) -> api::ErrorOutput {

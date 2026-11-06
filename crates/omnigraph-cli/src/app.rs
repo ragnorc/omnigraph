@@ -391,14 +391,12 @@ pub(crate) fn error_output_of(error: &color_eyre::Report) -> Option<ErrorOutput>
         output.code = Some(refusal.code);
         return Some(output);
     }
-    let diagnostic = if let Some(engine) = error.downcast_ref::<omnigraph::error::OmniError>() {
-        engine.diagnostic()
-    } else if let Some(compiler) = error.downcast_ref::<omnigraph_compiler::error::CompilerError>()
-    {
-        compiler.diagnostic()
-    } else {
-        None
-    }?;
+    if let Some(compiler) = error.downcast_ref::<omnigraph_compiler::error::CompilerError>() {
+        return Some(omnigraph_server::compiler_error_output(compiler));
+    }
+    let diagnostic = error
+        .downcast_ref::<omnigraph::error::OmniError>()
+        .and_then(|engine| engine.diagnostic())?;
     let mut output = ErrorOutput::message(error.to_string());
     output.diagnostic = Some(omnigraph_api_types::DiagnosticOutput::from(diagnostic));
     Some(output)

@@ -1668,9 +1668,12 @@ fn a_query_without_its_parameter_list_reports_q002_in_every_output_format() {
     assert_eq!(json["diagnostic"]["position"]["line"], 1);
     assert_eq!(json["diagnostic"]["position"]["column"], 11);
     assert_eq!(json["diagnostic"]["suggestion"], suggestion);
-    assert!(
-        json.get("code").is_none(),
-        "an embedded refusal has no HTTP code: {json}"
+    // The embedded refusal carries the code a server answers, so its
+    // disposition follows that code: fix the source (issue 1281).
+    assert_eq!(json["code"], "bad_request", "{json}");
+    assert_eq!(
+        json["disposition"],
+        serde_json::json!({"effects": "none", "action": "fix"})
     );
 
     let jsonl = output_failure(
