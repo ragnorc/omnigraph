@@ -144,3 +144,10 @@ opt-level = 2
 lto = "thin"
 codegen-units = 16
 strip = true
+
+# PROTOTYPE (issue 1277): datafusion-optimizer 54.0.0 with a minimal backport of
+# apache/datafusion#24258, so the IN-list set rules keep the NULL branch of a
+# nullable column. Lance 13 runs this simplifier on every pushed filter.
+# Remove once the pins move to a DataFusion release that contains #24258.
+[patch.crates-io]
+datafusion-optimizer = { path = "vendor/datafusion-optimizer" }
