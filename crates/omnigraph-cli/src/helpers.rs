@@ -586,7 +586,9 @@ pub(crate) fn select_named_query(
     } else if queries.is_empty() {
         return Err(bad_request(query_file_refusals::NO_QUERY));
     } else {
-        return Err(bad_request("query file contains multiple queries; pass --name"));
+        return Err(bad_request(
+            "query file contains multiple queries; pass --name",
+        ));
     };
 
     Ok((query.name, query.params))
