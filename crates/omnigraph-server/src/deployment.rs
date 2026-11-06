@@ -563,6 +563,27 @@ async fn execute(
             }
         }
     }
+    // Refuse what plan refuses before pausing healthy graphs. Plan observes
+    // the live handles without closing admission. Apply still repeats every
+    // check under the schema gate after drainage, which stays authoritative
+    // for a branch created after this observation.
+    let observed: BTreeMap<_, _> = state
+        .routing
+        .registry
+        .list()
+        .into_iter()
+        .map(|view| (view.key.graph_id.to_string(), Arc::clone(&view.engine)))
+        .collect();
+    if let Ok(plan) =
+        omnigraph_cluster::plan_captured_deployment(&request.deployment, &owner, &caller, &observed)
+            .await
+        && let Some(error) = plan
+            .diagnostics
+            .into_iter()
+            .find(|diagnostic| diagnostic.code == "schema_preflight_failed")
+    {
+        return Err(refusal(error).proven_unpublished());
+    }
     let transition = state
         .routing
         .registry
@@ -873,7 +894,7 @@ fn abort_before_effects(
     refusal: ApiError,
 ) -> ApiError {
     match transition.abort_before_effects() {
-        Ok(_) => refusal,
+        Ok(_) => refusal.proven_unpublished(),
         Err(_) if state.operations.snapshot().closed => ApiError::admission_closed(),
         Err(error) => uncertain(format!(
             "pre-effect refusal could not restore coherent serving: {error}"

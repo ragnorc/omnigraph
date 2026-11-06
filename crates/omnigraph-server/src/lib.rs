@@ -1153,6 +1153,14 @@ impl ApiError {
         }
     }
 
+    /// Mark a refusal the server proved took no effect: a deployment refused
+    /// before its first effect, with its serving transition restored, or
+    /// before any transition opened. Its disposition reports `none`.
+    pub(crate) fn proven_unpublished(mut self) -> Self {
+        self.unpublished = true;
+        self
+    }
+
     fn with_details(mut self, details: ApiErrorDetails) -> Self {
         self.details = Some(Box::new(details));
         self
