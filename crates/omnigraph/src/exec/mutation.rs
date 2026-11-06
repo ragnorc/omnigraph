@@ -449,6 +449,35 @@ fn build_insert_batch(
     RecordBatch::try_new(schema.clone(), columns).map_err(OmniError::arrow_internal)
 }
 
+/// #1278 prototype: a keyed insert names the properties it changes. Keep the
+/// system columns and the assigned properties, in catalog order, so Lance's
+/// partial-schema merge-insert keeps every other column of an existing row
+/// and fills it with null on a new one.
+fn project_insert_to_supplied(
+    batch: RecordBatch,
+    assignments: &HashMap<String, Literal>,
+    system_columns: SystemColumns,
+) -> Result<RecordBatch> {
+    let schema = batch.schema();
+    let indices = schema
+        .fields()
+        .iter()
+        .enumerate()
+        .filter(|(_, field)| {
+            let name = field.name().as_str();
+            name == system_columns.id
+                || name == system_columns.src
+                || name == system_columns.dst
+                || assignments.contains_key(name)
+        })
+        .map(|(index, _)| index)
+        .collect::<Vec<_>>();
+    if indices.len() == schema.fields().len() {
+        return Ok(batch);
+    }
+    batch.project(&indices).map_err(OmniError::arrow_internal)
+}
+
 /// The mutation `where` as the typed DataFusion expression Lance evaluates,
 /// through the lowering a read scan uses; the compiler already put every
 /// property leaf on its physical column, and `schema` types the literals.
@@ -1581,6 +1610,12 @@ impl Omnigraph {
                     staging.write_budget(),
                 )?;
                 let has_key = node_type.key.is_some();
+                let batch = if has_key {
+                    project_insert_to_supplied(batch, &resolved, catalog.system_columns)?
+                } else {
+                    batch
+                };
+                let schema = batch.schema();
                 let table_key = format!("node:{}", type_name);
                 let insert_kind = if has_key {
                     crate::db::MutationOpKind::Merge
@@ -1670,6 +1705,12 @@ impl Omnigraph {
                     staging.write_budget(),
                 )?;
                 let has_key = edge_type.key.is_some();
+                let batch = if has_key {
+                    project_insert_to_supplied(batch, &resolved, catalog.system_columns)?
+                } else {
+                    batch
+                };
+                let schema = batch.schema();
                 let table_key = format!("edge:{}", type_name);
                 let insert_kind = if has_key {
                     crate::db::MutationOpKind::Merge

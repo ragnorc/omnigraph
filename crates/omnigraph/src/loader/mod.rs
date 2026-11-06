@@ -1079,6 +1079,11 @@ async fn load_jsonl_reader_once<R: BufRead>(
             catalog.system_columns,
             write_budget,
         )?;
+        let batch = if mode == LoadMode::Merge {
+            project_merge_batch_to_supplied(&type_name, batch, &rows, &[catalog.system_columns.id])?
+        } else {
+            batch
+        };
         if bounded_keyed_input {
             prepared_keyed_bytes = retain_keyed_batch(prepared_keyed_bytes, &batch, write_budget)?;
         }
@@ -1098,6 +1103,11 @@ async fn load_jsonl_reader_once<R: BufRead>(
             .dataset(&table_key)
             .ok_or_else(|| OmniError::manifest(missing_graph_type_at_snapshot(&table_key)))?;
         let batch = normalize_strict_json_rows(&catalog, &table_key, &rows, write_budget)?;
+        let batch = if mode == LoadMode::Merge {
+            project_merge_batch_to_supplied(&type_name, batch, &rows, &[catalog.system_columns.id])?
+        } else {
+            batch
+        };
         if bounded_keyed_input {
             prepared_keyed_bytes = retain_keyed_batch(prepared_keyed_bytes, &batch, write_budget)?;
         }
@@ -1169,6 +1179,23 @@ async fn load_jsonl_reader_once<R: BufRead>(
             catalog.system_columns,
             write_budget,
         )?;
+        let batch = if mode == LoadMode::Merge {
+            project_merge_batch_to_supplied(
+                &edge_name,
+                batch,
+                &rows
+                    .iter()
+                    .map(|(_, _, data)| data.clone())
+                    .collect::<Vec<_>>(),
+                &[
+                    catalog.system_columns.id,
+                    catalog.system_columns.src,
+                    catalog.system_columns.dst,
+                ],
+            )?
+        } else {
+            batch
+        };
         if bounded_keyed_input {
             prepared_keyed_bytes = retain_keyed_batch(prepared_keyed_bytes, &batch, write_budget)?;
         }
@@ -1188,6 +1215,20 @@ async fn load_jsonl_reader_once<R: BufRead>(
             .dataset(&table_key)
             .ok_or_else(|| OmniError::manifest(missing_graph_type_at_snapshot(&table_key)))?;
         let batch = normalize_strict_json_rows(&catalog, &table_key, &rows, write_budget)?;
+        let batch = if mode == LoadMode::Merge {
+            project_merge_batch_to_supplied(
+                &edge_name,
+                batch,
+                &rows,
+                &[
+                    catalog.system_columns.id,
+                    catalog.system_columns.src,
+                    catalog.system_columns.dst,
+                ],
+            )?
+        } else {
+            batch
+        };
         if bounded_keyed_input {
             prepared_keyed_bytes = retain_keyed_batch(prepared_keyed_bytes, &batch, write_budget)?;
         }
@@ -2257,6 +2298,50 @@ impl TypedNodeIdRemap {
             .and_then(|by_old_id| by_old_id.get(old_id))
             .map(String::as_str)
     }
+}
+
+/// #1278 prototype: a `merge` record names the properties it changes. Keep
+/// the system columns and the properties the rows supply, in catalog order,
+/// so Lance's partial-schema merge-insert keeps every omitted column of a
+/// matched row (a Blob and a vector included) and fills it with null on an
+/// inserted row. One merge-insert takes one source schema, so every row of a
+/// type must supply the same property set; a mixed batch is refused.
+fn project_merge_batch_to_supplied(
+    type_name: &str,
+    batch: RecordBatch,
+    rows: &[JsonValue],
+    system_columns: &[&str],
+) -> Result<RecordBatch> {
+    let supplied = |row: &JsonValue| -> std::collections::BTreeSet<String> {
+        row.as_object()
+            .map(|object| object.keys().cloned().collect())
+            .unwrap_or_default()
+    };
+    let Some(first) = rows.first() else {
+        return Ok(batch);
+    };
+    let names = supplied(first);
+    if let Some(other) = rows.iter().find(|row| supplied(row) != names) {
+        let other = supplied(other);
+        return Err(OmniError::manifest(format!(
+            "merge load of '{type_name}': every record of a type must name the same \
+             properties (prototype limit); found {names:?} and {other:?}"
+        )));
+    }
+    let schema = batch.schema();
+    let indices = schema
+        .fields()
+        .iter()
+        .enumerate()
+        .filter(|(_, field)| {
+            system_columns.contains(&field.name().as_str()) || names.contains(field.name())
+        })
+        .map(|(index, _)| index)
+        .collect::<Vec<_>>();
+    if indices.len() == schema.fields().len() {
+        return Ok(batch);
+    }
+    batch.project(&indices).map_err(OmniError::arrow_internal)
 }
 
 fn build_node_batch(
