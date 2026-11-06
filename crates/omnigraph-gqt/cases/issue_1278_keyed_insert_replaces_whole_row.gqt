@@ -1,4 +1,5 @@
 # issue: 1278
+# red_on: none; guard case pinning the whole-row replacement contract that main 4ebbf719 already has
 # notes: A keyed insert replaces the whole matched row: a property it does not name becomes
 # notes: null, on a node and on a keyed edge, for a committed row and for a row inserted
 # notes: earlier in the same mutation. An update changes only the properties it assigns.
