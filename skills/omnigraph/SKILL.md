@@ -60,7 +60,7 @@ See [traversal](../../docs/user/queries/traversal.md) and
 1. **Lint before commit** — `omnigraph lint --schema schema.pg --query queries/foo.gq` validates both sides against each other. No running repo required.
 2. **Plan before apply** — never run `schema apply` without a successful `schema plan` first. Apply is destructive; plan is free. (Cluster mode has the same rule with different verbs: `cluster plan` before `cluster apply` — the plan embeds the engine's real migration steps.)
 3. **Branches are for data; apply is for schema** — review bulk data loads on a feature branch then merge. Schema changes go straight to `main`: in cluster mode edit the `.pg` and run `cluster apply` (a server target deploys without restart; a direct root target requires stopped serving; a direct `schema apply` **refuses** a cluster-managed graph); for the managed service commit, `cluster push --target managed`, `cluster plan --target managed --rev <rev>`, then `cluster apply --target managed --plan <preview-id>`; `schema plan`/`apply` is for a non-cluster store.
-4. **Pick the right write command** — `mutate` for edits (typechecked, parameterized); `load` for bulk JSONL, local **or** remote, with a **required** `--mode` (`merge` upsert · `append` strict-insert · `overwrite` replaces only the node/edge types represented in the batch). `load --from <base>` forks a review branch in one shot; bare `load` needs an existing target branch.
+4. **Pick the right write command** — `mutate` for edits (typechecked, parameterized); `load` for bulk JSONL, local **or** remote, with a **required** `--mode` (`merge` upsert of whole records · `append` strict-insert · `overwrite` replaces only the node/edge types represented in the batch). `load --from <base>` forks a review branch in one shot; bare `load` needs an existing target branch.
 5. **Parameterize everything** — never string-interpolate values into `.gq` bodies or `--params`. Declare `$var: Type` and pass via `--params`.
 6. **Expose agent reads as aliases** — aliases decouple a read operation name
    from its stored-query implementation. Aliases are read-only; invoke a served
@@ -115,7 +115,7 @@ query remove($slug: String)              { delete Signal where slug = $slug }
   execution still requires the vector. Supply it explicitly; writes never
   embed automatically.
 - A single mutation is insert/update-only **or** delete-only — never both (D₂ rule, refused at execution before any effect; `lint` does not catch it); split them.
-- Edge inserts give logical `from`/`to` endpoint IDs; a propertyless edge needs only those, and there is no nested `data` block in GQ. An unkeyed edge insert is strict (inserting twice creates two edges). An edge type may declare `@key(@src, @dst[, prop…])` in its body when created; inserts then upsert by the derived id, and identical inserts on two branches converge on merge. Edges cannot be `update`d (T16).
+- Edge inserts give logical `from`/`to` endpoint IDs; a propertyless edge needs only those, and there is no nested `data` block in GQ. An unkeyed edge insert is strict (inserting twice creates two edges). An edge type may declare `@key(@src, @dst[, prop…])` in its body when created; inserts then upsert by the derived id and replace the whole edge, and identical inserts on two branches converge on merge. Edges cannot be `update`d (T16).
 
 ### Bulk load (JSONL)
 
@@ -129,7 +129,7 @@ omnigraph load --data seed.jsonl --mode merge --target $GRAPH                   
 omnigraph load --data delta.jsonl --from main --branch review --mode merge --target $GRAPH     # fork a review branch in one shot
 ```
 
-- `--mode`: `merge` (upsert by logical entity ID; keyed node and keyed edge IDs derive from their `@key` tuple — re-running a merge file duplicates unkeyed edges) · `append` (fails on ID collision) · `overwrite` (destructive, staged). `--from <base>` forks a missing `--branch`; bare `load` needs an existing branch. Works local **and** remote.
+- `--mode`: `merge` (upsert by logical entity ID; a matched row is replaced whole, so an omitted property, Blob or vector becomes null; keyed node and keyed edge IDs derive from their `@key` tuple — re-running a merge file duplicates unkeyed edges) · `append` (fails on ID collision) · `overwrite` (destructive, staged). `--from <base>` forks a missing `--branch`; bare `load` needs an existing branch. Works local **and** remote.
 - **Date values**: use a calendar-day string (`YYYY-MM-DD`) for `Date` and an ISO timestamp to the millisecond for `DateTime` (`.123` or `.123000`; `.123456` is refused), in both `mutate --params` and JSONL. `load` also accepts integer epoch days for `Date`.
 - **CSV** is a GQ statement, not an `omnigraph load` format (`load` reads JSONL only): `omnigraph mutate --target $GRAPH -e 'load csv "s3://imports/person.csv" into node:Person mode append header'`, with `mode` required, optional `delimiter "|"`, and `columns (a, b)` when there is no `header`. The source must lie under the graph's external Blob policy base (a direct run admits its own `file://` directory; a served run refuses `file://`) and within `load_source_max_bytes` (32 MiB default). See [CSV loading](../../docs/user/mutations/index.md#csv-loading).
 

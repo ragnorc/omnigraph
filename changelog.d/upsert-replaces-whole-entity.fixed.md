@@ -1,0 +1,1 @@
+- The guides and the agent skill now say that a `merge` load and a keyed `insert` replace the whole matched entity: a property the record or the insert omits becomes null, a Blob payload and a vector included. Use `update` to change some properties and keep the others.

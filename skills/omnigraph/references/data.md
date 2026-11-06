@@ -20,7 +20,7 @@ edits.
 | Task | Command | Why |
 |------|---------|-----|
 | Add/update a single entity | `mutate` with a named mutation | typechecked, parameterized, auditable |
-| Bulk upsert by logical entity ID | `load --mode merge` | preserves rows not in the file; keyed node and edge IDs derive from `@key` |
+| Bulk upsert of complete records by logical entity ID | `load --mode merge` | preserves rows not in the file; replaces each matched row whole; keyed node and edge IDs derive from `@key` |
 | Additive-only bulk | `load --mode append` | fails on key collision |
 | Replace complete batches by type | `load --mode overwrite` | **destructive for represented types**; absent types remain |
 | Bulk load onto a fresh review branch | `load --from main --mode merge --branch <name>` | forks `<name>` from `main`, loads onto it, leaves it for review |
@@ -126,9 +126,12 @@ one-shot review-branch flow below). Without `--from`, the target `--branch`
   edge type present in the batch; types absent from the batch stay unchanged.
   The loader validates constraints and referential integrity before publication.
   Use a review branch for an established graph.
-- **`merge`** (upsert) — inserts or updates each row by logical entity `id`
-  (derived from the typed `@key` tuple for keyed nodes and keyed edges). Rows
-  not in the file are preserved. The safe default for incremental bulk updates.
+- **`merge`** (upsert) — inserts each new row and replaces each existing row
+  by logical entity `id` (derived from the typed `@key` tuple for keyed nodes
+  and keyed edges). Rows not in the file are preserved. A matched row is
+  replaced whole: a property the record omits becomes null, a Blob payload and
+  a vector included. Send complete records; to change some properties and keep
+  the rest, use a `.gq` `update`.
   An unkeyed edge without a supplied `id` never matches an existing row, so
   re-running the same merge file duplicates it; declare `@key(@src, @dst)` when
   creating the edge type if repeated loads must converge.

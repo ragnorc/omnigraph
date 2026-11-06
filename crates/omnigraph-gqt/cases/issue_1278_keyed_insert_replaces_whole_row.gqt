@@ -1,0 +1,98 @@
+# issue: 1278
+# notes: A keyed insert replaces the whole matched row: a property it does not name becomes
+# notes: null, on a node and on a keyed edge, for a committed row and for a row inserted
+# notes: earlier in the same mutation. An update changes only the properties it assigns.
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+    slug: String @key
+    title: String
+    n: I64?
+    emb: Vector(2)?
+}
+
+edge Cites: Doc -> Doc {
+    weight: I64?
+    note: String?
+    @key(@src, @dst)
+}
+
+--- seed
+{"type":"Doc","data":{"slug":"d1","title":"old","n":7,"emb":[1.0,2.0]}}
+{"type":"Doc","data":{"slug":"d2","title":"two","n":8}}
+{"edge":"Cites","from":"d1","to":"d2","data":{"weight":3,"note":"seed"}}
+
+--- mutate
+query retitle() {
+    insert Doc { slug: "d1", title: "new" }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate
+query reweigh() {
+    insert Cites { from: "d1", to: "d2", weight: 4 }
+}
+
+--- expect affected: nodes=0 edges=1
+
+--- mutate
+query insert_then_retitle() {
+    insert Doc { slug: "d3", title: "first", n: 9 }
+    insert Doc { slug: "d3", title: "second" }
+}
+
+--- expect affected: nodes=2 edges=0
+
+--- mutate
+query new_key() {
+    insert Doc { slug: "d4", title: "fresh" }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate
+query update_keeps_unassigned() {
+    update Doc set { title: "two again" } where slug = "d2"
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- query
+query docs() {
+    match { $d: Doc }
+    return { $d.slug, $d.title, $d.n, $d.emb }
+}
+
+--- expect unordered
+{"d.slug": "d1", "d.title": "new"}
+{"d.slug": "d2", "d.title": "two again", "d.n": 8}
+{"d.slug": "d3", "d.title": "second"}
+{"d.slug": "d4", "d.title": "fresh"}
+
+--- expect shape
+d.slug: String
+d.title: String
+d.n: I64?
+d.emb: Vector(2)?
+
+--- query
+query cites() {
+    match { $a: Doc $a $c:cites $b }
+    return { $a.slug, $b.slug, $c.weight, $c.note }
+}
+
+--- expect unordered
+{"a.slug": "d1", "b.slug": "d2", "c.weight": 4}
+
+--- expect shape
+a.slug: String
+b.slug: String
+c.weight: I64?
+c.note: String?

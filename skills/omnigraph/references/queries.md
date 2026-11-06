@@ -440,9 +440,11 @@ query add_and_link($slug: String, $pattern: String, $createdAt: DateTime, $updat
 ```
 
 There is no `upsert` keyword: `insert` on a node or edge with `@key` upserts
-the derived identity. Without a key, `insert` is strict; inserting an unkeyed
+the derived identity and replaces the whole matched row: every property the
+insert does not name becomes null, a Blob payload and a vector included. Use
+`update` to change some properties of a node and keep the rest. Without a key, `insert` is strict; inserting an unkeyed
 edge twice creates two edges. Use `load --mode merge` for bulk upsert. Edge
-`update` is unsupported; reinsert a keyed edge to change non-key properties,
+`update` is unsupported; reinsert a keyed edge with all of its properties to change them,
 or delete and reinsert an unkeyed edge.
 
 > **Insert/update-only OR delete-only (the D₂ rule).** A single mutation query may contain inserts and updates, **or** deletes — never both. Mixing a `delete` with an `insert`/`update` in the same query is refused when the mutation executes, before any effect — `lint` does not catch it. The split is deliberate: one mutation query is constructive XOR destructive. Split a delete-then-insert into two separate mutations.
