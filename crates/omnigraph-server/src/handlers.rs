@@ -551,6 +551,7 @@ pub(crate) fn resolve_registered_graph(
         .routing()
         .registry
         .capture_with_policy(&state.operations, key)?;
+    let transitioning = matches!(captured, RegistryCapture::Transitioning(_));
     let (policy, invalid_policy, message) = match captured {
         RegistryCapture::Loading(graph) => (
             graph.policy.clone(),
@@ -605,7 +606,14 @@ pub(crate) fn resolve_registered_graph(
     if !listable {
         return Err(ApiError::not_found("graph not found"));
     }
-    Err(ApiError::new(ErrorCode::GraphUnavailable, message))
+    let error = ApiError::new(ErrorCode::GraphUnavailable, message);
+    // A serving transition drains for at most its deadline and usually ends
+    // in under a second; the constant 60 s hint would idle every client.
+    Err(if transitioning {
+        error.short_retry()
+    } else {
+        error
+    })
 }
 
 pub(crate) fn log_policy_decision(

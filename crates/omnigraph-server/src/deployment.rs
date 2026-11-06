@@ -873,7 +873,7 @@ fn abort_before_effects(
     refusal: ApiError,
 ) -> ApiError {
     match transition.abort_before_effects() {
-        Ok(_) => refusal,
+        Ok(_) => refusal.proven_unpublished(),
         Err(_) if state.operations.snapshot().closed => ApiError::admission_closed(),
         Err(error) => uncertain(format!(
             "pre-effect refusal could not restore coherent serving: {error}"

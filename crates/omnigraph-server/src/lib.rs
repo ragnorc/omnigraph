@@ -516,6 +516,10 @@ pub struct ApiError {
     /// holds unsettled. Such an error reports its unknown outcome but does
     /// not contain the process.
     scoped_unknown: bool,
+    /// The refusal's cause has a known short bound, such as a serving
+    /// transition: `Retry-After` advises `SHORT_RETRY_AFTER_SECONDS`, not
+    /// the constant. A flag, so the error keeps its four-word size.
+    short_retry: bool,
 }
 
 #[derive(Debug)]
@@ -1150,7 +1154,23 @@ impl ApiError {
             compound: false,
             unpublished: false,
             scoped_unknown: false,
+            short_retry: false,
         }
+    }
+
+    /// Mark a refusal the server proved took no effect: a deployment refused
+    /// before its first effect, with its serving transition restored, or
+    /// before any transition opened. Its disposition reports `none`.
+    pub(crate) fn proven_unpublished(mut self) -> Self {
+        self.unpublished = true;
+        self
+    }
+
+    /// Advise `SHORT_RETRY_AFTER_SECONDS` instead of the constant
+    /// `Retry-After`.
+    pub(crate) fn short_retry(mut self) -> Self {
+        self.short_retry = true;
+        self
     }
 
     fn with_details(mut self, details: ApiErrorDetails) -> Self {
@@ -1919,6 +1939,10 @@ fn format_key_conflict(
 /// whose action is `retry`.
 const RETRY_AFTER_SECONDS: &str = "60";
 
+/// `Retry-After` for a 503 whose cause ends within about a second, such as
+/// a graph's serving transition.
+const SHORT_RETRY_AFTER_SECONDS: &str = "1";
+
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let error = self.with_request_facts();
@@ -1940,6 +1964,7 @@ impl IntoResponse for ApiError {
             Some(ApiErrorDetails::Unauthenticated(reason)) => Some(*reason),
             _ => None,
         };
+        let short_retry = error.short_retry;
         let output = error.into_judged_output();
         if output
             .disposition
@@ -1949,10 +1974,12 @@ impl IntoResponse for ApiError {
                 StatusCode::TOO_MANY_REQUESTS | StatusCode::SERVICE_UNAVAILABLE
             )
         {
-            headers.insert(
-                axum::http::header::RETRY_AFTER,
-                axum::http::HeaderValue::from_static(RETRY_AFTER_SECONDS),
-            );
+            let value = axum::http::HeaderValue::from_static(if short_retry {
+                SHORT_RETRY_AFTER_SECONDS
+            } else {
+                RETRY_AFTER_SECONDS
+            });
+            headers.insert(axum::http::header::RETRY_AFTER, value);
         }
         let mut response = (status, headers, Json(output)).into_response();
         if let Some(reason) = unauthenticated {
