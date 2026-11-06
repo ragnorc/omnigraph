@@ -2545,6 +2545,11 @@ async fn live_query_deployment_closes_admission_before_waiting_for_a_merge() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn live_schema_deployment_refused_at_preflight_keeps_admission_open_issue_1280() {
+    live_deployment_fixture("schema_refusal").await;
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn deployment_acceptance_and_polling_track_the_owned_executor_through_activation() {
     live_deployment_fixture("acceptance").await;
 }
@@ -2646,7 +2651,7 @@ async fn live_deployment_fixture(mode: &str) {
     fs::write(temp.path().join("policy.yaml"), "version: 1\ngroups:\n  admins: [operator]\n  readers: [reader]\nrules:\n  - id: admins\n    allow:\n      actors: { group: admins }\n      actions: [schema_apply, read, invoke_query]\n  - id: readers\n    allow:\n      actors: { group: readers }\n      actions: [read]\n").unwrap();
     fs::write(temp.path().join("cluster-policy.yaml"), "version: 1\ngroups:\n  admins: [operator]\nrules:\n  - id: manage\n    allow:\n      actors: { group: admins }\n      actions: [config_manage]\n").unwrap();
     fs::write(temp.path().join("cluster.yaml"), "version: 1\ngraphs:\n  knowledge:\n    schema: ./people.pg\n    queries:\n      find_person:\n        file: ./people.gq\n  peer:\n    schema: ./peer.pg\npolicies:\n  access:\n    file: ./policy.yaml\n    applies_to: [knowledge, peer]\n  management:\n    file: ./cluster-policy.yaml\n    applies_to: [cluster]\n").unwrap();
-    if mode == "merge" {
+    if mode == "merge" || mode == "schema_refusal" {
         let policy = fs::read_to_string(temp.path().join("policy.yaml")).unwrap();
         fs::write(temp.path().join("policy.yaml"), policy.replace("[schema_apply, read, invoke_query]", "[schema_apply, read, invoke_query, change, branch_create, branch_merge, branch_delete]")).unwrap();
     }
@@ -2815,7 +2820,7 @@ async fn live_deployment_fixture(mode: &str) {
         }
         return;
     }
-    if mode == "merge" {
+    if mode == "merge" || mode == "schema_refusal" {
         use omnigraph::seams::catalog::BRANCH_MERGE_POST_AUTHORITY_CAPTURE;
         struct RequestHold {
             thread: std::thread::ThreadId,
@@ -2978,6 +2983,44 @@ async fn live_deployment_fixture(mode: &str) {
         .await
         .expect("graph reads stay admitted during planning and the held merge");
         assert_eq!(code, StatusCode::OK);
+        if mode == "schema_refusal" {
+            // Issue #1280: the live feature branch makes this schema change
+            // ineligible. Apply must refuse it the way plan does, without
+            // closing graph admission and so without waiting for the held
+            // merge, and report that it took no effect.
+            let ledger_before = fs::read(temp.path().join("__cluster/state.json")).unwrap();
+            let (code, refusal) = tokio::time::timeout(
+                Duration::from_secs(5),
+                json_response(&app, submit(&id, &candidate, "operator-token")),
+            )
+            .await
+            .expect("a deployment refused at preflight must not wait to drain admission");
+            assert_eq!(code, StatusCode::CONFLICT, "{refusal}");
+            assert!(
+                refusal["error"].as_str().unwrap().contains("only main"),
+                "{refusal}"
+            );
+            assert_eq!(
+                refusal["disposition"],
+                serde_json::json!({"effects": "none", "action": "refresh"}),
+                "a refusal that recorded nothing took no effect"
+            );
+            assert_eq!(
+                fs::read(temp.path().join("__cluster/state.json")).unwrap(),
+                ledger_before
+            );
+            let RegistryLookup::Ready(after) = state.routing().registry.get(&key) else {
+                panic!("a refused deployment must leave graph admission ready");
+            };
+            assert!(Arc::ptr_eq(&original, &after));
+            hold.release();
+            let (code, merge) = tokio::task::spawn_blocking(move || merger.join().unwrap())
+                .await
+                .unwrap();
+            assert_eq!(code, StatusCode::OK, "{merge}");
+            drop(guard);
+            return;
+        }
         fs::write(&schema_path, original_source).unwrap();
         fs::write(temp.path().join("people.gq"), "// query-only deployment\nquery find_person($name: String) { match { $p: Person { name: $name } } return { $p.name } }\n").unwrap();
         let deployment = omnigraph_cluster::capture_deployment(temp.path()).unwrap();
