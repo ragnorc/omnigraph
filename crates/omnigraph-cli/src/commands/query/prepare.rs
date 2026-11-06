@@ -4,7 +4,7 @@
 //! Unrecognized source stays opaque: the execution owner retains responsibility
 //! for syntax diagnostics, including source accepted by a newer server.
 
-use color_eyre::eyre::{Result, bail};
+use color_eyre::eyre::Result;
 use omnigraph_api_types::{branch_statement_refusals, query_file_refusals};
 use omnigraph_compiler::query::ast::{
     BranchRead, BranchStmt, BranchWrite, CommitWrite, EXPLAIN_STATEMENT_NAME, EmptyFile, FileBody,
@@ -15,6 +15,20 @@ use omnigraph_compiler::settings::SettingId;
 use serde_json::{Map, Value};
 
 use crate::operator::OperatorAlias;
+
+/// Refuse the request as a server refuses the same source: `bad_request`, so
+/// the disposition says to fix it on either transport.
+macro_rules! refuse {
+    ($fmt:literal $(, $arg:expr)* $(,)?) => {
+        refuse!(format!($fmt $(, $arg)*))
+    };
+    ($message:expr) => {
+        return Err(crate::helpers::CodedRefusal::report(
+            omnigraph_api_types::ErrorCode::BadRequest,
+            $message,
+        ))
+    };
+}
 
 /// Source presence, not a positional name, selects the ad-hoc invocation lane.
 pub(super) enum QueryInput<'a> {
@@ -85,7 +99,7 @@ pub(super) fn prepare_read<'a>(
     let QueryInput::Supplied(source) = input else {
         refuse_stored_settings(envelope.has_settings)?;
         let Some(name) = envelope.name else {
-            bail!(
+            refuse!(
                 "provide a query name to invoke from the catalog, or -e '<gq>' / \
                  --query <file> for an ad-hoc query"
             );
@@ -100,7 +114,7 @@ pub(super) fn prepare_read<'a>(
         }) => {
             refuse_process_prefix_when_remote(remote, &prefix)?;
             if let BranchStmt::Write(write) = &statement {
-                bail!(
+                refuse!(
                     "{}",
                     branch_statement_refusals::with_statement(
                         branch_statement_refusals::CONTROL_WRITE_AT_READ_DOOR,
@@ -118,7 +132,7 @@ pub(super) fn prepare_read<'a>(
         Ok(QueryFile {
             body: FileBody::Commit(write),
             ..
-        }) => bail!(
+        }) => refuse!(
             "{}",
             branch_statement_refusals::with_statement(
                 branch_statement_refusals::CONTROL_WRITE_AT_READ_DOOR,
@@ -128,7 +142,7 @@ pub(super) fn prepare_read<'a>(
         Ok(QueryFile {
             body: FileBody::Load(statement),
             ..
-        }) => bail!(
+        }) => refuse!(
             "{}",
             branch_statement_refusals::with_statement(
                 branch_statement_refusals::CONTROL_WRITE_AT_READ_DOOR,
@@ -171,7 +185,7 @@ pub(super) fn prepare_mutation<'a>(
     let QueryInput::Supplied(source) = input else {
         refuse_stored_settings(envelope.has_settings)?;
         let Some(name) = envelope.name else {
-            bail!(
+            refuse!(
                 "provide a mutation name to invoke from the catalog, or -e '<gq>' / \
                  --query <file> for an ad-hoc mutation"
             );
@@ -187,7 +201,7 @@ pub(super) fn prepare_mutation<'a>(
             refuse_process_prefix_when_remote(remote, &prefix)?;
             let statement_name = statement.statement_name();
             let BranchStmt::Write(write) = statement else {
-                bail!("{}", read_at_write_door(statement_name));
+                refuse!("{}", read_at_write_door(statement_name));
             };
             refuse_statement_envelope(&envelope, envelope.has_target)?;
             Ok(MutationOperation::Branch(source, write))
@@ -214,11 +228,11 @@ pub(super) fn prepare_mutation<'a>(
         Ok(QueryFile {
             body: FileBody::Show(id),
             ..
-        }) => bail!("{}", read_at_write_door(&show_statement_name(id))),
+        }) => refuse!("{}", read_at_write_door(&show_statement_name(id))),
         Ok(QueryFile {
             body: FileBody::Explain(_) | FileBody::ExplainLoad(_),
             ..
-        }) => bail!("{}", read_at_write_door(EXPLAIN_STATEMENT_NAME)),
+        }) => refuse!("{}", read_at_write_door(EXPLAIN_STATEMENT_NAME)),
         parsed => {
             if let Ok(file) = &parsed {
                 refuse_prefix_this_door_cannot_run(remote, file)?;
@@ -254,7 +268,7 @@ pub(super) fn prepare_mutation<'a>(
 
 fn refuse_stored_settings(has_settings: bool) -> Result<()> {
     if has_settings {
-        bail!(
+        refuse!(
             "--set applies to an ad-hoc source (-e '<gq>' / --query <file>), not to a stored query"
         );
     }
@@ -264,7 +278,7 @@ fn refuse_stored_settings(has_settings: bool) -> Result<()> {
 /// A source prefix cannot stand alone or change served process settings.
 fn refuse_prefix_this_door_cannot_run(remote: bool, file: &QueryFile) -> Result<()> {
     if matches!(file.empty_kind(), Some(EmptyFile::SettingsOnly)) {
-        bail!(query_file_refusals::ONLY_SETTINGS);
+        refuse!(query_file_refusals::ONLY_SETTINGS);
     }
     refuse_process_prefix_when_remote(remote, &file.settings)
 }
@@ -288,13 +302,13 @@ fn read_at_write_door(statement_name: &str) -> String {
 /// Keep the server's envelope refusal order: target, name/params, precondition.
 pub(super) fn refuse_statement_envelope(envelope: &Envelope<'_>, has_target: bool) -> Result<()> {
     if has_target {
-        bail!(branch_statement_refusals::REQUEST_TARGET);
+        refuse!(branch_statement_refusals::REQUEST_TARGET);
     }
     if envelope.name.is_some() || envelope.has_params {
-        bail!(branch_statement_refusals::NAME_OR_PARAMS);
+        refuse!(branch_statement_refusals::NAME_OR_PARAMS);
     }
     if envelope.has_expected_head {
-        bail!(branch_statement_refusals::COMMIT_PRECONDITION);
+        refuse!(branch_statement_refusals::COMMIT_PRECONDITION);
     }
     Ok(())
 }
@@ -308,13 +322,13 @@ pub(super) fn alias_params(
     let mut params = Map::new();
     for (key, value) in &alias.params {
         let Some(key) = key.as_str() else {
-            bail!("alias '{alias_name}': params keys must be strings");
+            refuse!("alias '{alias_name}': params keys must be strings");
         };
         params.insert(key.to_string(), serde_json::to_value(value)?);
     }
     if let Some(explicit) = explicit {
         let Value::Object(explicit) = explicit else {
-            bail!("alias '{alias_name}': --params and --params-file must contain a JSON object");
+            refuse!("alias '{alias_name}': --params and --params-file must contain a JSON object");
         };
         for (key, value) in explicit {
             params.insert(key, value);

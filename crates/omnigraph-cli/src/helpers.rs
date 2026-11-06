@@ -574,22 +574,28 @@ pub(crate) fn select_named_query(
 ) -> Result<(String, Vec<omnigraph_compiler::query::ast::Param>)> {
     let queries = match query_file.body.into_read_declarations() {
         Ok(queries) => queries,
-        Err(message) => bail!("{message}"),
+        Err(message) => return Err(bad_request(message)),
     };
     let query = if let Some(name) = requested_name {
         queries
             .into_iter()
             .find(|query| query.name == name)
-            .ok_or_else(|| color_eyre::eyre::eyre!("query '{}' not found", name))?
+            .ok_or_else(|| bad_request(format!("query '{name}' not found")))?
     } else if queries.len() == 1 {
         queries.into_iter().next().unwrap()
     } else if queries.is_empty() {
-        bail!(query_file_refusals::NO_QUERY);
+        return Err(bad_request(query_file_refusals::NO_QUERY));
     } else {
-        bail!("query file contains multiple queries; pass --name");
+        return Err(bad_request("query file contains multiple queries; pass --name"));
     };
 
     Ok((query.name, query.params))
+}
+
+/// A query-source refusal the CLI decides before any request: the
+/// `bad_request` a server answers for the same source.
+fn bad_request(message: impl Into<String>) -> color_eyre::Report {
+    CodedRefusal::report(omnigraph_api_types::ErrorCode::BadRequest, message)
 }
 
 pub(crate) fn query_params_from_json(
