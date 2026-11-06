@@ -4005,7 +4005,17 @@ fn literal_type(lit: &Literal) -> Result<PropType> {
         // Null is compatible with any nullable type; default to String for inference.
         Literal::Null => Ok(PropType::scalar(ScalarType::String, true)),
         Literal::String(_) => Ok(PropType::scalar(ScalarType::String, false)),
-        Literal::Integer(_) => Ok(PropType::scalar(ScalarType::I64, false)),
+        // A literal's own type is the narrower of the two integer types that
+        // hold every written value: `I64`, else `U64` above `I64`'s maximum.
+        // Comparison and assignment still narrow it to the other operand's
+        // type when the value is exactly representable there.
+        Literal::Integer(value) if i64::try_from(*value).is_ok() => {
+            Ok(PropType::scalar(ScalarType::I64, false))
+        }
+        Literal::Integer(value) if u64::try_from(*value).is_ok() => {
+            Ok(PropType::scalar(ScalarType::U64, false))
+        }
+        Literal::Integer(_) => Err(CompilerError::typed(T3, INTEGER_LITERAL_RANGE.to_string())),
         Literal::Float(value) if value.is_infinite() => Err(CompilerError::typed(
             T3,
             "float literal is outside the F64 range".to_string(),
@@ -4038,8 +4048,18 @@ fn literal_type(lit: &Literal) -> Result<PropType> {
                 scalar = Some(match scalar {
                     None => item_type.scalar,
                     Some(previous) if previous == item_type.scalar => previous,
-                    Some(ScalarType::I64 | ScalarType::F64)
-                        if matches!(item_type.scalar, ScalarType::I64 | ScalarType::F64) =>
+                    // `[1, 18446744073709551615]`: every element is a `U64`
+                    // value unless one is negative, checked below.
+                    Some(ScalarType::I64 | ScalarType::U64)
+                        if matches!(item_type.scalar, ScalarType::I64 | ScalarType::U64) =>
+                    {
+                        ScalarType::U64
+                    }
+                    Some(ScalarType::I64 | ScalarType::U64 | ScalarType::F64)
+                        if matches!(
+                            item_type.scalar,
+                            ScalarType::I64 | ScalarType::U64 | ScalarType::F64
+                        ) =>
                     {
                         ScalarType::F64
                     }
@@ -4050,6 +4070,17 @@ fn literal_type(lit: &Literal) -> Result<PropType> {
                         ));
                     }
                 });
+            }
+            if scalar == Some(ScalarType::U64)
+                && items
+                    .iter()
+                    .any(|item| matches!(item, Literal::Integer(value) if *value < 0))
+            {
+                return Err(CompilerError::typed(
+                    T53,
+                    "list literal mixes negative integers with integers above the I64 range"
+                        .to_string(),
+                ));
             }
             Ok(PropType::list_of(
                 scalar.unwrap_or(ScalarType::String),

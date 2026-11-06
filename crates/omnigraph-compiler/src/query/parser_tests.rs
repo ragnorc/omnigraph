@@ -2574,6 +2574,26 @@ fn handwritten_query_diagnostics_locate_the_refused_token() {
             Q005,
         ),
         (
+            "query q() { match { $p: Person $p.age = 18446744073709551616 } return { $p.name } }",
+            "18446744073709551616",
+            Q005,
+        ),
+        (
+            "query q() { match { $p: Person $p.age > -9223372036854775809 } return { $p.name } }",
+            "-9223372036854775809",
+            Q005,
+        ),
+        (
+            "query q() { match { $p: Person $p.age > -18446744073709551615 } return { $p.name } }",
+            "-18446744073709551615",
+            Q005,
+        ),
+        (
+            "query q($t: I64) { match { $p: Person $p.age > -$t } return { $p.name } }",
+            "-$t",
+            Q005,
+        ),
+        (
             "query q() { match { $p: Person } return { $p.name } limit 99999999999999999999999 }",
             "99999999999999999999999",
             Q005,

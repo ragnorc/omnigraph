@@ -1379,6 +1379,14 @@ fn parse_operand(pair: pest::iterators::Pair<Rule>, scope: NameScope<'_>) -> Res
             Ok(Expr::Variable(v.strip_prefix('$').unwrap_or(v).to_string()))
         }
         Rule::literal => Ok(Expr::Literal(parse_literal(inner)?)),
+        Rule::negated => {
+            let span = inner.clone();
+            let operand = inner.into_inner().next().unwrap();
+            match parse_operand(operand, scope)? {
+                Expr::Literal(literal) => negate_number(literal, &span).map(Expr::Literal),
+                _ => Err(query_error_at(NEGATION_OPERAND.to_string(), &span)),
+            }
+        }
         Rule::agg_call => {
             let mut parts = inner.into_inner();
             let func = parse_agg_func(parts.next().unwrap().as_str())?;
@@ -1562,20 +1570,7 @@ fn parse_literal(pair: pest::iterators::Pair<Rule>) -> Result<Literal> {
     let inner = pair.into_inner().next().unwrap();
     match inner.as_rule() {
         Rule::string_lit => Ok(Literal::String(parse_string_lit(&inner)?)),
-        Rule::integer => {
-            let n: i64 = inner
-                .as_str()
-                .parse()
-                .map_err(|e| query_error_at(format!("invalid integer: {}", e), &inner))?;
-            Ok(Literal::Integer(i128::from(n)))
-        }
-        Rule::float_lit => {
-            let f: f64 = inner
-                .as_str()
-                .parse()
-                .map_err(|e| query_error_at(format!("invalid float: {}", e), &inner))?;
-            Ok(Literal::Float(f))
-        }
+        Rule::integer | Rule::float_lit => parse_number(inner),
         Rule::bool_lit => {
             let b = match inner.as_str() {
                 "true" => true,
@@ -1612,9 +1607,18 @@ fn parse_literal(pair: pest::iterators::Pair<Rule>) -> Result<Literal> {
         Rule::list_lit => {
             let mut items = Vec::new();
             for item in inner.into_inner() {
-                if item.as_rule() == Rule::literal {
-                    items.push(parse_literal(item)?);
+                if item.as_rule() != Rule::list_item {
+                    continue;
                 }
+                let item = item.into_inner().next().unwrap();
+                items.push(match item.as_rule() {
+                    Rule::negated_number => {
+                        let span = item.clone();
+                        let number = parse_number(item.into_inner().next().unwrap())?;
+                        negate_number(number, &span)?
+                    }
+                    _ => parse_literal(item)?,
+                });
             }
             Ok(Literal::List(items))
         }
@@ -1623,6 +1627,44 @@ fn parse_literal(pair: pest::iterators::Pair<Rule>) -> Result<Literal> {
             inner.as_rule()
         ))),
     }
+}
+
+/// An unsigned `integer` or `float_lit` token as its literal.
+fn parse_number(token: pest::iterators::Pair<Rule>) -> Result<Literal> {
+    match token.as_rule() {
+        Rule::integer => {
+            let value = token.as_str().parse::<i128>().ok();
+            integer_in_range(value, &token)
+        }
+        Rule::float_lit => token
+            .as_str()
+            .parse::<f64>()
+            .map(Literal::Float)
+            .map_err(|e| query_error_at(format!("invalid float: {}", e), &token)),
+        other => Err(CompilerError::Parse(format!(
+            "unexpected number: {other:?}"
+        ))),
+    }
+}
+
+/// Prefix `-` folded into the number it negates. The value stays exact
+/// (`-9223372036854775808` is `I64`'s minimum); the type checker refuses a
+/// result outside every integer type.
+fn negate_number(literal: Literal, at: &pest::iterators::Pair<Rule>) -> Result<Literal> {
+    match literal {
+        Literal::Integer(value) => integer_in_range(Some(-value), at),
+        Literal::Float(value) => Ok(Literal::Float(-value)),
+        _ => Err(query_error_at(NEGATION_OPERAND.to_string(), at)),
+    }
+}
+
+/// An integer some declared integer type holds, `I64`'s minimum through
+/// `U64`'s maximum, kept exact; the type checker types it `I64`, else `U64`.
+fn integer_in_range(value: Option<i128>, at: &pest::iterators::Pair<Rule>) -> Result<Literal> {
+    value
+        .filter(|n| i64::try_from(*n).is_ok() || u64::try_from(*n).is_ok())
+        .map(Literal::Integer)
+        .ok_or_else(|| query_error_at(INTEGER_LITERAL_RANGE.to_string(), at))
 }
 
 fn parse_string_lit(at: &pest::iterators::Pair<Rule>) -> Result<String> {

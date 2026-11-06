@@ -1017,6 +1017,15 @@ impl std::fmt::Display for AggFunc {
     }
 }
 
+/// The refusal for an integer literal no declared integer type can hold:
+/// below `I64`'s minimum or above `U64`'s maximum.
+pub const INTEGER_LITERAL_RANGE: &str = "integer literal is outside the I64 and U64 ranges";
+
+/// The refusal for a prefix `-` before anything but a number: GQ has no
+/// arithmetic, so a parameter carries a computed or negated value.
+pub const NEGATION_OPERAND: &str =
+    "a prefix `-` applies only to a number literal; pass a computed value as a parameter";
+
 #[derive(Debug, Clone)]
 pub enum Literal {
     Null,

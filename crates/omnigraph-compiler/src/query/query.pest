@@ -213,10 +213,15 @@ and_expr          = { not_expr ~ (kw_and ~ not_expr)* }
 not_expr          = { (kw_not ~ not_expr) | comparison }
 comparison        = { operand ~ ((filter_op ~ operand) | (kw_in ~ operand) | null_test)? }
 null_test         = { kw_is ~ kw_not? ~ kw_null }
-operand           = { "(" ~ expr ~ ")" | now_call | nearest_ordering | search_call
+operand           = { "(" ~ expr ~ ")" | negated | now_call | nearest_ordering | search_call
                     | fuzzy_call | match_text_call | bm25_call | rrf_call | agg_call
                     | prop_access | meta_field | variable | literal
                     | reserved_property | expr_ident }
+// Prefix `-`: an operator, not part of the number token, so `- 5` and
+// `-(5)` parse and a later arithmetic grammar keeps the token boundary.
+// The parser folds it into the number literal it negates and refuses any
+// other operand until GQ has arithmetic.
+negated           = { "-" ~ operand }
 kw_and            = @{ "and" ~ !(ASCII_ALPHANUMERIC | "_") }
 kw_or             = @{ "or" ~ !(ASCII_ALPHANUMERIC | "_") }
 kw_not            = @{ "not" ~ !(ASCII_ALPHANUMERIC | "_") }
@@ -266,7 +271,10 @@ ident = @{ (ASCII_ALPHA_LOWER | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
 literal = { list_lit | datetime_lit | date_lit | string_lit | float_lit | integer | bool_lit }
 date_lit = { "date" ~ "(" ~ string_lit ~ ")" }
 datetime_lit = { "datetime" ~ "(" ~ string_lit ~ ")" }
-list_lit = { "[" ~ (literal ~ ("," ~ literal)*)? ~ "]" }
+list_lit = { "[" ~ (list_item ~ ("," ~ list_item)*)? ~ "]" }
+// A list holds literals only, so the prefix `-` applies to a number here.
+list_item = { negated_number | literal }
+negated_number = { "-" ~ (float_lit | integer) }
 string_lit = @{ "\"" ~ string_char* ~ "\"" }
 string_char = @{ !("\"" | "\\") ~ ANY | "\\" ~ ANY }
 float_lit = @{ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ }
