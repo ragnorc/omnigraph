@@ -1003,7 +1003,9 @@ impl ExecutionPlan for FullSchemaMergeInsertExec {
             };
             // Existing target references may be outside the current bases. Check
             // only source-provided blob columns before allowing them through.
-            let write_data_stream = if source_blob_columns.is_empty() {
+            let write_data_stream = if source_blob_columns.is_empty()
+                || params.allow_external_blob_outside_bases
+            {
                 write_data_stream
             } else {
                 let resolver =

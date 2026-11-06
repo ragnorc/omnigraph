@@ -615,6 +615,11 @@ struct MergeInsertParams {
     target_all_bases: Option<bool>,
     // Exact output data file version. The manifest default is used when absent.
     data_storage_version: Option<PlanFileVersion>,
+    // PROTOTYPE (omnigraph#1274), minimal backport of lance#9888: let a source
+    // blob v2 URI outside the registered bases be stored as an absolute
+    // external reference, as `WriteParams::allow_external_blob_outside_bases`
+    // does for other writes.
+    allow_external_blob_outside_bases: bool,
 }
 
 impl MergeInsertParams {
@@ -782,6 +787,7 @@ impl MergeInsertBuilder {
                 target_base_names_or_paths: None,
                 target_all_bases: None,
                 data_storage_version: None,
+                allow_external_blob_outside_bases: false,
             },
         })
     }
@@ -860,6 +866,14 @@ impl MergeInsertBuilder {
 
     pub fn skip_auto_cleanup(&mut self, skip: bool) -> &mut Self {
         self.params.skip_auto_cleanup = skip;
+        self
+    }
+
+    /// PROTOTYPE (omnigraph#1274), minimal backport of lance#9888: store a
+    /// source blob v2 URI outside the registered bases as an absolute
+    /// external reference instead of refusing it.
+    pub fn allow_external_blob_outside_bases(&mut self, allow: bool) -> &mut Self {
+        self.params.allow_external_blob_outside_bases = allow;
         self
     }
 
@@ -1954,6 +1968,7 @@ impl MergeInsertJob {
                 reservation_size: usize,
                 target_bases_info: Arc<Option<Vec<TargetBaseInfo>>>,
                 write_version: ConcreteFileVersion,
+                allow_external_blob_outside_bases: bool,
             ) -> Result<usize> {
                 // Batches still have _rowaddr (used elsewhere to merge with existing data)
                 // We need to remove it before writing to Lance files.
@@ -1985,7 +2000,10 @@ impl MergeInsertJob {
                     &dataset.base,
                     write_schema,
                     stream,
-                    Default::default(), // TODO: support write params.
+                    WriteParams {
+                        allow_external_blob_outside_bases,
+                        ..Default::default()
+                    },
                     (*target_bases_info).clone(),
                 )
                 .await?;
@@ -2079,6 +2097,9 @@ impl MergeInsertJob {
                         memory_size,
                         target_bases_info.clone(),
                         write_version,
+                        // PROTOTYPE: the partial-schema path is not threaded;
+                        // OmniGraph's keyed writes send full-schema sources.
+                        false,
                     );
                     tasks.spawn(fut);
                 }
@@ -2964,7 +2985,10 @@ impl MergeInsertJob {
                 &self.dataset.base,
                 self.dataset.schema().clone(),
                 Box::pin(stream),
-                WriteParams::default(),
+                WriteParams {
+                    allow_external_blob_outside_bases: self.params.allow_external_blob_outside_bases,
+                    ..Default::default()
+                },
                 target_bases_info,
             )
             .await?;

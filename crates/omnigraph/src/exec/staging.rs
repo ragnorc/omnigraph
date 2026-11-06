@@ -548,13 +548,24 @@ impl MutationStaging {
                 }
             }
         }
+        // PROTOTYPE (issue 1274): references carried unchanged from committed
+        // rows were admitted when stored; they are neither authorized again
+        // nor materialized.
+        let carried_external_blob_uris = crate::table_store::carried_external_blob_uris();
+        let admitted_external_blob_uris = external_blob_uris
+            .as_slice()
+            .iter()
+            .filter(|uri| !carried_external_blob_uris.contains(*uri))
+            .cloned()
+            .collect::<Vec<_>>();
         let external_blob_preflight = db
             .storage()
-            .preflight_external_blob_uris(external_blob_uris.as_slice())
+            .preflight_external_blob_uris(&admitted_external_blob_uris)
             .await?;
         let copied_external_blob_uris = copied_external_blob_uri_indices
             .iter()
             .map(|index| external_blob_uris.as_slice()[*index].as_str())
+            .filter(|uri| !carried_external_blob_uris.contains(*uri))
             .collect::<Vec<_>>();
         let copied_external_blob_bytes =
             external_blob_preflight.materialized_payload_bytes(&copied_external_blob_uris)?;
