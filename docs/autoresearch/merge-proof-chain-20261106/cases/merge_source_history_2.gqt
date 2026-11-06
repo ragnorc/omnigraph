@@ -1,0 +1,52 @@
+# issue: none
+# notes: a merge whose source inserted 2 Person rows, one commit each, while main moved Knows.
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine-dst
+    storage: in-memory-object-store
+    seeds: [0]
+
+--- schema
+node Person {
+    name: String @key
+    age: I32
+}
+
+edge Knows: Person -> Person
+
+--- seed
+{"type":"Person","data":{"name":"a","age":0}}
+{"type":"Person","data":{"name":"b","age":0}}
+
+--- mutate
+branch create feature;
+
+--- expect ok
+
+--- mutate branch: feature
+query ins_0() {
+    insert Person { name: "s0", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_1() {
+    insert Person { name: "s1", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate
+query knows() {
+    insert Knows { from: "a", to: "b" }
+}
+
+--- expect affected: nodes=0 edges=1
+
+--- mutate
+branch merge feature into main;
+
+--- expect outcome: merged

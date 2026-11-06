@@ -1,0 +1,262 @@
+# issue: none
+# notes: a merge whose source inserted 32 Person rows, one commit each, while main moved Knows.
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine-dst
+    storage: in-memory-object-store
+    seeds: [0]
+
+--- schema
+node Person {
+    name: String @key
+    age: I32
+}
+
+edge Knows: Person -> Person
+
+--- seed
+{"type":"Person","data":{"name":"a","age":0}}
+{"type":"Person","data":{"name":"b","age":0}}
+
+--- mutate
+branch create feature;
+
+--- expect ok
+
+--- mutate branch: feature
+query ins_0() {
+    insert Person { name: "s0", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_1() {
+    insert Person { name: "s1", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_2() {
+    insert Person { name: "s2", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_3() {
+    insert Person { name: "s3", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_4() {
+    insert Person { name: "s4", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_5() {
+    insert Person { name: "s5", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_6() {
+    insert Person { name: "s6", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_7() {
+    insert Person { name: "s7", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_8() {
+    insert Person { name: "s8", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_9() {
+    insert Person { name: "s9", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_10() {
+    insert Person { name: "s10", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_11() {
+    insert Person { name: "s11", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_12() {
+    insert Person { name: "s12", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_13() {
+    insert Person { name: "s13", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_14() {
+    insert Person { name: "s14", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_15() {
+    insert Person { name: "s15", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_16() {
+    insert Person { name: "s16", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_17() {
+    insert Person { name: "s17", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_18() {
+    insert Person { name: "s18", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_19() {
+    insert Person { name: "s19", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_20() {
+    insert Person { name: "s20", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_21() {
+    insert Person { name: "s21", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_22() {
+    insert Person { name: "s22", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_23() {
+    insert Person { name: "s23", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_24() {
+    insert Person { name: "s24", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_25() {
+    insert Person { name: "s25", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_26() {
+    insert Person { name: "s26", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_27() {
+    insert Person { name: "s27", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_28() {
+    insert Person { name: "s28", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_29() {
+    insert Person { name: "s29", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_30() {
+    insert Person { name: "s30", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate branch: feature
+query ins_31() {
+    insert Person { name: "s31", age: 1 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate
+query knows() {
+    insert Knows { from: "a", to: "b" }
+}
+
+--- expect affected: nodes=0 edges=1
+
+--- mutate
+branch merge feature into main;
+
+--- expect outcome: merged
