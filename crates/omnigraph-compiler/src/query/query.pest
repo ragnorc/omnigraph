@@ -263,12 +263,18 @@ edge_ident = @{ !reserved ~ (ASCII_ALPHA_LOWER | "_") ~ (ASCII_ALPHANUMERIC | "_
 type_name = @{ "@"? ~ ASCII_ALPHA_UPPER ~ (ASCII_ALPHANUMERIC | "_")* }
 ident = @{ (ASCII_ALPHA_LOWER | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
 
-literal = { list_lit | datetime_lit | date_lit | string_lit | float_lit | integer | bool_lit }
+literal = { list_lit | datetime_lit | date_lit | string_lit | float_lit | signed_integer | bool_lit }
 date_lit = { "date" ~ "(" ~ string_lit ~ ")" }
 datetime_lit = { "datetime" ~ "(" ~ string_lit ~ ")" }
 list_lit = { "[" ~ (literal ~ ("," ~ literal)*)? ~ "]" }
 string_lit = @{ "\"" ~ string_char* ~ "\"" }
 string_char = @{ !("\"" | "\\") ~ ANY | "\\" ~ ANY }
-float_lit = @{ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ }
+// A number literal carries an optional leading `-`, spelled as the schema
+// grammar spells `signed_float` and `signed_integer` (`@range(t, -10..10)`).
+// The sign is part of the token: `- 5` is not a literal. `integer` stays
+// unsigned for the counts that cannot be negative: `limit`, traversal bounds,
+// a vector dimension and a setting value.
+float_lit = @{ "-"? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ }
+signed_integer = @{ "-"? ~ ASCII_DIGIT+ }
 integer = @{ ASCII_DIGIT+ }
 bool_lit = @{ ("true" | "false") ~ !(ASCII_ALPHANUMERIC | "_") }

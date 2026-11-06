@@ -1,0 +1,164 @@
+# issue: 1279
+# red_on: main @ 47040945; before the fix every step is a parse error: `expected operand` for a negative filter literal, `expected literal` in a list, `expected not_expr` in an `insert` or `update`, and `invalid integer: number too large to fit in target type` above the I64 range.
+# notes: A negative integer or float literal, and a U64 literal above the I64 range, in a filter, a list, an insert and an update. A literal outside both integer ranges is a located parse error, pinned in `parser_tests.rs` (`handwritten_query_diagnostics_locate_the_refused_token`).
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Account {
+    slug: String @key
+    balance: I64
+    rate: F64?
+    size: U64?
+}
+
+--- seed
+{"type":"Account","data":{"slug":"a","balance":-250,"rate":-0.5}}
+{"type":"Account","data":{"slug":"b","balance":40,"size":18446744073709551615}}
+
+--- query
+query overdrawn() {
+    match {
+        $a: Account
+        $a.balance < -100
+    }
+    return { $a.slug }
+}
+
+--- expect unordered
+{"a.slug": "a"}
+
+--- expect shape
+a.slug: String
+
+--- query
+query negative_rate() {
+    match {
+        $a: Account
+        $a.rate < -0.25
+    }
+    return { $a.slug }
+}
+
+--- expect unordered
+{"a.slug": "a"}
+
+--- expect shape
+a.slug: String
+
+--- query
+query largest() {
+    match {
+        $a: Account
+        $a.size = 18446744073709551615
+    }
+    return { $a.slug }
+}
+
+--- expect unordered
+{"a.slug": "b"}
+
+--- expect shape
+a.slug: String
+
+--- query
+query balance_in_list() {
+    match {
+        $a: Account
+        $a.balance in [-250, -9223372036854775808]
+    }
+    return { $a.slug }
+}
+
+--- expect unordered
+{"a.slug": "a"}
+
+--- expect shape
+a.slug: String
+
+--- mutate
+query open_negative() {
+    insert Account { slug: "c", balance: -5, rate: -0.25, size: 18446744073709551615 }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- mutate
+query lower_rate() {
+    update Account set { rate: -0.75 } where balance = -5
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- query
+query written_values() {
+    match {
+        $a: Account
+        $a.slug = "c"
+    }
+    return { $a.balance, $a.rate, $a.size }
+}
+
+--- expect unordered
+{"a.balance": -5, "a.rate": -0.75, "a.size": 18446744073709551615}
+
+--- expect shape
+a.balance: I64
+a.rate: F64?
+a.size: U64?
+
+--- query
+query i64_minimum() {
+    match {
+        $a: Account
+        $a.balance > -9223372036854775808
+        $a.balance < 0
+    }
+    return { $a.slug }
+}
+
+--- expect unordered
+{"a.slug": "a"}
+{"a.slug": "c"}
+
+--- expect shape
+a.slug: String
+
+--- query
+query mixed_sign_and_u64_list() {
+    match {
+        $a: Account
+        $a.size in [-1, 18446744073709551615]
+    }
+    return { $a.slug }
+}
+
+--- expect error: T53: list literal mixes negative integers with integers above the I64 range
+
+--- mutate
+query negative_into_u64() {
+    insert Account { slug: "d", balance: 1, size: -1 }
+}
+
+--- expect error: integer value -1 exceeds UInt64 range
+
+--- query
+query refused_insert_wrote_nothing() {
+    match {
+        $a: Account
+        $a.balance > -9223372036854775808
+    }
+    return { $a.slug }
+}
+
+--- expect unordered
+{"a.slug": "a"}
+{"a.slug": "b"}
+{"a.slug": "c"}
+
+--- expect shape
+a.slug: String

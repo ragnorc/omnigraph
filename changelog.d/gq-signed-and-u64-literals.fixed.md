@@ -1,0 +1,1 @@
+- A GQ filter, list, `insert` or `update` accepts a negative number literal (`-100`, `-0.25`) and an integer literal up to `18446744073709551615`; before, these were parse errors and needed a parameter.

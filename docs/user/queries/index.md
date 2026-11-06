@@ -64,6 +64,12 @@ null, and `not null` is null. A filter or mutation `where` keeps only rows
 whose expression is true, so `not ($p.age > 30)` skips rows whose `age` is
 null.
 
+A number literal may carry a leading `-` with no space (`-100`, `-0.25`). An
+integer literal holds any `I64` or `U64` value, from `-9223372036854775808` to
+`18446744073709551615`; its own type is `I64`, or `U64` above the `I64` range,
+and a value outside both is a parse error. A list literal cannot mix a
+negative integer with one above the `I64` range (`T53`).
+
 Numeric comparisons choose their types before execution. A literal may use a
 property's type when its value is exactly representable in that type; otherwise
 both operands use a common numeric type. Parameters use their declared type,

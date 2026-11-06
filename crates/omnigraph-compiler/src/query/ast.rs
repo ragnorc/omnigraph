@@ -1017,6 +1017,10 @@ impl std::fmt::Display for AggFunc {
     }
 }
 
+/// The refusal for an integer literal no declared integer type can hold:
+/// below `I64`'s minimum or above `U64`'s maximum.
+pub const INTEGER_LITERAL_RANGE: &str = "integer literal is outside the I64 and U64 ranges";
+
 #[derive(Debug, Clone)]
 pub enum Literal {
     Null,

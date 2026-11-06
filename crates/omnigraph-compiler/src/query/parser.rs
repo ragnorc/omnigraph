@@ -1562,12 +1562,16 @@ fn parse_literal(pair: pest::iterators::Pair<Rule>) -> Result<Literal> {
     let inner = pair.into_inner().next().unwrap();
     match inner.as_rule() {
         Rule::string_lit => Ok(Literal::String(parse_string_lit(&inner)?)),
-        Rule::integer => {
-            let n: i64 = inner
+        Rule::signed_integer => {
+            // The literal keeps its exact value when some declared integer
+            // type holds it; the type checker types it `I64`, else `U64`.
+            inner
                 .as_str()
-                .parse()
-                .map_err(|e| query_error_at(format!("invalid integer: {}", e), &inner))?;
-            Ok(Literal::Integer(i128::from(n)))
+                .parse::<i128>()
+                .ok()
+                .filter(|n| i64::try_from(*n).is_ok() || u64::try_from(*n).is_ok())
+                .map(Literal::Integer)
+                .ok_or_else(|| query_error_at(INTEGER_LITERAL_RANGE.to_string(), &inner))
         }
         Rule::float_lit => {
             let f: f64 = inner
