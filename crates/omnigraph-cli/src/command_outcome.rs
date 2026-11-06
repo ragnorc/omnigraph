@@ -355,6 +355,12 @@ impl Failure {
                 },
             }
         };
+        // A query diagnostic is the compiler refusing the source: a fault in
+        // the request, which a server answers as `bad_request` (issue 1281).
+        let mut output = output;
+        if output.code.is_none() && output.diagnostic.is_some() {
+            output.code = Some(ErrorCode::BadRequest);
+        }
         let served = served.or_else(|| output.disposition.filter(|_| engine_write && embedded));
         let not_started = read
             || admission.is_some()
