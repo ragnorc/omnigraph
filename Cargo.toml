@@ -144,3 +144,10 @@ opt-level = 2
 lto = "thin"
 codegen-units = 16
 strip = true
+
+# PROTOTYPE (issue 1274): Lance 13.0.0 with a minimal backport of
+# lance-format/lance#9888 (`MergeInsertBuilder` write params), so a keyed
+# merge can keep an external Blob reference outside registered bases.
+# Remove once the pin moves to a Lance release that contains #9888.
+[patch.crates-io]
+lance = { path = "vendor/lance" }
