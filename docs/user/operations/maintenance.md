@@ -154,6 +154,20 @@ branch is `main`.
 trust boundary. An embedded host that installs a policy checker also enforces
 the Change permission on the selected branch before building or rebuilding.
 
+Lance builds each full-text index with its own memory defaults, and no
+Omnigraph setting changes them. Lance runs about half the CPUs it sees as
+build workers, and each worker holds up to 2 GiB of postings before it writes
+a partition. On a host where Lance sees 32 CPUs, that is 16 workers and up to
+32 GiB for one column. The build also reads the column ahead of the workers,
+up to `LANCE_DEFAULT_IO_BUFFER_SIZE` (2 GiB by default). To lower the ceiling,
+set `LANCE_FTS_NUM_SHARDS` (workers) and `LANCE_FTS_PARTITION_SIZE` (MiB per
+worker) in the environment of the process that runs the build. These
+variables apply to the whole process. A smaller share per worker writes more
+partitions, and every query searches every partition: on 3 million documents,
+64 MiB per worker over 16 workers wrote 25 partitions instead of 1 and made
+search about three times slower. Fewer workers with larger shares keep the
+partition count low.
+
 Other branches and historical snapshots are not rewritten. Rebuild every live
 branch that needs full-text search; restoring an older snapshot may require
 rebuilding again. The operation does not regenerate embeddings or alter entity
