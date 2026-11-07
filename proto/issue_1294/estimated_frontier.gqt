@@ -1,0 +1,75 @@
+# issue: 1294
+# red_on: probe
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine-dst
+    storage: in-memory-object-store
+    seeds: [0]
+
+--- schema
+node Hub {
+    name: String @key
+}
+node Person {
+    name: String @key
+    age: I64?
+}
+edge Follows: Hub -> Person
+
+--- seed generate: v1 seed: 7
+tables:
+  - kind: node
+    name: Person
+    rows: 40000
+    commits: 10
+    columns:
+      name: {kind: key, prefix: p, width: 5}
+      age: {kind: modulo, modulus: 90}
+  - kind: node
+    name: Hub
+    rows: 12
+    commits: 1
+    columns:
+      name: {kind: key, prefix: h, width: 2}
+  - kind: edge
+    name: Follows
+    rows: 3072
+    commits: 1
+    from: {kind: key, prefix: h, width: 2, modulo: 12}
+    to: {kind: key, prefix: p, width: 5}
+    columns: {}
+
+--- query
+query one_hub() { match { $h: Hub { name: "h00" } $h follows $f } return { sum($f.age) as total, count($f) as n } }
+--- expect unordered
+{"n": 256, "total": 10710}
+--- expect shape
+total: F64?
+n: I64
+
+--- query
+query all_hubs() { match { $h: Hub $h follows $f } return { sum($f.age) as total, count($f) as n } }
+--- expect unordered
+{"n": 3072, "total": 136236}
+--- expect shape
+total: F64?
+n: I64
+--- expect plan
+scan Person as $f: access id_lookup
+
+--- query
+query one_hub_again() { match { $h: Hub { name: "h00" } $h follows $f } return { sum($f.age) as total, count($f) as n } }
+--- expect unordered
+{"n": 256, "total": 10710}
+--- expect shape
+total: F64?
+n: I64
+
+--- query
+query whole_table() { match { $f: Person } return { sum($f.age) as total, count($f) as n } }
+--- expect unordered
+{"n": 40000, "total": 1779000}
+--- expect shape
+total: F64?
+n: I64
