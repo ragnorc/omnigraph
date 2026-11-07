@@ -3648,3 +3648,231 @@ async fn schema_evolution_plans_metadata_only_steps_and_refuses_rewrites() {
         unmarked.schema().field("age").unwrap().id
     );
 }
+
+/// Resident memory of this process (`VmRSS`), in bytes. `VmHWM` is not
+/// reported on every kernel (gVisor), so the instrument samples this.
+fn issue_1296_rss_bytes() -> u64 {
+    let status = std::fs::read_to_string("/proc/self/status").unwrap();
+    let line = status
+        .lines()
+        .find(|line| line.starts_with("VmRSS:"))
+        .expect("VmRSS line");
+    let kib: u64 = line
+        .split_whitespace()
+        .nth(1)
+        .and_then(|value| value.parse().ok())
+        .expect("VmRSS value");
+    kib * 1024
+}
+
+/// Issue #1296 instrument: the memory one full-text build holds through
+/// `stage_create_indices`, Omnigraph's full build path. The corpus is
+/// written in streamed batches; the build's growth is the sampled peak
+/// resident memory during `stage_create_indices` over the level before it. Run one configuration
+/// per process: Lance reads `LANCE_FTS_PARTITION_SIZE` (MiB per worker) and
+/// `LANCE_CPU_THREADS` once. `OMNIGRAPH_ISSUE_1296_ROWS` sets the corpus.
+#[tokio::test(flavor = "multi_thread")]
+#[ignore = "instrument: peak RSS of one full-text build; run with --ignored --nocapture"]
+async fn full_text_build_memory_is_bounded_only_by_lance_defaults_issue_1296() {
+    use lance_index::scalar::FullTextSearchQuery;
+
+    let rows: usize = std::env::var("OMNIGRAPH_ISSUE_1296_ROWS")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(1_000_000);
+    let words_per_doc = 40usize;
+    let vocabulary = 500_000u64;
+    let batch_rows = 16_384usize;
+
+    let dir = tempfile::tempdir().unwrap();
+    let uri = format!("{}/corpus.lance", dir.path().to_str().unwrap());
+    let store = TableStore::new(dir.path().to_str().unwrap(), test_session());
+    let schema = Arc::new(Schema::new(vec![
+        Field::new("id", DataType::Utf8, false),
+        Field::new("body", DataType::Utf8, false),
+    ]));
+    let word = |n: u64| {
+        let mut n = n;
+        let mut out = String::from("w");
+        loop {
+            out.push((b'a' + (n % 26) as u8) as char);
+            n /= 26;
+            if n == 0 {
+                break out;
+            }
+        }
+    };
+    let batch_schema = schema.clone();
+    let batches = (0..rows.div_ceil(batch_rows)).map(move |batch| {
+        let start = batch * batch_rows;
+        let end = (start + batch_rows).min(rows);
+        let mut state = 0x9E37_79B9_7F4A_7C15u64 ^ start as u64;
+        let mut ids = Vec::with_capacity(end - start);
+        let mut bodies = Vec::with_capacity(end - start);
+        for row in start..end {
+            ids.push(format!("doc{row}"));
+            let mut body = String::new();
+            for _ in 0..words_per_doc {
+                state = state
+                    .wrapping_mul(6_364_136_223_846_793_005)
+                    .wrapping_add(1_442_695_040_888_963_407);
+                // Skewed toward small ids: a shared head and a long tail.
+                let draw = (state >> 33) % vocabulary;
+                let skewed = (draw * draw) / vocabulary;
+                body.push_str(&word(skewed));
+                body.push(' ');
+            }
+            bodies.push(body);
+        }
+        Ok(RecordBatch::try_new(
+            batch_schema.clone(),
+            vec![
+                Arc::new(StringArray::from(ids)),
+                Arc::new(StringArray::from(bodies)),
+            ],
+        )
+        .unwrap())
+    });
+    let reader = arrow_array::RecordBatchIterator::new(batches, schema.clone());
+    let params = lance::dataset::WriteParams {
+        enable_stable_row_ids: true,
+        data_storage_version: Some(lance_file::version::LanceFileVersion::V2_2),
+        skip_auto_cleanup: true,
+        ..Default::default()
+    };
+    let ds = Dataset::write(reader, &uri, Some(params)).await.unwrap();
+
+    let before = issue_1296_rss_bytes();
+    let heap_before = crate::test_heap::live();
+    crate::test_heap::reset_peak();
+    let sampling = Arc::new(std::sync::atomic::AtomicBool::new(true));
+    let sampler = {
+        let sampling = sampling.clone();
+        std::thread::spawn(move || {
+            let mut peak = 0u64;
+            while sampling.load(std::sync::atomic::Ordering::Relaxed) {
+                peak = peak.max(issue_1296_rss_bytes());
+                std::thread::sleep(std::time::Duration::from_millis(5));
+            }
+            peak.max(issue_1296_rss_bytes())
+        })
+    };
+    let started = std::time::Instant::now();
+    // `OMNIGRAPH_ISSUE_1296_RAW=1` calls Lance's builder directly with
+    // Lance's default parameters and none of Omnigraph's steps around it.
+    let raw = std::env::var("OMNIGRAPH_ISSUE_1296_RAW").is_ok_and(|value| value == "1");
+    let (index_uuid, staged) = if raw {
+        use lance::index::DatasetIndexExt;
+        let mut builder_ds = ds.clone();
+        let index = builder_ds
+            .create_index_builder(
+                &["body"],
+                lance_index::IndexType::Inverted,
+                &lance_index::scalar::InvertedIndexParams::default(),
+            )
+            .replace(true)
+            .execute_uncommitted()
+            .await
+            .unwrap();
+        (index.uuid, None)
+    } else {
+        let staged = store
+            .stage_create_indices(
+                &ds,
+                &[IndexBuildSpec::FullText {
+                    column: "body".into(),
+                }],
+            )
+            .await
+            .unwrap();
+        let Operation::CreateIndex { new_indices, .. } = &staged.transaction.operation else {
+            panic!("expected CreateIndex");
+        };
+        (new_indices[0].uuid, Some(staged))
+    };
+    let build = started.elapsed();
+    sampling.store(false, std::sync::atomic::Ordering::Relaxed);
+    let after = sampler.join().unwrap();
+    let heap_growth = (crate::test_heap::peak() - heap_before).max(0) as u64;
+    let heap_held = (crate::test_heap::live() - heap_before).max(0) as u64;
+
+    let index_dir = format!("{uri}/_indices/{index_uuid}");
+    let mut partitions = std::collections::BTreeSet::new();
+    let mut index_bytes = 0u64;
+    for entry in std::fs::read_dir(&index_dir).unwrap() {
+        let entry = entry.unwrap();
+        index_bytes += entry.metadata().unwrap().len();
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if let Some(rest) = name.strip_prefix("part_")
+            && let Some(id) = rest.split('_').next()
+        {
+            partitions.insert(id.to_string());
+        }
+    }
+    println!(
+        "ISSUE_1296_BUILD raw={raw} rows={rows} heap_peak_growth_mib={} heap_held_after_mib={} \
+         partitions={} index_mib={}",
+        heap_growth >> 20,
+        heap_held >> 20,
+        partitions.len(),
+        index_bytes >> 20,
+    );
+    let Some(staged) = staged else {
+        return;
+    };
+    let (built, _) = store
+        .commit_staged_exact(Arc::new(ds.clone()), staged)
+        .await
+        .unwrap();
+    let mut results = Vec::new();
+    let search_started = std::time::Instant::now();
+    for term in [word(3), word(4_000), word(250_000)] {
+        let batches: Vec<_> =
+            TableStore::scan_stream_with(&built, Some(&["id"]), None, None, false, |scan| {
+                scan.full_text_search(FullTextSearchQuery::new(term.clone()).limit(Some(10)))
+                    .map_err(OmniError::storage)?;
+                Ok(())
+            })
+            .await
+            .unwrap()
+            .try_collect()
+            .await
+            .unwrap();
+        let mut top = Vec::new();
+        for batch in &batches {
+            let ids = batch
+                .column_by_name("id")
+                .unwrap()
+                .as_any()
+                .downcast_ref::<StringArray>()
+                .unwrap();
+            let scores = batch
+                .column_by_name("_score")
+                .unwrap()
+                .as_any()
+                .downcast_ref::<arrow_array::Float32Array>()
+                .unwrap();
+            for row in 0..batch.num_rows() {
+                top.push(format!("{}:{:.4}", ids.value(row), scores.value(row)));
+            }
+        }
+        results.push(format!("{term}=[{}]", top.join(",")));
+    }
+    let search = search_started.elapsed();
+    println!(
+        "ISSUE_1296 rows={rows} partition_mib={} cpu_threads={} rss_before_mib={} \
+         peak_during_build_mib={} build_growth_mib={} heap_peak_growth_mib={} build_s={:.1} partitions={} index_mib={} \
+         search_ms={}",
+        std::env::var("LANCE_FTS_PARTITION_SIZE").unwrap_or_else(|_| "default".into()),
+        std::env::var("LANCE_CPU_THREADS").unwrap_or_else(|_| "default".into()),
+        before >> 20,
+        after >> 20,
+        after.saturating_sub(before) >> 20,
+        heap_growth >> 20,
+        build.as_secs_f64(),
+        partitions.len(),
+        index_bytes >> 20,
+        search.as_millis(),
+    );
+    println!("ISSUE_1296_RESULTS {}", results.join(" "));
+}

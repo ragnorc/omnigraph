@@ -127,6 +127,7 @@ mod tests {
     }
 
     fn count(bytes: isize) {
+        crate::test_heap::record(bytes);
         if COUNTING.get() {
             let live = LIVE.get() + bytes;
             LIVE.set(live);

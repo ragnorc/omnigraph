@@ -15,6 +15,8 @@ pub mod changes;
 #[cfg(test)]
 mod core_tests;
 pub mod db;
+#[cfg(test)]
+pub(crate) mod test_heap;
 #[cfg(feature = "dst")]
 pub use omnigraph_core::dst_clock;
 #[cfg(not(feature = "dst"))]
