@@ -1877,6 +1877,43 @@ decide_seam! {
     pub static CHANGE_FEED_ETAG_WITNESS = ("change_feed.etag_witness", Unreachable, [Skip]);
 }
 
+/// The posting memory one full-text build may hold, in total across Lance's
+/// build workers, unless `OMNIGRAPH_INDEX_BUILD_MEMORY_BYTES` sets another.
+/// Lance's own default is 2 GiB per worker and about half the CPUs it sees
+/// as workers (16 on a 32-CPU host, a 32 GiB ceiling), which no Omnigraph
+/// setting sees (#1296). Prototype: this bounds the posting builders only;
+/// the training scan, the tokenizers and the partition writes are outside
+/// it.
+pub(crate) const DEFAULT_FULL_TEXT_BUILD_MEMORY_BYTES: u64 = 1 << 30;
+
+/// The least posting memory one build worker gets. Lance flushes a worker's
+/// postings as a partition when the worker reaches its share, and every
+/// partition is searched by every query, so a small share multiplies
+/// partitions: on 3M documents a 1 GiB bound over 16 workers wrote 25
+/// partitions and tripled search time, over 4 workers 3 partitions and
+/// equal search time.
+pub(crate) const MIN_FULL_TEXT_WORKER_MEMORY_BYTES: u64 = 256 << 20;
+
+/// `InvertedIndexParams` for a full build: Lance's defaults with the posting
+/// builders' memory bounded and the worker count cut so each worker keeps
+/// at least [`MIN_FULL_TEXT_WORKER_MEMORY_BYTES`]. Both are build-time
+/// parameters Lance does not persist with the index, so the analyzer
+/// certificate and the index details are unchanged.
+pub(crate) fn full_text_build_params() -> InvertedIndexParams {
+    let bytes = std::env::var("OMNIGRAPH_INDEX_BUILD_MEMORY_BYTES")
+        .ok()
+        .and_then(|value| value.parse::<u64>().ok())
+        .filter(|value| *value > 0)
+        .unwrap_or(DEFAULT_FULL_TEXT_BUILD_MEMORY_BYTES);
+    let lance_workers = *lance_index::scalar::inverted::builder::LANCE_FTS_NUM_SHARDS;
+    let workers = usize::try_from(bytes / MIN_FULL_TEXT_WORKER_MEMORY_BYTES)
+        .unwrap_or(usize::MAX)
+        .clamp(1, lance_workers.max(1));
+    InvertedIndexParams::default()
+        .memory_limit_mb((bytes >> 20).max(1))
+        .num_workers(workers)
+}
+
 impl TableStore {
     pub(crate) fn session(&self) -> Arc<lance::session::Session> {
         self.session.clone()
@@ -5619,7 +5656,7 @@ impl TableStore {
                     builder.replace(true).execute_uncommitted().await
                 }
                 IndexBuildSpec::FullText { column } => {
-                    let params = InvertedIndexParams::default();
+                    let params = full_text_build_params();
                     ds_clone
                         .create_index_builder(&[column.as_str()], IndexType::Inverted, &params)
                         .replace(true)
