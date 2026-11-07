@@ -114,7 +114,7 @@ across runs.
 
 ### 1. L-index-tail-cost: access paths are chosen without index coverage, and each id-lookup slice rescans the uncovered tail — M
 
-**Issue:** #TBD-tail
+**Issue:** #1294
 
 - **Now.** `choose_access_path` picks an id lookup or a hash join from row counts and build bytes
   only (`crates/omnigraph-planner/src/cost.rs:116-130`). The scan-access pass records whether an
@@ -148,7 +148,7 @@ across runs.
 
 ### 2. L-merge-delete-rowid: branch-merge deletes search by `id IN (...)` although the walk holds `_rowid` — S to M
 
-**Issue:** #TBD-rowid
+**Issue:** #1295
 
 - **Now.** `commit_staged_delete_chunks` stages each chunk as `id IN (ids)` through Lance's delete
   (`engine-src/exec/merge.rs:4454-4478`; ids collected near `:1988`). Each chunk searches the
@@ -173,7 +173,7 @@ across runs.
 
 ### 3. L-fts-build-bounds: full-text index builds run at Lance's default workers and memory — S
 
-**Issue:** #TBD-fts
+**Issue:** #1296
 
 - **Now.** Every full-text build uses `InvertedIndexParams::default()`
   (`engine-src/table_store.rs:5622` for full builds, `:4437` for untrained ones). It sets neither
@@ -196,7 +196,7 @@ across runs.
 
 ### 4. L-vector-metric-pin: the L2 and exhaustive-search promises depend on who built the index — S
 
-**Issue:** #TBD-metric
+**Issue:** #1297
 
 - **Now.** `nearest` never sets `distance_metric` (`engine-src/engine/scan.rs:402-413`). The index
   facts classify any vector index as vector without reading its details
@@ -219,7 +219,7 @@ across runs.
 
 ### 5. Small items — S each
 
-**Issue:** #TBD-small (both items)
+**Issue:** #1298 (both items)
 
 - **L-coverage-one-source.** Three coverage calculations disagree.
   `key_column_index_coverage` takes the first BTREE segment it finds (`.find`) and treats an
@@ -238,14 +238,14 @@ across runs.
 
 ## New evidence on existing issues
 
-- **`fuzzy()` expansion cap (#748).** Comment: #TBD-c748. `build_fts_query` sets neither
+- **`fuzzy()` expansion cap (#748).** Comment: #748 (issuecomment-6706190052). `build_fts_query` sets neither
   `max_expansions` nor `prefix_length` (`engine-src/engine/scan.rs:946-948`). Lance's 50-term
   expansion budget is shared across the query's words
   (`lance-index-13.0.0/src/scalar/inverted.rs:118-175`). Measured with a scratch `.gqt` on
   `omnigraph-engine`, local filesystem: with 76 indexed titles one edit from `kat` and one titled
   `qqq`, `fuzzy(title, "kat qqq", 1)` returns exactly 50 rows and misses `qqq`; `fuzzy(title,
   "qqq", 1)` finds it.
-- **BM25 never passes its limit to Lance (RFC 0048, #793).** Comment: #TBD-c793. The ranking query
+- **BM25 never passes its limit to Lance (RFC 0048, #793).** Comment: #793 (issuecomment-6706190278). The ranking query
   is `FullTextSearchQuery::new(text).with_column(prop)` with no limit
   (`engine-src/engine/scan.rs:217-219`), so Lance scores and sorts every match and fetches each
   match's `id`. Lance takes a limit from the query or the scanner
@@ -309,3 +309,15 @@ These look like underused primitives and are not. Do not undo them.
 - The DST storage-cost golden cannot show the effects in this area, because its tables are too
   small to have an uncovered tail. A large-table instrument for index coverage would let the next
   run measure L-index-tail-cost.
+
+## Filed issues
+
+| Finding | Issue |
+|---|---|
+| L-index-tail-cost | #1294 |
+| L-merge-delete-rowid | #1295 |
+| L-fts-build-bounds | #1296 |
+| L-vector-metric-pin | #1297 |
+| L-coverage-one-source, L-blob-take-rows | #1298 |
+| `fuzzy()` expansion cap (evidence) | comment on #748 |
+| BM25 limit not passed to Lance (evidence) | comment on #793 |
