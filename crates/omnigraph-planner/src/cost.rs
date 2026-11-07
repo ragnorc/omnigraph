@@ -109,20 +109,30 @@ pub fn hydrate_chunk_bytes(pool: u64) -> u64 {
     (pool / 8).max(1)
 }
 
-/// The access path of a dependent scan. `HashJoin` needs both: the table
-/// holds at most `HASH_JOIN_RATIO` rows per frontier row, and the build
-/// side's estimated bytes are known and at most `build_bytes_budget`.
+/// Destination ids one id-lookup read resolves: the dependent scan reads in
+/// slices of at most this many input rows (the `Expand` chunk size).
+pub const LOOKUP_SLICE_ROWS: u64 = 256;
+
+/// The access path of a dependent scan. `HashJoin` needs the build side's
+/// estimated bytes known and at most `build_bytes_budget`, and either the
+/// table holds at most `HASH_JOIN_RATIO` rows per frontier row, or the
+/// lookup's slices would together scan more rows of the destination's
+/// uncovered `__id` tail (`tail_rows`, every row when no BTREE covers it) than
+/// the table holds: each slice scans that tail again.
 /// `None` when either row count is unknown (the model did not decide).
 pub fn choose_access_path(
     frontier_rows: Option<u64>,
     table_rows: Option<u64>,
+    tail_rows: Option<u64>,
     build_bytes: Option<u64>,
     build_bytes_budget: u64,
 ) -> Option<AccessPath> {
     let (frontier, rows) = (frontier_rows?, table_rows?);
     let few_rows = rows <= frontier.saturating_mul(HASH_JOIN_RATIO);
+    let slices = frontier.div_ceil(LOOKUP_SLICE_ROWS).max(1);
+    let tail_rescans = tail_rows.is_some_and(|tail| slices.saturating_mul(tail) > rows);
     let fits = build_bytes.is_some_and(|bytes| bytes <= build_bytes_budget);
-    Some(if few_rows && fits {
+    Some(if (few_rows || tail_rescans) && fits {
         AccessPath::HashJoin
     } else {
         AccessPath::IdLookup
@@ -873,7 +883,7 @@ mod tests {
     /// frontier of 1 (8 < 20) look ids up; an unknown count decides nothing.
     #[test]
     fn access_path_joins_when_the_table_is_at_most_eight_frontiers() {
-        let path = |frontier, rows| choose_access_path(frontier, rows, Some(0), 0);
+        let path = |frontier, rows| choose_access_path(frontier, rows, None, Some(0), 0);
         assert_eq!(path(Some(20_000), Some(20_000)), Some(AccessPath::HashJoin));
         assert_eq!(path(Some(6), Some(6)), Some(AccessPath::HashJoin));
         assert_eq!(path(Some(1), Some(8)), Some(AccessPath::HashJoin));
@@ -891,12 +901,12 @@ mod tests {
     #[test]
     fn access_path_joins_only_when_the_build_side_fits_the_budget() {
         let budget = 150 * 1024 * 1024 / HASH_JOIN_POOL_DIVISOR;
-        let path = |bytes| choose_access_path(Some(20_000), Some(20_000), bytes, budget);
+        let path = |bytes| choose_access_path(Some(20_000), Some(20_000), None, bytes, budget);
         assert_eq!(path(Some(budget)), Some(AccessPath::HashJoin));
         assert_eq!(path(Some(budget + 1)), Some(AccessPath::IdLookup));
         assert_eq!(path(None), Some(AccessPath::IdLookup));
         assert_eq!(
-            choose_access_path(Some(1), Some(20), Some(0), budget),
+            choose_access_path(Some(1), Some(20), None, Some(0), budget),
             Some(AccessPath::IdLookup)
         );
     }

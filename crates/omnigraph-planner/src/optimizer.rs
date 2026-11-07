@@ -4034,7 +4034,14 @@ impl Lowering<'_> {
             )
         });
         let budget = self.source.query_memory_pool_bytes() / HASH_JOIN_POOL_DIVISOR;
-        let Some(access) = choose_access_path(frontier, rows, build_bytes, budget) else {
+        let tail = rows.and_then(|rows| {
+            id_tail_rows(
+                rows,
+                &self.source.index_facts(&spec.table.type_key),
+                node_type.columns.id,
+            )
+        });
+        let Some(access) = choose_access_path(frontier, rows, tail, build_bytes, budget) else {
             return Ok(AccessPath::IdLookup);
         };
         self.access_path = true;
@@ -4224,7 +4231,7 @@ pub fn column_statistics_needed(
             |_| Some(0),
         );
         if budget == 0
-            || choose_access_path(frontier, Some(rows), minimum, budget)
+            || choose_access_path(frontier, Some(rows), None, minimum, budget)
                 != Some(AccessPath::HashJoin)
         {
             continue;
@@ -4236,11 +4243,29 @@ pub fn column_statistics_needed(
             spec.projection.as_deref(),
             |column| source.column_data_bytes(&spec.table.type_key, column),
         );
-        if choose_access_path(frontier, Some(rows), current, budget) != Some(AccessPath::HashJoin) {
+        if choose_access_path(frontier, Some(rows), None, current, budget) != Some(AccessPath::HashJoin) {
             tables.insert(spec.table.type_key.clone());
         }
     }
     Ok(tables)
+}
+
+/// Estimated rows of `rows` that no usable `column` BTREE covers, from the
+/// pinned fragment coverage (rows spread evenly over fragments): all of them
+/// when no BTREE names the column, `None` when a BTREE's coverage is unknown.
+fn id_tail_rows(rows: u64, facts: &[crate::IndexFact], column: &str) -> Option<u64> {
+    let mut btrees = facts.iter().filter(|fact| {
+        fact.column == column && matches!(fact.kind, crate::IndexKind::Btree { usable: true })
+    });
+    let Some(fact) = btrees.next() else {
+        return Some(rows);
+    };
+    let coverage = fact.coverage?;
+    if coverage.total == 0 {
+        return Some(0);
+    }
+    let uncovered = coverage.total.saturating_sub(coverage.covered);
+    Some(rows.saturating_mul(uncovered) / coverage.total)
 }
 
 /// Hash-build sizing heuristic: projected fixed widths plus compressed bytes
