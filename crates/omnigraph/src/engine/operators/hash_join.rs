@@ -429,7 +429,7 @@ impl Streamed for Probe {
                     Ok(Flow::Continue)
                 }
                 Side::Lookup(lookup) => {
-                    lookup.resolve(batch, memory, sender).await?;
+                    lookup.resolve(batch, memory, sender, 256).await?;
                     Ok(Flow::Continue)
                 }
                 Side::Empty => Ok(Flow::Stop),

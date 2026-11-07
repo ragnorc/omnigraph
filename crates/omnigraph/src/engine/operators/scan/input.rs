@@ -75,8 +75,13 @@ impl ScanExec {
             }),
             declared: self.schema(),
         };
+        let coalesced = Coalesced {
+            lookup,
+            pending: Vec::new(),
+            rows: 0,
+        };
         let input = Arc::clone(input);
-        Ok(shape.produce(memory, &self.metrics, move || input.execute(0, ctx), lookup))
+        Ok(shape.produce(memory, &self.metrics, move || input.execute(0, ctx), coalesced))
     }
 }
 
@@ -95,10 +100,15 @@ impl Lookup {
         batch: RecordBatch,
         memory: &Arc<WorkMemory>,
         sender: &BatchSender,
+        slice_rows: usize,
     ) -> DfResult<()> {
         let held = memory.child("scan candidate input")?;
         held.hold(&batch)?;
-        let rows = memory.ctx.session_config().batch_size().clamp(1, 256);
+        let rows = memory
+            .ctx
+            .session_config()
+            .batch_size()
+            .clamp(1, slice_rows);
         for offset in (0..batch.num_rows()).step_by(rows) {
             let work = Arc::new(memory.child("destination scan batch")?);
             let candidates = batch.slice(offset, rows.min(batch.num_rows() - offset));
@@ -131,9 +141,62 @@ impl Streamed for Lookup {
     ) -> BoxFuture<'a, DfResult<Flow>> {
         Box::pin(async move {
             memory.metric("input_rows", batch.num_rows());
-            self.resolve(batch, memory, sender).await?;
+            self.resolve(batch, memory, sender, 256).await?;
             Ok(Flow::Continue)
         })
+    }
+}
+
+/// Prototype (#1294): the dependent scan gathers its input up to
+/// `COALESCED_LOOKUP_ROWS` ids before one Lance read, so an uncovered `__id`
+/// tail is scanned once per that many ids instead of once per 256.
+const COALESCED_LOOKUP_ROWS: usize = 4096;
+
+struct Coalesced {
+    lookup: Lookup,
+    pending: Vec<RecordBatch>,
+    rows: usize,
+}
+
+impl Coalesced {
+    async fn flush(&mut self, memory: &Arc<WorkMemory>, sender: &BatchSender) -> DfResult<()> {
+        if self.pending.is_empty() {
+            return Ok(());
+        }
+        let schema = self.pending[0].schema();
+        let batch = arrow_select::concat::concat_batches(&schema, &self.pending)?;
+        self.pending.clear();
+        self.rows = 0;
+        self.lookup
+            .resolve(batch, memory, sender, COALESCED_LOOKUP_ROWS)
+            .await
+    }
+}
+
+impl Streamed for Coalesced {
+    fn batch<'a>(
+        &'a mut self,
+        batch: RecordBatch,
+        memory: &'a Arc<WorkMemory>,
+        sender: &'a BatchSender,
+    ) -> BoxFuture<'a, DfResult<Flow>> {
+        Box::pin(async move {
+            memory.metric("input_rows", batch.num_rows());
+            self.rows += batch.num_rows();
+            self.pending.push(batch);
+            if self.rows >= COALESCED_LOOKUP_ROWS {
+                self.flush(memory, sender).await?;
+            }
+            Ok(Flow::Continue)
+        })
+    }
+
+    fn finish<'a>(
+        &'a mut self,
+        memory: &'a Arc<WorkMemory>,
+        sender: &'a BatchSender,
+    ) -> BoxFuture<'a, DfResult<()>> {
+        Box::pin(async move { self.flush(memory, sender).await })
     }
 }
 
