@@ -1249,6 +1249,9 @@ fn the_edition2_corpus_read_as_edition_3() {
                 } else {
                     format!("Q008 {kind}")
                 };
+                if e.code.as_str() == "Q018" {
+                    eprintln!("Q018 in {origin}: {}", e.message);
+                }
                 *refused_by.entry(key).or_default() += 1;
                 continue;
             }
@@ -1435,5 +1438,37 @@ fn recognizers_shadow_only_ill_typed_text() {
     assert_eq!(
         code3("query q() { match { let($a) in [1] } return { 1 } }"),
         "Q012"
+    );
+}
+
+#[test]
+fn reserved_words_between_two_variables() {
+    // grammar2 finding 9: of the six reserved words, only `is` and `null`
+    // between two variables are parse errors. `and`, `or`, `in` and `not`
+    // there are legal expressions (`$a not $b` is two filters), so a bare
+    // edge of that name can be refused only by the type checker.
+    for word in ["and", "or", "in"] {
+        let c = match_clauses(&format!("$a: Person  $a {word} $b"));
+        assert!(matches!(c[1], Clause3::Filter(_)), "{word}: {c:#?}");
+    }
+    assert_eq!(match_clauses("$a: Person  $a not $b").len(), 3);
+    for word in ["is", "null"] {
+        assert!(
+            parse3(&format!(
+                "query q() {{ match {{ $a: Person  $a {word} $b }} return {{ 1 }} }}"
+            ))
+            .is_err(),
+            "{word}"
+        );
+    }
+}
+
+#[test]
+fn a_date_literal_with_a_space_is_still_the_literal() {
+    // grammar2 finding 10: `date_lit` is edition 2's rule, not atomic, so
+    // `date ("…")` is the literal although a call's name touches its `(`.
+    assert_eq!(
+        filter_expr("$d.at > date (\"2025-01-01\")"),
+        filter_expr("$d.at > date(\"2025-01-01\")")
     );
 }
