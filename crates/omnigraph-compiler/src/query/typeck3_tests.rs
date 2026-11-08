@@ -363,7 +363,75 @@ fn the_edition2_corpus_type_checks_alike_in_both_editions() {
             eprintln!("      {x}");
         }
     }
-    let _ = &differ;
+    // The verdicts that change acceptance, pinned. Every row is a rule
+    // edition 3 changes, a finding of docs/spikes/gq3-typeck.md:
+    // - T65 (156), T71 (4): the rewriter's ranking and positional-option rows.
+    // - T68 (5): an inner binding of an outer name, which edition 2 reads as
+    //   a filter on the outer row; no rewriter row covers it (finding 4).
+    // - T5 (4): a block naming a variable bound later in the scope now
+    //   correlates on it (finding 5).
+    // - T76 (1): two different upserts of one key in one write (finding 6).
+    // - T42 (3): an order key over grouped rows that is neither a key nor an
+    //   aggregate item (edition 2 admits a meta-field there).
+    // - edition 3 accepting: T40 lifted (1); a traversal with no anchored
+    //   endpoint, which edition 2 refuses as unexecutable and the core reads
+    //   as a Correlate (4); an order key that is not a return item (1); a
+    //   Boolean or property item beside aggregates (2).
+    let mut changed: BTreeMap<String, usize> = BTreeMap::new();
+    for (k, v) in &differ {
+        let ok2 = k.contains("edition 2   ok");
+        let ok3 = k.ends_with("edition 3   ok");
+        if ok2 != ok3 {
+            *changed.entry(k.clone()).or_default() += v.len();
+        }
+    }
+    let want: BTreeMap<String, usize> = [
+        ("edition 2   ok / edition 3   T5", 4),
+        ("edition 2   ok / edition 3  T42", 3),
+        ("edition 2   ok / edition 3  T65", 156),
+        ("edition 2   ok / edition 3  T68", 5),
+        ("edition 2   ok / edition 3  T71", 4),
+        ("edition 2   ok / edition 3  T76", 1),
+        ("edition 2   T5 / edition 3   ok", 4),
+        ("edition 2   T9 / edition 3   ok", 1),
+        ("edition 2  T40 / edition 3   ok", 1),
+        ("edition 2  T42 / edition 3   ok", 1),
+        ("edition 2  T58 / edition 3   ok", 1),
+    ]
+    .into_iter()
+    .map(|(k, v)| (k.to_string(), v))
+    .collect();
+    assert_eq!(changed, want);
+    assert!(agree * 100 >= total * 88, "{agree} of {total}");
+}
+
+/// Finding 5: a block correlates on a variable the enclosing scope binds
+/// after it. Edition 2 reads `$x` in the block as local (the GQT case
+/// `issue_659_compiler_scopes.gqt` pins that); the RFC's "a filter or block
+/// waits for every variable it names" correlates it. With both of one type,
+/// the text is accepted by both and means two things.
+#[test]
+fn a_block_naming_a_later_variable_changes_meaning_silently() {
+    let src = "query q() { match { $p: Person  not { $p knows $x }  $x: Person { handle: \"q\" } } return { $p } }";
+    assert_eq!(e2(src), "ok");
+    let c = ok(src);
+    let text = format!("{:?}", read_of(&c).term);
+    assert!(
+        text.contains("Env([Col { name: \"p\"") && text.contains("Col { name: \"x\", ty: Node"),
+        "the block's Env carries both `p` and `x`: {text}"
+    );
+}
+
+/// Finding 4: edition 2 reads a block's binding of an outer variable as a
+/// filter on the outer row (`not { $p: Person { name: "bob" } }` is "`$p` is
+/// not bob"); edition 3 refuses it, and the rewriter has no row for it.
+#[test]
+fn an_inner_rebinding_that_edition_2_reads_as_a_filter() {
+    let src = "query q() { match { $p: Person  not { $p: Person { handle: \"bob\" } } } return { $p } }";
+    assert_eq!(e2(src), "ok");
+    refused(src, "T68");
+    // The mechanical rewrite keeps the meaning.
+    ok("query q() { match { $p: Person  not { $p.handle = \"bob\" } } return { $p } }");
 }
 
 
@@ -892,4 +960,37 @@ fn as_commit_is_admitted_only_on_a_write_body() {
     assert_eq!(write_of(&w).write_mode, super::ast::MutationWriteMode::AsCommit);
     let e = parse_query3("gq 3;\nquery q() as commit { match { $p: Person } return { $p } }").unwrap_err();
     assert_eq!(e.code.as_str(), "Q011");
+}
+
+/// The probes `docs/spikes/gq3-typeck/compare_core.py` runs through the core
+/// spike's typer, written here as edition-3 text; the script holds these
+/// verdicts and prints where the two disagree.
+#[test]
+fn the_core_spike_probes_in_rust() {
+    let dist = |ret: &str, budget: &str, filter: &str| {
+        format!(
+            "query dist($from: String) {budget} {{ match {{ from union(
+               {{ match {{ $p: Person {{ handle: $from }}  $p knows $q }} return {{ $q, 1 as d }} }},
+               {{ match {{ from dist($from) {filter} $q knows $r }} return {{ $r as q, $d + 1 as d }} }}) }} return {{ {ret} }} }}"
+        )
+    };
+    let probes: Vec<(&str, String, &str)> = vec![
+        ("inner_rebinding_in_not", "query x() { match { $p: Person  not { $p: Person { handle: \"bob\" } } } return { $p.name } }".into(), "T68"),
+        ("future_name_in_block", "query x() { match { $p: Person  not { $p knows $x }  $x: Person { handle: \"q\" } } return { $p.name } }".into(), "ok"),
+        ("from_collision", "query x() { match { $c: Company  from { match { $x: Company } return { $x as c } } } return { $c } }".into(), "T68"),
+        ("union_mismatch", "query x() { match { from union({ match { $p: Person } return { $p.age as c } }, { match { $x: Company } return { $x.name as c } }) } return { $c } }".into(), "T73"),
+        ("union_nullable", "query x() { match { from union({ match { $p: Person } return { $p.city as c } }, { match { $x: Company } return { $x.name as c } }) } return { $c } }".into(), "ok"),
+        ("not_over_recursion", "query bad($from: String) { match { from union({ match { $p: Person { handle: $from } } return { $p as m } }, { match { $q: Person  not { from bad($from)  $m knows $q } } return { $q as m } }) } return distinct { $m } }".into(), "T70"),
+        ("exists_over_recursion", "query members($from: String) { match { from union({ match { $p: Person { handle: $from } } return { $p as m } }, { match { $q: Person  exists { from members($from)  $m knows $q } } return { $q as m } }) } return distinct { $m } }".into(), "ok"),
+        ("computed_recursive_arg", "query down($n: I64) { match { from union({ match { $p: Person } return { $p } }, { match { from down($n - 1) } return { $p } }) } return distinct { $p } }".into(), "T70"),
+        ("invented_value_without_min", dist("$q, $d", "@budget(rounds = 50)", "").replace("return { $q, $d }", "return distinct { $q, $d }"), "T70"),
+        ("min_without_rounds", dist("$q, min($d) as d", "", ""), "T70"),
+        ("min_with_rounds", dist("$q, min($d) as d", "@budget(rounds = 50)", ""), "ok"),
+        ("filter_on_max_column", dist("$q, max($d) as d", "@budget(rounds = 50)", " $d < 3 "), "T70"),
+        ("age_times_two_into_age", "query w($h: String) { $p: Person { handle: $h }  update $p set { age: $p.age * 2 } }".into(), "ok"),
+        ("update_and_delete_one_write", "query w($h: String) { $p: Person { handle: $h }  $p $k:worksAt $c  delete $k  update $p set { city: null } }".into(), "T76"),
+    ];
+    for (name, src, want) in probes {
+        assert_eq!(code(&src), want, "{name}\n{src}");
+    }
 }
