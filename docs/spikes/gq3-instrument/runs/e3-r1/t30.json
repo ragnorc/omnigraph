@@ -1,0 +1,102 @@
+{
+  "task": "t30",
+  "kind": "hybrid, weighted",
+  "m0": null,
+  "edition": 3,
+  "has_truth": true,
+  "try1": {
+    "result": "```gq\ngq 3;\nquery best_docs($q: String, $v: Vector(3)) {\n  match {\n    from bm25({ match { $d: Doc } return { $d } }, $d.body, $q)\n    from {\n      match {\n        from distance({ match { $e: Doc } return { $e } }, $e.embedding, $v)\n      }\n      return { $e as d2, $distance as dist }\n    }\n    $d = $d2\n  }\n  return { $d.title, 0.7 * (1.0 / (1.0 + $dist)) + 0.3 * $score as s }\n  order { s desc }\n  limit 10\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 6878,
+    "tokens_out": 723,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 5441,
+      "cache_read_input_tokens": 1435,
+      "output_tokens": 723,
+      "output_tokens_details": {
+        "thinking_tokens": 517
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 5441,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 723,
+          "cache_read_input_tokens": 1435,
+          "cache_creation_input_tokens": 5441,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 5441
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0291415,
+    "seconds": 7.0,
+    "session_id": "053d138a-1227-48f4-ae64-1dcbabeade92",
+    "transport_retries": 0,
+    "text": "gq 3;\nquery best_docs($q: String, $v: Vector(3)) {\n  match {\n    from bm25({ match { $d: Doc } return { $d } }, $d.body, $q)\n    from {\n      match {\n        from distance({ match { $e: Doc } return { $e } }, $e.embedding, $v)\n      }\n      return { $e as d2, $distance as dist }\n    }\n    $d = $d2\n  }\n  return { $d.title, 0.7 * (1.0 / (1.0 + $dist)) + 0.3 * $score as s }\n  order { s desc }\n  limit 10\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [
+      "gq 3;"
+    ],
+    "check": {
+      "decls": 1,
+      "edition3_forms": [
+        "arithmetic",
+        "from",
+        "from_bm25",
+        "from_distance",
+        "inline_read"
+      ],
+      "id": "answer",
+      "lower_diagnostic": {
+        "code": "T60",
+        "column": null,
+        "fix": null,
+        "kind": "type",
+        "line": null,
+        "message": "`from` is edition-3 syntax this prototype parses but does not type-check",
+        "rendered": "type error T60: `from` is edition-3 syntax this prototype parses but does not type-check\n  stage: typecheck",
+        "suggestion": null
+      },
+      "lowered_type_diagnostic": null,
+      "lowered_type_ok": null,
+      "lowers_to_edition2": false,
+      "parse_ok": true,
+      "printed": "gq 3;\nquery best_docs($q: String, $v: Vector(3)) { match { from bm25({ match { $d: Doc } return { $d } }, $d.body, $q)  from { match { from distance({ match { $e: Doc } return { $e } }, $e.embedding, $v) } return { $e as d2, $distance as dist } }  $d = $d2 } return { $d.title, 0.7 * (1.0 / (1.0 + $dist)) + 0.3 * $score as s } order { s desc } limit 10 }\n",
+      "t65_ranking_call_in_order_or_return": [],
+      "semantic_strict": false,
+      "semantic_renamed": false,
+      "semantic_detail": [
+        {
+          "renamed": false,
+          "strict": false
+        }
+      ],
+      "semantic_equal": false
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": false,
+  "final_decls": 1,
+  "tokens_in": 6878,
+  "tokens_out": 723
+}

@@ -1,0 +1,15 @@
+{
+  "id": "t33",
+  "kind": "delete by predicate",
+  "asset_section": "6",
+  "m0": null,
+  "prompt": "Remove every employment link of the person with handle `$h`.",
+  "truth3": [
+    "query retire($h: String) {\n  $p: Person { handle: $h }\n  $p $k:worksAt $c\n  delete $k\n}",
+    "query retire($h: String) {\n  $x: WorksAt  $x.@src = $h\n  delete $x\n}"
+  ],
+  "truth2": [
+    "query retire($h: String) {\n  delete WorksAt where @src = $h\n}"
+  ],
+  "note": null
+}

@@ -1,0 +1,71 @@
+{
+  "task": "t30",
+  "kind": "hybrid, weighted",
+  "m0": null,
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\n// GQ has no arithmetic over scores, so the 0.7/0.3 weighted sum can't be written.\n// This approximates it with reciprocal rank fusion of the vector and BM25 arms.\nquery hybrid_scored($q: String, $v: Vector(3)) {\n    match {\n        $d: Doc\n        match_text($d.body, $q)\n    }\n    return { $d.title, rrf(nearest($d.embedding, $v), bm25($d.body, $q)) as s }\n    order { rrf(nearest($d.embedding, $v), bm25($d.body, $q)) }\n    limit 10\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8356,
+    "tokens_out": 501,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 6919,
+      "cache_read_input_tokens": 1435,
+      "output_tokens": 501,
+      "output_tokens_details": {
+        "thinking_tokens": 291
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 6919,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 501,
+          "cache_read_input_tokens": 1435,
+          "cache_creation_input_tokens": 6919,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 6919
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0328335,
+    "seconds": 6.3,
+    "session_id": "7d5be9d5-b56b-488f-844d-d0275d0d7c75",
+    "transport_retries": 0,
+    "text": "// GQ has no arithmetic over scores, so the 0.7/0.3 weighted sum can't be written.\n// This approximates it with reciprocal rank fusion of the vector and BM25 arms.\nquery hybrid_scored($q: String, $v: Vector(3)) {\n    match {\n        $d: Doc\n        match_text($d.body, $q)\n    }\n    return { $d.title, rrf(nearest($d.embedding, $v), bm25($d.body, $q)) as s }\n    order { rrf(nearest($d.embedding, $v), bm25($d.body, $q)) }\n    limit 10\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 1,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 1,
+  "tokens_in": 8356,
+  "tokens_out": 501
+}

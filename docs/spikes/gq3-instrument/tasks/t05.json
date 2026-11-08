@@ -1,0 +1,14 @@
+{
+  "id": "t05",
+  "kind": "membership in a list property",
+  "asset_section": "1",
+  "m0": null,
+  "prompt": "List the titles of documents tagged \"rust\".",
+  "truth3": [
+    "query tagged() {\n  match { $d: Doc  \"rust\" in $d.tags }\n  return { $d.title }\n}"
+  ],
+  "truth2": [
+    "query tagged() {\n  match { $d: Doc  $d.tags contains \"rust\" }\n  return { $d.title }\n}"
+  ],
+  "note": null
+}

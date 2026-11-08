@@ -1,0 +1,14 @@
+{
+  "id": "t11",
+  "kind": "either orientation",
+  "asset_section": "2",
+  "m0": null,
+  "prompt": "List the names of the people linked to the person with handle `$h` by a `knows` edge in either direction.",
+  "truth3": [
+    "query around($h: String) {\n  match { $p: Person { handle: $h }  $p <knows> $f }\n  return { $f.name }\n}"
+  ],
+  "truth2": [
+    "query around($h: String) {\n  match { $p: Person { handle: $h }  $p <knows> $f }\n  return { $f.name }\n}"
+  ],
+  "note": null
+}

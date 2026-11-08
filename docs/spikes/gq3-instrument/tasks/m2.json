@@ -1,0 +1,12 @@
+{
+  "id": "m2",
+  "kind": "count block compared with another binding's value",
+  "asset_section": "3",
+  "m0": "a group-specific threshold",
+  "prompt": "List the slugs of the collections that hold at least as many documents as their own `min_docs` value.",
+  "truth3": [
+    "query full_collections() {\n  match { $x: Collection  count { $d \"in\" $x } >= $x.min_docs }\n  return { $x.slug }\n}"
+  ],
+  "truth2": [],
+  "note": null
+}

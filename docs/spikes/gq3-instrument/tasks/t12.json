@@ -1,0 +1,12 @@
+{
+  "id": "t12",
+  "kind": "unbounded reachability",
+  "asset_section": "2",
+  "m0": null,
+  "prompt": "List the distinct names of everyone reachable from the person with handle `$from` by following `knows` edges any number of times.",
+  "truth3": [
+    "query reachable($from: String) {\n  match {\n    from union(\n      { match { $p: Person { handle: $from }  $p knows $q } return { $q } },\n      { match { from reachable($from)  $q knows $r } return { $r as q } })\n  }\n  return distinct { $q.name }\n}"
+  ],
+  "truth2": [],
+  "note": null
+}

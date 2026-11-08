@@ -1,0 +1,71 @@
+{
+  "task": "t17",
+  "kind": "aggregate of an aggregate",
+  "m0": null,
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\n// GQ cannot aggregate over an aggregate, so a per-company count cannot be averaged in one query.\n// This returns only the largest headcount (top company); the mean is not expressible here.\nquery company_headcount() {\n    match {\n        $c: Company\n        $p worksAt $c\n    }\n    return {\n        $c.name\n        count($p) as largest\n    }\n    order { largest desc }\n    limit 1\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8320,
+    "tokens_out": 734,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 314,
+      "cache_read_input_tokens": 8004,
+      "output_tokens": 734,
+      "output_tokens_details": {
+        "thinking_tokens": 593
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 314,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 734,
+          "cache_read_input_tokens": 8004,
+          "cache_creation_input_tokens": 314,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 314
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0094004,
+    "seconds": 8.6,
+    "session_id": "20b3d09f-5ad3-4bf8-9a52-e52fc81d3ce6",
+    "transport_retries": 0,
+    "text": "// GQ cannot aggregate over an aggregate, so a per-company count cannot be averaged in one query.\n// This returns only the largest headcount (top company); the mean is not expressible here.\nquery company_headcount() {\n    match {\n        $c: Company\n        $p worksAt $c\n    }\n    return {\n        $c.name\n        count($p) as largest\n    }\n    order { largest desc }\n    limit 1\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 1,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 1,
+  "tokens_in": 8320,
+  "tokens_out": 734
+}

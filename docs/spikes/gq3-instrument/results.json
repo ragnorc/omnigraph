@@ -1,0 +1,124 @@
+{
+  "e2r1": {
+    "tasks": 45,
+    "first": 44,
+    "after": 45,
+    "repairs": 1,
+    "sem": 20,
+    "with_truth": 26,
+    "tokens_in": 383169,
+    "tokens_out": 12816,
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "adjudicated": {
+      "null": 19,
+      "equal": 20,
+      "equivalent": 4,
+      "renamed": 1,
+      "wrong": 1
+    }
+  },
+  "e2r2": {
+    "tasks": 45,
+    "first": 44,
+    "after": 45,
+    "repairs": 1,
+    "sem": 21,
+    "with_truth": 26,
+    "tokens_in": 383165,
+    "tokens_out": 12859,
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "adjudicated": {
+      "null": 19,
+      "equal": 21,
+      "extra": 1,
+      "wrong": 1,
+      "alternative": 1,
+      "equivalent": 2
+    }
+  },
+  "e2r3": {
+    "tasks": 45,
+    "first": 44,
+    "after": 45,
+    "repairs": 1,
+    "sem": 22,
+    "with_truth": 26,
+    "tokens_in": 383167,
+    "tokens_out": 12924,
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "adjudicated": {
+      "null": 19,
+      "equal": 22,
+      "wrong": 1,
+      "equivalent": 3
+    }
+  },
+  "e3r1": {
+    "tasks": 45,
+    "first": 45,
+    "after": 45,
+    "repairs": 0,
+    "sem": 27,
+    "with_truth": 45,
+    "tokens_in": 308117,
+    "tokens_out": 7055,
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "adjudicated": {
+      "equal": 27,
+      "equivalent": 7,
+      "extra": 4,
+      "alternative": 6,
+      "renamed": 1
+    }
+  },
+  "e3r2": {
+    "tasks": 45,
+    "first": 45,
+    "after": 45,
+    "repairs": 0,
+    "sem": 27,
+    "with_truth": 45,
+    "tokens_in": 308162,
+    "tokens_out": 7975,
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "adjudicated": {
+      "equal": 27,
+      "wrong": 1,
+      "equivalent": 6,
+      "extra": 4,
+      "alternative": 6,
+      "renamed": 1
+    }
+  },
+  "e3r3": {
+    "tasks": 45,
+    "first": 45,
+    "after": 45,
+    "repairs": 0,
+    "sem": 29,
+    "with_truth": 45,
+    "tokens_in": 308162,
+    "tokens_out": 6845,
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "adjudicated": {
+      "equal": 29,
+      "wrong": 1,
+      "equivalent": 6,
+      "extra": 3,
+      "alternative": 5,
+      "renamed": 1
+    }
+  }
+}

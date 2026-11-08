@@ -1,0 +1,12 @@
+{
+  "id": "t36",
+  "kind": "write whose targets come from a ranked read",
+  "asset_section": "6",
+  "m0": null,
+  "prompt": "Tag the 20 documents nearest to the vector `$q` with the single tag \"near\", replacing their existing tags.",
+  "truth3": [
+    "query tag_near($q: Vector(3)) {\n  from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 20)\n  update $d set { tags: [\"near\"] }\n}"
+  ],
+  "truth2": [],
+  "note": null
+}

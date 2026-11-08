@@ -1,0 +1,71 @@
+{
+  "task": "m4",
+  "kind": "reuse of a declared read with arguments",
+  "m0": "reuse with parameters",
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\n// Run first: lists the colleagues of $of. The caller can use this on its own.\nquery colleagues($of: String) {\n    match {\n        $p: Person { handle: $of }\n        $p worksAt $c\n        $m worksAt $c\n        $m.handle != $of\n    }\n    return distinct { $m.handle, $m.name }\n}\n```\n\n```gq\n// GQ has no way to call one query from another, so this repeats the colleagues\n// pattern inline and adds a second hop. The caller uses the returned names as is.\nquery colleagues_of_colleagues($of: String) {\n    match {\n        $p: Person { handle: $of }\n        $p worksAt $c\n        $m worksAt $c\n        $m.handle != $of\n        $m worksAt $d\n        $f worksAt $d\n        $f.handle != $m.handle\n    }\n    return distinct { $f.name }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8415,
+    "tokens_out": 779,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 314,
+      "cache_read_input_tokens": 8099,
+      "output_tokens": 779,
+      "output_tokens_details": {
+        "thinking_tokens": 487
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 314,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 779,
+          "cache_read_input_tokens": 8099,
+          "cache_creation_input_tokens": 314,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 314
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0098599,
+    "seconds": 7.6,
+    "session_id": "18b4b2f9-ee72-4986-a383-87beb72d0103",
+    "transport_retries": 0,
+    "text": "// Run first: lists the colleagues of $of. The caller can use this on its own.\nquery colleagues($of: String) {\n    match {\n        $p: Person { handle: $of }\n        $p worksAt $c\n        $m worksAt $c\n        $m.handle != $of\n    }\n    return distinct { $m.handle, $m.name }\n}\n// GQ has no way to call one query from another, so this repeats the colleagues\n// pattern inline and adds a second hop. The caller uses the returned names as is.\nquery colleagues_of_colleagues($of: String) {\n    match {\n        $p: Person { handle: $of }\n        $p worksAt $c\n        $m worksAt $c\n        $m.handle != $of\n        $m worksAt $d\n        $f worksAt $d\n        $f.handle != $m.handle\n    }\n    return distinct { $f.name }\n}\n",
+    "blocks": 2,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 2,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 2,
+  "tokens_in": 8415,
+  "tokens_out": 779
+}

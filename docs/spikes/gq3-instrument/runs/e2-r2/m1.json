@@ -1,0 +1,71 @@
+{
+  "task": "m1",
+  "kind": "block as a value (count plus projection)",
+  "m0": "count plus projection",
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\n// Run first. The caller keeps these rows as they are: people who know at least one person, most connected first. `handle` keeps same-named people from being merged into one group.\nquery people_with_friends() {\n    match {\n        $p: Person\n        $p knows $f\n    }\n    return {\n        $p.handle\n        $p.name\n        count($f) as degree\n    }\n    order { degree desc }\n}\n```\n\n```gq\n// Run second. The caller appends these rows after the first result, giving each a `degree` of 0, because a traversal match cannot return people with no edges.\nquery people_without_friends() {\n    match {\n        $p: Person\n        not { $p knows $_ }\n    }\n    return { $p.handle, $p.name }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8371,
+    "tokens_out": 545,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 314,
+      "cache_read_input_tokens": 8055,
+      "output_tokens": 545,
+      "output_tokens_details": {
+        "thinking_tokens": 309
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 314,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 545,
+          "cache_read_input_tokens": 8055,
+          "cache_creation_input_tokens": 314,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 314
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0075155,
+    "seconds": 6.7,
+    "session_id": "63ac9054-d8f5-465d-b997-5c27cab4fe4f",
+    "transport_retries": 0,
+    "text": "// Run first. The caller keeps these rows as they are: people who know at least one person, most connected first. `handle` keeps same-named people from being merged into one group.\nquery people_with_friends() {\n    match {\n        $p: Person\n        $p knows $f\n    }\n    return {\n        $p.handle\n        $p.name\n        count($f) as degree\n    }\n    order { degree desc }\n}\n// Run second. The caller appends these rows after the first result, giving each a `degree` of 0, because a traversal match cannot return people with no edges.\nquery people_without_friends() {\n    match {\n        $p: Person\n        not { $p knows $_ }\n    }\n    return { $p.handle, $p.name }\n}\n",
+    "blocks": 2,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 2,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 2,
+  "tokens_in": 8371,
+  "tokens_out": 545
+}

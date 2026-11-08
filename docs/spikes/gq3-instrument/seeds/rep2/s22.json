@@ -1,0 +1,99 @@
+{
+  "seed": "s22",
+  "task": "t02",
+  "habit": "uppercase keyword",
+  "seed_check": {
+    "diagnostic": {
+      "code": "Q001",
+      "column": 18,
+      "fix": null,
+      "kind": "parse",
+      "line": 5,
+      "message": "expected kw_and, kw_or, kw_is, kw_in, comp_op, order_dir3, infix_string_op, concat_bars, product_op",
+      "rendered": "parse error Q001: expected kw_and, kw_or, kw_is, kw_in, comp_op, order_dir3, infix_string_op, concat_bars, product_op\n  at line 5, column 18",
+      "suggestion": null
+    },
+    "id": "answer",
+    "parse_ok": false,
+    "semantic_strict": false,
+    "semantic_renamed": false,
+    "semantic_detail": [],
+    "semantic_equal": false
+  },
+  "refused": true,
+  "repair": {
+    "result": "```gq\ngq 3;\nquery adults($min: I32) {\n  match { $p: Person  $p.age >= $min }\n  return { $p.name }\n  order { $p.age desc }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 6981,
+    "tokens_out": 65,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 315,
+      "cache_read_input_tokens": 6664,
+      "output_tokens": 65,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 315,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 65,
+          "cache_read_input_tokens": 6664,
+          "cache_creation_input_tokens": 315,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 315
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0025804,
+    "seconds": 2.3,
+    "session_id": "0a4ac172-baa1-466f-b94e-c3579c2e76ec",
+    "transport_retries": 0,
+    "text": "gq 3;\nquery adults($min: I32) {\n  match { $p: Person  $p.age >= $min }\n  return { $p.name }\n  order { $p.age desc }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [
+      "gq 3;"
+    ],
+    "check": {
+      "decls": 1,
+      "edition3_forms": [],
+      "id": "answer",
+      "lower_diagnostic": null,
+      "lowered_type_diagnostic": null,
+      "lowered_type_ok": true,
+      "lowers_to_edition2": true,
+      "parse_ok": true,
+      "printed": "gq 3;\nquery adults($min: I32) { match { $p: Person  $p.age >= $min } return { $p.name } order { $p.age desc } }\n",
+      "t65_ranking_call_in_order_or_return": [],
+      "semantic_strict": true,
+      "semantic_renamed": true,
+      "semantic_detail": [
+        {
+          "renamed": true,
+          "strict": true
+        }
+      ],
+      "semantic_equal": true
+    }
+  },
+  "valid_after_repair": true,
+  "semantic_equal": true
+}

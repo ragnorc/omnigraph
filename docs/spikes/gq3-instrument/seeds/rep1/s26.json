@@ -1,0 +1,112 @@
+{
+  "seed": "s26",
+  "task": "t21",
+  "habit": "UNION between two reads (SQL)",
+  "seed_check": {
+    "diagnostic": {
+      "code": "Q001",
+      "column": 3,
+      "fix": null,
+      "kind": "parse",
+      "line": 4,
+      "message": "expected kw_limit, kw_order",
+      "rendered": "parse error Q001: expected kw_limit, kw_order\n  at line 4, column 3",
+      "suggestion": null
+    },
+    "id": "answer",
+    "parse_ok": false,
+    "semantic_strict": false,
+    "semantic_renamed": false,
+    "semantic_detail": [],
+    "semantic_equal": false
+  },
+  "refused": true,
+  "repair": {
+    "result": "```gq\ngq 3;\nquery people_and_companies() {\n  match {\n    from union(\n      { match { $p: Person } return { $p.name as name, \"person\" as kind } },\n      { match { $c: Company } return { $c.name as name, \"company\" as kind } }\n    )\n  }\n  return { $name, $kind }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 6967,
+    "tokens_out": 242,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 5530,
+      "cache_read_input_tokens": 1435,
+      "output_tokens": 242,
+      "output_tokens_details": {
+        "thinking_tokens": 135
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 5530,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 242,
+          "cache_read_input_tokens": 1435,
+          "cache_creation_input_tokens": 5530,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 5530
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0246875,
+    "seconds": 4.0,
+    "session_id": "ceea1b01-3a31-4a3b-a1fb-2ed738a98bfd",
+    "transport_retries": 0,
+    "text": "gq 3;\nquery people_and_companies() {\n  match {\n    from union(\n      { match { $p: Person } return { $p.name as name, \"person\" as kind } },\n      { match { $c: Company } return { $c.name as name, \"company\" as kind } }\n    )\n  }\n  return { $name, $kind }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [
+      "gq 3;"
+    ],
+    "check": {
+      "decls": 1,
+      "edition3_forms": [
+        "from",
+        "from_union",
+        "inline_read"
+      ],
+      "id": "answer",
+      "lower_diagnostic": {
+        "code": "T60",
+        "column": null,
+        "fix": null,
+        "kind": "type",
+        "line": null,
+        "message": "`from` is edition-3 syntax this prototype parses but does not type-check",
+        "rendered": "type error T60: `from` is edition-3 syntax this prototype parses but does not type-check\n  stage: typecheck",
+        "suggestion": null
+      },
+      "lowered_type_diagnostic": null,
+      "lowered_type_ok": null,
+      "lowers_to_edition2": false,
+      "parse_ok": true,
+      "printed": "gq 3;\nquery people_and_companies() { match { from union({ match { $p: Person } return { $p.name as name, \"person\" as kind } }, { match { $c: Company } return { $c.name as name, \"company\" as kind } }) } return { $name, $kind } }\n",
+      "t65_ranking_call_in_order_or_return": [],
+      "semantic_strict": true,
+      "semantic_renamed": true,
+      "semantic_detail": [
+        {
+          "renamed": true,
+          "strict": true
+        }
+      ],
+      "semantic_equal": true
+    }
+  },
+  "valid_after_repair": true,
+  "semantic_equal": true
+}

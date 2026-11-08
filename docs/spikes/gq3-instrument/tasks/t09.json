@@ -1,0 +1,12 @@
+{
+  "id": "t09",
+  "kind": "conditional and default values",
+  "asset_section": "1",
+  "m0": null,
+  "prompt": "List every person's name, their city or \"unknown\" when it is missing (as `city`), and \"senior\" when they are 65 or older, otherwise \"active\" (as `band`).",
+  "truth3": [
+    "query with_city() {\n  match { $p: Person }\n  return { $p.name, coalesce($p.city, \"unknown\") as city, if($p.age >= 65, \"senior\", \"active\") as band }\n}"
+  ],
+  "truth2": [],
+  "note": null
+}

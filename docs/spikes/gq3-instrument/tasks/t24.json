@@ -1,0 +1,15 @@
+{
+  "id": "t24",
+  "kind": "nearest window",
+  "asset_section": "5",
+  "m0": null,
+  "prompt": "Find the titles of the 20 documents from 2025 or later that are most similar to the vector `$q`.",
+  "truth3": [
+    "query similar($q: Vector(3)) {\n  match { from nearest({ match { $d: Doc  $d.year >= 2025 } return { $d } }, $d.embedding, $q, k: 20) }\n  return { $d.title }\n  order { $distance }\n}",
+    "query similar($q: Vector(3)) {\n  match { from nearest({ match { $d: Doc  $d.year >= 2025 } return { $d } }, $d.embedding, $q, k: 20) }\n  return { $d.title }\n  order { $distance }\n  limit 20\n}"
+  ],
+  "truth2": [
+    "query similar($q: Vector(3)) {\n  match { $d: Doc  $d.year >= 2025 }\n  return { $d.title }\n  order { nearest($d.embedding, $q) }\n  limit 20\n}"
+  ],
+  "note": null
+}

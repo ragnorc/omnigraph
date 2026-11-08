@@ -1,0 +1,71 @@
+{
+  "task": "t20",
+  "kind": "outer join",
+  "m0": null,
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\n// GQ has no optional match or outer join, so this one query cannot keep people without an employer.\n// It returns only people who have a WorksAt edge. People with no employer need a second query:\n//   match { $p: Person  not { $p worksAt $_ } }  return { $p.name }\nquery people_with_employers() {\n    match {\n        $p: Person\n        $p worksAt $c\n    }\n    return { $p.name as person, $c.name as employer }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8309,
+    "tokens_out": 546,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 314,
+      "cache_read_input_tokens": 7993,
+      "output_tokens": 546,
+      "output_tokens_details": {
+        "thinking_tokens": 394
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 314,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 546,
+          "cache_read_input_tokens": 7993,
+          "cache_creation_input_tokens": 314,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 314
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0075193000000000005,
+    "seconds": 6.5,
+    "session_id": "c13ad05a-2ef3-4ece-9a33-f35f43d13f51",
+    "transport_retries": 0,
+    "text": "// GQ has no optional match or outer join, so this one query cannot keep people without an employer.\n// It returns only people who have a WorksAt edge. People with no employer need a second query:\n//   match { $p: Person  not { $p worksAt $_ } }  return { $p.name }\nquery people_with_employers() {\n    match {\n        $p: Person\n        $p worksAt $c\n    }\n    return { $p.name as person, $c.name as employer }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 1,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 1,
+  "tokens_in": 8309,
+  "tokens_out": 546
+}

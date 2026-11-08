@@ -1,0 +1,81 @@
+{
+  "task": "t29",
+  "kind": "hybrid, fused",
+  "m0": null,
+  "edition": 2,
+  "has_truth": true,
+  "try1": {
+    "result": "```gq\nquery fused_titles($v: Vector(3), $q: String) {\n    match { $d: Doc }\n    return { $d.title }\n    order { rrf(nearest($d.embedding, $v), bm25($d.body, $q)) }\n    limit 10\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8357,
+    "tokens_out": 344,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 6920,
+      "cache_read_input_tokens": 1435,
+      "output_tokens": 344,
+      "output_tokens_details": {
+        "thinking_tokens": 253
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 6920,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 344,
+          "cache_read_input_tokens": 1435,
+          "cache_creation_input_tokens": 6920,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 6920
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.031267500000000004,
+    "seconds": 4.9,
+    "session_id": "b57353ee-1e65-4192-ad10-a8796dc99f2f",
+    "transport_retries": 0,
+    "text": "query fused_titles($v: Vector(3), $q: String) {\n    match { $d: Doc }\n    return { $d.title }\n    order { rrf(nearest($d.embedding, $v), bm25($d.body, $q)) }\n    limit 10\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 1,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true,
+      "semantic_strict": false,
+      "semantic_renamed": false,
+      "semantic_detail": [
+        {
+          "ir_renamed": false,
+          "renamed": false,
+          "strict": false
+        }
+      ],
+      "semantic_equal": false
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": false,
+  "final_decls": 1,
+  "tokens_in": 8357,
+  "tokens_out": 344
+}

@@ -1,0 +1,14 @@
+{
+  "id": "t01",
+  "kind": "key lookup",
+  "asset_section": "1",
+  "m0": null,
+  "prompt": "Show the name and city of the person whose handle is `$h`.",
+  "truth3": [
+    "query person($h: String) {\n  match { $p: Person { handle: $h } }\n  return { $p.name, $p.city }\n}"
+  ],
+  "truth2": [
+    "query person($h: String) {\n  match { $p: Person { handle: $h } }\n  return { $p.name, $p.city }\n}"
+  ],
+  "note": null
+}

@@ -1,0 +1,14 @@
+{
+  "id": "t18",
+  "kind": "count block with a parameter bound",
+  "asset_section": "3",
+  "m0": null,
+  "prompt": "List the names of people who know at least `$min` people.",
+  "truth3": [
+    "query well_connected($min: I64) {\n  match { $p: Person  count { $p knows $q } >= $min }\n  return { $p.name }\n}"
+  ],
+  "truth2": [
+    "query well_connected($min: I64) {\n  match { $p: Person  count { $p knows $q } >= $min }\n  return { $p.name }\n}"
+  ],
+  "note": null
+}

@@ -1,0 +1,14 @@
+{
+  "id": "t32",
+  "kind": "insert a node and a keyed edge",
+  "asset_section": "6",
+  "m0": null,
+  "prompt": "Hire someone: create a person with handle `$h` (whose name is also `$h`) and record that they work at the company with slug `$slug`.",
+  "truth3": [
+    "query hire($h: String, $slug: String) {\n  insert Person { handle: $h, name: $h }\n  insert WorksAt { from: $h, to: $slug }\n}"
+  ],
+  "truth2": [
+    "query hire($h: String, $slug: String) {\n  insert Person { handle: $h, name: $h }\n  insert WorksAt { from: $h, to: $slug }\n}"
+  ],
+  "note": null
+}

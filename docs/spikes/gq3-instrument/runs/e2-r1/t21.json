@@ -1,0 +1,80 @@
+{
+  "task": "t21",
+  "kind": "union of two reads",
+  "m0": null,
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\nquery people_and_companies() {\n    match {\n        $n: Named\n    }\n    return { $n.name, $n.@type as kind }\n    order { $n.name }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8315,
+    "tokens_out": 596,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 6878,
+      "cache_read_input_tokens": 1435,
+      "output_tokens": 596,
+      "output_tokens_details": {
+        "thinking_tokens": 536
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 6878,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 596,
+          "cache_read_input_tokens": 1435,
+          "cache_creation_input_tokens": 6878,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 6878
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.033619500000000004,
+    "seconds": 7.1,
+    "session_id": "f24ab7da-092f-454a-bac9-0b0724bca8cd",
+    "transport_retries": 0,
+    "text": "query people_and_companies() {\n    match {\n        $n: Named\n    }\n    return { $n.name, $n.@type as kind }\n    order { $n.name }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 1,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": {
+        "code": "T1",
+        "column": null,
+        "fix": null,
+        "kind": "type",
+        "line": null,
+        "message": "unknown node type `Named`",
+        "rendered": "type error T1: unknown node type `Named`\n  stage: typecheck",
+        "suggestion": null
+      },
+      "type_ok": false
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 1,
+  "tokens_in": 8315,
+  "tokens_out": 596
+}

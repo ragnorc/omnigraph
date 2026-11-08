@@ -1,0 +1,12 @@
+{
+  "id": "m4",
+  "kind": "reuse of a declared read with arguments",
+  "asset_section": "4",
+  "m0": "reuse with parameters",
+  "prompt": "Define a query `colleagues($of)` that returns the people working at the same company as the person with handle `$of`, and a query `colleagues_of_colleagues($of)` that reuses it to list the distinct names of the colleagues of those colleagues.",
+  "truth3": [
+    "query colleagues($of: String) {\n  match { $p: Person { handle: $of }  $p worksAt $c  $q worksAt $c  $q != $p }\n  return { $q }\n}\n\nquery colleagues_of_colleagues($of: String) {\n  match {\n    from { match { from colleagues($of) } return { $q as c } }\n    from { match { from colleagues($c.handle) } return { $q as r } }\n  }\n  return distinct { $r.name }\n}"
+  ],
+  "truth2": [],
+  "note": null
+}

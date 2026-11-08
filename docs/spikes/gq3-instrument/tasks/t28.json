@@ -1,0 +1,15 @@
+{
+  "id": "t28",
+  "kind": "lexical filter without a score",
+  "asset_section": "5",
+  "m0": null,
+  "prompt": "List the titles of documents whose body matches the search text `$s` and also matches the text `$q` allowing up to 2 typos.",
+  "truth3": [
+    "query mentions($s: String, $q: String) {\n  match { $d: Doc  search($d.body, $s)  fuzzy($d.body, $q, max_edits: 2) }\n  return { $d.title }\n}",
+    "query mentions($s: String, $q: String) {\n  match { $d: Doc  match_terms($d.body, terms($s, mode: any))  match_terms($d.body, terms($q, mode: any, max_edits: 2)) }\n  return { $d.title }\n}"
+  ],
+  "truth2": [
+    "query mentions($s: String, $q: String) {\n  match { $d: Doc  search($d.body, $s)  fuzzy($d.body, $q, 2) }\n  return { $d.title }\n}"
+  ],
+  "note": "The asset's `mentions` runs `fuzzy` over `Doc.title`, which its schema does not index (`T27`); the task uses the indexed body."
+}

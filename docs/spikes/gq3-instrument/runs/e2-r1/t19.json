@@ -1,0 +1,81 @@
+{
+  "task": "t19",
+  "kind": "existence and absence",
+  "m0": null,
+  "edition": 2,
+  "has_truth": true,
+  "try1": {
+    "result": "```gq\nquery uncited_authors() {\n    match {\n        $p: Person\n        exists { $p authored $_ }\n        not {\n            $p authored $d\n            $_ cites $d\n        }\n    }\n    return { $p.name }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8312,
+    "tokens_out": 394,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 6875,
+      "cache_read_input_tokens": 1435,
+      "output_tokens": 394,
+      "output_tokens_details": {
+        "thinking_tokens": 315
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 6875,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 394,
+          "cache_read_input_tokens": 1435,
+          "cache_creation_input_tokens": 6875,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 6875
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0315875,
+    "seconds": 5.1,
+    "session_id": "cca6682f-82cb-4043-9f89-0fecbf96d103",
+    "transport_retries": 0,
+    "text": "query uncited_authors() {\n    match {\n        $p: Person\n        exists { $p authored $_ }\n        not {\n            $p authored $d\n            $_ cites $d\n        }\n    }\n    return { $p.name }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 1,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true,
+      "semantic_strict": false,
+      "semantic_renamed": false,
+      "semantic_detail": [
+        {
+          "ir_renamed": false,
+          "renamed": false,
+          "strict": false
+        }
+      ],
+      "semantic_equal": false
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": false,
+  "final_decls": 1,
+  "tokens_in": 8312,
+  "tokens_out": 394
+}

@@ -1,0 +1,71 @@
+{
+  "task": "t36",
+  "kind": "write whose targets come from a ranked read",
+  "m0": null,
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\n// A mutation cannot use nearest(), so $ids must hold the 20 ids returned by a prior nearest(...) read with limit 20.\nquery tag_near_docs($ids: [String]) {\n    update Doc set { tags: [\"near\"] } where id in $ids\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8322,
+    "tokens_out": 461,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 6885,
+      "cache_read_input_tokens": 1435,
+      "output_tokens": 461,
+      "output_tokens_details": {
+        "thinking_tokens": 364
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 6885,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 461,
+          "cache_read_input_tokens": 1435,
+          "cache_creation_input_tokens": 6885,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 6885
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0322975,
+    "seconds": 7.0,
+    "session_id": "a15bd086-1f55-41f6-b9fc-3eaed3d6f445",
+    "transport_retries": 0,
+    "text": "// A mutation cannot use nearest(), so $ids must hold the 20 ids returned by a prior nearest(...) read with limit 20.\nquery tag_near_docs($ids: [String]) {\n    update Doc set { tags: [\"near\"] } where id in $ids\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 1,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 1,
+  "tokens_in": 8322,
+  "tokens_out": 461
+}

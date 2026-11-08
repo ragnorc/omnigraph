@@ -1,0 +1,16 @@
+{
+  "id": "m3",
+  "kind": "filter on an aggregate",
+  "asset_section": "3",
+  "m0": "filtering grouped output",
+  "prompt": "List the companies with at least `$min` employees: the company name and its employee count as `n`, largest first.",
+  "truth3": [
+    "query big_employers($min: I64) {\n  match {\n    from { match { $c: Company  $p worksAt $c } return { $c, count($p) as n } }\n    $n >= $min\n  }\n  return { $c.name, $n }\n  order { $n desc }\n}",
+    "query big_employers($min: I64) {\n  match { $c: Company  count { $q worksAt $c } >= $min  $p worksAt $c }\n  return { $c.name, count($p) as n }\n  order { n desc }\n}",
+    "query big_employers($min: I64) {\n  match {\n    $c: Company\n    let $n = count { $p worksAt $c }\n    $n >= $min\n  }\n  return { $c.name, $n }\n  order { $n desc }\n}"
+  ],
+  "truth2": [
+    "query big_employers($min: I64) {\n  match { $c: Company  count { $q worksAt $c } >= $min  $p worksAt $c }\n  return { $c.name, count($p) as n }\n  order { n desc }\n}"
+  ],
+  "note": "The asset marks 'filter on an aggregate' Not supported in edition 2; with a literal or parameter threshold, a count block in `match` beside the grouped traversal expresses it."
+}

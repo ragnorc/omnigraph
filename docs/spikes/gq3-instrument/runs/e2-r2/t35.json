@@ -1,0 +1,71 @@
+{
+  "task": "t35",
+  "kind": "write with a computed value",
+  "m0": null,
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\nquery birthday($h: String, $new_age: I32) {\n    update Person set { age: $new_age } where handle = $h\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8310,
+    "tokens_out": 332,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 314,
+      "cache_read_input_tokens": 7994,
+      "output_tokens": 332,
+      "output_tokens_details": {
+        "thinking_tokens": 284
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 314,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 332,
+          "cache_read_input_tokens": 7994,
+          "cache_creation_input_tokens": 314,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 314
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0053794,
+    "seconds": 5.7,
+    "session_id": "6d541ba3-7b6b-49bb-a94e-5a82284b5004",
+    "transport_retries": 0,
+    "text": "query birthday($h: String, $new_age: I32) {\n    update Person set { age: $new_age } where handle = $h\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 1,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 1,
+  "tokens_in": 8310,
+  "tokens_out": 332
+}

@@ -1,0 +1,12 @@
+{
+  "id": "t30",
+  "kind": "hybrid, weighted",
+  "asset_section": "5",
+  "m0": null,
+  "prompt": "Score each document whose body matches the text `$q` as 0.7 times 1/(1 + its vector distance to `$v`) plus 0.3 times its BM25 score; return the 10 best titles with the score as `s`.",
+  "truth3": [
+    "query weighted($q: String, $v: Vector(3)) {\n  match {\n    let $docs = { match { $d: Doc } return { $d } }\n    from { match { from distance($docs, $d.embedding, $v) } return { $d, $distance as vec } }\n    from { match { from bm25($docs, $d.body, $q) } return { $d as d2, $score as lex } }\n    $d = $d2\n  }\n  return { $d.title, 0.7 * (1.0 / (1.0 + $vec)) + 0.3 * $lex as s }\n  order { s desc }\n  limit 10\n}"
+  ],
+  "truth2": [],
+  "note": null
+}

@@ -1,0 +1,13 @@
+{
+  "id": "t31",
+  "kind": "declared recall",
+  "asset_section": "5",
+  "m0": null,
+  "prompt": "Find the 20 documents nearest to the vector `$q`, accepting 90% recall in exchange for speed; return titles and distances.",
+  "truth3": [
+    "query similar_fast($q: Vector(3)) {\n  match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 20, recall: 0.9) }\n  return { $d.title, $distance }\n}",
+    "query similar_fast($q: Vector(3)) {\n  match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 20, recall: 0.9) }\n  return { $d.title, $distance }\n  order { $distance }\n}"
+  ],
+  "truth2": [],
+  "note": null
+}

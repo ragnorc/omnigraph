@@ -1,0 +1,14 @@
+{
+  "id": "t14",
+  "kind": "traversal against schema order",
+  "asset_section": "2",
+  "m0": null,
+  "prompt": "Who works at the company with slug `$slug`? Return their names.",
+  "truth3": [
+    "query staff($slug: String) {\n  match { $c: Company { slug: $slug }  $p worksAt $c }\n  return { $p.name }\n}"
+  ],
+  "truth2": [
+    "query staff($slug: String) {\n  match { $c: Company { slug: $slug }  $p worksAt $c }\n  return { $p.name }\n}"
+  ],
+  "note": null
+}

@@ -1,0 +1,111 @@
+{
+  "seed": "s19",
+  "task": "t22",
+  "habit": "let ... in (PR 1244)",
+  "seed_check": {
+    "diagnostic": {
+      "code": "Q012",
+      "column": 5,
+      "fix": "`from <relation>` for rows, or `$x in $list` against a binding",
+      "kind": "parse",
+      "line": 5,
+      "message": "`let \u2026 in \u2026` is not GQ: `let` names one value and `from` draws rows from a relation; a list has no row form",
+      "rendered": "parse error Q012: `let \u2026 in \u2026` is not GQ: `let` names one value and `from` draws rows from a relation; a list has no row form\n  at line 5, column 5\n  fix: `from <relation>` for rows, or `$x in $list` against a binding",
+      "suggestion": null
+    },
+    "id": "answer",
+    "parse_ok": false,
+    "semantic_strict": false,
+    "semantic_renamed": false,
+    "semantic_detail": [],
+    "semantic_equal": false
+  },
+  "refused": true,
+  "repair": {
+    "result": "```gq\ngq 3;\nquery latest_per_author() {\n  match {\n    $p: Person\n    from { match { $p authored $d } return { $d } order { $d.year desc } limit 3 }\n  }\n  return { $p.name, $d.title, $d.year }\n  order { $p.name, $d.year desc }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 7025,
+    "tokens_out": 107,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 315,
+      "cache_read_input_tokens": 6708,
+      "output_tokens": 107,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 315,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 107,
+          "cache_read_input_tokens": 6708,
+          "cache_creation_input_tokens": 315,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 315
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0030048,
+    "seconds": 6.2,
+    "session_id": "454a4668-f791-403e-9073-5ea545a1cc99",
+    "transport_retries": 0,
+    "text": "gq 3;\nquery latest_per_author() {\n  match {\n    $p: Person\n    from { match { $p authored $d } return { $d } order { $d.year desc } limit 3 }\n  }\n  return { $p.name, $d.title, $d.year }\n  order { $p.name, $d.year desc }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [
+      "gq 3;"
+    ],
+    "check": {
+      "decls": 1,
+      "edition3_forms": [
+        "from",
+        "inline_read"
+      ],
+      "id": "answer",
+      "lower_diagnostic": {
+        "code": "T60",
+        "column": null,
+        "fix": null,
+        "kind": "type",
+        "line": null,
+        "message": "`from` is edition-3 syntax this prototype parses but does not type-check",
+        "rendered": "type error T60: `from` is edition-3 syntax this prototype parses but does not type-check\n  stage: typecheck",
+        "suggestion": null
+      },
+      "lowered_type_diagnostic": null,
+      "lowered_type_ok": null,
+      "lowers_to_edition2": false,
+      "parse_ok": true,
+      "printed": "gq 3;\nquery latest_per_author() { match { $p: Person  from { match { $p authored $d } return { $d } order { $d.year desc } limit 3 } } return { $p.name, $d.title, $d.year } order { $p.name, $d.year desc } }\n",
+      "t65_ranking_call_in_order_or_return": [],
+      "semantic_strict": false,
+      "semantic_renamed": false,
+      "semantic_detail": [
+        {
+          "renamed": false,
+          "strict": false
+        }
+      ],
+      "semantic_equal": false
+    }
+  },
+  "valid_after_repair": true,
+  "semantic_equal": false
+}

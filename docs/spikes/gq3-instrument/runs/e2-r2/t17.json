@@ -1,0 +1,80 @@
+{
+  "task": "t17",
+  "kind": "aggregate of an aggregate",
+  "m0": null,
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\nquery employees_per_company_stats() {\n    match {\n        $c: Company\n        $p worksAt $c\n    }\n    return {\n        avg(count($p)) as mean\n        max(count($p)) as largest\n    }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8320,
+    "tokens_out": 824,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 314,
+      "cache_read_input_tokens": 8004,
+      "output_tokens": 824,
+      "output_tokens_details": {
+        "thinking_tokens": 746
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 314,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 824,
+          "cache_read_input_tokens": 8004,
+          "cache_creation_input_tokens": 314,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 314
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0103004,
+    "seconds": 9.6,
+    "session_id": "3c7c05a6-0e07-4998-9335-13d1dea540f5",
+    "transport_retries": 0,
+    "text": "query employees_per_company_stats() {\n    match {\n        $c: Company\n        $p worksAt $c\n    }\n    return {\n        avg(count($p)) as mean\n        max(count($p)) as largest\n    }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 1,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": {
+        "code": "T8",
+        "column": null,
+        "fix": null,
+        "kind": "type",
+        "line": null,
+        "message": "avg cannot take an aggregate or a forward alias reference as its argument",
+        "rendered": "type error T8: avg cannot take an aggregate or a forward alias reference as its argument\n  stage: typecheck",
+        "suggestion": null
+      },
+      "type_ok": false
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 1,
+  "tokens_in": 8320,
+  "tokens_out": 824
+}

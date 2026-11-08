@@ -1,0 +1,14 @@
+{
+  "id": "t15",
+  "kind": "count per group",
+  "asset_section": "3",
+  "m0": null,
+  "prompt": "For each company, return its name and its number of employees as `n`, largest first.",
+  "truth3": [
+    "query headcount() {\n  match { $c: Company  $p worksAt $c }\n  return { $c.name, count($p) as n }\n  order { n desc }\n}"
+  ],
+  "truth2": [
+    "query headcount() {\n  match { $c: Company  $p worksAt $c }\n  return { $c.name, count($p) as n }\n  order { n desc }\n}"
+  ],
+  "note": null
+}

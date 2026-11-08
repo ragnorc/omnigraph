@@ -1,0 +1,15 @@
+{
+  "id": "t25",
+  "kind": "nearest with the distance returned",
+  "asset_section": "5",
+  "m0": null,
+  "prompt": "Find the 20 documents most similar to the vector `$q`; return each title and its distance as `s`.",
+  "truth3": [
+    "query similar_scored($q: Vector(3)) {\n  match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 20) }\n  return { $d.title, $distance as s }\n  order { $distance }\n}",
+    "query similar_scored($q: Vector(3)) {\n  match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 20) }\n  return { $d.title, $distance as s }\n  order { $distance }\n  limit 20\n}"
+  ],
+  "truth2": [
+    "query similar_scored($q: Vector(3)) {\n  match { $d: Doc }\n  return { $d.title, nearest($d.embedding, $q) as s }\n  order { nearest($d.embedding, $q) }\n  limit 20\n}"
+  ],
+  "note": null
+}

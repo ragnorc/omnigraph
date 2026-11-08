@@ -1,0 +1,12 @@
+{
+  "id": "t26",
+  "kind": "every document within a distance",
+  "asset_section": "5",
+  "m0": null,
+  "prompt": "List the titles and distances of documents from 2025 or later whose vector is within distance `$r` of `$q`, closest first, at most 10.",
+  "truth3": [
+    "query within_radius($q: Vector(3), $r: F32) {\n  match {\n    from distance({ match { $d: Doc  $d.year >= 2025 } return { $d } }, $d.embedding, $q)\n    $distance <= $r\n  }\n  return { $d.title, $distance }\n  order { $distance }\n  limit 10\n}"
+  ],
+  "truth2": [],
+  "note": null
+}

@@ -1,0 +1,12 @@
+{
+  "id": "t20",
+  "kind": "outer join",
+  "asset_section": "4",
+  "m0": null,
+  "prompt": "List every person's name together with their employer's name, keeping people who have no employer.",
+  "truth3": [
+    "query people_and_employers() {\n  match { $p: Person  optional { $p worksAt $c } }\n  return { $p.name, $c.name }\n}"
+  ],
+  "truth2": [],
+  "note": null
+}

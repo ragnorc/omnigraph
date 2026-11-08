@@ -1,0 +1,99 @@
+{
+  "seed": "s02",
+  "task": "t05",
+  "habit": "list contains (edition 2)",
+  "seed_check": {
+    "diagnostic": {
+      "code": "Q012",
+      "column": 28,
+      "fix": "contains($d.tags, \"rust\")",
+      "kind": "parse",
+      "line": 3,
+      "message": "`contains` is a function in edition 3, called with its operands",
+      "rendered": "parse error Q012: `contains` is a function in edition 3, called with its operands\n  at line 3, column 28\n  fix: contains($d.tags, \"rust\")",
+      "suggestion": null
+    },
+    "id": "answer",
+    "parse_ok": false,
+    "semantic_strict": false,
+    "semantic_renamed": false,
+    "semantic_detail": [],
+    "semantic_equal": false
+  },
+  "refused": true,
+  "repair": {
+    "result": "```gq\ngq 3;\nquery tagged() {\n  match { $d: Doc  \"rust\" in $d.tags }\n  return { $d.title }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 6949,
+    "tokens_out": 149,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 314,
+      "cache_read_input_tokens": 6633,
+      "output_tokens": 149,
+      "output_tokens_details": {
+        "thinking_tokens": 96
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 314,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 149,
+          "cache_read_input_tokens": 6633,
+          "cache_creation_input_tokens": 314,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 314
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0034133,
+    "seconds": 3.4,
+    "session_id": "96ce8c2c-4c29-4e57-a638-6542d51088d1",
+    "transport_retries": 0,
+    "text": "gq 3;\nquery tagged() {\n  match { $d: Doc  \"rust\" in $d.tags }\n  return { $d.title }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [
+      "gq 3;"
+    ],
+    "check": {
+      "decls": 1,
+      "edition3_forms": [],
+      "id": "answer",
+      "lower_diagnostic": null,
+      "lowered_type_diagnostic": null,
+      "lowered_type_ok": true,
+      "lowers_to_edition2": true,
+      "parse_ok": true,
+      "printed": "gq 3;\nquery tagged() { match { $d: Doc  \"rust\" in $d.tags } return { $d.title } }\n",
+      "t65_ranking_call_in_order_or_return": [],
+      "semantic_strict": true,
+      "semantic_renamed": true,
+      "semantic_detail": [
+        {
+          "renamed": true,
+          "strict": true
+        }
+      ],
+      "semantic_equal": true
+    }
+  },
+  "valid_after_repair": true,
+  "semantic_equal": true
+}

@@ -1,0 +1,14 @@
+{
+  "id": "t04",
+  "kind": "membership in a list literal",
+  "asset_section": "1",
+  "m0": null,
+  "prompt": "List the names of people who live in Berlin or Paris.",
+  "truth3": [
+    "query in_cities() {\n  match { $p: Person  $p.city in [\"Berlin\", \"Paris\"] }\n  return { $p.name }\n}"
+  ],
+  "truth2": [
+    "query in_cities() {\n  match { $p: Person  $p.city in [\"Berlin\", \"Paris\"] }\n  return { $p.name }\n}"
+  ],
+  "note": null
+}

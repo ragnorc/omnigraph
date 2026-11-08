@@ -1,0 +1,81 @@
+{
+  "task": "t33",
+  "kind": "delete by predicate",
+  "m0": null,
+  "edition": 2,
+  "has_truth": true,
+  "try1": {
+    "result": "```gq\nquery remove_employment($h: String) {\n    delete WorksAt where @src = $h\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8303,
+    "tokens_out": 97,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 313,
+      "cache_read_input_tokens": 7988,
+      "output_tokens": 97,
+      "output_tokens_details": {
+        "thinking_tokens": 60
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 313,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 97,
+          "cache_read_input_tokens": 7988,
+          "cache_creation_input_tokens": 313,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 313
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0030248000000000002,
+    "seconds": 2.7,
+    "session_id": "ebeb13bf-0aef-4f3c-a5ac-3a96b9640a89",
+    "transport_retries": 0,
+    "text": "query remove_employment($h: String) {\n    delete WorksAt where @src = $h\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 1,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true,
+      "semantic_strict": true,
+      "semantic_renamed": true,
+      "semantic_detail": [
+        {
+          "ir_renamed": true,
+          "renamed": true,
+          "strict": true
+        }
+      ],
+      "semantic_equal": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": true,
+  "final_decls": 1,
+  "tokens_in": 8303,
+  "tokens_out": 97
+}

@@ -1,0 +1,103 @@
+{
+  "task": "t29",
+  "kind": "hybrid, fused",
+  "m0": null,
+  "edition": 3,
+  "has_truth": true,
+  "try1": {
+    "result": "```gq\ngq 3;\nquery fused_docs($v: Vector(3), $q: String) {\n  match {\n    let $docs = { match { $d: Doc } return { $d } }\n    from rrf(\n      nearest($docs, $d.embedding, $v, k: 10),\n      bm25($docs, $d.body, $q),\n      k: 60\n    )\n  }\n  return { $d.title, $score }\n  order { $score desc }\n  limit 10\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 6880,
+    "tokens_out": 151,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 313,
+      "cache_read_input_tokens": 6565,
+      "output_tokens": 151,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 313,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 151,
+          "cache_read_input_tokens": 6565,
+          "cache_creation_input_tokens": 313,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 313
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0034225,
+    "seconds": 3.2,
+    "session_id": "13f5a31a-7e5b-4aab-a026-eed5fa6f7b2b",
+    "transport_retries": 0,
+    "text": "gq 3;\nquery fused_docs($v: Vector(3), $q: String) {\n  match {\n    let $docs = { match { $d: Doc } return { $d } }\n    from rrf(\n      nearest($docs, $d.embedding, $v, k: 10),\n      bm25($docs, $d.body, $q),\n      k: 60\n    )\n  }\n  return { $d.title, $score }\n  order { $score desc }\n  limit 10\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [
+      "gq 3;"
+    ],
+    "check": {
+      "decls": 1,
+      "edition3_forms": [
+        "from",
+        "from_bm25",
+        "from_nearest",
+        "from_rrf",
+        "let",
+        "let_relation"
+      ],
+      "id": "answer",
+      "lower_diagnostic": {
+        "code": "T60",
+        "column": null,
+        "fix": null,
+        "kind": "type",
+        "line": null,
+        "message": "`let $docs` is edition-3 syntax this prototype parses but does not type-check",
+        "rendered": "type error T60: `let $docs` is edition-3 syntax this prototype parses but does not type-check\n  stage: typecheck",
+        "suggestion": null
+      },
+      "lowered_type_diagnostic": null,
+      "lowered_type_ok": null,
+      "lowers_to_edition2": false,
+      "parse_ok": true,
+      "printed": "gq 3;\nquery fused_docs($v: Vector(3), $q: String) { match { let $docs = { match { $d: Doc } return { $d } }  from rrf(nearest($docs, $d.embedding, $v, k: 10), bm25($docs, $d.body, $q), k: 60) } return { $d.title, $score } order { $score desc } limit 10 }\n",
+      "t65_ranking_call_in_order_or_return": [],
+      "semantic_strict": false,
+      "semantic_renamed": false,
+      "semantic_detail": [
+        {
+          "renamed": false,
+          "strict": false
+        }
+      ],
+      "semantic_equal": false
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": false,
+  "final_decls": 1,
+  "tokens_in": 6880,
+  "tokens_out": 151
+}

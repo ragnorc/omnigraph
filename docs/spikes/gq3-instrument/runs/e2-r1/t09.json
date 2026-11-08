@@ -1,0 +1,71 @@
+{
+  "task": "t09",
+  "kind": "conditional and default values",
+  "m0": null,
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\n// GQ has no coalesce or conditional expression, so \"unknown\" and \"senior\"/\"active\"\n// cannot be produced as string values. This returns the raw city (null when missing)\n// and a boolean flag for age >= 65 instead (null when age is missing).\nquery people_bands() {\n    match {\n        $p: Person\n    }\n    return {\n        $p.name,\n        $p.city,\n        $p.age >= 65 as senior\n    }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8337,
+    "tokens_out": 520,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 6900,
+      "cache_read_input_tokens": 1435,
+      "output_tokens": 520,
+      "output_tokens_details": {
+        "thinking_tokens": 370
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 6900,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 520,
+          "cache_read_input_tokens": 1435,
+          "cache_creation_input_tokens": 6900,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 6900
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0329475,
+    "seconds": 6.2,
+    "session_id": "4e85bc9d-ca60-4949-91ce-df2f34b9d51d",
+    "transport_retries": 0,
+    "text": "// GQ has no coalesce or conditional expression, so \"unknown\" and \"senior\"/\"active\"\n// cannot be produced as string values. This returns the raw city (null when missing)\n// and a boolean flag for age >= 65 instead (null when age is missing).\nquery people_bands() {\n    match {\n        $p: Person\n    }\n    return {\n        $p.name,\n        $p.city,\n        $p.age >= 65 as senior\n    }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 1,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 1,
+  "tokens_in": 8337,
+  "tokens_out": 520
+}

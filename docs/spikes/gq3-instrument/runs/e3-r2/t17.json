@@ -1,0 +1,99 @@
+{
+  "task": "t17",
+  "kind": "aggregate of an aggregate",
+  "m0": null,
+  "edition": 3,
+  "has_truth": true,
+  "try1": {
+    "result": "```gq\ngq 3;\nquery company_headcount_stats() {\n  match {\n    $c: Company\n    let $n = count { $p worksAt $c }\n  }\n  return { avg($n) as mean, max($n) as largest }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 6842,
+    "tokens_out": 356,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 313,
+      "cache_read_input_tokens": 6527,
+      "output_tokens": 356,
+      "output_tokens_details": {
+        "thinking_tokens": 277
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 313,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 356,
+          "cache_read_input_tokens": 6527,
+          "cache_creation_input_tokens": 313,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 313
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0054687,
+    "seconds": 5.0,
+    "session_id": "b2cb216e-0343-4bc0-966b-729c653bafcb",
+    "transport_retries": 0,
+    "text": "gq 3;\nquery company_headcount_stats() {\n  match {\n    $c: Company\n    let $n = count { $p worksAt $c }\n  }\n  return { avg($n) as mean, max($n) as largest }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [
+      "gq 3;"
+    ],
+    "check": {
+      "decls": 1,
+      "edition3_forms": [
+        "block_value",
+        "let"
+      ],
+      "id": "answer",
+      "lower_diagnostic": {
+        "code": "T60",
+        "column": null,
+        "fix": null,
+        "kind": "type",
+        "line": null,
+        "message": "`let $n` is edition-3 syntax this prototype parses but does not type-check",
+        "rendered": "type error T60: `let $n` is edition-3 syntax this prototype parses but does not type-check\n  stage: typecheck",
+        "suggestion": null
+      },
+      "lowered_type_diagnostic": null,
+      "lowered_type_ok": null,
+      "lowers_to_edition2": false,
+      "parse_ok": true,
+      "printed": "gq 3;\nquery company_headcount_stats() { match { $c: Company  let $n = count { $p worksAt $c } } return { avg($n) as mean, max($n) as largest } }\n",
+      "t65_ranking_call_in_order_or_return": [],
+      "semantic_strict": false,
+      "semantic_renamed": false,
+      "semantic_detail": [
+        {
+          "renamed": false,
+          "strict": false
+        }
+      ],
+      "semantic_equal": false
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": false,
+  "final_decls": 1,
+  "tokens_in": 6842,
+  "tokens_out": 356
+}

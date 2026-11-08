@@ -1,0 +1,71 @@
+{
+  "task": "t09",
+  "kind": "conditional and default values",
+  "m0": null,
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\n// GQ has no coalesce, case or if-expression and no null literal, so \"unknown\"\n// and the \"senior\"/\"active\" labels cannot be produced in a query.\n// This returns the raw values: city is null where missing, and senior is\n// true/false (null when age is missing). Map them to \"unknown\" and\n// \"senior\"/\"active\" in the client.\nquery people_bands() {\n    match {\n        $p: Person\n    }\n    return {\n        $p.name,\n        $p.city,\n        $p.age >= 65 as senior\n    }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8338,
+    "tokens_out": 512,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 314,
+      "cache_read_input_tokens": 8022,
+      "output_tokens": 512,
+      "output_tokens_details": {
+        "thinking_tokens": 334
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 314,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 512,
+          "cache_read_input_tokens": 8022,
+          "cache_creation_input_tokens": 314,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 314
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0071822,
+    "seconds": 6.2,
+    "session_id": "7ac8f0dc-3564-4f8b-a5de-a5d079b2d6f7",
+    "transport_retries": 0,
+    "text": "// GQ has no coalesce, case or if-expression and no null literal, so \"unknown\"\n// and the \"senior\"/\"active\" labels cannot be produced in a query.\n// This returns the raw values: city is null where missing, and senior is\n// true/false (null when age is missing). Map them to \"unknown\" and\n// \"senior\"/\"active\" in the client.\nquery people_bands() {\n    match {\n        $p: Person\n    }\n    return {\n        $p.name,\n        $p.city,\n        $p.age >= 65 as senior\n    }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 1,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 1,
+  "tokens_in": 8338,
+  "tokens_out": 512
+}

@@ -1,0 +1,12 @@
+{
+  "id": "t22",
+  "kind": "correlated subquery per group",
+  "asset_section": "4",
+  "m0": null,
+  "prompt": "For each person, list the titles and years of their three most recent documents.",
+  "truth3": [
+    "query latest_per_author() {\n  match {\n    $p: Person\n    from { match { $p authored $d } return { $d } order { $d.year desc } limit 3 }\n  }\n  return { $p.name, $d.title, $d.year }\n}"
+  ],
+  "truth2": [],
+  "note": null
+}

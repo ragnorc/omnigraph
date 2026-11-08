@@ -1,0 +1,84 @@
+{
+  "task": "t13",
+  "kind": "edge whose name is a reserved word",
+  "m0": null,
+  "edition": 2,
+  "has_truth": true,
+  "try1": {
+    "result": "```gq\nquery docs_in_collection($slug: String) {\n    match {\n        $c: Collection { slug: $slug }\n        $d in $c\n    }\n    return { $d.title }\n}\n```\n\nWait \u2014 `in` is reserved as a bare name, and the card says the edge is traversed as \"in\". Corrected query below.\n\n```gq\nquery docs_in_collection($slug: String) {\n    match {\n        $c: Collection { slug: $slug }\n        $d: Doc\n        $d in $c\n    }\n    return { $d.title }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8306,
+    "tokens_out": 175,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 6869,
+      "cache_read_input_tokens": 1435,
+      "output_tokens": 175,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 6869,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 175,
+          "cache_read_input_tokens": 1435,
+          "cache_creation_input_tokens": 6869,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 6869
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0293735,
+    "seconds": 4.4,
+    "session_id": "4999513c-224e-4c4d-accc-c8824624531d",
+    "transport_retries": 0,
+    "text": "query docs_in_collection($slug: String) {\n    match {\n        $c: Collection { slug: $slug }\n        $d in $c\n    }\n    return { $d.title }\n}\nquery docs_in_collection($slug: String) {\n    match {\n        $c: Collection { slug: $slug }\n        $d: Doc\n        $d in $c\n    }\n    return { $d.title }\n}\n",
+    "blocks": 2,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 2,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": {
+        "code": "T7",
+        "column": null,
+        "fix": null,
+        "kind": "type",
+        "line": null,
+        "message": "`in` needs a list on the right, got node `Collection`",
+        "rendered": "type error T7: `in` needs a list on the right, got node `Collection`\n  stage: typecheck",
+        "suggestion": null
+      },
+      "type_ok": false,
+      "semantic_strict": false,
+      "semantic_renamed": false,
+      "semantic_detail": [],
+      "semantic_equal": false
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": false,
+  "final_decls": 2,
+  "tokens_in": 8306,
+  "tokens_out": 175
+}

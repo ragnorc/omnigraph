@@ -1,0 +1,71 @@
+{
+  "task": "t22",
+  "kind": "correlated subquery per group",
+  "m0": null,
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\n// GQ has no per-group limit (`limit` is global), so this returns every\n// person's documents, newest first within each person. Keep the first three rows per person.\nquery recent_docs_per_person() {\n    match {\n        $p: Person\n        $p authored $d\n    }\n    return { $p.handle, $p.name, $d.title, $d.year }\n    order { $p.handle, $d.year desc }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8305,
+    "tokens_out": 561,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 314,
+      "cache_read_input_tokens": 7989,
+      "output_tokens": 561,
+      "output_tokens_details": {
+        "thinking_tokens": 425
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 314,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 561,
+          "cache_read_input_tokens": 7989,
+          "cache_creation_input_tokens": 314,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 314
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.007668899999999999,
+    "seconds": 7.5,
+    "session_id": "b71298b8-6e48-4df3-8f33-3892423f1972",
+    "transport_retries": 0,
+    "text": "// GQ has no per-group limit (`limit` is global), so this returns every\n// person's documents, newest first within each person. Keep the first three rows per person.\nquery recent_docs_per_person() {\n    match {\n        $p: Person\n        $p authored $d\n    }\n    return { $p.handle, $p.name, $d.title, $d.year }\n    order { $p.handle, $d.year desc }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 1,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 1,
+  "tokens_in": 8305,
+  "tokens_out": 561
+}

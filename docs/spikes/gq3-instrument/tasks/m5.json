@@ -1,0 +1,12 @@
+{
+  "id": "m5",
+  "kind": "a window over documents, then a traversal from the hits",
+  "asset_section": "5",
+  "m0": "search followed by a graph operation",
+  "prompt": "Find the 10 documents most similar to the vector `$q` and, for each, return its title, its distance and how many documents it cites as `cites` (zero when it cites none).",
+  "truth3": [
+    "query cited_near($q: Vector(3)) {\n  match {\n    from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 10)\n    let $cites = count { $d cites $other }\n  }\n  return { $d.title, $distance, $cites }\n  order { $distance }\n}"
+  ],
+  "truth2": [],
+  "note": null
+}

@@ -1,0 +1,13 @@
+{
+  "id": "m6",
+  "kind": "window versus population",
+  "asset_section": "5",
+  "m0": "the window-versus-population distinction",
+  "prompt": "Take the 10 documents nearest to the vector `$q` among all documents, and return the titles of those of the 10 that belong to the collection with slug `$coll`.",
+  "truth3": [
+    "query near_then_in($q: Vector(3), $coll: String) {\n  match {\n    from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 10)\n    $x: Collection { slug: $coll }\n    $d \"in\" $x\n  }\n  return { $d.title }\n}",
+    "query near_then_in($q: Vector(3), $coll: String) {\n  match {\n    from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 10)\n    $d \"in\" $x\n    $x: Collection { slug: $coll }\n  }\n  return { $d.title }\n}"
+  ],
+  "truth2": [],
+  "note": null
+}

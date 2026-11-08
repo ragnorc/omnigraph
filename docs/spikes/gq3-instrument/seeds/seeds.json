@@ -1,0 +1,170 @@
+[
+  {
+    "id": "s01",
+    "task": "t03",
+    "habit": "infix contains / starts_with (edition 2)",
+    "text": "gq 3;\nquery titled() {\n  match { $d: Doc  $d.title contains \"graph\"  $d.title starts_with \"The\" }\n  return { $d.title }\n}"
+  },
+  {
+    "id": "s02",
+    "task": "t05",
+    "habit": "list contains (edition 2)",
+    "text": "gq 3;\nquery tagged() {\n  match { $d: Doc  $d.tags contains \"rust\" }\n  return { $d.title }\n}"
+  },
+  {
+    "id": "s03",
+    "task": "t28",
+    "habit": "positional fuzzy budget (edition 2)",
+    "text": "gq 3;\nquery mentions($s: String, $q: String) {\n  match { $d: Doc  search($d.body, $s)  fuzzy($d.body, $q, 2) }\n  return { $d.title }\n}"
+  },
+  {
+    "id": "s04",
+    "task": "t24",
+    "habit": "nearest in order (edition 2)",
+    "text": "gq 3;\nquery similar($q: Vector(3)) {\n  match { $d: Doc  $d.year >= 2025 }\n  return { $d.title }\n  order { nearest($d.embedding, $q) }\n  limit 20\n}"
+  },
+  {
+    "id": "s05",
+    "task": "t27",
+    "habit": "bm25 in return and order (edition 2)",
+    "text": "gq 3;\nquery about($q: String) {\n  match { $d: Doc }\n  return { $d.title, bm25($d.body, $q) as s }\n  order { bm25($d.body, $q) desc }\n  limit 10\n}"
+  },
+  {
+    "id": "s06",
+    "task": "t33",
+    "habit": "delete T where (edition 2)",
+    "text": "gq 3;\nquery retire($h: String) {\n  delete WorksAt where @src = $h\n}"
+  },
+  {
+    "id": "s07",
+    "task": "t35",
+    "habit": "update T set where (edition 2)",
+    "text": "gq 3;\nquery birthday($h: String) {\n  update Person set { age: age + 1 } where handle = $h\n}"
+  },
+  {
+    "id": "s08",
+    "task": "m3",
+    "habit": "having (SQL)",
+    "text": "gq 3;\nquery big_employers($min: I64) {\n  match { $c: Company  $p worksAt $c }\n  return { $c.name, count($p) as n }\n  having { n >= $min }\n  order { n desc }\n}"
+  },
+  {
+    "id": "s09",
+    "task": "t20",
+    "habit": "optional without braces (Cypher OPTIONAL MATCH)",
+    "text": "gq 3;\nquery people_and_employers() {\n  match { $p: Person  optional $p worksAt $c }\n  return { $p.name, $c.name }\n}"
+  },
+  {
+    "id": "s10",
+    "task": "t09",
+    "habit": "CASE ... END (SQL)",
+    "text": "gq 3;\nquery with_city() {\n  match { $p: Person }\n  return { $p.name, coalesce($p.city, \"unknown\") as city, CASE WHEN $p.age >= 65 THEN \"senior\" ELSE \"active\" END as band }\n}"
+  },
+  {
+    "id": "s11",
+    "task": "t08",
+    "habit": "minus spaced on one side only",
+    "text": "gq 3;\nquery doubled($min: I32) {\n  match { $p: Person  $p.age * 2 >= $min }\n  return { $p.name, $p.age * 2 as twice, 2026 -$p.age as born_about }\n}"
+  },
+  {
+    "id": "s12",
+    "task": "t02",
+    "habit": "comparison inside binding braces",
+    "text": "gq 3;\nquery adults($min: I32) {\n  match { $p: Person { age >= $min } }\n  return { $p.name }\n  order { $p.age desc }\n}"
+  },
+  {
+    "id": "s13",
+    "task": "t01",
+    "habit": "missing empty parameter list",
+    "text": "gq 3;\nquery person {\n  match { $p: Person { handle: $h } }\n  return { $p.name, $p.city }\n}"
+  },
+  {
+    "id": "s14",
+    "task": "t32",
+    "habit": "mutation keyword (GraphQL)",
+    "text": "gq 3;\nmutation hire($h: String, $slug: String) {\n  insert Person { handle: $h, name: $h }\n  insert WorksAt { from: $h, to: $slug }\n}"
+  },
+  {
+    "id": "s15",
+    "task": "t35",
+    "habit": "write body wrapped in match",
+    "text": "gq 3;\nquery birthday($h: String) {\n  match { $p: Person { handle: $h } }\n  update $p set { age: $p.age + 1 }\n}"
+  },
+  {
+    "id": "s16",
+    "task": "t13",
+    "habit": "bare reserved edge name",
+    "text": "gq 3;\nquery in_collection($slug: String) {\n  match { $x: Collection { slug: $slug }  $d in $x }\n  return { $d.title }\n}"
+  },
+  {
+    "id": "s17",
+    "task": "t18",
+    "habit": "where (SQL / Cypher)",
+    "text": "gq 3;\nquery well_connected($min: I64) {\n  match { $p: Person  where count { $p knows $q } >= $min }\n  return { $p.name }\n}"
+  },
+  {
+    "id": "s18",
+    "task": "t11",
+    "habit": "arrow traversal (Cypher)",
+    "text": "gq 3;\nquery around($h: String) {\n  match { $p: Person { handle: $h }  $p -knows- $f }\n  return { $f.name }\n}"
+  },
+  {
+    "id": "s19",
+    "task": "t22",
+    "habit": "let ... in (PR 1244)",
+    "text": "gq 3;\nquery latest_per_author() {\n  match {\n    $p: Person\n    let $d in { match { $p authored $d } return { $d } order { $d.year desc } limit 3 }\n  }\n  return { $p.name, $d.title, $d.year }\n}"
+  },
+  {
+    "id": "s20",
+    "task": "t16",
+    "habit": "count(*) (SQL)",
+    "text": "gq 3;\nquery distinct_cities() {\n  match { $p: Person }\n  return { count(*) as cities }\n}"
+  },
+  {
+    "id": "s21",
+    "task": "t06",
+    "habit": "null literal in a read",
+    "text": "gq 3;\nquery homeless() {\n  match { $p: Person  $p.city = null }\n  return { $p.name }\n}"
+  },
+  {
+    "id": "s22",
+    "task": "t02",
+    "habit": "uppercase keyword",
+    "text": "gq 3;\nquery adults($min: I32) {\n  match { $p: Person  $p.age >= $min }\n  return { $p.name }\n  order { $p.age DESC }\n}"
+  },
+  {
+    "id": "s23",
+    "task": "t17",
+    "habit": "aggregate of an aggregate",
+    "text": "gq 3;\nquery average_headcount() {\n  match { $c: Company  $p worksAt $c }\n  return { avg(count($p)) as mean, max(count($p)) as largest }\n}"
+  },
+  {
+    "id": "s24",
+    "task": "t30",
+    "habit": "two rankings drawn into one scope (T68)",
+    "text": "gq 3;\nquery weighted($q: String, $v: Vector(3)) {\n  match {\n    from distance({ match { $d: Doc } return { $d } }, $d.embedding, $v)\n    from bm25({ match { $d: Doc } return { $d } }, $d.body, $q)\n  }\n  return { $d.title, 0.7 * (1.0 / (1.0 + $distance)) + 0.3 * $score as s }\n  order { s desc }\n  limit 10\n}"
+  },
+  {
+    "id": "s25",
+    "task": "t24",
+    "habit": "nearest without k",
+    "text": "gq 3;\nquery similar($q: Vector(3)) {\n  match { from nearest({ match { $d: Doc  $d.year >= 2025 } return { $d } }, $d.embedding, $q) }\n  return { $d.title }\n  order { $distance }\n  limit 20\n}"
+  },
+  {
+    "id": "s26",
+    "task": "t21",
+    "habit": "UNION between two reads (SQL)",
+    "text": "gq 3;\nquery people_and_companies() {\n  match { $p: Person } return { $p.name as name, \"person\" as kind }\n  union\n  match { $c: Company } return { $c.name as name, \"company\" as kind }\n}"
+  },
+  {
+    "id": "s27",
+    "task": "t04",
+    "habit": "single-quoted strings and == (other languages)",
+    "text": "gq 3;\nquery in_cities() {\n  match { $p: Person  $p.city == 'Berlin' or $p.city == 'Paris' }\n  return { $p.name }\n}"
+  },
+  {
+    "id": "s28",
+    "task": "m4",
+    "habit": "space before a call's parenthesis",
+    "text": "gq 3;\nquery colleagues($of: String) {\n  match { $p: Person { handle: $of }  $p worksAt $c  $q worksAt $c  $q != $p }\n  return { $q }\n}\n\nquery colleagues_of_colleagues($of: String) {\n  match {\n    from { match { from colleagues ($of) } return { $q as c } }\n    from { match { from colleagues ($c.handle) } return { $q as r } }\n  }\n  return distinct { $r.name }\n}"
+  }
+]

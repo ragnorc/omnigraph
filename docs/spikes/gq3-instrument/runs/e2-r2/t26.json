@@ -1,0 +1,71 @@
+{
+  "task": "t26",
+  "kind": "every document within a distance",
+  "m0": null,
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\nquery recent_docs_near($q: Vector(3), $r: F64) {\n    match {\n        $d: Doc\n        $d.year >= 2025\n    }\n    return { $d.title, nearest($d.embedding, $q) as distance }\n    order { nearest($d.embedding, $q) }\n    limit 10\n}\n// NOTE: the reference card has no way to filter on distance, so the `$r` radius is not applied.\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8330,
+    "tokens_out": 608,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 314,
+      "cache_read_input_tokens": 8014,
+      "output_tokens": 608,
+      "output_tokens_details": {
+        "thinking_tokens": 464
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 314,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 608,
+          "cache_read_input_tokens": 8014,
+          "cache_creation_input_tokens": 314,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 314
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0081414,
+    "seconds": 7.5,
+    "session_id": "1fdd911d-e43a-4ba2-8b3a-4213945fdba5",
+    "transport_retries": 0,
+    "text": "query recent_docs_near($q: Vector(3), $r: F64) {\n    match {\n        $d: Doc\n        $d.year >= 2025\n    }\n    return { $d.title, nearest($d.embedding, $q) as distance }\n    order { nearest($d.embedding, $q) }\n    limit 10\n}\n// NOTE: the reference card has no way to filter on distance, so the `$r` radius is not applied.\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 1,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 1,
+  "tokens_in": 8330,
+  "tokens_out": 608
+}

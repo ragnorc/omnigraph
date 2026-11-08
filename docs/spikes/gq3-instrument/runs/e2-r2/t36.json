@@ -1,0 +1,71 @@
+{
+  "task": "t36",
+  "kind": "write whose targets come from a ranked read",
+  "m0": null,
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\n// GQ can't do this in one query: a mutation has no match/order/nearest, and\n// `nearest` is only allowed in a read query's `order`. This is step 1, which\n// returns the 20 nearest ids. Step 2 is a separate mutation:\n//   query tag_near($ids: [String]) {\n//       update Doc set { tags: [\"near\"] } where id in $ids\n//   }\nquery nearest_docs($q: Vector(3)) {\n    match { $d: Doc }\n    return { $d.id }\n    order { nearest($d.embedding, $q) }\n    limit 20\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8323,
+    "tokens_out": 700,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 314,
+      "cache_read_input_tokens": 8007,
+      "output_tokens": 700,
+      "output_tokens_details": {
+        "thinking_tokens": 500
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 314,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 700,
+          "cache_read_input_tokens": 8007,
+          "cache_creation_input_tokens": 314,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 314
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0090607,
+    "seconds": 8.3,
+    "session_id": "ef0f00db-8346-4325-9d73-49516fdb0aab",
+    "transport_retries": 0,
+    "text": "// GQ can't do this in one query: a mutation has no match/order/nearest, and\n// `nearest` is only allowed in a read query's `order`. This is step 1, which\n// returns the 20 nearest ids. Step 2 is a separate mutation:\n//   query tag_near($ids: [String]) {\n//       update Doc set { tags: [\"near\"] } where id in $ids\n//   }\nquery nearest_docs($q: Vector(3)) {\n    match { $d: Doc }\n    return { $d.id }\n    order { nearest($d.embedding, $q) }\n    limit 20\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 1,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 1,
+  "tokens_in": 8323,
+  "tokens_out": 700
+}

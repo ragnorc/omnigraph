@@ -1,0 +1,101 @@
+{
+  "task": "t12",
+  "kind": "unbounded reachability",
+  "m0": null,
+  "edition": 3,
+  "has_truth": true,
+  "try1": {
+    "result": "```gq\ngq 3;\nquery reachable_names($from: String) {\n  match {\n    from union(\n      { match { $p: Person { handle: $from }  $p knows $q } return { $q } },\n      { match { from reachable_names($from)  $q knows $r } return { $r as q } })\n  }\n  return distinct { $q.name }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 6844,
+    "tokens_out": 309,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 313,
+      "cache_read_input_tokens": 6529,
+      "output_tokens": 309,
+      "output_tokens_details": {
+        "thinking_tokens": 196
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 313,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 309,
+          "cache_read_input_tokens": 6529,
+          "cache_creation_input_tokens": 313,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 313
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0049989000000000006,
+    "seconds": 4.6,
+    "session_id": "22ed3b6e-3af4-4c86-b540-e9975ad41db1",
+    "transport_retries": 0,
+    "text": "gq 3;\nquery reachable_names($from: String) {\n  match {\n    from union(\n      { match { $p: Person { handle: $from }  $p knows $q } return { $q } },\n      { match { from reachable_names($from)  $q knows $r } return { $r as q } })\n  }\n  return distinct { $q.name }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [
+      "gq 3;"
+    ],
+    "check": {
+      "decls": 1,
+      "edition3_forms": [
+        "from",
+        "from_declared_read",
+        "from_union",
+        "inline_read"
+      ],
+      "id": "answer",
+      "lower_diagnostic": {
+        "code": "T60",
+        "column": null,
+        "fix": null,
+        "kind": "type",
+        "line": null,
+        "message": "`from` is edition-3 syntax this prototype parses but does not type-check",
+        "rendered": "type error T60: `from` is edition-3 syntax this prototype parses but does not type-check\n  stage: typecheck",
+        "suggestion": null
+      },
+      "lowered_type_diagnostic": null,
+      "lowered_type_ok": null,
+      "lowers_to_edition2": false,
+      "parse_ok": true,
+      "printed": "gq 3;\nquery reachable_names($from: String) { match { from union({ match { $p: Person { handle: $from }  $p knows $q } return { $q } }, { match { from reachable_names($from)  $q knows $r } return { $r as q } }) } return distinct { $q.name } }\n",
+      "t65_ranking_call_in_order_or_return": [],
+      "semantic_strict": true,
+      "semantic_renamed": true,
+      "semantic_detail": [
+        {
+          "renamed": true,
+          "strict": true
+        }
+      ],
+      "semantic_equal": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": true,
+  "final_decls": 1,
+  "tokens_in": 6844,
+  "tokens_out": 309
+}

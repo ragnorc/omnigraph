@@ -1,0 +1,71 @@
+{
+  "task": "m5",
+  "kind": "a window over documents, then a traversal from the hits",
+  "m0": "search followed by a graph operation",
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\n// Run first. The caller keeps these 10 rows in order (id, title, distance) and collects the ids.\nquery nearest_docs($q: Vector(3)) {\n    match { $d: Doc }\n    return { $d.id, $d.title, nearest($d.embedding, $q) as distance }\n    order { nearest($d.embedding, $q) }\n    limit 10\n}\n```\n\n```gq\n// Run second, passing the ids from the first result as $ids. The caller joins the rows to the first result on id and sets cites to 0 for any id that is missing here, since a doc that cites nothing has no traversal match.\nquery cite_counts($ids: [String]) {\n    match {\n        $d: Doc\n        $d.id in $ids\n        $d cites $c\n    }\n    return { $d.id, count($c) as cites }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8390,
+    "tokens_out": 645,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 314,
+      "cache_read_input_tokens": 8074,
+      "output_tokens": 645,
+      "output_tokens_details": {
+        "thinking_tokens": 373
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 314,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 645,
+          "cache_read_input_tokens": 8074,
+          "cache_creation_input_tokens": 314,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 314
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.008517399999999998,
+    "seconds": 7.4,
+    "session_id": "39f3f9bd-60b6-493d-a525-4d1020c7e90c",
+    "transport_retries": 0,
+    "text": "// Run first. The caller keeps these 10 rows in order (id, title, distance) and collects the ids.\nquery nearest_docs($q: Vector(3)) {\n    match { $d: Doc }\n    return { $d.id, $d.title, nearest($d.embedding, $q) as distance }\n    order { nearest($d.embedding, $q) }\n    limit 10\n}\n// Run second, passing the ids from the first result as $ids. The caller joins the rows to the first result on id and sets cites to 0 for any id that is missing here, since a doc that cites nothing has no traversal match.\nquery cite_counts($ids: [String]) {\n    match {\n        $d: Doc\n        $d.id in $ids\n        $d cites $c\n    }\n    return { $d.id, count($c) as cites }\n}\n",
+    "blocks": 2,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 2,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 2,
+  "tokens_in": 8390,
+  "tokens_out": 645
+}

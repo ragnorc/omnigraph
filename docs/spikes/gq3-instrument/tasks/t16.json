@@ -1,0 +1,14 @@
+{
+  "id": "t16",
+  "kind": "distinct counts",
+  "asset_section": "3",
+  "m0": null,
+  "prompt": "How many distinct cities do people live in? Return the number as `cities`.",
+  "truth3": [
+    "query distinct_cities() {\n  match { $p: Person }\n  return { count(distinct $p.city) as cities }\n}"
+  ],
+  "truth2": [
+    "query distinct_cities() {\n  match { $p: Person }\n  return { count(distinct $p.city) as cities }\n}"
+  ],
+  "note": null
+}

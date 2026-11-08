@@ -1,0 +1,14 @@
+{
+  "id": "t39",
+  "kind": "annotations on a declaration",
+  "asset_section": "7",
+  "m0": null,
+  "prompt": "Write a stored query returning the names of people older than `$cutoff`, with the description \"People over a given age\" and the instruction \"Pass the age as an integer\".",
+  "truth3": [
+    "query people_over($cutoff: I32) @description(\"People over a given age\") @instruction(\"Pass the age as an integer\") {\n  match { $p: Person  $p.age > $cutoff }\n  return { $p.name }\n}"
+  ],
+  "truth2": [
+    "query people_over($cutoff: I32) @description(\"People over a given age\") @instruction(\"Pass the age as an integer\") {\n  match { $p: Person  $p.age > $cutoff }\n  return { $p.name }\n}"
+  ],
+  "note": null
+}

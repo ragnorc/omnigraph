@@ -1,0 +1,12 @@
+{
+  "id": "m1",
+  "kind": "block as a value (count plus projection)",
+  "asset_section": "3",
+  "m0": "count plus projection",
+  "prompt": "For every person, return their name and how many people they know as `degree` (zero for people who know nobody), most connected first.",
+  "truth3": [
+    "query degrees() {\n  match {\n    $p: Person\n    let $degree = count { $p knows $q }\n  }\n  return { $p.name, $degree }\n  order { $degree desc }\n}"
+  ],
+  "truth2": [],
+  "note": null
+}

@@ -1,0 +1,71 @@
+{
+  "task": "t35",
+  "kind": "write with a computed value",
+  "m0": null,
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\nquery birthday($h: String, $new_age: I32)\n@description(\"Caller passes the person's current age plus one as $new_age; GQ has no arithmetic in update set.\")\n{\n    update Person set { age: $new_age } where handle = $h\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8309,
+    "tokens_out": 366,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 6872,
+      "cache_read_input_tokens": 1435,
+      "output_tokens": 366,
+      "output_tokens_details": {
+        "thinking_tokens": 279
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 6872,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 366,
+          "cache_read_input_tokens": 1435,
+          "cache_creation_input_tokens": 6872,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 6872
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0312955,
+    "seconds": 5.9,
+    "session_id": "2c45cd24-35cf-4d18-9996-5f8a32b5285c",
+    "transport_retries": 0,
+    "text": "query birthday($h: String, $new_age: I32)\n@description(\"Caller passes the person's current age plus one as $new_age; GQ has no arithmetic in update set.\")\n{\n    update Person set { age: $new_age } where handle = $h\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 1,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 1,
+  "tokens_in": 8309,
+  "tokens_out": 366
+}

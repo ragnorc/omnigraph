@@ -1,0 +1,12 @@
+{
+  "id": "t23",
+  "kind": "parameterised limit with a default",
+  "asset_section": "4",
+  "m0": null,
+  "prompt": "List the names of the `$k` oldest people, where `$k` defaults to 10.",
+  "truth3": [
+    "query top_people($k: I64 = 10) {\n  match { $p: Person }\n  return { $p.name }\n  order { $p.age desc }\n  limit $k\n}"
+  ],
+  "truth2": [],
+  "note": null
+}

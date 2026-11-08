@@ -1,0 +1,14 @@
+{
+  "id": "t02",
+  "kind": "comparison filter",
+  "asset_section": "1",
+  "m0": null,
+  "prompt": "List the names of people aged at least `$min`, oldest first.",
+  "truth3": [
+    "query adults($min: I32) {\n  match { $p: Person  $p.age >= $min }\n  return { $p.name }\n  order { $p.age desc }\n}"
+  ],
+  "truth2": [
+    "query adults($min: I32) {\n  match { $p: Person  $p.age >= $min }\n  return { $p.name }\n  order { $p.age desc }\n}"
+  ],
+  "note": null
+}

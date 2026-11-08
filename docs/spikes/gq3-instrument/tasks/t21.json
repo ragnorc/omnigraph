@@ -1,0 +1,12 @@
+{
+  "id": "t21",
+  "kind": "union of two reads",
+  "asset_section": "4",
+  "m0": null,
+  "prompt": "List the names of all people and all companies in one result, with a column `kind` that says \"person\" or \"company\".",
+  "truth3": [
+    "query people_and_companies() {\n  match {\n    from union(\n      { match { $p: Person } return { $p.name as name, \"person\" as kind } },\n      { match { $c: Company } return { $c.name as name, \"company\" as kind } })\n  }\n  return { $name, $kind }\n}"
+  ],
+  "truth2": [],
+  "note": null
+}

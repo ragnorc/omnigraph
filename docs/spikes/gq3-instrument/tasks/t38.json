@@ -1,0 +1,14 @@
+{
+  "id": "t38",
+  "kind": "the engine catalogue",
+  "asset_section": "7",
+  "m0": null,
+  "prompt": "List the name and inputs of every physical operator the engine has.",
+  "truth3": [
+    "query operators() {\n  match { $o: @Operator }\n  return { $o.name, $o.inputs }\n}"
+  ],
+  "truth2": [
+    "query operators() {\n  match { $o: @Operator }\n  return { $o.name, $o.inputs }\n}"
+  ],
+  "note": null
+}

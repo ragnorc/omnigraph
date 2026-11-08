@@ -1,0 +1,99 @@
+{
+  "seed": "s12",
+  "task": "t02",
+  "habit": "comparison inside binding braces",
+  "seed_check": {
+    "diagnostic": {
+      "code": "Q010",
+      "column": 11,
+      "fix": "$p: Person  $p.age >= $min",
+      "kind": "parse",
+      "line": 3,
+      "message": "the braces of a binding hold `property: value` matches; `age >= $min` is a comparison",
+      "rendered": "parse error Q010: the braces of a binding hold `property: value` matches; `age >= $min` is a comparison\n  at line 3, column 11\n  fix: $p: Person  $p.age >= $min",
+      "suggestion": null
+    },
+    "id": "answer",
+    "parse_ok": false,
+    "semantic_strict": false,
+    "semantic_renamed": false,
+    "semantic_detail": [],
+    "semantic_equal": false
+  },
+  "refused": true,
+  "repair": {
+    "result": "```gq\ngq 3;\nquery adults($min: I32) {\n  match {\n    $p: Person\n    $p.age >= $min\n  }\n  return { $p.name }\n  order { $p.age desc }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 6977,
+    "tokens_out": 70,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 315,
+      "cache_read_input_tokens": 6660,
+      "output_tokens": 70,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 315,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 70,
+          "cache_read_input_tokens": 6660,
+          "cache_creation_input_tokens": 315,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 315
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.00263,
+    "seconds": 2.9,
+    "session_id": "90a75b8f-c1ae-4900-b98d-cf280473c51d",
+    "transport_retries": 0,
+    "text": "gq 3;\nquery adults($min: I32) {\n  match {\n    $p: Person\n    $p.age >= $min\n  }\n  return { $p.name }\n  order { $p.age desc }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [
+      "gq 3;"
+    ],
+    "check": {
+      "decls": 1,
+      "edition3_forms": [],
+      "id": "answer",
+      "lower_diagnostic": null,
+      "lowered_type_diagnostic": null,
+      "lowered_type_ok": true,
+      "lowers_to_edition2": true,
+      "parse_ok": true,
+      "printed": "gq 3;\nquery adults($min: I32) { match { $p: Person  $p.age >= $min } return { $p.name } order { $p.age desc } }\n",
+      "t65_ranking_call_in_order_or_return": [],
+      "semantic_strict": true,
+      "semantic_renamed": true,
+      "semantic_detail": [
+        {
+          "renamed": true,
+          "strict": true
+        }
+      ],
+      "semantic_equal": true
+    }
+  },
+  "valid_after_repair": true,
+  "semantic_equal": true
+}

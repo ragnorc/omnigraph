@@ -1,0 +1,99 @@
+{
+  "seed": "s18",
+  "task": "t11",
+  "habit": "arrow traversal (Cypher)",
+  "seed_check": {
+    "diagnostic": {
+      "code": "Q007",
+      "column": 38,
+      "fix": "$p <knows> $f",
+      "kind": "parse",
+      "line": 3,
+      "message": "a traversal is a triple: the source, the edge and the target, with no arrow",
+      "rendered": "parse error Q007: a traversal is a triple: the source, the edge and the target, with no arrow\n  at line 3, column 38\n  fix: $p <knows> $f",
+      "suggestion": null
+    },
+    "id": "answer",
+    "parse_ok": false,
+    "semantic_strict": false,
+    "semantic_renamed": false,
+    "semantic_detail": [],
+    "semantic_equal": false
+  },
+  "refused": true,
+  "repair": {
+    "result": "```gq\ngq 3;\nquery around($h: String) {\n  match { $p: Person { handle: $h }  $p <knows> $f }\n  return { $f.name }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 6972,
+    "tokens_out": 59,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 5535,
+      "cache_read_input_tokens": 1435,
+      "output_tokens": 59,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 5535,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 59,
+          "cache_read_input_tokens": 1435,
+          "cache_creation_input_tokens": 5535,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 5535
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0228775,
+    "seconds": 2.9,
+    "session_id": "87efea87-e66a-4d5c-bb09-8ef4dbca8ac7",
+    "transport_retries": 0,
+    "text": "gq 3;\nquery around($h: String) {\n  match { $p: Person { handle: $h }  $p <knows> $f }\n  return { $f.name }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [
+      "gq 3;"
+    ],
+    "check": {
+      "decls": 1,
+      "edition3_forms": [],
+      "id": "answer",
+      "lower_diagnostic": null,
+      "lowered_type_diagnostic": null,
+      "lowered_type_ok": true,
+      "lowers_to_edition2": true,
+      "parse_ok": true,
+      "printed": "gq 3;\nquery around($h: String) { match { $p: Person { handle: $h }  $p <knows> $f } return { $f.name } }\n",
+      "t65_ranking_call_in_order_or_return": [],
+      "semantic_strict": true,
+      "semantic_renamed": true,
+      "semantic_detail": [
+        {
+          "renamed": true,
+          "strict": true
+        }
+      ],
+      "semantic_equal": true
+    }
+  },
+  "valid_after_repair": true,
+  "semantic_equal": true
+}

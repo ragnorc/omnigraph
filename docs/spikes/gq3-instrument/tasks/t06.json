@@ -1,0 +1,14 @@
+{
+  "id": "t06",
+  "kind": "null test",
+  "asset_section": "1",
+  "m0": null,
+  "prompt": "List the names of people whose city is not recorded.",
+  "truth3": [
+    "query homeless() {\n  match { $p: Person  $p.city is null }\n  return { $p.name }\n}"
+  ],
+  "truth2": [
+    "query homeless() {\n  match { $p: Person  $p.city is null }\n  return { $p.name }\n}"
+  ],
+  "note": null
+}

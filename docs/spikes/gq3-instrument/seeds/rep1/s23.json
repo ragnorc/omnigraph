@@ -1,0 +1,36 @@
+{
+  "seed": "s23",
+  "task": "t17",
+  "habit": "aggregate of an aggregate",
+  "seed_check": {
+    "decls": 1,
+    "edition3_forms": [],
+    "id": "answer",
+    "lower_diagnostic": null,
+    "lowered_type_diagnostic": {
+      "code": "T8",
+      "column": null,
+      "fix": null,
+      "kind": "type",
+      "line": null,
+      "message": "avg cannot take an aggregate or a forward alias reference as its argument",
+      "rendered": "type error T8: avg cannot take an aggregate or a forward alias reference as its argument\n  stage: typecheck",
+      "suggestion": null
+    },
+    "lowered_type_ok": false,
+    "lowers_to_edition2": true,
+    "parse_ok": true,
+    "printed": "gq 3;\nquery average_headcount() { match { $c: Company  $p worksAt $c } return { avg(count($p)) as mean, max(count($p)) as largest } }\n",
+    "t65_ranking_call_in_order_or_return": [],
+    "semantic_strict": false,
+    "semantic_renamed": false,
+    "semantic_detail": [
+      {
+        "renamed": false,
+        "strict": false
+      }
+    ],
+    "semantic_equal": false
+  },
+  "refused": false
+}

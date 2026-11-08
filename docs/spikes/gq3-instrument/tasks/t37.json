@@ -1,0 +1,14 @@
+{
+  "id": "t37",
+  "kind": "unattached branch snapshot",
+  "asset_section": "6",
+  "m0": null,
+  "prompt": "Create a person with handle `$h` (name also `$h`) as an unattached branch snapshot instead of writing to the branch.",
+  "truth3": [
+    "query propose($h: String) as unattached branch {\n  insert Person { handle: $h, name: $h }\n}"
+  ],
+  "truth2": [
+    "query propose($h: String) as unattached branch {\n  insert Person { handle: $h, name: $h }\n}"
+  ],
+  "note": null
+}

@@ -1,0 +1,108 @@
+{
+  "seed": "s10",
+  "task": "t09",
+  "habit": "CASE ... END (SQL)",
+  "seed_check": {
+    "diagnostic": {
+      "code": "Q001",
+      "column": 64,
+      "fix": null,
+      "kind": "parse",
+      "line": 4,
+      "message": "expected kw_as, kw_and, kw_or, kw_is, kw_in, comp_op, not_expr3, infix_string_op, concat_bars, product_op",
+      "rendered": "parse error Q001: expected kw_as, kw_and, kw_or, kw_is, kw_in, comp_op, not_expr3, infix_string_op, concat_bars, product_op\n  at line 4, column 64",
+      "suggestion": null
+    },
+    "id": "answer",
+    "parse_ok": false,
+    "semantic_strict": false,
+    "semantic_renamed": false,
+    "semantic_detail": [],
+    "semantic_equal": false
+  },
+  "refused": true,
+  "repair": {
+    "result": "```gq\ngq 3;\nquery with_city() {\n  match { $p: Person }\n  return { $p.name, coalesce($p.city, \"unknown\") as city, if($p.age >= 65, \"senior\", \"active\") as band }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 7045,
+    "tokens_out": 78,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 315,
+      "cache_read_input_tokens": 6728,
+      "output_tokens": 78,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 315,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 78,
+          "cache_read_input_tokens": 6728,
+          "cache_creation_input_tokens": 315,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 315
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0027168,
+    "seconds": 3.4,
+    "session_id": "1f36957b-4559-4fa8-99fb-7806f2ffb03a",
+    "transport_retries": 0,
+    "text": "gq 3;\nquery with_city() {\n  match { $p: Person }\n  return { $p.name, coalesce($p.city, \"unknown\") as city, if($p.age >= 65, \"senior\", \"active\") as band }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [
+      "gq 3;"
+    ],
+    "check": {
+      "decls": 1,
+      "edition3_forms": [],
+      "id": "answer",
+      "lower_diagnostic": {
+        "code": "T60",
+        "column": null,
+        "fix": null,
+        "kind": "type",
+        "line": null,
+        "message": "the call `coalesce(\u2026)` is edition-3 syntax this prototype parses but does not type-check",
+        "rendered": "type error T60: the call `coalesce(\u2026)` is edition-3 syntax this prototype parses but does not type-check\n  stage: typecheck",
+        "suggestion": null
+      },
+      "lowered_type_diagnostic": null,
+      "lowered_type_ok": null,
+      "lowers_to_edition2": false,
+      "parse_ok": true,
+      "printed": "gq 3;\nquery with_city() { match { $p: Person } return { $p.name, coalesce($p.city, \"unknown\") as city, if($p.age >= 65, \"senior\", \"active\") as band } }\n",
+      "t65_ranking_call_in_order_or_return": [],
+      "semantic_strict": true,
+      "semantic_renamed": true,
+      "semantic_detail": [
+        {
+          "renamed": true,
+          "strict": true
+        }
+      ],
+      "semantic_equal": true
+    }
+  },
+  "valid_after_repair": true,
+  "semantic_equal": true
+}

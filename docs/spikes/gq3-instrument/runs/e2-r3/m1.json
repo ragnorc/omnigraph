@@ -1,0 +1,71 @@
+{
+  "task": "m1",
+  "kind": "block as a value (count plus projection)",
+  "m0": "count plus projection",
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\n// Run first. People who know at least one person, with their degree, most connected first.\nquery connected_people() {\n    match {\n        $p: Person\n        $p knows $f\n    }\n    return {\n        $p.handle\n        $p.name\n        count($f) as degree\n    }\n    order { degree desc }\n}\n```\n\n```gq\n// Run second. The caller appends these people to the first result with degree = 0, after all the connected rows.\nquery isolated_people() {\n    match {\n        $p: Person\n        not { $p knows $_ }\n    }\n    return { $p.handle, $p.name }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8371,
+    "tokens_out": 558,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 314,
+      "cache_read_input_tokens": 8055,
+      "output_tokens": 558,
+      "output_tokens_details": {
+        "thinking_tokens": 367
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 314,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 558,
+          "cache_read_input_tokens": 8055,
+          "cache_creation_input_tokens": 314,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 314
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0076454999999999995,
+    "seconds": 6.5,
+    "session_id": "ae23830c-a268-434c-8de0-0e4cf2fc24ae",
+    "transport_retries": 0,
+    "text": "// Run first. People who know at least one person, with their degree, most connected first.\nquery connected_people() {\n    match {\n        $p: Person\n        $p knows $f\n    }\n    return {\n        $p.handle\n        $p.name\n        count($f) as degree\n    }\n    order { degree desc }\n}\n// Run second. The caller appends these people to the first result with degree = 0, after all the connected rows.\nquery isolated_people() {\n    match {\n        $p: Person\n        not { $p knows $_ }\n    }\n    return { $p.handle, $p.name }\n}\n",
+    "blocks": 2,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 2,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 2,
+  "tokens_in": 8371,
+  "tokens_out": 558
+}

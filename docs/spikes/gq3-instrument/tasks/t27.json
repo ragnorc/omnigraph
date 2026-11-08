@@ -1,0 +1,14 @@
+{
+  "id": "t27",
+  "kind": "lexical ranking",
+  "asset_section": "5",
+  "m0": null,
+  "prompt": "Rank documents by the BM25 relevance of their body to the text `$q`; return the top 10 titles with the score as `s`.",
+  "truth3": [
+    "query about($q: String) {\n  match { from bm25({ match { $d: Doc } return { $d } }, $d.body, $q) }\n  return { $d.title, $score as s }\n  order { $score desc }\n  limit 10\n}"
+  ],
+  "truth2": [
+    "query about($q: String) {\n  match { $d: Doc }\n  return { $d.title, bm25($d.body, $q) as s }\n  order { bm25($d.body, $q) desc }\n  limit 10\n}"
+  ],
+  "note": null
+}

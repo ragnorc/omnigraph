@@ -1,0 +1,14 @@
+{
+  "id": "t13",
+  "kind": "edge whose name is a reserved word",
+  "asset_section": "2",
+  "m0": null,
+  "prompt": "List the titles of the documents in the collection with slug `$slug`.",
+  "truth3": [
+    "query in_collection($slug: String) {\n  match { $x: Collection { slug: $slug }  $d \"in\" $x }\n  return { $d.title }\n}"
+  ],
+  "truth2": [
+    "query in_collection($slug: String) {\n  match { $x: Collection { slug: $slug }  $d \"in\" $x }\n  return { $d.title }\n}"
+  ],
+  "note": null
+}

@@ -1,0 +1,12 @@
+{
+  "id": "t07",
+  "kind": "interface binding",
+  "asset_section": "1",
+  "m0": null,
+  "prompt": "List the name of everything that has a name, people and companies alike, in one result.",
+  "truth3": [
+    "query names() {\n  match { $n: Named }\n  return { $n.name }\n}"
+  ],
+  "truth2": [],
+  "note": "Edition 2 parses `$n: Named` but today's type checker refuses it (`T1: unknown node type Named`), so no edition-2 ground truth exists, although the asset marks the kind Unchanged."
+}

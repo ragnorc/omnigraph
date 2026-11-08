@@ -1,0 +1,100 @@
+{
+  "task": "t26",
+  "kind": "every document within a distance",
+  "m0": null,
+  "edition": 3,
+  "has_truth": true,
+  "try1": {
+    "result": "```gq\ngq 3;\nquery recent_within_radius($q: Vector(3), $r: F64) {\n  match {\n    from distance(\n      { match { $d: Doc  $d.year >= 2025 } return { $d } },\n      $d.embedding, $q\n    )\n    $distance <= $r\n  }\n  return { $d.title, $distance }\n  order { $distance }\n  limit 10\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 6851,
+    "tokens_out": 132,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 5414,
+      "cache_read_input_tokens": 1435,
+      "output_tokens": 132,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 5414,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 132,
+          "cache_read_input_tokens": 1435,
+          "cache_creation_input_tokens": 5414,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 5414
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0231235,
+    "seconds": 3.5,
+    "session_id": "b4c8fd42-78ac-4573-befc-7d04851052a8",
+    "transport_retries": 0,
+    "text": "gq 3;\nquery recent_within_radius($q: Vector(3), $r: F64) {\n  match {\n    from distance(\n      { match { $d: Doc  $d.year >= 2025 } return { $d } },\n      $d.embedding, $q\n    )\n    $distance <= $r\n  }\n  return { $d.title, $distance }\n  order { $distance }\n  limit 10\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [
+      "gq 3;"
+    ],
+    "check": {
+      "decls": 1,
+      "edition3_forms": [
+        "from",
+        "from_distance",
+        "inline_read"
+      ],
+      "id": "answer",
+      "lower_diagnostic": {
+        "code": "T60",
+        "column": null,
+        "fix": null,
+        "kind": "type",
+        "line": null,
+        "message": "`from` is edition-3 syntax this prototype parses but does not type-check",
+        "rendered": "type error T60: `from` is edition-3 syntax this prototype parses but does not type-check\n  stage: typecheck",
+        "suggestion": null
+      },
+      "lowered_type_diagnostic": null,
+      "lowered_type_ok": null,
+      "lowers_to_edition2": false,
+      "parse_ok": true,
+      "printed": "gq 3;\nquery recent_within_radius($q: Vector(3), $r: F64) { match { from distance({ match { $d: Doc  $d.year >= 2025 } return { $d } }, $d.embedding, $q)  $distance <= $r } return { $d.title, $distance } order { $distance } limit 10 }\n",
+      "t65_ranking_call_in_order_or_return": [],
+      "semantic_strict": false,
+      "semantic_renamed": false,
+      "semantic_detail": [
+        {
+          "renamed": false,
+          "strict": false
+        }
+      ],
+      "semantic_equal": false
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": false,
+  "final_decls": 1,
+  "tokens_in": 6851,
+  "tokens_out": 132
+}

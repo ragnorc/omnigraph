@@ -1,0 +1,15 @@
+{
+  "id": "t34",
+  "kind": "write whose targets come from a traversal",
+  "asset_section": "6",
+  "m0": null,
+  "prompt": "Close a company: delete the employment links of everyone who works at the company with slug `$slug`.",
+  "truth3": [
+    "query close_company($slug: String) {\n  $c: Company { slug: $slug }\n  $p $k:worksAt $c\n  delete $k\n}",
+    "query close_company($slug: String) {\n  $x: WorksAt  $x.@dst = $slug\n  delete $x\n}"
+  ],
+  "truth2": [
+    "query close_company($slug: String) {\n  delete WorksAt where @dst = $slug\n}"
+  ],
+  "note": "The asset marks this kind 'Not supported' in edition 2, but `delete WorksAt where @dst = $slug` expresses it: the company's key is the edge's destination id."
+}

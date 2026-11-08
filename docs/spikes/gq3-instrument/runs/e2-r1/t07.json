@@ -1,0 +1,80 @@
+{
+  "task": "t07",
+  "kind": "interface binding",
+  "m0": null,
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\nquery all_names() {\n    match {\n        $n: Named\n    }\n    return { $n.name }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8307,
+    "tokens_out": 154,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 6870,
+      "cache_read_input_tokens": 1435,
+      "output_tokens": 154,
+      "output_tokens_details": {
+        "thinking_tokens": 115
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 6870,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 154,
+          "cache_read_input_tokens": 1435,
+          "cache_creation_input_tokens": 6870,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 6870
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.029167500000000002,
+    "seconds": 3.7,
+    "session_id": "a5fcac0c-4146-4aa2-a20d-7701a348d17e",
+    "transport_retries": 0,
+    "text": "query all_names() {\n    match {\n        $n: Named\n    }\n    return { $n.name }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 1,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": {
+        "code": "T1",
+        "column": null,
+        "fix": null,
+        "kind": "type",
+        "line": null,
+        "message": "unknown node type `Named`",
+        "rendered": "type error T1: unknown node type `Named`\n  stage: typecheck",
+        "suggestion": null
+      },
+      "type_ok": false
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 1,
+  "tokens_in": 8307,
+  "tokens_out": 154
+}

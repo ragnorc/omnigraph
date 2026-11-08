@@ -1,0 +1,12 @@
+{
+  "id": "t17",
+  "kind": "aggregate of an aggregate",
+  "asset_section": "3",
+  "m0": null,
+  "prompt": "Across companies, what is the average number of employees per company and the largest? Return them as `mean` and `largest`.",
+  "truth3": [
+    "query average_headcount() {\n  match { from { match { $c: Company  $p worksAt $c } return { $c, count($p) as n } } }\n  return { avg($n) as mean, max($n) as largest }\n}"
+  ],
+  "truth2": [],
+  "note": null
+}

@@ -1,0 +1,71 @@
+{
+  "task": "t30",
+  "kind": "hybrid, weighted",
+  "m0": null,
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\nquery hybrid_docs($v: Vector(3), $q: String) {\n    match {\n        $d: Doc\n        match_text($d.body, $q)\n    }\n    return {\n        $d.title,\n        rrf(nearest($d.embedding, $v), bm25($d.body, $q)) as s\n    }\n    order { rrf(nearest($d.embedding, $v), bm25($d.body, $q)) }\n    limit 10\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8357,
+    "tokens_out": 474,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 314,
+      "cache_read_input_tokens": 8041,
+      "output_tokens": 474,
+      "output_tokens_details": {
+        "thinking_tokens": 326
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 314,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 474,
+          "cache_read_input_tokens": 8041,
+          "cache_creation_input_tokens": 314,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 314
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0068040999999999996,
+    "seconds": 5.7,
+    "session_id": "5128d92c-26e6-472f-95f0-be91a97082cc",
+    "transport_retries": 0,
+    "text": "query hybrid_docs($v: Vector(3), $q: String) {\n    match {\n        $d: Doc\n        match_text($d.body, $q)\n    }\n    return {\n        $d.title,\n        rrf(nearest($d.embedding, $v), bm25($d.body, $q)) as s\n    }\n    order { rrf(nearest($d.embedding, $v), bm25($d.body, $q)) }\n    limit 10\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 1,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 1,
+  "tokens_in": 8357,
+  "tokens_out": 474
+}

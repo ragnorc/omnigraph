@@ -1,0 +1,14 @@
+{
+  "id": "t03",
+  "kind": "string predicate",
+  "asset_section": "1",
+  "m0": null,
+  "prompt": "Find the titles of documents whose title contains \"graph\" and starts with \"The\".",
+  "truth3": [
+    "query titled() {\n  match { $d: Doc  contains($d.title, \"graph\")  starts_with($d.title, \"The\") }\n  return { $d.title }\n}"
+  ],
+  "truth2": [
+    "query titled() {\n  match { $d: Doc  $d.title contains \"graph\"  $d.title starts_with \"The\" }\n  return { $d.title }\n}"
+  ],
+  "note": null
+}

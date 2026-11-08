@@ -1,0 +1,71 @@
+{
+  "task": "m6",
+  "kind": "window versus population",
+  "m0": "the window-versus-population distinction",
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\n// Run first: the 10 nearest documents across all docs. The caller collects the returned ids and passes them as $ids to the next query.\nquery nearest_docs($q: Vector(3)) {\n    match { $d: Doc }\n    return { $d.id, $d.title }\n    order { nearest($d.embedding, $q) }\n    limit 10\n}\n```\n\n```gq\n// Run second: the caller passes the ids from the first query as $ids. This keeps only those documents in collection $coll and returns their titles.\nquery nearest_in_collection($ids: [String], $coll: String) {\n    match {\n        $d: Doc\n        $d.id in $ids\n        $c: Collection { slug: $coll }\n        $d \"in\" $c\n    }\n    return { $d.title }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8389,
+    "tokens_out": 660,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 314,
+      "cache_read_input_tokens": 8073,
+      "output_tokens": 660,
+      "output_tokens_details": {
+        "thinking_tokens": 405
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 314,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 660,
+          "cache_read_input_tokens": 8073,
+          "cache_creation_input_tokens": 314,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 314
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0086673,
+    "seconds": 7.6,
+    "session_id": "8238fea6-89ea-4ab7-9368-33aa7f0ac15b",
+    "transport_retries": 0,
+    "text": "// Run first: the 10 nearest documents across all docs. The caller collects the returned ids and passes them as $ids to the next query.\nquery nearest_docs($q: Vector(3)) {\n    match { $d: Doc }\n    return { $d.id, $d.title }\n    order { nearest($d.embedding, $q) }\n    limit 10\n}\n// Run second: the caller passes the ids from the first query as $ids. This keeps only those documents in collection $coll and returns their titles.\nquery nearest_in_collection($ids: [String], $coll: String) {\n    match {\n        $d: Doc\n        $d.id in $ids\n        $c: Collection { slug: $coll }\n        $d \"in\" $c\n    }\n    return { $d.title }\n}\n",
+    "blocks": 2,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 2,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 2,
+  "tokens_in": 8389,
+  "tokens_out": 660
+}

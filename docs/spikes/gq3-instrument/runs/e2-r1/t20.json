@@ -1,0 +1,71 @@
+{
+  "task": "t20",
+  "kind": "outer join",
+  "m0": null,
+  "edition": 2,
+  "has_truth": false,
+  "try1": {
+    "result": "```gq\n// GQ has no optional match, so this inner-join form omits people with no employer.\nquery people_with_employers() {\n    match {\n        $p: Person\n        $p worksAt $c\n    }\n    return { $p.name as person, $c.name as employer }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 8308,
+    "tokens_out": 465,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 6871,
+      "cache_read_input_tokens": 1435,
+      "output_tokens": 465,
+      "output_tokens_details": {
+        "thinking_tokens": 377
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 6871,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 465,
+          "cache_read_input_tokens": 1435,
+          "cache_creation_input_tokens": 6871,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 6871
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.032281500000000005,
+    "seconds": 6.8,
+    "session_id": "0ec36aed-980b-4710-b5b4-57cdbe68127c",
+    "transport_retries": 0,
+    "text": "// GQ has no optional match, so this inner-join form omits people with no employer.\nquery people_with_employers() {\n    match {\n        $p: Person\n        $p worksAt $c\n    }\n    return { $p.name as person, $c.name as employer }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [],
+    "check": {
+      "decls": 1,
+      "id": "answer",
+      "parse_ok": true,
+      "type_diagnostic": null,
+      "type_ok": true
+    }
+  },
+  "first_try_valid": true,
+  "repaired": false,
+  "valid_after_repair": true,
+  "final_semantic_equal": null,
+  "final_decls": 1,
+  "tokens_in": 8308,
+  "tokens_out": 465
+}

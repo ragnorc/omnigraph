@@ -1,0 +1,14 @@
+{
+  "id": "t19",
+  "kind": "existence and absence",
+  "asset_section": "3",
+  "m0": null,
+  "prompt": "List the names of people who have authored at least one document and none of whose documents is cited by any document.",
+  "truth3": [
+    "query uncited_authors() {\n  match {\n    $p: Person\n    exists { $p authored $d }\n    not { $p authored $d2  $other cites $d2 }\n  }\n  return { $p.name }\n}"
+  ],
+  "truth2": [
+    "query uncited_authors() {\n  match {\n    $p: Person\n    exists { $p authored $d }\n    not { $p authored $d2  $other cites $d2 }\n  }\n  return { $p.name }\n}"
+  ],
+  "note": null
+}

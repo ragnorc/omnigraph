@@ -1,0 +1,42 @@
+{
+  "seed": "s04",
+  "task": "t24",
+  "habit": "nearest in order (edition 2)",
+  "seed_check": {
+    "decls": 1,
+    "edition3_forms": [],
+    "id": "answer",
+    "lower_diagnostic": {
+      "code": "T60",
+      "column": null,
+      "fix": null,
+      "kind": "type",
+      "line": null,
+      "message": "`nearest` (a relation function; RFC T65 when written as a scalar) is edition-3 syntax this prototype parses but does not type-check",
+      "rendered": "type error T60: `nearest` (a relation function; RFC T65 when written as a scalar) is edition-3 syntax this prototype parses but does not type-check\n  stage: typecheck",
+      "suggestion": null
+    },
+    "lowered_type_diagnostic": null,
+    "lowered_type_ok": null,
+    "lowers_to_edition2": false,
+    "parse_ok": true,
+    "printed": "gq 3;\nquery similar($q: Vector(3)) { match { $d: Doc  $d.year >= 2025 } return { $d.title } order { nearest($d.embedding, $q) } limit 20 }\n",
+    "t65_ranking_call_in_order_or_return": [
+      "nearest"
+    ],
+    "semantic_strict": false,
+    "semantic_renamed": false,
+    "semantic_detail": [
+      {
+        "renamed": false,
+        "strict": false
+      },
+      {
+        "renamed": false,
+        "strict": false
+      }
+    ],
+    "semantic_equal": false
+  },
+  "refused": false
+}

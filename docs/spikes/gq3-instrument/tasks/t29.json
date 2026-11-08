@@ -1,0 +1,14 @@
+{
+  "id": "t29",
+  "kind": "hybrid, fused",
+  "asset_section": "5",
+  "m0": null,
+  "prompt": "Fuse, by reciprocal rank fusion with constant 60, the 10 documents nearest to the vector `$v` and every document whose body matches the text `$q` ranked by BM25; return the 10 best fused titles.",
+  "truth3": [
+    "query hybrid($q: String, $v: Vector(3)) {\n  match {\n    let $docs = { match { $d: Doc } return { $d } }\n    from rrf(nearest($docs, $d.embedding, $v, k: 10), bm25($docs, $d.body, $q), k: 60)\n  }\n  return { $d.title }\n  order { $score desc }\n  limit 10\n}"
+  ],
+  "truth2": [
+    "query hybrid($q: String, $v: Vector(3)) {\n  match { $d: Doc }\n  return { $d.title }\n  order { rrf(nearest($d.embedding, $v), bm25($d.body, $q), 60) }\n  limit 10\n}"
+  ],
+  "note": null
+}

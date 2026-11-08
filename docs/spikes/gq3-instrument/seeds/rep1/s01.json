@@ -1,0 +1,99 @@
+{
+  "seed": "s01",
+  "task": "t03",
+  "habit": "infix contains / starts_with (edition 2)",
+  "seed_check": {
+    "diagnostic": {
+      "code": "Q012",
+      "column": 29,
+      "fix": "contains($d.title, \"graph\")",
+      "kind": "parse",
+      "line": 3,
+      "message": "`contains` is a function in edition 3, called with its operands",
+      "rendered": "parse error Q012: `contains` is a function in edition 3, called with its operands\n  at line 3, column 29\n  fix: contains($d.title, \"graph\")",
+      "suggestion": null
+    },
+    "id": "answer",
+    "parse_ok": false,
+    "semantic_strict": false,
+    "semantic_renamed": false,
+    "semantic_detail": [],
+    "semantic_equal": false
+  },
+  "refused": true,
+  "repair": {
+    "result": "```gq\ngq 3;\nquery titled() {\n  match {\n    $d: Doc\n    contains($d.title, \"graph\")\n    starts_with($d.title, \"The\")\n  }\n  return { $d.title }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 6967,
+    "tokens_out": 72,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 5530,
+      "cache_read_input_tokens": 1435,
+      "output_tokens": 72,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 5530,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 72,
+          "cache_read_input_tokens": 1435,
+          "cache_creation_input_tokens": 5530,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 5530
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0229875,
+    "seconds": 4.2,
+    "session_id": "1bb97d75-c5d5-437e-984a-2051fc02ff30",
+    "transport_retries": 0,
+    "text": "gq 3;\nquery titled() {\n  match {\n    $d: Doc\n    contains($d.title, \"graph\")\n    starts_with($d.title, \"The\")\n  }\n  return { $d.title }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [
+      "gq 3;"
+    ],
+    "check": {
+      "decls": 1,
+      "edition3_forms": [],
+      "id": "answer",
+      "lower_diagnostic": null,
+      "lowered_type_diagnostic": null,
+      "lowered_type_ok": true,
+      "lowers_to_edition2": true,
+      "parse_ok": true,
+      "printed": "gq 3;\nquery titled() { match { $d: Doc  contains($d.title, \"graph\")  starts_with($d.title, \"The\") } return { $d.title } }\n",
+      "t65_ranking_call_in_order_or_return": [],
+      "semantic_strict": true,
+      "semantic_renamed": true,
+      "semantic_detail": [
+        {
+          "renamed": true,
+          "strict": true
+        }
+      ],
+      "semantic_equal": true
+    }
+  },
+  "valid_after_repair": true,
+  "semantic_equal": true
+}

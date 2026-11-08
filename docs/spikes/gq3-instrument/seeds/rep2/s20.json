@@ -1,0 +1,99 @@
+{
+  "seed": "s20",
+  "task": "t16",
+  "habit": "count(*) (SQL)",
+  "seed_check": {
+    "diagnostic": {
+      "code": "Q001",
+      "column": 18,
+      "fix": null,
+      "kind": "parse",
+      "line": 4,
+      "message": "expected kw_distinct, not_expr3, call_args",
+      "rendered": "parse error Q001: expected kw_distinct, not_expr3, call_args\n  at line 4, column 18",
+      "suggestion": null
+    },
+    "id": "answer",
+    "parse_ok": false,
+    "semantic_strict": false,
+    "semantic_renamed": false,
+    "semantic_detail": [],
+    "semantic_equal": false
+  },
+  "refused": true,
+  "repair": {
+    "result": "```gq\ngq 3;\nquery distinct_cities() {\n  match { $p: Person }\n  return { count(distinct $p.city) as cities }\n}\n```",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "tokens_in": 6934,
+    "tokens_out": 53,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 315,
+      "cache_read_input_tokens": 6617,
+      "output_tokens": 53,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 315,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "global",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 53,
+          "cache_read_input_tokens": 6617,
+          "cache_creation_input_tokens": 315,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 315
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "cost_usd": 0.0024557,
+    "seconds": 2.8,
+    "session_id": "d78dc4ab-9e3c-455d-8594-08831a60a9f4",
+    "transport_retries": 0,
+    "text": "gq 3;\nquery distinct_cities() {\n  match { $p: Person }\n  return { count(distinct $p.city) as cities }\n}\n",
+    "blocks": 1,
+    "fenced": true,
+    "edition_lines_written": [
+      "gq 3;"
+    ],
+    "check": {
+      "decls": 1,
+      "edition3_forms": [],
+      "id": "answer",
+      "lower_diagnostic": null,
+      "lowered_type_diagnostic": null,
+      "lowered_type_ok": true,
+      "lowers_to_edition2": true,
+      "parse_ok": true,
+      "printed": "gq 3;\nquery distinct_cities() { match { $p: Person } return { count(distinct $p.city) as cities } }\n",
+      "t65_ranking_call_in_order_or_return": [],
+      "semantic_strict": true,
+      "semantic_renamed": true,
+      "semantic_detail": [
+        {
+          "renamed": true,
+          "strict": true
+        }
+      ],
+      "semantic_equal": true
+    }
+  },
+  "valid_after_repair": true,
+  "semantic_equal": true
+}
