@@ -6,6 +6,7 @@ pub mod codes;
 pub mod descriptor;
 pub mod diagnostic;
 pub mod lint;
+pub mod normalise3;
 pub mod parser;
 pub mod parser3;
 pub mod print3;

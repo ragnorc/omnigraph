@@ -100,7 +100,7 @@ fn nearest_moves_into_from_with_k_and_the_distance_column() {
     assert_eq!(
         body(&m),
         r#"query similar($q: Vector(3)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 20) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 20) }
     return { $d.slug, $distance as s }
     order { $distance }
     limit 20
@@ -139,7 +139,7 @@ fn a_bare_bm25_key_keeps_its_descending_direction() {
     assert_eq!(
         body(&m),
         r#"query q($t: String) {
-    match { from bm25({ match { $d: Doc  contains($d.title, "x") } return { $d } }, body, $t) }
+    match { from bm25({ match { $d: Doc  contains($d.title, "x") } return { $d } }, $d.body, $t) }
     return { $d.slug }
     order { $score desc }
     limit 3
@@ -158,7 +158,7 @@ fn rrf_names_the_population_once_and_sizes_the_nearest_arm() {
     assert_eq!(
         body(&m),
         r#"query q($v: Vector(3), $t: String) {
-    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, embedding, $v, k: 4), bm25($p, body, $t), k: 30) }
+    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, $d.embedding, $v, k: 4), bm25($p, $d.body, $t), k: 30) }
     return { $d.slug }
     order { $score desc }
     limit 4
@@ -375,7 +375,7 @@ fn variables_bound_inside_a_block_stay_out_of_the_population() {
     limit 2
 }"#);
     assert!(
-        body(&m).contains("return { $d } }, embedding"),
+        body(&m).contains("return { $d } }, $d.embedding"),
         "{}",
         m.text
     );

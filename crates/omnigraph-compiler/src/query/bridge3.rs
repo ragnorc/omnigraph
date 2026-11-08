@@ -93,6 +93,7 @@ pub fn lower_decl(decl: Decl3) -> R<QueryDecl> {
         limit: None,
         mutations: Vec::new(),
         write_mode: decl.write_mode,
+        spans: Default::default(),
     };
     match decl.body {
         DeclBody3::Read(body) => {
@@ -163,7 +164,7 @@ pub fn lower_decl(decl: Decl3) -> R<QueryDecl> {
 }
 
 #[derive(Clone, Copy)]
-enum Scope<'a> {
+pub(crate) enum Scope<'a> {
     Alias,
     Property(&'a str),
 }
@@ -251,7 +252,7 @@ fn boxed(e: Expr3, scope: Scope<'_>) -> R<Box<Expr>> {
     lower_expr(e, scope).map(Box::new)
 }
 
-fn lower_expr(e: Expr3, scope: Scope<'_>) -> R<Expr> {
+pub(crate) fn lower_expr(e: Expr3, scope: Scope<'_>) -> R<Expr> {
     Ok(match e {
         Expr3::Literal(l) => Expr::Literal(l),
         Expr3::Variable(v) => Expr::Variable(v),

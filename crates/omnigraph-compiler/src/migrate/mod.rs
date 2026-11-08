@@ -30,6 +30,8 @@ use crate::query::parser::parse_query_diagnostic;
 #[cfg(test)]
 mod corpus_tests;
 #[cfg(test)]
+mod exec_tests;
+#[cfg(test)]
 mod tests;
 
 /// The seven rows of the rewriter table, the list `contains` and the two
@@ -913,7 +915,7 @@ fn rewrite_ranking(cx: &mut Cx<'_>, decl: &QueryDecl) {
             row,
             "population-node-columns",
             format!(
-                "population returns {} node columns ({}); section 5 requires exactly one, and the bare field names none of them",
+                "population returns {} node columns ({}); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)",
                 node_columns.len(),
                 node_columns.iter().map(|v| format!("${v}")).collect::<Vec<_>>().join(", ")
             ),
@@ -998,7 +1000,7 @@ fn rewrite_ranking(cx: &mut Cx<'_>, decl: &QueryDecl) {
             };
             note_ranked_var(cx, decl, row, &var, &node_columns);
             let mut tail = vec![
-                lit(format!("}} {return_list} }}, {field}, ")),
+                lit(format!("}} {return_list} }}, ${var}.{field}, ")),
                 Piece::Src(query),
             ];
             if kind == "nearest" {
@@ -1089,7 +1091,7 @@ fn rewrite_ranking(cx: &mut Cx<'_>, decl: &QueryDecl) {
             };
             let fused_k = args.get(2).map(|k| Piece::Src(*k));
             let arm_call = |a: &(&'static str, String, String, Span)| -> Vec<Piece> {
-                let mut pieces = vec![lit(format!("{}(${p}, {}, ", a.0, a.2)), Piece::Src(a.3)];
+                let mut pieces = vec![lit(format!("{}(${p}, ${}.{}, ", a.0, a.1, a.2)), Piece::Src(a.3)];
                 if a.0 == "nearest" {
                     pieces.push(lit(format!(", k: {window_k}")));
                 }
@@ -1217,7 +1219,7 @@ fn note_ranked_var(cx: &mut Cx<'_>, decl: &QueryDecl, row: Row, var: &str, node_
             decl,
             row,
             "ranked-variable-dropped",
-            format!("the ranking read `${var}`; the generated bare field does not say which of the population's node columns it names"),
+            format!("the ranking read `${var}`; the call names `${var}` among the population's node columns"),
         );
     }
 }
