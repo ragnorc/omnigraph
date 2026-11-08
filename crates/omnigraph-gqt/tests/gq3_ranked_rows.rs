@@ -878,9 +878,7 @@ async fn rfc_rows(
                     .and_then(|x| x.get("__v").cloned())
                     .unwrap_or(Value::Null)
             } else {
-                r.get(&format!("__gq3_i{i}"))
-                    .cloned()
-                    .unwrap_or(Value::Null)
+                r.get(format!("__gq3_i{i}")).cloned().unwrap_or(Value::Null)
             };
             values.push(value);
         }

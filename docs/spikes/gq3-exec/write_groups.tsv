@@ -1,0 +1,53 @@
+case	step	decl	statements	reached by	outcome	conflict rule	detail
+blob_update_carries_unassigned_blobs.gqt	11	insert_then_assign_second	2	replay	same-final-state	no conflict	affected 2 both
+card_minimum_counts_every_written_source.gqt	5	hire_two_with_one_employer	3	replay	both-refuse	no conflict	whole body: @card violation on edge WorksAt: source 'bob' has 0 edges (min 1) | group 1: @card violation on edge WorksAt: source 'bob' has 0 edges (min 1)
+card_minimum_counts_every_written_source.gqt	7	hire_with_employer	2	replay	whole-write-check-refuses-a-group	no conflict	group 1: @card violation on edge WorksAt: source 'bob' has 0 edges (min 1) (a check over the whole write; the harness publishes each group alone)
+detached_lost_publish_acknowledgement.gqt	4	add_after_lost_ack	2	replay	same-final-state	no conflict	affected 2 both
+detached_multitable_failure_after_table_1_with_edge.gqt	4	w	3	replay	same-final-state	no conflict	affected 3 both
+detached_multitable_failure_after_table_1_with_edge.gqt	25	w	3	replay	same-final-state	no conflict	affected 3 both
+detached_multitable_failure_after_table_3.gqt	4	add_all	3	replay	same-final-state	no conflict	affected 3 both
+detached_multitable_failure_after_table_3.gqt	25	add_all	3	replay	same-final-state	no conflict	affected 3 both
+detached_multitable_update_failure_after_table_2.gqt	4	w	4	replay	same-final-state	no conflict	affected 4 both
+detached_multitable_update_failure_after_table_2.gqt	31	w	4	replay	same-final-state	no conflict	affected 4 both
+detached_publish_outcome_in_doubt.gqt	5	ambiguous_write	2	replay	same-final-state	no conflict	affected 2 both
+insert_node_and_edge_to_it_on_unindexed_integer_keys.gqt	3	add_both	2	replay	same-final-state	no conflict	affected 2 both
+insert_refuses_node_unique_before_edge_orphan_on_integer_keys.gqt	3	w	2	replay	both-refuse	no conflict	whole body: @unique violation on Person.code: value '103' held by '3' and '500' | group 1: @unique violation on Person.code: value '103' held by '3' and '500'
+insert_refuses_node_unique_before_edge_orphan_on_text_keys.gqt	3	w	2	replay	both-refuse	no conflict	whole body: @unique violation on Person.email: value 'e000003' held by 'p000003' and 'n000000' | group 1: @unique violation on Person.email: value 'e000003' held by 'p000003' and 'n000000'
+insert_two_nodes_and_edge_between_into_empty_integer_keyed_table.gqt	3	w	3	replay	same-final-state	no conflict	affected 3 both
+issue_1277_composed_and_wide_predicates_keep_null_rows_out.gqt	13	delete_after_disjoint_negated_statements	3	replay	same-final-state	no conflict	affected 4 both
+list_membership_over_indexed_columns_across_writes_and_restart.gqt	25	append_tail	4	replay	same-final-state	no conflict	affected 4 both
+list_membership_over_indexed_columns_across_writes_and_restart.gqt	43	change_covered_rows	2	replay	same-final-state	no conflict	affected 2 both
+overlapping_delete_predicates_count_the_union.gqt	3	delete_three_overlapping	3	replay	same-final-state	no conflict	affected 7 both
+reserved_word_property_in_mutation_predicate.gqt	7	chained_updates	4	replay	same-final-state	RFC refuses: Span "c"#0.exists: group 1 wrote 5, group 4 wrote 6	affected 4 both
+selfloop_rows_gated_once.gqt	3	two_loops	2	replay	same-final-state	no conflict	affected 2 both
+v2/bm25_score_ignores_a_filter_over_an_unindexed_fragment.gqt	7	tail	2	replay	same-final-state	no conflict	affected 2 both
+v2/planner/issue_723_grouped_transfer_aggregation.gqt	23	add_direction_boundaries	2	replay	same-final-state	no conflict	affected 2 both
+write_max_bytes.gqt	7	aggregate	2	replay	whole-write-check-refuses-whole-body	no conflict	resource limit exceeded for decoded blob input bytes per operation: actual 4094, limit 4093 (a check over the whole write; the harness publishes each group alone)
+write_max_bytes.gqt	9	cross_table	2	replay	whole-write-check-refuses-whole-body	no conflict	resource limit exceeded for decoded blob input bytes per operation: actual 4094, limit 4093 (a check over the whole write; the harness publishes each group alone)
+write_max_bytes.gqt	23	three_payloads	3	replay	same-final-state	no conflict	affected 3 both
+write_max_bytes_insert_then_update_same_row.gqt	3	insert_then_update	2	replay	whole-write-check-refuses-whole-body	RFC refuses: Doc "twice"#0.note: group 1 wrote "n", group 2 wrote "u"	resource limit exceeded for materialized blob payload bytes: actual 4230, limit 4093 (a check over the whole write; the harness publishes each group alone)
+write_max_bytes_superseded_upsert_payload.gqt	3	upsert_twice	2	replay	whole-write-check-refuses-whole-body	RFC refuses: Doc "same"#0.note: group 1 wrote "first", group 2 wrote "second"	resource limit exceeded for decoded blob input bytes per operation: actual 31998, limit 30000 (a check over the whole write; the harness publishes each group alone)
+write_max_bytes_update_after_duplicate_upserts.gqt	3	upsert_then_assign	3	replay	whole-write-check-refuses-whole-body	RFC refuses: Doc "same"#0.note: group 1 wrote "first", group 2 wrote "second"	resource limit exceeded for decoded blob input bytes per operation: actual 31998, limit 30000 (a check over the whole write; the harness publishes each group alone)
+write_max_bytes_update_assignment_aggregate_name.gqt	3	seed_docs	2	replay	same-final-state	no conflict	affected 2 both
+write_max_bytes_update_carried_blob.gqt	3	retitle_one_byte_short	2	replay	whole-write-check-refuses-whole-body	no conflict	resource limit exceeded for materialized blob payload bytes: actual 2048, limit 2047 (a check over the whole write; the harness publishes each group alone)
+write_max_bytes_update_carried_blob.gqt	8	retitle_exact	2	replay	same-final-state	no conflict	affected 1 both
+write_max_bytes_update_carried_blob.gqt	18	carry_after_patch_still_counts_the_payload	2	replay	whole-write-check-refuses-whole-body	no conflict	resource limit exceeded for materialized blob payload bytes: actual 2048, limit 2047 (a check over the whole write; the harness publishes each group alone)
+detached_abandoned_mixed_write_stays_invisible.gqt	6	mixed_write	3	gqt-prefix	not-reached	-	prefix refused: invalid_case: seam has no following operation
+detached_abandoned_mixed_write_stays_invisible.gqt	20	mixed_write	3	gqt-prefix	not-reached	-	prefix did not run green: unsupported_environment: this executor cannot run seams or concurrent blocks
+detached_merge_pins_survive_reopen.gqt	5	add_source	2	gqt-prefix	same-final-state	no conflict	affected 2 both
+detached_merge_pins_survive_reopen.gqt	30	after_merge	2	gqt-prefix	same-final-state	no conflict	affected 2 both
+detached_merge_publish_outcome_in_doubt.gqt	5	source_changes	2	gqt-prefix	same-final-state	no conflict	affected 2 both
+detached_named_branch_in_doubt_stays_isolated.gqt	7	ambiguous_write	2	gqt-prefix	not-reached	-	prefix refused: invalid_case: seam has no following operation
+detached_rewriting_merge_fails_between_phases.gqt	5	source_changes	2	gqt-prefix	same-final-state	no conflict	affected 2 both
+detached_sibling_snapshots_stay_distinct.gqt	7	left_changes	2	gqt-prefix	same-final-state	no conflict	affected 2 both
+detached_sibling_snapshots_stay_distinct.gqt	9	right_changes	2	gqt-prefix	same-final-state	no conflict	affected 2 both
+detached_sibling_snapshots_stay_distinct.gqt	33	left_again	2	gqt-prefix	same-final-state	no conflict	affected 2 both
+merge_again_after_same_value_fast_forward.gqt	5	insert_a_same_size	2	gqt-prefix	same-final-state	no conflict	affected 2 both
+update_column_patch_matches_whole_row_update.gqt	10	rewrite_scores	2	gqt-prefix	same-final-state	no conflict	affected 4 both
+update_column_patch_matches_whole_row_update.gqt	38	rewrite_out_of_range	2	gqt-prefix	both-refuse	no conflict	whole body: @range violation on Doc.score: value 500 > max 100 | group 1: @range violation on Doc.score: value 500 > max 100
+update_column_patch_matches_whole_row_update.gqt	42	rewrite_duplicate_code	2	gqt-prefix	both-refuse	no conflict	whole body: @unique violation on Doc.code: value 'c-03' held by 'd-03' and 'd-00' | group 1: @unique violation on Doc.code: value 'c-03' held by 'd-03' and 'd-00'
+update_column_patch_matches_whole_row_update.gqt	50	rewrite_again	2	gqt-prefix	same-final-state	no conflict	affected 3 both
+update_column_patch_matches_whole_row_update.gqt	68	rewrite_on_feature	2	gqt-prefix	same-final-state	no conflict	affected 1 both
+update_column_patch_matches_whole_row_update.gqt	70	rewrite_on_rows	2	gqt-prefix	same-final-state	no conflict	affected 1 both
+write_max_bytes_merge_across_types.gqt	5	insert_source	2	gqt-prefix	same-final-state	no conflict	affected 2 both
+write_max_bytes_merge_across_types.gqt	8	diverge_main	2	gqt-prefix	same-final-state	no conflict	affected 2 both

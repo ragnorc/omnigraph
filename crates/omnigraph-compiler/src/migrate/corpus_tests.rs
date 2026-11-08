@@ -145,12 +145,7 @@ pub(crate) fn doc_sources(group: &'static str, dir: &Path, out: &mut Vec<Source>
             match &mut current {
                 None => {
                     if let Some(info) = trimmed.strip_prefix("```") {
-                        let lang = info
-                            .trim()
-                            .split_whitespace()
-                            .next()
-                            .unwrap_or("")
-                            .to_string();
+                        let lang = info.split_whitespace().next().unwrap_or("").to_string();
                         current = Some((lang, String::new()));
                     }
                 }
@@ -430,12 +425,11 @@ fn whole_corpus_through_the_rewriter() {
                 n.detail.replace(['\n', '\t'], " ")
             ));
         }
-        if catalog.is_some()
+        if let Some(catalog) = catalog
             && m.decls
                 .iter()
                 .any(|d| d.rows.contains_key(&Row::ListContains))
         {
-            let catalog = catalog.unwrap();
             let rewritten =
                 apply_rows_in_edition_2(&s.text, Some(catalog), &[Row::ListContains]).unwrap();
             let decls_of = |text: &str| match parse_query_diagnostic(text).map(|f| f.body) {

@@ -1022,10 +1022,11 @@ fn shared_examples_mean_the_same_in_both_editions() {
         if mark.as_deref().is_some_and(|m| m.contains("later")) {
             continue;
         }
-        let Ok(two) = parse_edition2(&block) else {
+        let Ok(two) = parse_edition2(&block).map(without_spans) else {
             continue;
         };
-        let Ok(three) = parse_query_diagnostic(&format!("gq 3;\n{block}")) else {
+        let Ok(three) = parse_query_diagnostic(&format!("gq 3;\n{block}")).map(without_spans)
+        else {
             continue;
         };
         assert_eq!(format!("{two:?}"), format!("{three:?}"), "block {n}");
@@ -1184,7 +1185,7 @@ fn the_edition2_corpus_read_as_edition_3() {
         if super::parser3::edition_line(text) != super::parser3::EditionLine::Absent {
             continue;
         }
-        let Ok(two) = parse_edition2(text) else {
+        let Ok(two) = parse_edition2(text).map(without_spans) else {
             continue;
         };
         let source3 = format!("gq 3;\n{text}");
@@ -1209,7 +1210,7 @@ fn the_edition2_corpus_read_as_edition_3() {
                 continue;
             }
         }
-        match parse_query_diagnostic(&source3) {
+        match parse_query_diagnostic(&source3).map(without_spans) {
             Ok(three) => {
                 both += 1;
                 if format!("{two:?}") == format!("{three:?}") {
@@ -1289,15 +1290,30 @@ fn a_block_in_clause_position_is_a_filter() {
         "exists { $p knows $q }",
     ] {
         let src = format!("query q() {{ match {{ $p: Person  {text} }} return {{ $p }} }}");
+        // `spans` (spike/gq3-rewriter) records source positions, which the
+        // bridge's lowered tree does not carry; compare without them.
         assert_eq!(
-            format!("{:?}", parse_edition2(&src).unwrap()),
+            format!("{:?}", without_spans(parse_edition2(&src).unwrap())),
             format!(
                 "{:?}",
-                parse_query_diagnostic(&format!("gq 3;\n{src}")).unwrap()
+                without_spans(parse_query_diagnostic(&format!("gq 3;\n{src}")).unwrap())
             ),
             "{text}"
         );
     }
+}
+
+fn without_spans(mut file: super::ast::QueryFile) -> super::ast::QueryFile {
+    match &mut file.body {
+        super::ast::FileBody::Queries(decls) => {
+            for d in decls {
+                d.spans = Default::default();
+            }
+        }
+        super::ast::FileBody::Explain(d) => d.spans = Default::default(),
+        _ => {}
+    }
+    file
 }
 
 #[test]

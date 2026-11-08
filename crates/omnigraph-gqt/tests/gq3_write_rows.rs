@@ -758,7 +758,7 @@ async fn compare_body(
             .await
             .unwrap();
     }
-    let whole_result = session.mutate(&whole, source, &decl.name, &params).await;
+    let whole_result = session.mutate(&whole, source, &decl.name, params).await;
     // Each statement as its own declaration, in order, with the
     // body's parameter list.
     let param_list = decl
@@ -784,15 +784,15 @@ async fn compare_body(
     for (g, (m, spans)) in decl.mutations.iter().zip(&decl.spans.mutations).enumerate() {
         let stmt = spans.stmt.text(source);
         let single = format!("query {}({param_list}) {{\n    {stmt}\n}}\n", decl.name);
-        let before = snapshot(&session, &groups, &reads).await;
-        match session.mutate(&groups, &single, &decl.name, &params).await {
+        let before = snapshot(session, &groups, reads).await;
+        match session.mutate(&groups, &single, &decl.name, params).await {
             Ok(r) => affected += r.affected_nodes + r.affected_edges,
             Err(e) => {
                 group_error = Some(format!("group {}: {e}", g + 1));
                 break;
             }
         }
-        let after = snapshot(&session, &groups, &reads).await;
+        let after = snapshot(session, &groups, reads).await;
         let (Ok(before), Ok(after)) = (before, after) else {
             continue;
         };
@@ -817,7 +817,7 @@ async fn compare_body(
                     Some(r) => r
                         .get("x")
                         .and_then(|x| x.get(p))
-                        .or_else(|| r.get(&format!("x.{p}")))
+                        .or_else(|| r.get(format!("x.{p}")))
                         .cloned()
                         .unwrap_or(serde_json::Value::Null),
                 };
@@ -871,8 +871,8 @@ async fn compare_body(
         ),
         (Ok(_), Some(b)) => ("groups-refuse-whole-runs".to_string(), b.clone()),
         (Ok(r), None) => {
-            let a = snapshot(&session, &whole, &reads).await;
-            let b = snapshot(&session, &groups, &reads).await;
+            let a = snapshot(session, &whole, reads).await;
+            let b = snapshot(session, &groups, reads).await;
             match (a, b) {
                 (Ok(a), Ok(b)) if a == b => {
                     let whole_affected = r.affected_nodes + r.affected_edges;

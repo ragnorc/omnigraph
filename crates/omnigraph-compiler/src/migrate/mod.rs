@@ -740,7 +740,7 @@ fn ranked_field(expr: &Expr) -> Option<(&str, &str)> {
 }
 
 /// The span and arguments of the ranking call recorded at `span`.
-fn call_at<'d>(spans: &'d DeclSpans, span: Span) -> Option<(&'d str, &'d [Span])> {
+fn call_at(spans: &DeclSpans, span: Span) -> Option<(&str, &[Span])> {
     spans.exprs.iter().find_map(|e| match &e.node {
         SpannedExpr::Call { name, args } if e.span == span => {
             Some((name.as_str(), args.as_slice()))

@@ -17,6 +17,9 @@ pub struct QueryFile {
 
 /// What follows a file's settings prefix. `Queries` is empty for a file that
 /// holds no statement at all, prefix or not.
+// SPIKE (spike/gq3-rewriter): `QueryDecl.spans` makes `Explain` the large
+// variant; boxing it would touch every consumer of the tree.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone)]
 pub enum FileBody {
     Queries(Vec<QueryDecl>),

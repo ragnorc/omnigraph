@@ -1,0 +1,179 @@
+origin	decl	shape	constructs	outcome	detail
+crates/omnigraph-gqt/cases/bare_node_projection_search_scan.gqt#3:query	top_chunks	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/bare_node_projection_search_scan.gqt#7:query	hybrid_chunks	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/bm25_distinct_scores_rank_descending.gqt#3:query	bm25_ranked	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/bm25_distinct_scores_rank_descending.gqt#7:query	distinct_literal_order	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/compound_and_bare_boolean_filters.gqt#6:query	leading_nearest_runs	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/conjunction_filter_prefilters_nearest.gqt#3:query	nearest_matching_both_filters	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/count_over_traversal_nearest_counts_window.gqt#3:query	count_nearest_with_edges	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/detached_branch_search_tracks_own_versions.gqt#3:query	nearest_docs	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/detached_branch_search_tracks_own_versions.gqt#12:query	nearest_docs	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/detached_branch_search_tracks_own_versions.gqt#16:query	nearest_docs	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/detached_branch_search_tracks_own_versions.gqt#23:query	nearest_docs	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/detached_branch_search_tracks_own_versions.gqt#27:query	nearest_docs	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/detached_branch_search_tracks_own_versions.gqt#34:query	nearest_docs	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/detached_branch_search_tracks_own_versions.gqt#39:query	nearest_docs	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/detached_branch_search_tracks_own_versions.gqt#43:query	nearest_docs	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/explicit_vector_nearest_does_not_require_gemini_credentials.gqt#3:query	vector_search_vector	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/filtered_nearest_fewer_matches_than_limit.gqt#3:query	nearest_single_match	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/filtered_nearest_more_matches_than_limit.gqt#3:query	nearest_matching_rows	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/filtered_nearest_no_match_is_empty.gqt#3:query	nearest_without_matches	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/filtered_nearest_returns_matching_rows_not_postfiltered_topk.gqt#3:query	filtered_nearest	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/filtered_nearest_returns_matching_rows_not_postfiltered_topk.gqt#7:query	filtered_nearest_clause_eq	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/filtered_nearest_returns_matching_rows_not_postfiltered_topk.gqt#11:query	filtered_nearest_clause_range	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/inline_property_filter_prefilters_nearest.gqt#3:query	nearest_inline_filter	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/issue_563_aggregate_uncapped.gqt#3:query	recall_count	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/issue_563_underfill_retry.gqt#3:query	recall	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/issue_567_filtered_nearest_returns_exact_matches.gqt#3:query	kept_nearest	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/issue_567_traversal_nearest_fills_limit.gqt#3:query	nearest_with_edge	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/issue_624_second_merge_after_fast_forward.gqt#28:query	vector_read_indexed_row	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/issue_624_second_merge_after_fast_forward.gqt#32:query	vector_read_new_row	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/issue_634_blob_property_keeps_search_ranking.gqt#3:query	ranked	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/issue_634_blob_property_keeps_search_ranking.gqt#7:query	closest	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#3:query	nearest_projected	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#7:query	nearest_projected_default_name	nearest	1	ir-unequal	return: edition 2 `…lue { scalar: F32, list: false, nullable: false } }, alias: None, column: "p._distance", ty: Value { scalar: F32, list: false, nullable: false } }]…` / normalised `…lue { scalar: F32, list: false, nullable: false } }, alias: Some("_distance"), column: "_distance", ty: Value { scalar: F32, list: false, nullable: false } }]…`
+crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#11:query	bm25_projected	bm25	1	ir-unequal	return: edition 2 `…lue { scalar: F32, list: false, nullable: false } }, alias: None, column: "p._score", ty: Value { scalar: F32, list: false, nullable: false } }]…` / normalised `…lue { scalar: F32, list: false, nullable: false } }, alias: Some("_score"), column: "_score", ty: Value { scalar: F32, list: false, nullable: false } }]…`
+crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#15:query	nearest_projected_no_match	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#19:query	bm25_projected_no_match	bm25	1	ir-equal	
+crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#32:query	rrf_projected	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#41:query	nearest_projected_through_traversal	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#45:query	nearest_ordered_plain_projection	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#3:query	nearest_named	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#8:query	nearest_alternative	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#13:query	nearest_wildcard	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#18:query	nearest_named_chain	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#23:query	nearest_selected_chain	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#28:query	fused_sparse_named	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#33:query	fused_sparse_wildcard	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/issue_665_nearest_retry_same_limit.gqt#3:query	nearest_with_edge	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/issue_787_rrf_order_keys_after_fused_score.gqt#3:query	secondary_key_breaks_fused_tie	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/issue_787_rrf_order_keys_after_fused_score.gqt#6:query	id_breaks_fused_tie	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/issue_788_search_led_aggregate_order_keys.gqt#3:query	largest_group	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/issue_788_search_led_aggregate_order_keys.gqt#7:query	smallest_group	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/issue_788_search_led_aggregate_order_keys.gqt#11:query	every_group_ordered	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/issue_920_out_of_range_float_literal.gqt#5:query	out_of_range_nearest_vector_literal	nearest	1	both-refuse-alike	type error: T3: float literal is outside the F64 range
+crates/omnigraph-gqt/cases/keyword_named_vector_property_index.gqt#3:query	nearest_by_keyword_property	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/nearest_alias_secondary_key.gqt#3:query	nearest_then_alias	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/nearest_bm25_and_rrf_rank_the_search_fixture.gqt#3:query	vector_search	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/nearest_bm25_and_rrf_rank_the_search_fixture.gqt#7:query	bm25_search	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/nearest_bm25_and_rrf_rank_the_search_fixture.gqt#11:query	bm25_then_slug	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/nearest_bm25_and_rrf_rank_the_search_fixture.gqt#15:query	hybrid_search	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/nearest_corpus_smaller_than_limit.gqt#3:query	nearest_small_corpus	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/nearest_interleaves_rows_around_the_query.gqt#3:query	nearest_around_query	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/nearest_rank_survives_edge_fanout_and_hops.gqt#3:query	nearest_edges	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/nearest_rank_survives_edge_fanout_and_hops.gqt#7:query	nearest_hops	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/nearest_ranks_updated_embedding.gqt#6:query	nearest_after_update	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/nearest_sees_rows_inserted_after_index_build.gqt#9:query	nearest_after_insert	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/nearest_sees_rows_inserted_after_index_build.gqt#14:query	nearest_after_restart	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/nearest_skips_deleted_rows_and_fills_limit.gqt#12:query	nearest_after_delete	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/negated_filter_nearest_refetches_survivors.gqt#3:query	nearest_after_negation	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/negated_filter_nearest_sparse_survivors.gqt#3:query	nearest_sparse_survivors	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/param_filter_prefilters_nearest.gqt#3:query	nearest_parameter_filter	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/rank_call_nested_in_a_boolean_projection.gqt#3:query	bm25_threshold	bm25	1	ir-equal	
+crates/omnigraph-gqt/cases/rank_call_nested_in_a_boolean_projection.gqt#7:query	nearest_threshold	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/rank_call_nested_in_a_boolean_projection.gqt#11:query	nearest_threshold_expression	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/rank_call_nested_in_a_boolean_projection.gqt#15:query	nearest_threshold_alias	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/rank_call_nested_in_a_boolean_projection.gqt#19:query	bm25_threshold_expression	bm25	1	ir-equal	
+crates/omnigraph-gqt/cases/rank_call_nested_in_a_boolean_projection.gqt#23:query	bm25_threshold_alias	bm25	1	ir-equal	
+crates/omnigraph-gqt/cases/rank_call_nested_in_a_boolean_projection.gqt#27:query	rrf_threshold_expression	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/rank_call_nested_in_a_boolean_projection.gqt#31:query	rrf_threshold_alias	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/rank_call_nested_in_a_boolean_projection.gqt#35:query	recursive_rank_keys	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/rank_key_asc_direction_refused.gqt#3:query	bm25_bare	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/rank_key_asc_direction_refused.gqt#11:query	rrf_desc	rrf	1	ir-equal-after-rules	rrf-default-k
+crates/omnigraph-gqt/cases/reverse_traversal_nearest_ranks_targets.gqt#3:query	nearest_edge_targets	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#3:query	recall_two_terms	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#8:query	recall_alternation	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#13:query	recall_wildcard	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/rrf_nearest_and_bm25_agreeing_arms.gqt#3:query	fused	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/rrf_nearest_arm_under_traversal.gqt#3:query	nearest_and_text_with_edges	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/rrf_parameter_named_like_binding.gqt#3:query	fused_v2	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/traversal_nearest_empty_after_sources_deleted.gqt#6:query	nearest_after_source_delete	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/traversal_nearest_fanout_counts_rows.gqt#3:query	nearest_counts_rows	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/traversal_nearest_fanout_counts_rows.gqt#7:query	nearest_returns_pairs	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/traversal_nearest_gate_ranks_eligible_docs.gqt#3:query	nearest_eligible_docs	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/traversal_nearest_over_empty_corpus.gqt#3:query	nearest_empty_graph	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/traversal_nearest_overfetch_fills_limit.gqt#3:query	nearest_fills_limit	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/traversal_nearest_rare_survivors_exact_pass.gqt#3:query	nearest_with_edge	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/traversal_nearest_rare_survivors_exact_pass.gqt#7:query	nearest_with_edge_wide	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/traversal_nearest_single_eligible_doc.gqt#3:query	nearest_single_source	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/traversal_nearest_with_source_and_target_filters.gqt#3:query	nearest_with_source_filter	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/traversal_nearest_with_source_and_target_filters.gqt#7:query	nearest_with_target_filter	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/traversal_nearest_with_source_and_target_filters.gqt#11:query	nearest_with_source_filter_above_gate	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/two_hop_nearest_ranks_chain_heads.gqt#3:query	nearest_two_hop_sources	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/typed_search_options.gqt#28:query	null_bm25_query	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/typed_search_options.gqt#31:query	null_nearest_query	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/update_column_patch_matches_whole_row_update.gqt#24:query	nearest_first	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/update_column_patch_matches_whole_row_update.gqt#28:query	nearest_first	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/bm25_score_ignores_a_filter_over_an_unindexed_fragment.gqt#3:query	covered	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/v2/bm25_score_ignores_a_filter_over_an_unindexed_fragment.gqt#9:query	unfiltered	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/v2/bm25_score_ignores_a_filter_over_an_unindexed_fragment.gqt#12:query	filtered	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/v2/bm25_ties_after_traversal.gqt#3:query	recall	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/v2/bm25_ties_after_traversal.gqt#7:query	root_tie	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/v2/issue_747_full_text_calls_need_a_full_text_index.gqt#12:query	ranked	bm25	1	both-refuse-alike	type error: T27: `bm25` over `$d.notes` needs a full-text index, and `Doc.notes` declares none
+crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#3:query	bm25_order	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#7:query	nearest_order	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#11:query	rrf_order	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#19:query	bm25_order_on_the_needles	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/v2/planner/explain_pipelines_rank_fuse_arms.gqt#3:query	fused	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/v2/planner/hydrate_return_columns_above_a_fusion.gqt#3:query	fused_top_two	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/v2/planner/hydrate_return_columns_above_a_fusion.gqt#8:query	ranked_top_two	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/v2/planner/input_ann_nprobes.gqt#3:query	by_vector	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/input_ann_nprobes.gqt#8:query	by_vector	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/issue_762_rrf_over_a_reached_binding.gqt#3:query	ranked_destination	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#3:query	nearest_on_an_undeclared_destination	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#9:query	nearest_on_a_destination_declared_second	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#15:query	rrf_over_one_destination	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#20:query	nearest_from_a_source_with_no_edges	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#3:query	bm25_on_an_undeclared_destination	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#8:query	bm25_two_hops_from_the_source	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#13:query	bm25_on_a_traversal_source	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#18:query	bm25_over_an_undirected_traversal	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt#3:query	f_eq	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt#8:query	f_ne	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt#13:query	f_gt	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt#18:query	f_lt	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt#23:query	f_ge	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt#28:query	f_le	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt#33:query	f_starts_with	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt#38:query	f_contains	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt#43:query	f_param	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt#48:query	f_flipped	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/overfetch_ladder_completes_a_traversal_source.gqt#3:query	nearest_citing_docs	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/projection_demand.gqt#15:query	leading_nearest	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/ranked_access_on_the_scan.gqt#3:query	by_text	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/v2/planner/ranked_access_on_the_scan.gqt#8:query	by_vector	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/ranked_access_on_the_scan.gqt#13:query	by_vector_among_members	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/ranked_access_on_the_scan.gqt#18:query	fused	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+crates/omnigraph-gqt/cases/v2/planner/ranked_source_over_a_hash_join.gqt#3:query	nearest_person_docs	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#9:query	search_only_order_with_an_unranked_binding	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#14:query	nearest_on_a_traversal_destination	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/search_scans_project_needed_columns_and_the_scoring_column.gqt#3:query	nearest_slug	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/planner/search_scans_project_needed_columns_and_the_scoring_column.gqt#8:query	bm25_slug	bm25	1	ir-equal-after-rules	rank-key-direction
+crates/omnigraph-gqt/cases/v2/planner/search_scans_project_needed_columns_and_the_scoring_column.gqt#13:query	nearest_whole	nearest	1	ir-equal	
+crates/omnigraph-gqt/cases/v2/search_filter_under_bm25_order.gqt#3:query	filtered_rank	bm25	1	ir-equal-after-rules	rank-key-direction
+benchmarks/fixtures/e2e_nearest_nprobes_one.gqt#3:query	nearest_matching_rows	nearest	1	ir-equal	
+benchmarks/fixtures/e2e_nearest_prefilter.gqt#3:query	filtered_nearest	nearest	1	ir-equal	
+benchmarks/fixtures/e2e_rrf_traversal.gqt#3:query	recall_two_terms	rrf	1	ir-equal-after-rules	rank-key-direction, rrf-default-k
+benchmarks/workloads/e2e_nearest_nprobes_one.gqt#1:query	nearest_matching_rows	nearest	1	equal-tree (no catalog)	
+benchmarks/workloads/e2e_nearest_nprobes_one.gqt#6:query	nearest_matching_rows	nearest	1	equal-tree (no catalog)	
+benchmarks/workloads/e2e_nearest_prefilter.gqt#1:query	filtered_nearest	nearest	1	equal-tree (no catalog)	
+benchmarks/workloads/e2e_nearest_prefilter.gqt#6:query	filtered_nearest	nearest	1	equal-tree (no catalog)	
+benchmarks/workloads/e2e_rrf_traversal.gqt#1:query	recall_two_terms	rrf	1	equal-tree (no catalog)	rank-key-direction, rrf-default-k
+benchmarks/workloads/e2e_rrf_traversal.gqt#7:query	recall_two_terms	rrf	1	equal-tree (no catalog)	rank-key-direction, rrf-default-k
+benchmarks/workloads/nearest_ranks_updated_embedding.gqt#1:query	nearest_after_update	nearest	1	equal-tree (no catalog)	
+benchmarks/workloads/nearest_ranks_updated_embedding.gqt#5:query	nearest_after_update	nearest	1	equal-tree (no catalog)	
+benchmarks/workloads/nearest_skips_deleted_rows_and_fills_limit.gqt#1:query	nearest_after_delete	nearest	1	equal-tree (no catalog)	
+benchmarks/workloads/nearest_skips_deleted_rows_and_fills_limit.gqt#5:query	nearest_after_delete	nearest	1	equal-tree (no catalog)	
+docs/rfcs/0047-search-plan-truth.md#1	passages	bm25	1	equal-tree (no catalog)	rank-key-direction
+docs/user/search/index.md#0	similar	nearest	1	equal-tree (no catalog)	
+docs/user/search/index.md#1	relevant	bm25	1	equal-tree (no catalog)	
+docs/user/search/index.md#2	hybrid	rrf	1	equal-tree (no catalog)	rank-key-direction, rrf-default-k
+docs/user/search/index.md#3	passages	bm25	1	equal-tree (no catalog)	rank-key-direction
+skills/omnigraph/references/queries.md#14	vector_search	nearest	1	equal-tree (no catalog)	
+skills/omnigraph/references/queries.md#15	hybrid_search	rrf	1	equal-tree (no catalog)	rank-key-direction, rrf-default-k
+skills/omnigraph/references/schema-design.md#13	customer_evidence	nearest	1	both-refuse-alike	type error: T1: unknown node type `Customer`
+skills/omnigraph/references/search.md#4	nearest_chunks	nearest	1	ir-equal	
+skills/omnigraph/references/search.md#5	top_titles	bm25	1	both-refuse-alike	type error: T1: unknown node type `Doc`
+skills/omnigraph/references/search.md#6	hybrid	rrf	1	both-refuse-alike	type error: T1: unknown node type `Doc`
+skills/omnigraph/references/search.md#7	scored_titles	bm25	1	both-refuse-alike	type error: T1: unknown node type `Doc`
+skills/omnigraph/references/search.md#10	related_chunks	nearest	1	both-refuse-alike	type error: T4: unknown edge type `partOfArtifact`

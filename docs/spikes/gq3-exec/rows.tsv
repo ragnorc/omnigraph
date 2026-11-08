@@ -1,0 +1,323 @@
+case	ordinal	shape	route	outcome	detail
+bare_node_projection_search_scan.gqt	1	bm25	bridge	equal	
+bare_node_projection_search_scan.gqt	1	bm25	rfc	equal	2 rows, same order
+bare_node_projection_search_scan.gqt	2	rrf	bridge	equal	
+bare_node_projection_search_scan.gqt	2	rrf	rfc	equal	3 rows, same order
+bare_node_projection_search_scan.gqt	2	rrf	rfc-type-arms	equal	3 rows
+bm25_distinct_scores_rank_descending.gqt	1	bm25	bridge	equal	
+bm25_distinct_scores_rank_descending.gqt	1	bm25	rfc	equal	3 rows, same order
+bm25_distinct_scores_rank_descending.gqt	2	bm25	bridge	equal	
+bm25_distinct_scores_rank_descending.gqt	2	bm25	rfc	rfc-not-evaluated	a rank key under `return distinct`: `distinct` is a `Group`, and the score is no group column (an order key edition 3 cannot type)
+compound_and_bare_boolean_filters.gqt	2	nearest	bridge	equal	
+compound_and_bare_boolean_filters.gqt	2	nearest	rfc	equal	1 rows, same order
+conjunction_filter_prefilters_nearest.gqt	1	nearest	bridge	equal	
+conjunction_filter_prefilters_nearest.gqt	1	nearest	rfc	equal	3 rows, same order
+count_over_traversal_nearest_counts_window.gqt	1	nearest	bridge	equal	
+count_over_traversal_nearest_counts_window.gqt	1	nearest	rfc	equal	1 rows, same order
+explicit_vector_nearest_does_not_require_gemini_credentials.gqt	1	nearest	bridge	equal	
+explicit_vector_nearest_does_not_require_gemini_credentials.gqt	1	nearest	rfc	equal	3 rows, same order
+filtered_nearest_fewer_matches_than_limit.gqt	1	nearest	bridge	equal	
+filtered_nearest_fewer_matches_than_limit.gqt	1	nearest	rfc	equal	1 rows, same order
+filtered_nearest_more_matches_than_limit.gqt	1	nearest	bridge	equal	
+filtered_nearest_more_matches_than_limit.gqt	1	nearest	rfc	equal	3 rows, same order
+filtered_nearest_no_match_is_empty.gqt	1	nearest	bridge	equal	
+filtered_nearest_no_match_is_empty.gqt	1	nearest	rfc	equal	0 rows, same order
+filtered_nearest_returns_matching_rows_not_postfiltered_topk.gqt	1	nearest	bridge	equal	
+filtered_nearest_returns_matching_rows_not_postfiltered_topk.gqt	1	nearest	rfc	equal	3 rows, same order
+filtered_nearest_returns_matching_rows_not_postfiltered_topk.gqt	2	nearest	bridge	equal	
+filtered_nearest_returns_matching_rows_not_postfiltered_topk.gqt	2	nearest	rfc	equal	3 rows, same order
+filtered_nearest_returns_matching_rows_not_postfiltered_topk.gqt	3	nearest	bridge	equal	
+filtered_nearest_returns_matching_rows_not_postfiltered_topk.gqt	3	nearest	rfc	equal	3 rows, same order
+inline_property_filter_prefilters_nearest.gqt	1	nearest	bridge	equal	
+inline_property_filter_prefilters_nearest.gqt	1	nearest	rfc	equal	1 rows, same order
+issue_563_aggregate_uncapped.gqt	1	bm25	bridge	equal	
+issue_563_aggregate_uncapped.gqt	1	bm25	rfc	equal	1 rows, same order
+issue_563_underfill_retry.gqt	1	bm25	bridge	equal	
+issue_563_underfill_retry.gqt	1	bm25	rfc	equal	2 rows, same order
+issue_567_filtered_nearest_returns_exact_matches.gqt	1	nearest	bridge	equal	
+issue_567_filtered_nearest_returns_exact_matches.gqt	1	nearest	rfc	equal	2 rows, same order
+issue_567_traversal_nearest_fills_limit.gqt	1	nearest	bridge	equal	
+issue_567_traversal_nearest_fills_limit.gqt	1	nearest	rfc	equal	3 rows, same order
+issue_634_blob_property_keeps_search_ranking.gqt	1	bm25	bridge	equal	
+issue_634_blob_property_keeps_search_ranking.gqt	1	bm25	rfc	equal	2 rows, same order
+issue_634_blob_property_keeps_search_ranking.gqt	2	nearest	bridge	equal	
+issue_634_blob_property_keeps_search_ranking.gqt	2	nearest	rfc	equal	2 rows, same order
+issue_640_search_score_projection.gqt	1	nearest	bridge	equal	
+issue_640_search_score_projection.gqt	1	nearest	rfc	equal	2 rows, same order
+issue_640_search_score_projection.gqt	2	nearest	bridge	different	row 0: edition 2 {"p.name":"B","p._distance":0.0} / edition 3 {"p.name":"B","_distance":0.0} [twin red under GQT: step 2 (query): result shape mismatch at column 1: expected name `p._distance`, the executor returned `_distance`]
+issue_640_search_score_projection.gqt	2	nearest	rfc	different	row 0: edition 2 {"p.name":"B","p._distance":0.0} / edition 3 {"p.name":"B","_distance":0.0}; edition 2 1 rows [{"p.name":"B","p._distance":0.0}]; edition 3 1 rows [{"p.name":"B","_distance":0.0}]
+issue_640_search_score_projection.gqt	3	bm25	bridge	different	row 0: edition 2 {"p.name":"A","p._score":0.2292043} / edition 3 {"p.name":"A","_score":0.2292043} [twin red under GQT: step 3 (query): result shape mismatch at column 1: expected name `p._score`, the executor returned `_score`]
+issue_640_search_score_projection.gqt	3	bm25	rfc	different	row 0: edition 2 {"p.name":"A","p._score":0.2292043} / edition 3 {"p.name":"A","_score":0.2292043}; edition 2 2 rows [{"p.name":"A","p._score":0.2292043},{"p.name":"B","p._score":0.21978495}]; edition 3 2 rows [{"p.name":"A","_score":0.2292043},{"p.name":"B","_score":0.21978495}]
+issue_640_search_score_projection.gqt	4	nearest	bridge	equal	
+issue_640_search_score_projection.gqt	4	nearest	rfc	equal	0 rows, same order
+issue_640_search_score_projection.gqt	5	bm25	bridge	equal	
+issue_640_search_score_projection.gqt	5	bm25	rfc	equal	0 rows, same order
+issue_640_search_score_projection.gqt	7	nearest	bridge	refused	rewriter refused: `nearest($p.embedding, [0.0, 1.0])` is a second ranking beside the window `nearest($p.embedding, $v)`; the table rewrites one ranking per read
+issue_640_search_score_projection.gqt	9	rrf	bridge	equal	
+issue_640_search_score_projection.gqt	9	rrf	rfc	equal	2 rows, same order
+issue_640_search_score_projection.gqt	9	rrf	rfc-type-arms	equal	2 rows
+issue_640_search_score_projection.gqt	12	nearest	bridge	equal	
+issue_640_search_score_projection.gqt	12	nearest	rfc	equal	2 rows, same order
+issue_640_search_score_projection.gqt	13	nearest	bridge	equal	
+issue_640_search_score_projection.gqt	13	nearest	rfc	equal	2 rows, same order
+issue_659_ranked_selection_differential.gqt	1	nearest	bridge	equal	
+issue_659_ranked_selection_differential.gqt	1	nearest	rfc	equal	3 rows, same order
+issue_659_ranked_selection_differential.gqt	2	nearest	bridge	equal	
+issue_659_ranked_selection_differential.gqt	2	nearest	rfc	equal	3 rows, same order
+issue_659_ranked_selection_differential.gqt	3	nearest	bridge	equal	
+issue_659_ranked_selection_differential.gqt	3	nearest	rfc	equal	3 rows, same order
+issue_659_ranked_selection_differential.gqt	4	nearest	bridge	equal	
+issue_659_ranked_selection_differential.gqt	4	nearest	rfc	equal	3 rows, same order
+issue_659_ranked_selection_differential.gqt	5	nearest	bridge	equal	
+issue_659_ranked_selection_differential.gqt	5	nearest	rfc	equal	3 rows, same order
+issue_659_ranked_selection_differential.gqt	6	rrf	bridge	equal	
+issue_659_ranked_selection_differential.gqt	6	rrf	rfc	different	unordered: edition 2 only - / edition 3 only {"slug":"d030"}; edition 2 2 rows [{"slug":"d020"},{"slug":"d040"}]; edition 3 3 rows [{"slug":"d020"},{"slug":"d030"},{"slug":"d040"}]
+issue_659_ranked_selection_differential.gqt	6	rrf	rfc-type-arms	equal	2 rows
+issue_659_ranked_selection_differential.gqt	7	rrf	bridge	equal	
+issue_659_ranked_selection_differential.gqt	7	rrf	rfc	different	unordered: edition 2 only - / edition 3 only {"slug":"d030"}; edition 2 2 rows [{"slug":"d020"},{"slug":"d040"}]; edition 3 3 rows [{"slug":"d020"},{"slug":"d030"},{"slug":"d040"}]
+issue_659_ranked_selection_differential.gqt	7	rrf	rfc-type-arms	equal	2 rows
+issue_659_rrf_typed_edge_identity.gqt	1	rrf	bridge	refused	rewriter refused: duplicate arms `bm25($p.text, "needle")`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
+issue_659_rrf_typed_edge_identity.gqt	2	rrf	bridge	refused	rewriter refused: duplicate arms `bm25($p.text, "needle")`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
+issue_659_rrf_typed_edge_identity.gqt	3	rrf	bridge	refused	rewriter refused: duplicate arms `bm25($p.text, "needle")`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
+issue_665_nearest_retry_same_limit.gqt	1	nearest	bridge	equal	
+issue_665_nearest_retry_same_limit.gqt	1	nearest	rfc	equal	1 rows, same order
+issue_787_rrf_order_keys_after_fused_score.gqt	1	rrf	bridge	equal	
+issue_787_rrf_order_keys_after_fused_score.gqt	1	rrf	rfc	equal	1 rows, same order
+issue_787_rrf_order_keys_after_fused_score.gqt	1	rrf	rfc-type-arms	equal	1 rows
+issue_787_rrf_order_keys_after_fused_score.gqt	2	rrf	bridge	equal	
+issue_787_rrf_order_keys_after_fused_score.gqt	2	rrf	rfc	equal	1 rows, same order
+issue_787_rrf_order_keys_after_fused_score.gqt	2	rrf	rfc-type-arms	equal	1 rows
+issue_787_rrf_order_keys_after_fused_score.gqt	3	rrf	bridge	refused	rewriter refused: duplicate arms `bm25($d.text, "needle")`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
+issue_788_search_led_aggregate_order_keys.gqt	1	bm25	bridge	equal	
+issue_788_search_led_aggregate_order_keys.gqt	1	bm25	rfc	equal	1 rows, same order
+issue_788_search_led_aggregate_order_keys.gqt	2	bm25	bridge	equal	
+issue_788_search_led_aggregate_order_keys.gqt	2	bm25	rfc	equal	1 rows, same order
+issue_788_search_led_aggregate_order_keys.gqt	3	bm25	bridge	equal	
+issue_788_search_led_aggregate_order_keys.gqt	3	bm25	rfc	equal	2 rows, same order
+issue_788_search_led_aggregate_order_keys.gqt	4	rrf	bridge	refused	rewriter refused: duplicate arms `bm25($d.text, $t)`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
+issue_788_search_led_aggregate_order_keys.gqt	5	rrf	bridge	refused	rewriter refused: duplicate arms `bm25($d.text, $t)`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
+issue_920_out_of_range_float_literal.gqt	2	nearest	bridge	twin-not-run	`--- query` section starting at line 32 does not parse: parse error: expected literal
+issue_920_out_of_range_float_literal.gqt	2	nearest	rfc	original-error	type error: T3: float literal is outside the F64 range
+keyword_named_vector_property_index.gqt	1	nearest	bridge	equal	
+keyword_named_vector_property_index.gqt	1	nearest	rfc	equal	2 rows, same order
+nearest_alias_secondary_key.gqt	1	nearest	bridge	equal	
+nearest_alias_secondary_key.gqt	1	nearest	rfc	equal	4 rows, same order
+nearest_bm25_and_rrf_rank_the_search_fixture.gqt	1	nearest	bridge	equal	
+nearest_bm25_and_rrf_rank_the_search_fixture.gqt	1	nearest	rfc	equal	3 rows, same order
+nearest_bm25_and_rrf_rank_the_search_fixture.gqt	2	bm25	bridge	equal	
+nearest_bm25_and_rrf_rank_the_search_fixture.gqt	2	bm25	rfc	equal	3 rows, same order
+nearest_bm25_and_rrf_rank_the_search_fixture.gqt	3	bm25	bridge	equal	
+nearest_bm25_and_rrf_rank_the_search_fixture.gqt	3	bm25	rfc	equal	3 rows, same order
+nearest_bm25_and_rrf_rank_the_search_fixture.gqt	4	rrf	bridge	equal	
+nearest_bm25_and_rrf_rank_the_search_fixture.gqt	4	rrf	rfc	equal	3 rows, same order
+nearest_bm25_and_rrf_rank_the_search_fixture.gqt	4	rrf	rfc-type-arms	equal	3 rows
+nearest_corpus_smaller_than_limit.gqt	1	nearest	bridge	equal	
+nearest_corpus_smaller_than_limit.gqt	1	nearest	rfc	equal	3 rows, same order
+nearest_interleaves_rows_around_the_query.gqt	1	nearest	bridge	equal	
+nearest_interleaves_rows_around_the_query.gqt	1	nearest	rfc	equal	3 rows, same order
+nearest_rank_survives_edge_fanout_and_hops.gqt	1	nearest	bridge	equal	
+nearest_rank_survives_edge_fanout_and_hops.gqt	1	nearest	rfc	equal	4 rows, same order
+nearest_rank_survives_edge_fanout_and_hops.gqt	2	nearest	bridge	equal	
+nearest_rank_survives_edge_fanout_and_hops.gqt	2	nearest	rfc	equal	2 rows, same order
+nearest_ranks_updated_embedding.gqt	2	nearest	bridge	equal	
+nearest_ranks_updated_embedding.gqt	2	nearest	rfc	equal	5 rows, same order
+nearest_sees_rows_inserted_after_index_build.gqt	3	nearest	bridge	equal	
+nearest_sees_rows_inserted_after_index_build.gqt	3	nearest	rfc	equal	4 rows, same order
+nearest_sees_rows_inserted_after_index_build.gqt	5	nearest	bridge	equal	
+nearest_sees_rows_inserted_after_index_build.gqt	5	nearest	rfc	equal	4 rows, same order
+nearest_skips_deleted_rows_and_fills_limit.gqt	4	nearest	bridge	equal	
+nearest_skips_deleted_rows_and_fills_limit.gqt	4	nearest	rfc	equal	3 rows, same order
+negated_filter_nearest_refetches_survivors.gqt	1	nearest	bridge	equal	
+negated_filter_nearest_refetches_survivors.gqt	1	nearest	rfc	equal	4 rows, same order
+negated_filter_nearest_sparse_survivors.gqt	1	nearest	bridge	equal	
+negated_filter_nearest_sparse_survivors.gqt	1	nearest	rfc	equal	2 rows, same order
+param_filter_prefilters_nearest.gqt	1	nearest	bridge	equal	
+param_filter_prefilters_nearest.gqt	1	nearest	rfc	equal	1 rows, same order
+rank_call_nested_in_a_boolean_projection.gqt	1	bm25	bridge	equal	
+rank_call_nested_in_a_boolean_projection.gqt	1	bm25	rfc	equal	2 rows, same order
+rank_call_nested_in_a_boolean_projection.gqt	2	nearest	bridge	equal	
+rank_call_nested_in_a_boolean_projection.gqt	2	nearest	rfc	equal	2 rows, same order
+rank_call_nested_in_a_boolean_projection.gqt	3	nearest	bridge	equal	
+rank_call_nested_in_a_boolean_projection.gqt	3	nearest	rfc	rfc-not-evaluated	an order key computed from the score
+rank_call_nested_in_a_boolean_projection.gqt	4	nearest	bridge	equal	
+rank_call_nested_in_a_boolean_projection.gqt	4	nearest	rfc	equal	2 rows, same order
+rank_call_nested_in_a_boolean_projection.gqt	5	bm25	bridge	equal	
+rank_call_nested_in_a_boolean_projection.gqt	5	bm25	rfc	rfc-not-evaluated	an order key computed from the score
+rank_call_nested_in_a_boolean_projection.gqt	6	bm25	bridge	equal	
+rank_call_nested_in_a_boolean_projection.gqt	6	bm25	rfc	equal	2 rows, same order
+rank_call_nested_in_a_boolean_projection.gqt	7	rrf	bridge	equal	
+rank_call_nested_in_a_boolean_projection.gqt	7	rrf	rfc	rfc-not-evaluated	an order key computed from the score
+rank_call_nested_in_a_boolean_projection.gqt	7	rrf	rfc-type-arms	rfc-not-evaluated	an order key computed from the score
+rank_call_nested_in_a_boolean_projection.gqt	8	rrf	bridge	equal	
+rank_call_nested_in_a_boolean_projection.gqt	8	rrf	rfc	equal	2 rows, same order
+rank_call_nested_in_a_boolean_projection.gqt	8	rrf	rfc-type-arms	equal	2 rows
+rank_call_nested_in_a_boolean_projection.gqt	9	nearest	bridge	equal	
+rank_call_nested_in_a_boolean_projection.gqt	9	nearest	rfc	rfc-not-evaluated	`query __gq3_item($v: Vector(2)) {     match {         $d: Doc         $d.@id in ["a"]     }     return { nearest($d.embedding, $v) in [0.0] as __v }     limit 1 } `: type error: T33: `nearest` in `return` must repeat the retrieval stated as the leading `order` key; the projection reads the score that ordering computed
+rank_key_asc_direction_refused.gqt	1	bm25	bridge	equal	
+rank_key_asc_direction_refused.gqt	1	bm25	rfc	equal	2 rows, same order
+rank_key_asc_direction_refused.gqt	2	bm25	bridge	refused	rewriter refused: `bm25($d.text, "needle") asc`: `asc` on a rank key is T54 in edition 2, while its rewrite `$score asc` is a legal ascending order in edition 3
+rank_key_asc_direction_refused.gqt	3	rrf	bridge	refused	rewriter refused: `rrf(nearest($d.embedding, $v), bm25($d.text, "needle")) asc`: `asc` on a rank key is T54 in edition 2, while its rewrite `$score asc` is a legal ascending order in edition 3
+rank_key_asc_direction_refused.gqt	4	rrf	bridge	equal	
+rank_key_asc_direction_refused.gqt	4	rrf	rfc	equal	2 rows, same order
+rank_key_asc_direction_refused.gqt	4	rrf	rfc-type-arms	equal	2 rows
+reverse_traversal_nearest_ranks_targets.gqt	1	nearest	bridge	equal	
+reverse_traversal_nearest_ranks_targets.gqt	1	nearest	rfc	equal	2 rows, same order
+rrf_cross_join_batch_order_preserves_rank.gqt	1	rrf	bridge	refused	rewriter refused: duplicate arms `bm25($d.text, $t)`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
+rrf_decoy_flood_does_not_flip_the_fused_winner.gqt	1	rrf	bridge	equal	
+rrf_decoy_flood_does_not_flip_the_fused_winner.gqt	1	rrf	rfc	equal	1 rows, same order
+rrf_decoy_flood_does_not_flip_the_fused_winner.gqt	1	rrf	rfc-type-arms	equal	1 rows
+rrf_decoy_flood_does_not_flip_the_fused_winner.gqt	2	rrf	bridge	equal	
+rrf_decoy_flood_does_not_flip_the_fused_winner.gqt	2	rrf	rfc	equal	1 rows, same order
+rrf_decoy_flood_does_not_flip_the_fused_winner.gqt	2	rrf	rfc-type-arms	equal	1 rows
+rrf_decoy_flood_does_not_flip_the_fused_winner.gqt	3	rrf	bridge	equal	
+rrf_decoy_flood_does_not_flip_the_fused_winner.gqt	3	rrf	rfc	equal	1 rows, same order
+rrf_decoy_flood_does_not_flip_the_fused_winner.gqt	3	rrf	rfc-type-arms	equal	1 rows
+rrf_nearest_and_bm25_agreeing_arms.gqt	1	rrf	bridge	equal	
+rrf_nearest_and_bm25_agreeing_arms.gqt	1	rrf	rfc	equal	3 rows, same order
+rrf_nearest_and_bm25_agreeing_arms.gqt	1	rrf	rfc-type-arms	equal	3 rows
+rrf_nearest_arm_under_traversal.gqt	1	rrf	bridge	equal	
+rrf_nearest_arm_under_traversal.gqt	1	rrf	rfc	equal	2 rows, same order
+rrf_nearest_arm_under_traversal.gqt	1	rrf	rfc-type-arms	equal	2 rows
+rrf_parameter_named_like_binding.gqt	1	rrf	bridge	equal	
+rrf_parameter_named_like_binding.gqt	1	rrf	rfc	equal	1 rows, same order
+rrf_parameter_named_like_binding.gqt	1	rrf	rfc-type-arms	equal	1 rows
+traversal_nearest_empty_after_sources_deleted.gqt	2	nearest	bridge	equal	
+traversal_nearest_empty_after_sources_deleted.gqt	2	nearest	rfc	equal	0 rows, same order
+traversal_nearest_fanout_counts_rows.gqt	1	nearest	bridge	equal	
+traversal_nearest_fanout_counts_rows.gqt	1	nearest	rfc	equal	3 rows, same order
+traversal_nearest_fanout_counts_rows.gqt	2	nearest	bridge	equal	
+traversal_nearest_fanout_counts_rows.gqt	2	nearest	rfc	equal	4 rows, same order
+traversal_nearest_gate_ranks_eligible_docs.gqt	1	nearest	bridge	equal	
+traversal_nearest_gate_ranks_eligible_docs.gqt	1	nearest	rfc	equal	3 rows, same order
+traversal_nearest_over_empty_corpus.gqt	1	nearest	bridge	equal	
+traversal_nearest_over_empty_corpus.gqt	1	nearest	rfc	equal	0 rows, same order
+traversal_nearest_overfetch_fills_limit.gqt	1	nearest	bridge	equal	
+traversal_nearest_overfetch_fills_limit.gqt	1	nearest	rfc	equal	3 rows, same order
+traversal_nearest_rare_survivors_exact_pass.gqt	1	nearest	bridge	equal	
+traversal_nearest_rare_survivors_exact_pass.gqt	1	nearest	rfc	equal	2 rows, same order
+traversal_nearest_rare_survivors_exact_pass.gqt	2	nearest	bridge	equal	
+traversal_nearest_rare_survivors_exact_pass.gqt	2	nearest	rfc	equal	40 rows, same order
+traversal_nearest_single_eligible_doc.gqt	1	nearest	bridge	equal	
+traversal_nearest_single_eligible_doc.gqt	1	nearest	rfc	equal	1 rows, same order
+traversal_nearest_with_source_and_target_filters.gqt	1	nearest	bridge	equal	
+traversal_nearest_with_source_and_target_filters.gqt	1	nearest	rfc	equal	2 rows, same order
+traversal_nearest_with_source_and_target_filters.gqt	2	nearest	bridge	equal	
+traversal_nearest_with_source_and_target_filters.gqt	2	nearest	rfc	equal	2 rows, same order
+traversal_nearest_with_source_and_target_filters.gqt	3	nearest	bridge	equal	
+traversal_nearest_with_source_and_target_filters.gqt	3	nearest	rfc	equal	2 rows, same order
+two_hop_nearest_ranks_chain_heads.gqt	1	nearest	bridge	equal	
+two_hop_nearest_ranks_chain_heads.gqt	1	nearest	rfc	equal	2 rows, same order
+typed_search_options.gqt	4	rrf	bridge	refused	rewriter refused: duplicate arms `bm25($d.text, "needle")`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
+typed_search_options.gqt	5	rrf	bridge	refused	rewriter refused: duplicate arms `bm25($d.text, "needle")`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
+typed_search_options.gqt	6	rrf	bridge	refused	rewriter refused: duplicate arms `bm25($d.text, "needle")`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
+typed_search_options.gqt	7	rrf	bridge	refused	rewriter refused: duplicate arms `bm25($d.text, "needle")`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
+typed_search_options.gqt	9	bm25	bridge	both-error-alike	search query must resolve to a non-null String
+typed_search_options.gqt	9	bm25	rfc	original-error	search query must resolve to a non-null String
+typed_search_options.gqt	10	nearest	bridge	both-error-alike	nearest query must resolve to a non-null String or numeric vector
+typed_search_options.gqt	10	nearest	rfc	original-error	nearest query must resolve to a non-null String or numeric vector
+v2/bm25_score_ignores_a_filter_over_an_unindexed_fragment.gqt	1	bm25	bridge	equal	
+v2/bm25_score_ignores_a_filter_over_an_unindexed_fragment.gqt	1	bm25	rfc	equal	2 rows, same order
+v2/bm25_score_ignores_a_filter_over_an_unindexed_fragment.gqt	3	bm25	bridge	equal	
+v2/bm25_score_ignores_a_filter_over_an_unindexed_fragment.gqt	3	bm25	rfc	equal	4 rows, same order
+v2/bm25_score_ignores_a_filter_over_an_unindexed_fragment.gqt	4	bm25	bridge	equal	
+v2/bm25_score_ignores_a_filter_over_an_unindexed_fragment.gqt	4	bm25	rfc	equal	3 rows, same order
+v2/bm25_ties_after_traversal.gqt	1	bm25	bridge	equal	
+v2/bm25_ties_after_traversal.gqt	1	bm25	rfc	equal	1 rows, same order
+v2/bm25_ties_after_traversal.gqt	2	bm25	bridge	equal	
+v2/bm25_ties_after_traversal.gqt	2	bm25	rfc	equal	1 rows, same order
+v2/issue_747_full_text_calls_need_a_full_text_index.gqt	4	bm25	bridge	both-error-alike	type error: T27: `bm25` over `$d.notes` needs a full-text index, and `Doc.notes` declares none
+v2/issue_747_full_text_calls_need_a_full_text_index.gqt	4	bm25	rfc	original-error	type error: T27: `bm25` over `$d.notes` needs a full-text index, and `Doc.notes` declares none
+v2/planner/contains_beside_search_and_ranking.gqt	1	bm25	bridge	equal	
+v2/planner/contains_beside_search_and_ranking.gqt	1	bm25	rfc	equal	1 rows, same order
+v2/planner/contains_beside_search_and_ranking.gqt	2	nearest	bridge	equal	
+v2/planner/contains_beside_search_and_ranking.gqt	2	nearest	rfc	equal	1 rows, same order
+v2/planner/contains_beside_search_and_ranking.gqt	3	rrf	bridge	equal	
+v2/planner/contains_beside_search_and_ranking.gqt	3	rrf	rfc	equal	1 rows, same order
+v2/planner/contains_beside_search_and_ranking.gqt	3	rrf	rfc-type-arms	equal	1 rows
+v2/planner/contains_beside_search_and_ranking.gqt	5	bm25	bridge	equal	
+v2/planner/contains_beside_search_and_ranking.gqt	5	bm25	rfc	equal	1 rows, same order
+v2/planner/explain_pipelines_rank_fuse_arms.gqt	1	rrf	bridge	equal	
+v2/planner/explain_pipelines_rank_fuse_arms.gqt	1	rrf	rfc	equal	3 rows, same order
+v2/planner/explain_pipelines_rank_fuse_arms.gqt	1	rrf	rfc-type-arms	equal	3 rows
+v2/planner/hydrate_return_columns_above_a_fusion.gqt	1	rrf	bridge	equal	
+v2/planner/hydrate_return_columns_above_a_fusion.gqt	1	rrf	rfc	equal	2 rows, same order
+v2/planner/hydrate_return_columns_above_a_fusion.gqt	1	rrf	rfc-type-arms	equal	2 rows
+v2/planner/hydrate_return_columns_above_a_fusion.gqt	2	bm25	bridge	equal	
+v2/planner/hydrate_return_columns_above_a_fusion.gqt	2	bm25	rfc	equal	2 rows, same order
+v2/planner/input_ann_nprobes.gqt	1	nearest	bridge	equal	
+v2/planner/input_ann_nprobes.gqt	1	nearest	rfc	equal	2 rows, same order
+v2/planner/input_ann_nprobes.gqt	2	nearest	bridge	equal	
+v2/planner/input_ann_nprobes.gqt	2	nearest	rfc	equal	2 rows, same order
+v2/planner/issue_762_rrf_over_a_reached_binding.gqt	1	rrf	bridge	equal	
+v2/planner/issue_762_rrf_over_a_reached_binding.gqt	1	rrf	rfc	equal	1 rows, same order
+v2/planner/issue_762_rrf_over_a_reached_binding.gqt	1	rrf	rfc-type-arms	equal	1 rows
+v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt	1	nearest	bridge	equal	
+v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt	1	nearest	rfc	equal	1 rows, same order
+v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt	2	nearest	bridge	equal	
+v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt	2	nearest	rfc	equal	2 rows, same order
+v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt	3	rrf	bridge	equal	
+v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt	3	rrf	rfc	different	1 rows in edition 2, 2 in edition 3; edition 2 1 rows [{"d.slug":"d1"}]; edition 3 2 rows [{"d.slug":"d1"},{"d.slug":"d2"}]
+v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt	3	rrf	rfc-type-arms	equal	1 rows
+v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt	4	nearest	bridge	equal	
+v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt	4	nearest	rfc	equal	0 rows, same order
+v2/planner/issue_789_ranked_binding_roots_its_component.gqt	1	bm25	bridge	equal	
+v2/planner/issue_789_ranked_binding_roots_its_component.gqt	1	bm25	rfc	equal	1 rows, same order
+v2/planner/issue_789_ranked_binding_roots_its_component.gqt	2	bm25	bridge	equal	
+v2/planner/issue_789_ranked_binding_roots_its_component.gqt	2	bm25	rfc	equal	2 rows, same order
+v2/planner/issue_789_ranked_binding_roots_its_component.gqt	3	bm25	bridge	equal	
+v2/planner/issue_789_ranked_binding_roots_its_component.gqt	3	bm25	rfc	equal	1 rows, same order
+v2/planner/issue_789_ranked_binding_roots_its_component.gqt	4	bm25	bridge	equal	
+v2/planner/issue_789_ranked_binding_roots_its_component.gqt	4	bm25	rfc	equal	2 rows, same order
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	1	nearest	bridge	equal	
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	1	nearest	rfc	equal	1 rows, same order
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	2	nearest	bridge	equal	
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	2	nearest	rfc	equal	3 rows, same order
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	3	nearest	bridge	equal	
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	3	nearest	rfc	equal	3 rows, same order
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	4	nearest	bridge	equal	
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	4	nearest	rfc	equal	3 rows, same order
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	5	nearest	bridge	equal	
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	5	nearest	rfc	equal	3 rows, same order
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	6	nearest	bridge	equal	
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	6	nearest	rfc	equal	3 rows, same order
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	7	nearest	bridge	equal	
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	7	nearest	rfc	equal	3 rows, same order
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	8	nearest	bridge	equal	
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	8	nearest	rfc	equal	3 rows, same order
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	9	nearest	bridge	equal	
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	9	nearest	rfc	equal	1 rows, same order
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	10	nearest	bridge	equal	
+v2/planner/nearest_pushes_every_grammar_filter_shape_into_the_scan.gqt	10	nearest	rfc	equal	3 rows, same order
+v2/planner/overfetch_ladder_completes_a_traversal_source.gqt	1	nearest	bridge	equal	
+v2/planner/overfetch_ladder_completes_a_traversal_source.gqt	1	nearest	rfc	equal	3 rows, same order
+v2/planner/projection_demand.gqt	4	nearest	bridge	equal	
+v2/planner/projection_demand.gqt	4	nearest	rfc	equal	1 rows, same order
+v2/planner/ranked_access_on_the_scan.gqt	1	bm25	bridge	equal	
+v2/planner/ranked_access_on_the_scan.gqt	1	bm25	rfc	equal	2 rows, same order
+v2/planner/ranked_access_on_the_scan.gqt	2	nearest	bridge	equal	
+v2/planner/ranked_access_on_the_scan.gqt	2	nearest	rfc	equal	2 rows, same order
+v2/planner/ranked_access_on_the_scan.gqt	3	nearest	bridge	equal	
+v2/planner/ranked_access_on_the_scan.gqt	3	nearest	rfc	equal	1 rows, same order
+v2/planner/ranked_access_on_the_scan.gqt	4	rrf	bridge	equal	
+v2/planner/ranked_access_on_the_scan.gqt	4	rrf	rfc	equal	3 rows, same order
+v2/planner/ranked_access_on_the_scan.gqt	4	rrf	rfc-type-arms	equal	3 rows
+v2/planner/ranked_source_over_a_hash_join.gqt	1	nearest	bridge	equal	
+v2/planner/ranked_source_over_a_hash_join.gqt	1	nearest	rfc	equal	2 rows, same order
+v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt	1	rrf	bridge	refused	rewriter refused: arms over different bindings (`$d`, `$t`): arms over different node columns are an edition-3 type error
+v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt	2	rrf	bridge	refused	rewriter refused: arms over different bindings (`$d`, `$t`): arms over different node columns are an edition-3 type error
+v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt	3	nearest	bridge	equal	
+v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt	3	nearest	rfc	equal	3 rows, same order
+v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt	4	nearest	bridge	equal	
+v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt	4	nearest	rfc	equal	1 rows, same order
+v2/planner/search_scans_project_needed_columns_and_the_scoring_column.gqt	1	nearest	bridge	equal	
+v2/planner/search_scans_project_needed_columns_and_the_scoring_column.gqt	1	nearest	rfc	equal	10 rows, same order
+v2/planner/search_scans_project_needed_columns_and_the_scoring_column.gqt	2	bm25	bridge	equal	
+v2/planner/search_scans_project_needed_columns_and_the_scoring_column.gqt	2	bm25	rfc	equal	10 rows, same order
+v2/planner/search_scans_project_needed_columns_and_the_scoring_column.gqt	3	nearest	bridge	equal	
+v2/planner/search_scans_project_needed_columns_and_the_scoring_column.gqt	3	nearest	rfc	equal	10 rows, same order
+v2/rrf_narrow_limit_memory.gqt	1	rrf	bridge	refused	rewriter refused: duplicate arms `bm25($d.text, "needle")`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
+v2/rrf_tied_rows_under_limit.gqt	1	rrf	bridge	refused	rewriter refused: duplicate arms `bm25($d.text, $t)`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
+v2/rrf_tied_rows_under_limit.gqt	2	rrf	bridge	refused	rewriter refused: duplicate arms `bm25($d.text, $t)`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
+v2/rrf_tied_rows_under_limit.gqt	3	rrf	bridge	refused	rewriter refused: duplicate arms `bm25($d.text, $t)`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
+v2/search_filter_under_bm25_order.gqt	1	bm25	bridge	equal	
+v2/search_filter_under_bm25_order.gqt	1	bm25	rfc	equal	1 rows, same order
