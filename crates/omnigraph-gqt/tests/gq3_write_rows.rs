@@ -435,9 +435,28 @@ async fn snapshot(
             .map_err(|e| format!("state of {t}: {e}"))?;
         let rows = r.to_rust_json().map_err(|e| e.to_string())?;
         let mut by_id = BTreeMap::new();
+        let is_edge = read.contains(" $x:\"");
         for row in rows.as_array().into_iter().flatten() {
-            let id = row.get("id").map(|v| v.to_string()).unwrap_or_default();
-            by_id.insert(id, row.clone());
+            // An edge's `@id` is generated per insert, so two branches that
+            // insert the same edge disagree on it: key an edge by its
+            // endpoints and properties, with a counter for duplicates.
+            let (key, row) = if is_edge {
+                let mut r = row.clone();
+                if let Some(o) = r.as_object_mut() {
+                    o.remove("id");
+                }
+                (r.to_string(), r)
+            } else {
+                (
+                    row.get("id").map(|v| v.to_string()).unwrap_or_default(),
+                    row.clone(),
+                )
+            };
+            let mut n = 0;
+            while by_id.contains_key(&format!("{key}#{n}")) {
+                n += 1;
+            }
+            by_id.insert(format!("{key}#{n}"), row);
         }
         state.insert(t.clone(), by_id);
     }
@@ -466,32 +485,38 @@ fn changes(a: &State, b: &State) -> BTreeMap<(String, String), Option<serde_json
 }
 
 fn first_state_difference(a: &State, b: &State) -> Option<String> {
-    changes(a, b)
-        .into_iter()
-        .next()
-        .map(|((t, id), row)| {
-            format!(
-                "{t} {id}: whole body {} / groups {}",
-                a.get(&t)
-                    .and_then(|r| r.get(&id))
-                    .map_or("absent".into(), |v| v.to_string()),
-                row.map_or("absent".into(), |v| v.to_string())
-            )
-        })
+    changes(a, b).into_iter().next().map(|((t, id), row)| {
+        format!(
+            "{t} {id}: whole body {} / groups {}",
+            a.get(&t)
+                .and_then(|r| r.get(&id))
+                .map_or("absent".into(), |v| v.to_string()),
+            row.map_or("absent".into(), |v| v.to_string())
+        )
+    })
 }
 
-use std::collections::BTreeMap;
 use omnigraph_compiler::query::ast::Mutation;
+use std::collections::BTreeMap;
+
+/// Refusals that judge the whole write at publication (cardinality, byte
+/// limits), which the harness's one publication per group cannot reproduce.
+fn whole_write_check(error: &str) -> bool {
+    error.contains("@card violation") || error.contains("resource limit exceeded")
+}
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn several_statements_as_sequential_groups_match_the_whole_body() {
     let mut files = Vec::new();
     collect(&root(), &mut files);
     files.sort();
-    let mut tsv = vec!["case\tstep\tdecl\tstatements\toutcome\tconflict rule\tdetail".to_string()];
+    let mut tsv = vec![
+        "case\tstep\tdecl\tstatements\treached by\toutcome\tconflict rule\tdetail".to_string(),
+    ];
     let mut summary: BTreeMap<String, usize> = BTreeMap::new();
     let mut seq = 0usize;
-    for file in files {
+    let mut reached: BTreeSet<(String, String, String)> = BTreeSet::new();
+    for file in files.clone() {
         let text = std::fs::read_to_string(&file).unwrap();
         let stem = file.file_stem().unwrap().to_string_lossy().to_string();
         let name = file.strip_prefix(root()).unwrap().display().to_string();
@@ -506,7 +531,9 @@ async fn several_statements_as_sequential_groups_match_the_whole_body() {
             continue;
         }
         let Ok(case) = parse_case(&stem, &text) else {
-            tsv.push(format!("{name}\t-\t-\t-\tnot-run\t-\tcase refused by the GQT parser"));
+            tsv.push(format!(
+                "{name}\t-\t-\t-\tnot-run\t-\tcase refused by the GQT parser"
+            ));
             continue;
         };
         let Some(fixture) = case.fixture.as_ref() else {
@@ -569,159 +596,139 @@ async fn several_statements_as_sequential_groups_match_the_whole_body() {
                 json_params_to_param_map(json.as_ref(), &decl.params, JsonParamMode::Standard)
                     .unwrap_or_default();
             if decl.mutations.len() > 1 {
-                let label = format!("{name}\t{i}\t{}\t{}", decl.name, decl.mutations.len());
                 seq += 1;
-                let (whole, groups) = (format!("gq3w{seq}"), format!("gq3g{seq}"));
-                for b in [&whole, &groups] {
-                    session
-                        .db()
-                        .branch_create_from(ReadTarget::branch("main"), b)
-                        .await
-                        .unwrap();
-                }
-                let whole_result = session.mutate(&whole, source, &decl.name, &params).await;
-                // Each statement as its own declaration, in order, with the
-                // body's parameter list.
-                let param_list = decl
-                    .params
-                    .iter()
-                    .map(|p| {
-                        format!(
-                            "${}: {}{}",
-                            p.name,
-                            p.type_name,
-                            if p.nullable { "?" } else { "" }
-                        )
-                    })
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                let mut group_error = None;
-                let mut affected = 0usize;
-                // (type, id, property) -> (group, value)
-                let mut written: BTreeMap<(String, String, String), (usize, serde_json::Value)> =
-                    BTreeMap::new();
-                let mut conflicts = Vec::new();
-                let mut identical = 0usize;
-                for (g, (m, spans)) in decl.mutations.iter().zip(&decl.spans.mutations).enumerate() {
-                    let stmt = spans.stmt.text(source);
-                    let single = format!("query {}({param_list}) {{\n    {stmt}\n}}\n", decl.name);
-                    let before = snapshot(&session, &groups, &reads).await;
-                    match session.mutate(&groups, &single, &decl.name, &params).await {
-                        Ok(r) => affected += r.affected_nodes + r.affected_edges,
-                        Err(e) => {
-                            group_error = Some(format!("group {}: {e}", g + 1));
-                            break;
-                        }
-                    }
-                    let after = snapshot(&session, &groups, &reads).await;
-                    let (Ok(before), Ok(after)) = (before, after) else {
-                        continue;
-                    };
-                    let (type_name, props): (String, Vec<String>) = match m {
-                        Mutation::Insert(x) => (
-                            x.type_name.clone(),
-                            x.assignments.iter().map(|a| a.property.clone()).collect(),
-                        ),
-                        Mutation::Update(x) => (
-                            x.type_name.clone(),
-                            x.assignments.iter().map(|a| a.property.clone()).collect(),
-                        ),
-                        Mutation::Delete(x) => (x.type_name.clone(), vec!["*".to_string()]),
-                    };
-                    for ((t, id), row) in changes(&before, &after) {
-                        if t != type_name {
-                            continue;
-                        }
-                        for p in &props {
-                            let value = match &row {
-                                None => serde_json::Value::String("<deleted>".into()),
-                                Some(r) => r
-                                    .get("x")
-                                    .and_then(|x| x.get(p))
-                                    .or_else(|| r.get(&format!("x.{p}")))
-                                    .cloned()
-                                    .unwrap_or(serde_json::Value::Null),
-                            };
-                            let key = (t.clone(), id.clone(), p.clone());
-                            if let Some((h, prev)) = written.get(&key) {
-                                if *prev == value {
-                                    identical += 1;
-                                } else {
-                                    conflicts.push(format!(
-                                        "{t} {id}.{p}: group {} wrote {prev}, group {} wrote {value}",
-                                        h + 1,
-                                        g + 1
-                                    ));
-                                }
-                            }
-                            // A delete also conflicts with any write of the entity.
-                            if p == "*" {
-                                for ((t2, id2, p2), (h, _)) in &written {
-                                    if t2 == &t && id2 == &id && p2 != "*" {
-                                        conflicts.push(format!(
-                                            "{t} {id}: group {} writes {p2}, group {} deletes it",
-                                            h + 1,
-                                            g + 1
-                                        ));
-                                    }
-                                }
-                            }
-                            written.insert(key, (g, value));
-                        }
-                    }
-                }
-                let rule = if conflicts.is_empty() {
-                    if identical > 0 {
-                        format!("no conflict ({identical} identical re-writes apply once)")
-                    } else {
-                        "no conflict".to_string()
-                    }
-                } else {
-                    format!("RFC refuses: {}", conflicts.join("; "))
-                };
-                let (outcome, detail) = match (&whole_result, &group_error) {
-                    (Err(a), Some(b)) => ("both-refuse".to_string(), format!("whole body: {a} | {b}")),
-                    (Err(a), None) => ("whole-refuses-groups-run".to_string(), a.to_string()),
-                    (Ok(_), Some(b)) => ("groups-refuse-whole-runs".to_string(), b.clone()),
-                    (Ok(r), None) => {
-                        let a = snapshot(&session, &whole, &reads).await;
-                        let b = snapshot(&session, &groups, &reads).await;
-                        match (a, b) {
-                            (Ok(a), Ok(b)) if a == b => {
-                                let whole_affected = r.affected_nodes + r.affected_edges;
-                                (
-                                    "same-final-state".to_string(),
-                                    if whole_affected == affected {
-                                        format!("affected {whole_affected} both")
-                                    } else {
-                                        format!(
-                                            "affected: whole body {whole_affected}, groups summed {affected}"
-                                        )
-                                    },
-                                )
-                            }
-                            (Ok(a), Ok(b)) => (
-                                "different-final-state".to_string(),
-                                first_state_difference(&a, &b).unwrap_or_default(),
-                            ),
-                            (a, b) => (
-                                "state-read-failed".to_string(),
-                                format!("{:?} {:?}", a.err(), b.err()),
-                            ),
-                        }
-                    }
-                };
+                let label = format!("{name}\t{i}\t{}\t{}", decl.name, decl.mutations.len());
+                reached.insert((name.clone(), decl.name.clone(), source.to_string()));
+                let (outcome, rule, detail) =
+                    compare_body(&session, "main", seq, source, decl, &params, &reads).await;
                 *summary.entry(outcome.clone()).or_default() += 1;
                 if rule.starts_with("RFC refuses") {
                     *summary.entry("conflict rule refuses".into()).or_default() += 1;
                 }
                 tsv.push(format!(
-                    "{label}\t{outcome}\t{rule}\t{}",
+                    "{label}\treplay\t{outcome}\t{rule}\t{}",
                     detail.replace(['\n', '\t'], " ")
                 ));
             }
             // Advance main as the case does.
             let _ = session.mutate("main", source, &decl.name, &params).await;
+        }
+    }
+    // Second pass: the bodies the main-branch replay did not reach (on
+    // another branch, after a control step or a load), reached through the
+    // GQT runner's executor running the case up to that step.
+    for file in files {
+        let text = std::fs::read_to_string(&file).unwrap();
+        let stem = file.file_stem().unwrap().to_string_lossy().to_string();
+        let name = file.strip_prefix(root()).unwrap().display().to_string();
+        let mut sections: Vec<(String, usize, usize, usize)> = Vec::new(); // header, header start, body start, body end
+        let mut at = 0;
+        for line in text.split_inclusive('\n') {
+            if let Some(h) = line.strip_prefix("--- ") {
+                if let Some(last) = sections.last_mut() {
+                    last.3 = at;
+                }
+                sections.push((h.trim_end().to_string(), at, at + line.len(), text.len()));
+            }
+            at += line.len();
+        }
+        for (k, (header, header_start, b0, b1)) in sections.iter().enumerate() {
+            if !header.starts_with("mutate") {
+                continue;
+            }
+            let source = &text[*b0..*b1];
+            let Ok(f) = parse_query_diagnostic(source) else {
+                continue;
+            };
+            let FileBody::Queries(decls) = &f.body else {
+                continue;
+            };
+            let Some(decl) = decls.iter().find(|d| d.mutations.len() > 1) else {
+                continue;
+            };
+            if reached.contains(&(name.clone(), decl.name.clone(), source.to_string())) {
+                continue;
+            }
+            let label = format!("{name}\t{k}\t{}\t{}", decl.name, decl.mutations.len());
+            let branch = header
+                .strip_prefix("mutate")
+                .and_then(|h| h.trim().strip_prefix("branch:"))
+                .map(|b| b.trim().to_string())
+                .unwrap_or_else(|| "main".to_string());
+            let json = sections[k + 1..]
+                .iter()
+                .take_while(|(h, ..)| h.starts_with("params") || h.starts_with("expect"))
+                .find(|(h, ..)| h.starts_with("params"))
+                .and_then(|(_, _, p0, p1)| {
+                    serde_json::from_str::<serde_json::Value>(text[*p0..*p1].trim()).ok()
+                });
+            let params =
+                json_params_to_param_map(json.as_ref(), &decl.params, JsonParamMode::Standard)
+                    .unwrap_or_default();
+            let prefix = &text[..*header_start];
+            let outcome = async {
+                let mut case =
+                    parse_case(&stem, prefix).map_err(|e| format!("prefix refused: {e}"))?;
+                let csv = tempfile::tempdir().unwrap();
+                case.materialize_csv_fixtures(csv.path())?;
+                let fixture = case.fixture.as_ref().ok_or("no fixture")?;
+                let catalog = parse_schema(&fixture.schema)
+                    .ok()
+                    .and_then(|s| build_catalog(&s).ok())
+                    .ok_or("schema")?;
+                let dir = tempfile::tempdir().unwrap();
+                let uri = dir.path().to_str().unwrap().to_string();
+                let db = Omnigraph::init(&uri, &fixture.schema)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                let session = case_session(db, &case, Engine::V2)?;
+                seed_case(&session, &fixture.seed, case.needs_indices).await?;
+                let session = omnigraph_gqt_core::execute_steps(
+                    &case,
+                    &file,
+                    false,
+                    session,
+                    &uri,
+                    None,
+                    &omnigraph_gqt_core::PlainHost,
+                )
+                .await
+                .map_err(|e| format!("prefix did not run green: {e}"))?;
+                seq += 1;
+                Ok::<_, String>(
+                    compare_body(
+                        &session,
+                        &branch,
+                        seq,
+                        source,
+                        decl,
+                        &params,
+                        &state_reads(&catalog),
+                    )
+                    .await,
+                )
+            }
+            .await;
+            match outcome {
+                Ok((outcome, rule, detail)) => {
+                    *summary.entry(outcome.clone()).or_default() += 1;
+                    if rule.starts_with("RFC refuses") {
+                        *summary.entry("conflict rule refuses".into()).or_default() += 1;
+                    }
+                    tsv.push(format!(
+                        "{label}\tgqt-prefix\t{outcome}\t{rule}\t{}",
+                        detail.replace(['\n', '\t'], " ")
+                    ));
+                }
+                Err(e) => {
+                    *summary.entry("not-reached".into()).or_default() += 1;
+                    let e: String = e.chars().take(300).collect();
+                    tsv.push(format!(
+                        "{label}\tgqt-prefix\tnot-reached\t-\t{}",
+                        e.replace(['\n', '\t'], " ")
+                    ));
+                }
+            }
         }
     }
     let out = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/spike-gq3-exec");
@@ -731,4 +738,165 @@ async fn several_statements_as_sequential_groups_match_the_whole_body() {
     for line in &tsv[1..] {
         println!("{line}");
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn compare_body(
+    session: &omnigraph::Session,
+    from_branch: &str,
+    seq: usize,
+    source: &str,
+    decl: &omnigraph_compiler::query::ast::QueryDecl,
+    params: &omnigraph_compiler::ParamMap,
+    reads: &[(String, String)],
+) -> (String, String, String) {
+    let (whole, groups) = (format!("gq3w{seq}"), format!("gq3g{seq}"));
+    for b in [&whole, &groups] {
+        session
+            .db()
+            .branch_create_from(ReadTarget::branch(from_branch), b)
+            .await
+            .unwrap();
+    }
+    let whole_result = session.mutate(&whole, source, &decl.name, &params).await;
+    // Each statement as its own declaration, in order, with the
+    // body's parameter list.
+    let param_list = decl
+        .params
+        .iter()
+        .map(|p| {
+            format!(
+                "${}: {}{}",
+                p.name,
+                p.type_name,
+                if p.nullable { "?" } else { "" }
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+    let mut group_error = None;
+    let mut affected = 0usize;
+    // (type, id, property) -> (group, value)
+    let mut written: BTreeMap<(String, String, String), (usize, serde_json::Value)> =
+        BTreeMap::new();
+    let mut conflicts = Vec::new();
+    let mut identical = 0usize;
+    for (g, (m, spans)) in decl.mutations.iter().zip(&decl.spans.mutations).enumerate() {
+        let stmt = spans.stmt.text(source);
+        let single = format!("query {}({param_list}) {{\n    {stmt}\n}}\n", decl.name);
+        let before = snapshot(&session, &groups, &reads).await;
+        match session.mutate(&groups, &single, &decl.name, &params).await {
+            Ok(r) => affected += r.affected_nodes + r.affected_edges,
+            Err(e) => {
+                group_error = Some(format!("group {}: {e}", g + 1));
+                break;
+            }
+        }
+        let after = snapshot(&session, &groups, &reads).await;
+        let (Ok(before), Ok(after)) = (before, after) else {
+            continue;
+        };
+        let (type_name, props): (String, Vec<String>) = match m {
+            Mutation::Insert(x) => (
+                x.type_name.clone(),
+                x.assignments.iter().map(|a| a.property.clone()).collect(),
+            ),
+            Mutation::Update(x) => (
+                x.type_name.clone(),
+                x.assignments.iter().map(|a| a.property.clone()).collect(),
+            ),
+            Mutation::Delete(x) => (x.type_name.clone(), vec!["*".to_string()]),
+        };
+        for ((t, id), row) in changes(&before, &after) {
+            if t != type_name {
+                continue;
+            }
+            for p in &props {
+                let value = match &row {
+                    None => serde_json::Value::String("<deleted>".into()),
+                    Some(r) => r
+                        .get("x")
+                        .and_then(|x| x.get(p))
+                        .or_else(|| r.get(&format!("x.{p}")))
+                        .cloned()
+                        .unwrap_or(serde_json::Value::Null),
+                };
+                let key = (t.clone(), id.clone(), p.clone());
+                if let Some((h, prev)) = written.get(&key) {
+                    if *prev == value {
+                        identical += 1;
+                    } else {
+                        conflicts.push(format!(
+                            "{t} {id}.{p}: group {} wrote {prev}, group {} wrote {value}",
+                            h + 1,
+                            g + 1
+                        ));
+                    }
+                }
+                // A delete also conflicts with any write of the entity.
+                if p == "*" {
+                    for ((t2, id2, p2), (h, _)) in &written {
+                        if t2 == &t && id2 == &id && p2 != "*" {
+                            conflicts.push(format!(
+                                "{t} {id}: group {} writes {p2}, group {} deletes it",
+                                h + 1,
+                                g + 1
+                            ));
+                        }
+                    }
+                }
+                written.insert(key, (g, value));
+            }
+        }
+    }
+    let rule = if conflicts.is_empty() {
+        if identical > 0 {
+            format!("no conflict ({identical} identical re-writes apply once)")
+        } else {
+            "no conflict".to_string()
+        }
+    } else {
+        format!("RFC refuses: {}", conflicts.join("; "))
+    };
+    let (outcome, detail) = match (&whole_result, &group_error) {
+        (Err(a), Some(b)) => ("both-refuse".to_string(), format!("whole body: {a} | {b}")),
+        (Err(a), None) if whole_write_check(&a.to_string()) => (
+            "whole-write-check-refuses-whole-body".to_string(),
+            format!("{a} (a check over the whole write; the harness publishes each group alone)"),
+        ),
+        (Err(a), None) => ("whole-refuses-groups-run".to_string(), a.to_string()),
+        (Ok(_), Some(b)) if whole_write_check(b) => (
+            "whole-write-check-refuses-a-group".to_string(),
+            format!("{b} (a check over the whole write; the harness publishes each group alone)"),
+        ),
+        (Ok(_), Some(b)) => ("groups-refuse-whole-runs".to_string(), b.clone()),
+        (Ok(r), None) => {
+            let a = snapshot(&session, &whole, &reads).await;
+            let b = snapshot(&session, &groups, &reads).await;
+            match (a, b) {
+                (Ok(a), Ok(b)) if a == b => {
+                    let whole_affected = r.affected_nodes + r.affected_edges;
+                    (
+                        "same-final-state".to_string(),
+                        if whole_affected == affected {
+                            format!("affected {whole_affected} both")
+                        } else {
+                            format!(
+                                "affected: whole body {whole_affected}, groups summed {affected}"
+                            )
+                        },
+                    )
+                }
+                (Ok(a), Ok(b)) => (
+                    "different-final-state".to_string(),
+                    first_state_difference(&a, &b).unwrap_or_default(),
+                ),
+                (a, b) => (
+                    "state-read-failed".to_string(),
+                    format!("{:?} {:?}", a.err(), b.err()),
+                ),
+            }
+        }
+    };
+    (outcome, rule, detail)
 }

@@ -18,7 +18,7 @@ query top_chunks($q: String) {
     match { from bm25({ match {
         $c: Chunk
         search($c.text, $q)
-    } return { $c } }, text, $q) }
+    } return { $c } }, $c.text, $q) }
     return { $c }
     order { $score desc }
     limit 2
@@ -39,7 +39,7 @@ query hybrid_chunks($q: String, $v: Vector(2)) {
 ```gq
 gq 3;
 query hybrid_chunks($q: String, $v: Vector(2)) {
-    match { let $p = { match { $c: Chunk } return { $c } }  from rrf(nearest($p, embedding, $v, k: 3), bm25($p, text, $q), k: 60) }
+    match { let $p = { match { $c: Chunk } return { $c } }  from rrf(nearest($p, $c.embedding, $v, k: 3), bm25($p, $c.text, $q), k: 60) }
     return { $c }
     order { $score desc }
     limit 3
@@ -220,7 +220,7 @@ query bm25_ranked($q: String) {
 ```gq
 gq 3;
 query bm25_ranked($q: String) {
-    match { from bm25({ match { $n: Note } return { $n } }, body, $q) }
+    match { from bm25({ match { $n: Note } return { $n } }, $n.body, $q) }
     return { $n.slug }
     order { $score desc }
     limit 3
@@ -241,7 +241,7 @@ query distinct_literal_order($q: String) {
 ```gq
 gq 3;
 query distinct_literal_order($q: String) {
-    match { from bm25({ match { $n: Note } return { $n } }, body, $q) }
+    match { from bm25({ match { $n: Note } return { $n } }, $n.body, $q) }
     return distinct { $n.slug, 1 as one }
     order { $score desc, 1 }
     limit 3
@@ -598,7 +598,7 @@ query leading_nearest_runs($q: Vector(2)) {
 ```gq
 gq 3;
 query leading_nearest_runs($q: Vector(2)) {
-    match { from nearest({ match { $p: Person  $p.enabled = true } return { $p } }, embedding, $q, k: 1) }
+    match { from nearest({ match { $p: Person  $p.enabled = true } return { $p } }, $p.embedding, $q, k: 1) }
     return { $p.slug }
     order { $distance }
     limit 1
@@ -676,7 +676,7 @@ query nearest_matching_both_filters($q: Vector(4)) {
         $d: Doc
         $d.n >= 7
         contains($d.name, "-00")
-    } return { $d } }, embedding, $q, k: 3) }
+    } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -767,7 +767,7 @@ query count_nearest_with_edges($q: Vector(4)) {
     match { from nearest({ match {
         $d: Doc
         $d knows $t
-    } return { $d, $t } }, embedding, $q, k: 2) }
+    } return { $d, $t } }, $d.embedding, $q, k: 2) }
     return { count($d) as total }
     limit 2
 }
@@ -819,7 +819,7 @@ query nearest_docs($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_docs($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 4) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 4) }
     return { $d.slug }
     order { $distance }
     limit 4
@@ -851,7 +851,7 @@ query nearest_docs($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_docs($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 4) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 4) }
     return { $d.slug }
     order { $distance }
     limit 4
@@ -872,7 +872,7 @@ query nearest_docs($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_docs($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 4) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 4) }
     return { $d.slug }
     order { $distance }
     limit 4
@@ -904,7 +904,7 @@ query nearest_docs($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_docs($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 4) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 4) }
     return { $d.slug }
     order { $distance }
     limit 4
@@ -925,7 +925,7 @@ query nearest_docs($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_docs($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 4) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 4) }
     return { $d.slug }
     order { $distance }
     limit 4
@@ -946,7 +946,7 @@ query nearest_docs($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_docs($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 4) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 4) }
     return { $d.slug }
     order { $distance }
     limit 4
@@ -967,7 +967,7 @@ query nearest_docs($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_docs($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 4) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 4) }
     return { $d.slug }
     order { $distance }
     limit 4
@@ -988,7 +988,7 @@ query nearest_docs($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_docs($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 4) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 4) }
     return { $d.slug }
     order { $distance }
     limit 4
@@ -1231,7 +1231,7 @@ query vector_search_vector($q: Vector(4)) {
 ```gq
 gq 3;
 query vector_search_vector($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug, $d.title }
     order { $distance }
     limit 3
@@ -1338,7 +1338,7 @@ query nearest_single_match($q: Vector(4)) {
     match { from nearest({ match {
         $d: Doc
         $d.n = 7
-    } return { $d } }, embedding, $q, k: 3) }
+    } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -1365,7 +1365,7 @@ query nearest_matching_rows($q: Vector(4)) {
     match { from nearest({ match {
         $d: Doc
         $d.n > 3
-    } return { $d } }, embedding, $q, k: 3) }
+    } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -1392,7 +1392,7 @@ query nearest_without_matches($q: Vector(4)) {
     match { from nearest({ match {
         $d: Doc
         starts_with($d.name, "doc-9")
-    } return { $d } }, embedding, $q, k: 2) }
+    } return { $d } }, $d.embedding, $q, k: 2) }
     return { $d.slug }
     order { $distance }
     limit 2
@@ -1413,7 +1413,7 @@ query filtered_nearest($q: Vector(4)) {
 ```gq
 gq 3;
 query filtered_nearest($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc { status: "hit" } } return { $d } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $d: Doc { status: "hit" } } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -1436,7 +1436,7 @@ query filtered_nearest_clause_eq($q: Vector(4)) {
 gq 3;
 query filtered_nearest_clause_eq($q: Vector(4)) {
     match { from nearest({ match { $d: Doc
-        $d.status = "hit" } return { $d } }, embedding, $q, k: 3) }
+        $d.status = "hit" } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -1459,7 +1459,7 @@ query filtered_nearest_clause_range($q: Vector(4)) {
 gq 3;
 query filtered_nearest_clause_range($q: Vector(4)) {
     match { from nearest({ match { $d: Doc
-        $d.status <= "hit" } return { $d } }, embedding, $q, k: 3) }
+        $d.status <= "hit" } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -1714,7 +1714,7 @@ gq 3;
 query nearest_inline_filter($q: Vector(4)) {
     match { from nearest({ match {
         $d: Doc { n: 7 }
-    } return { $d } }, embedding, $q, k: 3) }
+    } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -1853,7 +1853,7 @@ query recall_count($q: String) {
     match { from bm25({ match {
         $c: Chunk
         search($c.text, $q)
-    } return { $c } }, text, $q) }
+    } return { $c } }, $c.text, $q) }
     return { count($c) as total }
     limit 2
 }
@@ -1881,7 +1881,7 @@ query recall($q: String) {
         $c: Chunk
         $c chunkOfArtifact $a
         search($c.text, $q)
-    } return { $c, $a } }, text, $q) }
+    } return { $c, $a } }, $c.text, $q) }
     return { $c.slug, $a.slug }
     order { $score desc }
     limit 2
@@ -1902,7 +1902,7 @@ query kept_nearest($q: Vector(4)) {
 ```gq
 gq 3;
 query kept_nearest($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc { keep: true } } return { $d } }, embedding, $q, k: 5) }
+    match { from nearest({ match { $d: Doc { keep: true } } return { $d } }, $d.embedding, $q, k: 5) }
     return { $d.slug }
     order { $distance }
     limit 5
@@ -1929,7 +1929,7 @@ query nearest_with_edge($q: Vector(4)) {
     match { from nearest({ match {
         $d: Doc
         $d knows $t
-    } return { $d, $t } }, embedding, $q, k: 3) }
+    } return { $d, $t } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -1973,7 +1973,7 @@ query vector_read_indexed_row($q: Vector(4)) {
 ```gq
 gq 3;
 query vector_read_indexed_row($q: Vector(4)) {
-    match { from nearest({ match { $p: Person } return { $p } }, embedding, $q, k: 1) }
+    match { from nearest({ match { $p: Person } return { $p } }, $p.embedding, $q, k: 1) }
     return { $p.name }
     order { $distance }
     limit 1
@@ -1994,7 +1994,7 @@ query vector_read_new_row($q: Vector(4)) {
 ```gq
 gq 3;
 query vector_read_new_row($q: Vector(4)) {
-    match { from nearest({ match { $p: Person } return { $p } }, embedding, $q, k: 1) }
+    match { from nearest({ match { $p: Person } return { $p } }, $p.embedding, $q, k: 1) }
     return { $p.name }
     order { $distance }
     limit 1
@@ -2020,7 +2020,7 @@ query ranked($q: String) {
     match { from bm25({ match {
         $c: Chunk
         search($c.text, $q)
-    } return { $c } }, text, $q) }
+    } return { $c } }, $c.text, $q) }
     return { $c.slug }
     order { $score desc }
 }
@@ -2040,7 +2040,7 @@ query closest($v: Vector(2)) {
 ```gq
 gq 3;
 query closest($v: Vector(2)) {
-    match { from nearest({ match { $c: Chunk } return { $c } }, embedding, $v, k: 2) }
+    match { from nearest({ match { $c: Chunk } return { $c } }, $c.embedding, $v, k: 2) }
     return { $c.slug }
     order { $distance }
     limit 2
@@ -2109,7 +2109,7 @@ query nearest_projected($v: Vector(2)) {
 ```gq
 gq 3;
 query nearest_projected($v: Vector(2)) {
-    match { from nearest({ match { $p: Person } return { $p } }, embedding, $v, k: 2) }
+    match { from nearest({ match { $p: Person } return { $p } }, $p.embedding, $v, k: 2) }
     return { $p.name, $distance as score }
     order { $distance, $distance }
     limit 2
@@ -2130,7 +2130,7 @@ query nearest_projected_default_name($v: Vector(2)) {
 ```gq
 gq 3;
 query nearest_projected_default_name($v: Vector(2)) {
-    match { from nearest({ match { $p: Person } return { $p } }, embedding, $v, k: 1) }
+    match { from nearest({ match { $p: Person } return { $p } }, $p.embedding, $v, k: 1) }
     return { $p.name, $distance as _distance }
     order { $distance, $distance }
     limit 1
@@ -2151,7 +2151,7 @@ query bm25_projected($q: String) {
 ```gq
 gq 3;
 query bm25_projected($q: String) {
-    match { from bm25({ match { $p: Person } return { $p } }, bio, $q) }
+    match { from bm25({ match { $p: Person } return { $p } }, $p.bio, $q) }
     return { $p.name, $score as _score }
     order { $score desc, $score desc }
     limit 3
@@ -2172,7 +2172,7 @@ query nearest_projected_no_match($v: Vector(2)) {
 ```gq
 gq 3;
 query nearest_projected_no_match($v: Vector(2)) {
-    match { from nearest({ match { $p: Person { name: "absent" } } return { $p } }, embedding, $v, k: 2) }
+    match { from nearest({ match { $p: Person { name: "absent" } } return { $p } }, $p.embedding, $v, k: 2) }
     return { $p.name, $distance as score }
     order { $distance }
     limit 2
@@ -2193,7 +2193,7 @@ query bm25_projected_no_match($q: String) {
 ```gq
 gq 3;
 query bm25_projected_no_match($q: String) {
-    match { from bm25({ match { $p: Person { name: "absent" } } return { $p } }, bio, $q) }
+    match { from bm25({ match { $p: Person { name: "absent" } } return { $p } }, $p.bio, $q) }
     return { $p.name, $score as score }
     order { $score desc }
     limit 3
@@ -2214,7 +2214,7 @@ query rrf_projected($q: String, $v: Vector(2)) {
 ```gq
 gq 3;
 query rrf_projected($q: String, $v: Vector(2)) {
-    match { let $p2 = { match { $p: Person } return { $p } }  from rrf(nearest($p2, embedding, $v, k: 3), bm25($p2, bio, $q), k: 60) }
+    match { let $p2 = { match { $p: Person } return { $p } }  from rrf(nearest($p2, $p.embedding, $v, k: 3), bm25($p2, $p.bio, $q), k: 60) }
     return { $p.name, $score as fused }
     order { $score desc, $score desc }
     limit 3
@@ -2241,7 +2241,7 @@ query nearest_projected_through_traversal($v: Vector(2)) {
     match { from nearest({ match {
         $p: Person
         $p knows $f
-    } return { $p, $f } }, embedding, $v, k: 3) }
+    } return { $p, $f } }, $p.embedding, $v, k: 3) }
     return { $f.name, $distance as score }
     order { $distance, $f.name }
     limit 3
@@ -2262,7 +2262,7 @@ query nearest_ordered_plain_projection($v: Vector(2)) {
 ```gq
 gq 3;
 query nearest_ordered_plain_projection($v: Vector(2)) {
-    match { from nearest({ match { $p: Person } return { $p } }, embedding, $v, k: 2) }
+    match { from nearest({ match { $p: Person } return { $p } }, $p.embedding, $v, k: 2) }
     return { $p.name }
     order { $distance }
     limit 2
@@ -2380,7 +2380,7 @@ query nearest_named($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_named($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc $t: Doc $d knows $t  } return { $d, $t } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $d: Doc $t: Doc $d knows $t  } return { $d, $t } }, $d.embedding, $q, k: 3) }
     return { $d.slug as slug }
     order { $distance }
     limit 3
@@ -2401,7 +2401,7 @@ query nearest_alternative($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_alternative($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc $t: Doc $d (knows | knows) $t  } return { $d, $t } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $d: Doc $t: Doc $d (knows | knows) $t  } return { $d, $t } }, $d.embedding, $q, k: 3) }
     return { $d.slug as slug }
     order { $distance }
     limit 3
@@ -2422,7 +2422,7 @@ query nearest_wildcard($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_wildcard($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc $t: Doc $d * $t  } return { $d, $t } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $d: Doc $t: Doc $d * $t  } return { $d, $t } }, $d.embedding, $q, k: 3) }
     return { $d.slug as slug }
     order { $distance }
     limit 3
@@ -2443,7 +2443,7 @@ query nearest_named_chain($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_named_chain($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc $t: Doc $d knows $t $t tagged $m } return { $d, $t, $m } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $d: Doc $t: Doc $d knows $t $t tagged $m } return { $d, $t, $m } }, $d.embedding, $q, k: 3) }
     return { $d.slug as slug }
     order { $distance }
     limit 3
@@ -2464,7 +2464,7 @@ query nearest_selected_chain($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_selected_chain($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc $t: Doc $d knows $t $t (tagged | tagged) $m } return { $d, $t, $m } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $d: Doc $t: Doc $d knows $t $t (tagged | tagged) $m } return { $d, $t, $m } }, $d.embedding, $q, k: 3) }
     return { $d.slug as slug }
     order { $distance }
     limit 3
@@ -2485,7 +2485,7 @@ query fused_sparse_named($q: Vector(4), $other: Vector(4)) {
 ```gq
 gq 3;
 query fused_sparse_named($q: Vector(4), $other: Vector(4)) {
-    match { let $p = { match { $d: Doc $t: Doc $d knows $t } return { $d, $t } }  from rrf(nearest($p, embedding, $q, k: 3), nearest($p, embedding, $other, k: 3), k: 60) }
+    match { let $p = { match { $d: Doc $t: Doc $d knows $t } return { $d, $t } }  from rrf(nearest($p, $d.embedding, $q, k: 3), nearest($p, $d.embedding, $other, k: 3), k: 60) }
     return { $d.slug as slug }
     order { $score desc }
     limit 3
@@ -2506,7 +2506,7 @@ query fused_sparse_wildcard($q: Vector(4), $other: Vector(4)) {
 ```gq
 gq 3;
 query fused_sparse_wildcard($q: Vector(4), $other: Vector(4)) {
-    match { let $p = { match { $d: Doc $t: Doc $d * $t } return { $d, $t } }  from rrf(nearest($p, embedding, $q, k: 3), nearest($p, embedding, $other, k: 3), k: 60) }
+    match { let $p = { match { $d: Doc $t: Doc $d * $t } return { $d, $t } }  from rrf(nearest($p, $d.embedding, $q, k: 3), nearest($p, $d.embedding, $other, k: 3), k: 60) }
     return { $d.slug as slug }
     order { $score desc }
     limit 3
@@ -2581,7 +2581,7 @@ query nearest_with_edge($q: Vector(4)) {
     match { from nearest({ match {
         $d: Doc
         $d knows $t
-    } return { $d, $t } }, embedding, $q, k: 1) }
+    } return { $d, $t } }, $d.embedding, $q, k: 1) }
     return { $d.slug }
     order { $distance }
     limit 1
@@ -2714,7 +2714,7 @@ query secondary_key_breaks_fused_tie() {
 ```gq
 gq 3;
 query secondary_key_breaks_fused_tie() {
-    match { let $p = { match { $d: Doc } return { $d } }  from rrf(bm25($p, text, "alpha"), bm25($p, text, "beta"), k: 60) }
+    match { let $p = { match { $d: Doc } return { $d } }  from rrf(bm25($p, $d.text, "alpha"), bm25($p, $d.text, "beta"), k: 60) }
     return { $d.slug }
     order { $score desc, $d.slug desc }
     limit 1
@@ -2735,7 +2735,7 @@ query id_breaks_fused_tie() {
 ```gq
 gq 3;
 query id_breaks_fused_tie() {
-    match { let $p = { match { $d: Doc } return { $d } }  from rrf(bm25($p, text, "beta"), bm25($p, text, "alpha"), k: 60) }
+    match { let $p = { match { $d: Doc } return { $d } }  from rrf(bm25($p, $d.text, "beta"), bm25($p, $d.text, "alpha"), k: 60) }
     return { $d.slug }
     order { $score desc }
     limit 1
@@ -2758,7 +2758,7 @@ query largest_group($t: String) {
 gq 3;
 set engine = v2;
 query largest_group($t: String) {
-    match { from bm25({ match { $d: Doc } return { $d } }, text, $t) }
+    match { from bm25({ match { $d: Doc } return { $d } }, $d.text, $t) }
     return { $d.kind, count($d) as n }
     order { n desc }
     limit 1
@@ -2781,7 +2781,7 @@ query smallest_group($t: String) {
 gq 3;
 set engine = v2;
 query smallest_group($t: String) {
-    match { from bm25({ match { $d: Doc } return { $d } }, text, $t) }
+    match { from bm25({ match { $d: Doc } return { $d } }, $d.text, $t) }
     return { $d.kind, count($d) as n }
     order { n asc }
     limit 1
@@ -2804,7 +2804,7 @@ query every_group_ordered($t: String) {
 gq 3;
 set engine = v2;
 query every_group_ordered($t: String) {
-    match { from bm25({ match { $d: Doc } return { $d } }, text, $t) }
+    match { from bm25({ match { $d: Doc } return { $d } }, $d.text, $t) }
     return { $d.kind, count($d) as n }
     order { n desc }
     limit 10
@@ -2924,7 +2924,7 @@ gq 3;
 query out_of_range_nearest_vector_literal() {
     match { from nearest({ match {
         $x: N
-    } return { $x } }, embedding, [999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999.0, 0.0], k: 1) }
+    } return { $x } }, $x.embedding, [999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999.0, 0.0], k: 1) }
     return { $x.f }
     order { $distance }
     limit 1
@@ -3182,7 +3182,7 @@ query nearest_by_keyword_property($q: Vector(2)) {
 ```gq
 gq 3;
 query nearest_by_keyword_property($q: Vector(2)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, trim, $q, k: 2) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.trim, $q, k: 2) }
     return { $d.slug }
     order { $distance }
     limit 2
@@ -4277,7 +4277,7 @@ query nearest_then_alias($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_then_alias($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 10) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 10) }
     return { $d.slug, $d.name as name }
     order { $distance, name desc }
     limit 10
@@ -4298,7 +4298,7 @@ query vector_search($q: Vector(4)) {
 ```gq
 gq 3;
 query vector_search($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug, $d.title }
     order { $distance }
     limit 3
@@ -4319,7 +4319,7 @@ query bm25_search($q: String) {
 ```gq
 gq 3;
 query bm25_search($q: String) {
-    match { from bm25({ match { $d: Doc } return { $d } }, title, $q) }
+    match { from bm25({ match { $d: Doc } return { $d } }, $d.title, $q) }
     return { $d.slug, $d.title }
     order { $score desc }
     limit 3
@@ -4340,7 +4340,7 @@ query bm25_then_slug($q: String) {
 ```gq
 gq 3;
 query bm25_then_slug($q: String) {
-    match { from bm25({ match { $d: Doc } return { $d } }, title, $q) }
+    match { from bm25({ match { $d: Doc } return { $d } }, $d.title, $q) }
     return { $d.slug }
     order { $score desc, $d.slug desc }
     limit 3
@@ -4361,7 +4361,7 @@ query hybrid_search($vq: Vector(4), $tq: String) {
 ```gq
 gq 3;
 query hybrid_search($vq: Vector(4), $tq: String) {
-    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, embedding, $vq, k: 3), bm25($p, title, $tq), k: 60) }
+    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, $d.embedding, $vq, k: 3), bm25($p, $d.title, $tq), k: 60) }
     return { $d.slug, $d.title }
     order { $score desc }
     limit 3
@@ -4382,7 +4382,7 @@ query nearest_small_corpus($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_small_corpus($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 10) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 10) }
     return { $d.slug }
     order { $distance }
     limit 10
@@ -4403,7 +4403,7 @@ query nearest_around_query($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_around_query($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -4430,7 +4430,7 @@ query nearest_edges($q: Vector(4)) {
     match { from nearest({ match {
         $d: RankedDoc
         $d $w:rankedLink $target
-    } return { $d, $w, $target } }, embedding, $q, k: 4) }
+    } return { $d, $w, $target } }, $d.embedding, $q, k: 4) }
     return { $d.slug, $w.label }
     order { $distance }
     limit 4
@@ -4457,7 +4457,7 @@ query nearest_hops($q: Vector(4)) {
     match { from nearest({ match {
         $d: RankedDoc
         $d rankedLink{1,2} $target
-    } return { $d, $target } }, embedding, $q, k: 2) }
+    } return { $d, $target } }, $d.embedding, $q, k: 2) }
     return { $d.slug, $target.slug }
     order { $distance }
     limit 2
@@ -4494,7 +4494,7 @@ query nearest_after_update($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_after_update($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 6) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 6) }
     return { $d.slug }
     order { $distance }
     limit 6
@@ -4515,7 +4515,7 @@ query nearest_after_insert($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_after_insert($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 4) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 4) }
     return { $d.slug }
     order { $distance }
     limit 4
@@ -4536,7 +4536,7 @@ query nearest_after_restart($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_after_restart($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 4) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 4) }
     return { $d.slug }
     order { $distance }
     limit 4
@@ -4605,7 +4605,7 @@ query nearest_after_delete($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_after_delete($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -4632,7 +4632,7 @@ query nearest_after_negation($q: Vector(4)) {
     match { from nearest({ match {
         $d: Doc
         not { starts_with($d.name, "doc-00") }
-    } return { $d } }, embedding, $q, k: 4) }
+    } return { $d } }, $d.embedding, $q, k: 4) }
     return { $d.slug }
     order { $distance }
     limit 4
@@ -4661,7 +4661,7 @@ query nearest_sparse_survivors($q: Vector(4)) {
         $d: Doc
         not { $d.n < 49 }
         not { $d.n > 50 }
-    } return { $d } }, embedding, $q, k: 3) }
+    } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -5030,7 +5030,7 @@ query nearest_parameter_filter($q: Vector(4), $n: I64) {
     match { from nearest({ match {
         $d: Doc
         $d.n = $n
-    } return { $d } }, embedding, $q, k: 3) }
+    } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -5101,7 +5101,7 @@ query bm25_threshold($q: String) {
 gq 3;
 set engine = v2;
 query bm25_threshold($q: String) {
-    match { from bm25({ match { $d: Doc } return { $d } }, text, $q) }
+    match { from bm25({ match { $d: Doc } return { $d } }, $d.text, $q) }
     return { $d.slug, $score > 0.0 as hit }
     order { $score desc }
     limit 2
@@ -5124,7 +5124,7 @@ query nearest_threshold($v: Vector(2)) {
 gq 3;
 set engine = v2;
 query nearest_threshold($v: Vector(2)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $v, k: 2) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $v, k: 2) }
     return { $d.slug, $distance < 1.0 as close }
     order { $distance }
     limit 2
@@ -5147,7 +5147,7 @@ query nearest_threshold_expression($v: Vector(2)) {
 gq 3;
 set engine = v2;
 query nearest_threshold_expression($v: Vector(2)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $v, k: 2) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $v, k: 2) }
     return { $d.slug, $distance < 1.0 as close }
     order { $distance, ($distance < 1.0) asc }
     limit 2
@@ -5170,7 +5170,7 @@ query nearest_threshold_alias($v: Vector(2)) {
 gq 3;
 set engine = v2;
 query nearest_threshold_alias($v: Vector(2)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $v, k: 2) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $v, k: 2) }
     return { $d.slug, $distance < 1.0 as close }
     order { $distance, close asc }
     limit 2
@@ -5193,7 +5193,7 @@ query bm25_threshold_expression($q: String) {
 gq 3;
 set engine = v2;
 query bm25_threshold_expression($q: String) {
-    match { from bm25({ match { $d: Doc } return { $d } }, text, $q) }
+    match { from bm25({ match { $d: Doc } return { $d } }, $d.text, $q) }
     return { $d.slug, $score > 0.18 as hit }
     order { $score desc, ($score > 0.18) asc }
     limit 2
@@ -5216,7 +5216,7 @@ query bm25_threshold_alias($q: String) {
 gq 3;
 set engine = v2;
 query bm25_threshold_alias($q: String) {
-    match { from bm25({ match { $d: Doc } return { $d } }, text, $q) }
+    match { from bm25({ match { $d: Doc } return { $d } }, $d.text, $q) }
     return { $d.slug, $score > 0.18 as hit }
     order { $score desc, hit asc }
     limit 2
@@ -5239,7 +5239,7 @@ query rrf_threshold_expression($v: Vector(2), $q: String) {
 gq 3;
 set engine = v2;
 query rrf_threshold_expression($v: Vector(2), $q: String) {
-    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, embedding, $v, k: 2), bm25($p, text, $q), k: 60) }
+    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, $d.embedding, $v, k: 2), bm25($p, $d.text, $q), k: 60) }
     return { $d.slug, $score > 0.0325 as high }
     order { $score desc, ($score > 0.0325) asc }
     limit 2
@@ -5262,7 +5262,7 @@ query rrf_threshold_alias($v: Vector(2), $q: String) {
 gq 3;
 set engine = v2;
 query rrf_threshold_alias($v: Vector(2), $q: String) {
-    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, embedding, $v, k: 2), bm25($p, text, $q), k: 60) }
+    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, $d.embedding, $v, k: 2), bm25($p, $d.text, $q), k: 60) }
     return { $d.slug, $score > 0.0325 as high }
     order { $score desc, high asc }
     limit 2
@@ -5297,7 +5297,7 @@ query recursive_rank_keys($v: Vector(2)) {
 gq 3;
 set engine = v2;
 query recursive_rank_keys($v: Vector(2)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $v, k: 2) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $v, k: 2) }
     return {
         $d.slug,
         not ($distance < 1.0) as far,
@@ -5330,7 +5330,7 @@ query bm25_bare() {
 ```gq
 gq 3;
 query bm25_bare() {
-    match { from bm25({ match { $d: Doc } return { $d } }, text, "needle") }
+    match { from bm25({ match { $d: Doc } return { $d } }, $d.text, "needle") }
     return { $d.slug }
     order { $score desc }
     limit 2
@@ -5351,7 +5351,7 @@ query rrf_desc($v: Vector(2)) {
 ```gq
 gq 3;
 query rrf_desc($v: Vector(2)) {
-    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, embedding, $v, k: 2), bm25($p, text, "needle"), k: 60) }
+    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, $d.embedding, $v, k: 2), bm25($p, $d.text, "needle"), k: 60) }
     return { $d.slug }
     order { $score desc }
     limit 2
@@ -5490,7 +5490,7 @@ query nearest_edge_targets($q: Vector(4)) {
     match { from nearest({ match {
         $d: Doc
         $t knows $d
-    } return { $d, $t } }, embedding, $q, k: 2) }
+    } return { $d, $t } }, $d.embedding, $q, k: 2) }
     return { $d.slug }
     order { $distance }
     limit 2
@@ -5537,7 +5537,7 @@ query recall_two_terms($q1: String, $q2: String) {
         $a: Artifact
         $c chunkOfArtifact $a
         search($c.text, $q1)
-    } return { $c, $a } }  from rrf(bm25($p, text, $q1), bm25($p, text, $q2), k: 60) }
+    } return { $c, $a } }  from rrf(bm25($p, $c.text, $q1), bm25($p, $c.text, $q2), k: 60) }
     return { $c.slug }
     order { $score desc }
     limit 1
@@ -5568,7 +5568,7 @@ query recall_alternation($q1: String, $q2: String) {
         $a: Artifact
         $c (chunkOfArtifact | chunkOfArtifact) $a
         search($c.text, $q1)
-    } return { $c, $a } }  from rrf(bm25($p, text, $q1), bm25($p, text, $q2), k: 60) }
+    } return { $c, $a } }  from rrf(bm25($p, $c.text, $q1), bm25($p, $c.text, $q2), k: 60) }
     return { $c.slug }
     order { $score desc }
     limit 1
@@ -5599,7 +5599,7 @@ query recall_wildcard($q1: String, $q2: String) {
         $a: Artifact
         $c * $a
         search($c.text, $q1)
-    } return { $c, $a } }  from rrf(bm25($p, text, $q1), bm25($p, text, $q2), k: 60) }
+    } return { $c, $a } }  from rrf(bm25($p, $c.text, $q1), bm25($p, $c.text, $q2), k: 60) }
     return { $c.slug }
     order { $score desc }
     limit 1
@@ -5620,7 +5620,7 @@ query fused($q: Vector(4), $t: String) {
 ```gq
 gq 3;
 query fused($q: Vector(4), $t: String) {
-    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, embedding, $q, k: 3), bm25($p, text, $t), k: 60) }
+    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, $d.embedding, $q, k: 3), bm25($p, $d.text, $t), k: 60) }
     return { $d.slug }
     order { $score desc }
     limit 3
@@ -5647,7 +5647,7 @@ query nearest_and_text_with_edges($q: Vector(4), $text: String) {
     match { let $p = { match {
         $d: Doc
         $d knows $t
-    } return { $d, $t } }  from rrf(nearest($p, embedding, $q, k: 2), bm25($p, text, $text), k: 60) }
+    } return { $d, $t } }  from rrf(nearest($p, $d.embedding, $q, k: 2), bm25($p, $d.text, $text), k: 60) }
     return { $d.slug }
     order { $score desc }
     limit 2
@@ -5676,7 +5676,7 @@ query fused_v2($q: Vector(4), $t: String) {
     match { let $p = { match {
         $d: Doc
         $d knows $t
-    } return { $d, $t } }  from rrf(nearest($p, embedding, $q, k: 1), bm25($p, text, $t), k: 60) }
+    } return { $d, $t } }  from rrf(nearest($p, $d.embedding, $q, k: 1), bm25($p, $d.text, $t), k: 60) }
     return { $d.slug }
     order { $score desc }
     limit 1
@@ -5987,7 +5987,7 @@ query nearest_after_source_delete($q: Vector(4)) {
     match { from nearest({ match {
         $d: Doc
         $d knows $t
-    } return { $d, $t } }, embedding, $q, k: 2) }
+    } return { $d, $t } }, $d.embedding, $q, k: 2) }
     return { $d.slug }
     order { $distance }
     limit 2
@@ -6014,7 +6014,7 @@ query nearest_counts_rows($q: Vector(4)) {
     match { from nearest({ match {
         $d: Doc
         $d knows $t
-    } return { $d, $t } }, embedding, $q, k: 3) }
+    } return { $d, $t } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -6041,7 +6041,7 @@ query nearest_returns_pairs($q: Vector(4)) {
     match { from nearest({ match {
         $d: Doc
         $d knows $t
-    } return { $d, $t } }, embedding, $q, k: 4) }
+    } return { $d, $t } }, $d.embedding, $q, k: 4) }
     return { $d.slug, $t.slug }
     order { $distance }
     limit 4
@@ -6068,7 +6068,7 @@ query nearest_eligible_docs($q: Vector(4)) {
     match { from nearest({ match {
         $d: Doc
         $d knows $t
-    } return { $d, $t } }, embedding, $q, k: 3) }
+    } return { $d, $t } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -6095,7 +6095,7 @@ query nearest_empty_graph($q: Vector(4)) {
     match { from nearest({ match {
         $d: Doc
         $d knows $t
-    } return { $d, $t } }, embedding, $q, k: 10) }
+    } return { $d, $t } }, $d.embedding, $q, k: 10) }
     return { $d.slug }
     order { $distance }
     limit 10
@@ -6122,7 +6122,7 @@ query nearest_fills_limit($q: Vector(4)) {
     match { from nearest({ match {
         $d: Doc
         $d knows $t
-    } return { $d, $t } }, embedding, $q, k: 3) }
+    } return { $d, $t } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -6149,7 +6149,7 @@ query nearest_with_edge($q: Vector(4)) {
     match { from nearest({ match {
         $d: Doc
         $d knows $t
-    } return { $d, $t } }, embedding, $q, k: 2) }
+    } return { $d, $t } }, $d.embedding, $q, k: 2) }
     return { $d.slug }
     order { $distance }
     limit 2
@@ -6176,7 +6176,7 @@ query nearest_with_edge_wide($q: Vector(4)) {
     match { from nearest({ match {
         $d: Doc
         $d knows $t
-    } return { $d, $t } }, embedding, $q, k: 50) }
+    } return { $d, $t } }, $d.embedding, $q, k: 50) }
     return { $d.slug }
     order { $distance }
     limit 50
@@ -6203,7 +6203,7 @@ query nearest_single_source($q: Vector(4)) {
     match { from nearest({ match {
         $d: Doc
         $d knows $t
-    } return { $d, $t } }, embedding, $q, k: 3) }
+    } return { $d, $t } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -6232,7 +6232,7 @@ query nearest_with_source_filter($q: Vector(4)) {
         $d: Doc
         $d.n > 15
         $d knows $t
-    } return { $d, $t } }, embedding, $q, k: 2) }
+    } return { $d, $t } }, $d.embedding, $q, k: 2) }
     return { $d.slug }
     order { $distance }
     limit 2
@@ -6261,7 +6261,7 @@ query nearest_with_target_filter($q: Vector(4)) {
         $d: Doc
         $d knows $t
         $t.n > 25
-    } return { $d, $t } }, embedding, $q, k: 2) }
+    } return { $d, $t } }, $d.embedding, $q, k: 2) }
     return { $d.slug }
     order { $distance }
     limit 2
@@ -6290,7 +6290,7 @@ query nearest_with_source_filter_above_gate($q: Vector(4)) {
         $d: Doc
         $d.n > 15
         $d likes $t
-    } return { $d, $t } }, embedding, $q, k: 2) }
+    } return { $d, $t } }, $d.embedding, $q, k: 2) }
     return { $d.slug }
     order { $distance }
     limit 2
@@ -6319,7 +6319,7 @@ query nearest_two_hop_sources($q: Vector(4)) {
         $d: Doc
         $d knows $t
         $t knows $u
-    } return { $d, $t, $u } }, embedding, $q, k: 2) }
+    } return { $d, $t, $u } }, $d.embedding, $q, k: 2) }
     return { $d.slug }
     order { $distance }
     limit 2
@@ -6536,7 +6536,7 @@ query null_bm25_query($q: String?) {
 gq 3;
 set engine = v2;
 query null_bm25_query($q: String?) {
-    match { from bm25({ match { $d: Doc } return { $d } }, text, $q) }
+    match { from bm25({ match { $d: Doc } return { $d } }, $d.text, $q) }
     return { $d.key }
     order { $score desc }
     limit 1
@@ -6559,7 +6559,7 @@ query null_nearest_query($q: Vector(2)?) {
 gq 3;
 set engine = v2;
 query null_nearest_query($q: Vector(2)?) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 1) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 1) }
     return { $d.key }
     order { $distance }
     limit 1
@@ -6623,7 +6623,7 @@ query nearest_first($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_first($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, emb, $q, k: 6) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.emb, $q, k: 6) }
     return { $d.slug }
     order { $distance }
     limit 6
@@ -6644,7 +6644,7 @@ query nearest_first($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_first($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, emb, $q, k: 6) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.emb, $q, k: 6) }
     return { $d.slug }
     order { $distance }
     limit 6
@@ -6776,7 +6776,7 @@ query covered() {
 ```gq
 gq 3;
 query covered() {
-    match { from bm25({ match { $d: Doc $d.year >= 2020 } return { $d } }, text, "graph") }
+    match { from bm25({ match { $d: Doc $d.year >= 2020 } return { $d } }, $d.text, "graph") }
     return { $d.slug, $score as score }
     order { $score desc }
 }
@@ -6795,7 +6795,7 @@ query unfiltered() {
 ```gq
 gq 3;
 query unfiltered() {
-    match { from bm25({ match { $d: Doc } return { $d } }, text, "graph") }
+    match { from bm25({ match { $d: Doc } return { $d } }, $d.text, "graph") }
     return { $d.slug, $score as score }
     order { $score desc }
 }
@@ -6814,7 +6814,7 @@ query filtered() {
 ```gq
 gq 3;
 query filtered() {
-    match { from bm25({ match { $d: Doc $d.year >= 2000 } return { $d } }, text, "graph") }
+    match { from bm25({ match { $d: Doc $d.year >= 2000 } return { $d } }, $d.text, "graph") }
     return { $d.slug, $score as score }
     order { $score desc }
 }
@@ -6844,7 +6844,7 @@ query recall($q: String) {
         $c: Chunk
         $c chunkOfArtifact $a
         search($c.text, $q)
-    } return { $c, $a } }, text, $q) }
+    } return { $c, $a } }, $c.text, $q) }
     return { $c.slug, $a.slug }
     order { $score desc }
     limit 1
@@ -6867,7 +6867,7 @@ query root_tie($q: String) {
 gq 3;
 set engine = v2;
 query root_tie($q: String) {
-    match { from bm25({ match { $c: Chunk } return { $c } }, text, $q) }
+    match { from bm25({ match { $c: Chunk } return { $c } }, $c.text, $q) }
     return { $c.slug }
     order { $score desc }
     limit 1
@@ -6888,7 +6888,7 @@ query ranked($q: String) {
 ```gq
 gq 3;
 query ranked($q: String) {
-    match { from bm25({ match { $d: Doc } return { $d } }, notes, $q) }
+    match { from bm25({ match { $d: Doc } return { $d } }, $d.notes, $q) }
     return { $d.slug }
     order { $score desc }
     limit 2
@@ -6984,7 +6984,7 @@ query bm25_order() {
         $p: Passage
         contains($p.text, $m.number)
         $m.number != $p.pid
-    } return { $m, $p } }, text, "law") }
+    } return { $m, $p } }, $p.text, "law") }
     return { $p.pid }
     order { $score desc }
     limit 10
@@ -7017,7 +7017,7 @@ query nearest_order() {
         $p: Passage
         contains($p.text, $m.number)
         $m.number != $p.pid
-    } return { $m, $p } }, embedding, [1.0, 0.0], k: 10) }
+    } return { $m, $p } }, $p.embedding, [1.0, 0.0], k: 10) }
     return { $p.pid }
     order { $distance }
     limit 10
@@ -7050,7 +7050,7 @@ query rrf_order() {
         $p: Passage
         contains($p.text, $m.number)
         $m.number != $p.pid
-    } return { $m, $p } }  from rrf(nearest($p2, embedding, [1.0, 0.0], k: 10), bm25($p2, text, "law"), k: 60) }
+    } return { $m, $p } }  from rrf(nearest($p2, $p.embedding, [1.0, 0.0], k: 10), bm25($p2, $p.text, "law"), k: 60) }
     return { $p.pid }
     order { $score desc }
     limit 10
@@ -7114,7 +7114,7 @@ query bm25_order_on_the_needles() {
         $p: Passage
         contains($p.text, $m.number)
         $m.number != $p.pid
-    } return { $m, $p } }, number, "case") }
+    } return { $m, $p } }, $m.number, "case") }
     return { $p.pid }
     order { $score desc }
     limit 10
@@ -7477,7 +7477,7 @@ query fused($q: Vector(4), $t: String) {
 gq 3;
 set engine = v2;
 query fused($q: Vector(4), $t: String) {
-    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, embedding, $q, k: 3), bm25($p, text, $t), k: 60) }
+    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, $d.embedding, $q, k: 3), bm25($p, $d.text, $t), k: 60) }
     return { $d.slug }
     order { $score desc }
     limit 3
@@ -7500,7 +7500,7 @@ query fused_top_two($q: Vector(2), $t: String) {
 gq 3;
 set engine = v2;
 query fused_top_two($q: Vector(2), $t: String) {
-    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, embedding, $q, k: 2), bm25($p, text, $t), k: 60) }
+    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, $d.embedding, $q, k: 2), bm25($p, $d.text, $t), k: 60) }
     return { $d.slug, $d.body, $d.title }
     order { $score desc }
     limit 2
@@ -7523,7 +7523,7 @@ query ranked_top_two($t: String) {
 gq 3;
 set engine = v2;
 query ranked_top_two($t: String) {
-    match { from bm25({ match { $d: Doc } return { $d } }, text, $t) }
+    match { from bm25({ match { $d: Doc } return { $d } }, $d.text, $t) }
     return { $d.slug, $d.body, $d.title }
     order { $score desc }
     limit 2
@@ -7548,7 +7548,7 @@ gq 3;
 set engine = v2;
 set ann_nprobes = 1;
 query by_vector($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 2) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 2) }
     return { $d.slug }
     order { $distance }
     limit 2
@@ -7571,7 +7571,7 @@ query by_vector($q: Vector(4)) {
 gq 3;
 set engine = v2;
 query by_vector($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 2) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 2) }
     return { $d.slug }
     order { $distance }
     limit 2
@@ -7592,7 +7592,7 @@ query ranked_destination() {
 ```gq
 gq 3;
 query ranked_destination() {
-    match { let $p = { match { $t: Topic { name: "storage" } $d about $t } return { $t, $d } }  from rrf(nearest($p, embedding, [1.0, 0.0], k: 1), bm25($p, body, "needle"), k: 60) }
+    match { let $p = { match { $t: Topic { name: "storage" } $d about $t } return { $t, $d } }  from rrf(nearest($p, $d.embedding, [1.0, 0.0], k: 1), bm25($p, $d.body, "needle"), k: 60) }
     return { $d.slug }
     order { $score desc }
     limit 1
@@ -7691,7 +7691,7 @@ query nearest_on_an_undeclared_destination($q: Vector(2)) {
     match { from nearest({ match {
         $p: Person { name: "p1" }
         $p knows $d
-    } return { $p, $d } }, embedding, $q, k: 1) }
+    } return { $p, $d } }, $d.embedding, $q, k: 1) }
     return { $d.slug }
     order { $distance }
     limit 1
@@ -7720,7 +7720,7 @@ query nearest_on_a_destination_declared_second($q: Vector(2)) {
         $p: Person { name: "p1" }
         $d: Doc
         $p knows $d
-    } return { $p, $d } }, embedding, $q, k: 2) }
+    } return { $p, $d } }, $d.embedding, $q, k: 2) }
     return { $d.slug }
     order { $distance }
     limit 2
@@ -7747,7 +7747,7 @@ query rrf_over_one_destination($q: Vector(2)) {
     match { let $p2 = { match {
         $p: Person { name: "p1" }
         $p knows $d
-    } return { $p, $d } }  from rrf(nearest($p2, embedding, $q, k: 2), bm25($p2, body, "needle"), k: 60) }
+    } return { $p, $d } }  from rrf(nearest($p2, $d.embedding, $q, k: 2), bm25($p2, $d.body, "needle"), k: 60) }
     return { $d.slug }
     order { $score desc }
     limit 2
@@ -7774,7 +7774,7 @@ query nearest_from_a_source_with_no_edges($q: Vector(2)) {
     match { from nearest({ match {
         $p: Person { name: "p3" }
         $p knows $d
-    } return { $p, $d } }, embedding, $q, k: 2) }
+    } return { $p, $d } }, $d.embedding, $q, k: 2) }
     return { $d.slug }
     order { $distance }
     limit 2
@@ -7801,7 +7801,7 @@ query bm25_on_an_undeclared_destination() {
     match { from bm25({ match {
         $p: Person { name: "p1" }
         $p knows $d
-    } return { $p, $d } }, body, "needle") }
+    } return { $p, $d } }, $d.body, "needle") }
     return { $d.slug }
     order { $score desc }
     limit 3
@@ -7830,7 +7830,7 @@ query bm25_two_hops_from_the_source() {
         $p: Person { name: "p1" }
         $p knows $x
         $x cites $d
-    } return { $p, $x, $d } }, body, "needle") }
+    } return { $p, $x, $d } }, $d.body, "needle") }
     return { $x.slug, $d.slug }
     order { $score desc }
     limit 3
@@ -7857,7 +7857,7 @@ query bm25_on_a_traversal_source() {
     match { from bm25({ match {
         $t: Doc { slug: "d3" }
         $d cites $t
-    } return { $t, $d } }, body, "needle") }
+    } return { $t, $d } }, $d.body, "needle") }
     return { $d.slug }
     order { $score desc }
     limit 3
@@ -7884,7 +7884,7 @@ query bm25_over_an_undirected_traversal() {
     match { from bm25({ match {
         $a: Doc { slug: "d3" }
         $a <cites> $d
-    } return { $a, $d } }, body, "needle") }
+    } return { $a, $d } }, $d.body, "needle") }
     return { $d.slug }
     order { $score desc }
     limit 3
@@ -7954,7 +7954,7 @@ query f_eq($q: Vector(4)) {
 gq 3;
 query f_eq($q: Vector(4)) {
     match { from nearest({ match { $d: Doc
-        $d.n = 7 } return { $d } }, embedding, $q, k: 3) }
+        $d.n = 7 } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug } order { $distance } limit 3
 }
 ```
@@ -7973,7 +7973,7 @@ query f_ne($q: Vector(4)) {
 gq 3;
 query f_ne($q: Vector(4)) {
     match { from nearest({ match { $d: Doc
-        $d.n != 0 } return { $d } }, embedding, $q, k: 3) }
+        $d.n != 0 } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug } order { $distance } limit 3
 }
 ```
@@ -7992,7 +7992,7 @@ query f_gt($q: Vector(4)) {
 gq 3;
 query f_gt($q: Vector(4)) {
     match { from nearest({ match { $d: Doc
-        $d.n > 10 } return { $d } }, embedding, $q, k: 3) }
+        $d.n > 10 } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug } order { $distance } limit 3
 }
 ```
@@ -8011,7 +8011,7 @@ query f_lt($q: Vector(4)) {
 gq 3;
 query f_lt($q: Vector(4)) {
     match { from nearest({ match { $d: Doc
-        $d.n < 3 } return { $d } }, embedding, $q, k: 3) }
+        $d.n < 3 } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug } order { $distance } limit 3
 }
 ```
@@ -8030,7 +8030,7 @@ query f_ge($q: Vector(4)) {
 gq 3;
 query f_ge($q: Vector(4)) {
     match { from nearest({ match { $d: Doc
-        $d.n >= 10 } return { $d } }, embedding, $q, k: 3) }
+        $d.n >= 10 } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug } order { $distance } limit 3
 }
 ```
@@ -8049,7 +8049,7 @@ query f_le($q: Vector(4)) {
 gq 3;
 query f_le($q: Vector(4)) {
     match { from nearest({ match { $d: Doc
-        $d.n <= 2 } return { $d } }, embedding, $q, k: 3) }
+        $d.n <= 2 } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug } order { $distance } limit 3
 }
 ```
@@ -8068,7 +8068,7 @@ query f_starts_with($q: Vector(4)) {
 gq 3;
 query f_starts_with($q: Vector(4)) {
     match { from nearest({ match { $d: Doc
-        starts_with($d.name, "doc-2") } return { $d } }, embedding, $q, k: 3) }
+        starts_with($d.name, "doc-2") } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug } order { $distance } limit 3
 }
 ```
@@ -8087,7 +8087,7 @@ query f_contains($q: Vector(4)) {
 gq 3;
 query f_contains($q: Vector(4)) {
     match { from nearest({ match { $d: Doc
-        contains($d.name, "-3") } return { $d } }, embedding, $q, k: 3) }
+        contains($d.name, "-3") } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug } order { $distance } limit 3
 }
 ```
@@ -8106,7 +8106,7 @@ query f_param($q: Vector(4), $n: I64) {
 gq 3;
 query f_param($q: Vector(4), $n: I64) {
     match { from nearest({ match { $d: Doc
-        $d.n = $n } return { $d } }, embedding, $q, k: 3) }
+        $d.n = $n } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug } order { $distance } limit 3
 }
 ```
@@ -8125,7 +8125,7 @@ query f_flipped($q: Vector(4)) {
 gq 3;
 query f_flipped($q: Vector(4)) {
     match { from nearest({ match { $d: Doc
-        10 < $d.n } return { $d } }, embedding, $q, k: 3) }
+        10 < $d.n } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug } order { $distance } limit 3
 }
 ```
@@ -8303,7 +8303,7 @@ query nearest_citing_docs($q: Vector(2)) {
 gq 3;
 set engine = v2;
 query nearest_citing_docs($q: Vector(2)) {
-    match { from nearest({ match { $d: Doc $d cites $t } return { $d, $t } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $d: Doc $d cites $t } return { $d, $t } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -8326,7 +8326,7 @@ query leading_nearest() {
 gq 3;
 set engine = v2;
 query leading_nearest() {
-    match { from nearest({ match { $c: T } return { $c } }, embedding, [1.0, 0.0], k: 1) }
+    match { from nearest({ match { $c: T } return { $c } }, $c.embedding, [1.0, 0.0], k: 1) }
     return { $c.slug }
     order { $distance }
     limit 1
@@ -8349,7 +8349,7 @@ query by_text($t: String) {
 gq 3;
 set engine = v2;
 query by_text($t: String) {
-    match { from bm25({ match { $d: Doc } return { $d } }, text, $t) }
+    match { from bm25({ match { $d: Doc } return { $d } }, $d.text, $t) }
     return { $d.slug }
     order { $score desc }
     limit 2
@@ -8372,7 +8372,7 @@ query by_vector($q: Vector(4)) {
 gq 3;
 set engine = v2;
 query by_vector($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 2) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 2) }
     return { $d.slug }
     order { $distance }
     limit 2
@@ -8395,7 +8395,7 @@ query by_vector_among_members($q: Vector(4), $members: [String]) {
 gq 3;
 set engine = v2;
 query by_vector_among_members($q: Vector(4), $members: [String]) {
-    match { from nearest({ match { $d: Doc $d.slug in $members } return { $d } }, embedding, $q, k: 1) }
+    match { from nearest({ match { $d: Doc $d.slug in $members } return { $d } }, $d.embedding, $q, k: 1) }
     return { $d.slug }
     order { $distance }
     limit 1
@@ -8418,7 +8418,7 @@ query fused($q: Vector(4), $t: String) {
 gq 3;
 set engine = v2;
 query fused($q: Vector(4), $t: String) {
-    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, embedding, $q, k: 3), bm25($p, text, $t), k: 60) }
+    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, $d.embedding, $q, k: 3), bm25($p, $d.text, $t), k: 60) }
     return { $d.slug }
     order { $score desc }
     limit 3
@@ -8441,7 +8441,7 @@ query nearest_person_docs($q: Vector(2)) {
 gq 3;
 set engine = v2;
 query nearest_person_docs($q: Vector(2)) {
-    match { from nearest({ match { $p: Person $p knows $d } return { $p, $d } }, embedding, $q, k: 2) }
+    match { from nearest({ match { $p: Person $p knows $d } return { $p, $d } }, $p.embedding, $q, k: 2) }
     return { $p.name, $d.slug }
     order { $distance }
     limit 2
@@ -8464,7 +8464,7 @@ query search_only_order_with_an_unranked_binding($q: Vector(4)) {
 gq 3;
 set engine = v2;
 query search_only_order_with_an_unranked_binding($q: Vector(4)) {
-    match { from nearest({ match { $c: Doc $z: Zone } return { $c, $z } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $c: Doc $z: Zone } return { $c, $z } }, $c.embedding, $q, k: 3) }
     return { $c.slug, $z.name }
     order { $distance }
     limit 3
@@ -8487,7 +8487,7 @@ query nearest_on_a_traversal_destination($q: Vector(4)) {
 gq 3;
 set engine = v2;
 query nearest_on_a_traversal_destination($q: Vector(4)) {
-    match { from nearest({ match { $p: Person $p knows $d } return { $p, $d } }, embedding, $q, k: 1) }
+    match { from nearest({ match { $p: Person $p knows $d } return { $p, $d } }, $d.embedding, $q, k: 1) }
     return { $d.slug }
     order { $distance }
     limit 1
@@ -8508,7 +8508,7 @@ query nearest_slug($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_slug($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 10) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 10) }
     return { $d.slug }
     order { $distance }
     limit 10
@@ -8529,7 +8529,7 @@ query bm25_slug($q: String) {
 ```gq
 gq 3;
 query bm25_slug($q: String) {
-    match { from bm25({ match { $d: Doc } return { $d } }, title, $q) }
+    match { from bm25({ match { $d: Doc } return { $d } }, $d.title, $q) }
     return { $d.slug }
     order { $score desc }
     limit 10
@@ -8550,7 +8550,7 @@ query nearest_whole($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_whole($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 10) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 10) }
     return { $d }
     order { $distance }
     limit 10
@@ -8606,7 +8606,7 @@ query filtered_rank($t: String, $q: String) {
     match { from bm25({ match {
         $d: Doc
         search($d.title, $t)
-    } return { $d } }, body, $q) }
+    } return { $d } }, $d.body, $q) }
     return { $d.slug }
     order { $score desc }
     limit 5
@@ -9131,7 +9131,7 @@ query nearest_matching_rows($q: Vector(4)) {
 gq 3;
 set ann_nprobes = 1;
 query nearest_matching_rows($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc $d.n > 3 } return { $d } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $d: Doc $d.n > 3 } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -9152,7 +9152,7 @@ query filtered_nearest($q: Vector(4)) {
 ```gq
 gq 3;
 query filtered_nearest($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc { status: "hit" } } return { $d } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $d: Doc { status: "hit" } } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -9183,7 +9183,7 @@ query recall_two_terms($q1: String, $q2: String) {
         $a: Artifact
         $c chunkOfArtifact $a
         search($c.text, $q1)
-    } return { $c, $a } }  from rrf(bm25($p, text, $q1), bm25($p, text, $q2), k: 60) }
+    } return { $c, $a } }  from rrf(bm25($p, $c.text, $q1), bm25($p, $c.text, $q2), k: 60) }
     return { $c.slug }
     order { $score desc }
     limit 1
@@ -10035,7 +10035,7 @@ query nearest_matching_rows($q: Vector(4)) {
 gq 3;
 set ann_nprobes = 1;
 query nearest_matching_rows($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc $d.n > 3 } return { $d } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $d: Doc $d.n > 3 } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -10058,7 +10058,7 @@ query nearest_matching_rows($q: Vector(4)) {
 gq 3;
 set ann_nprobes = 1;
 query nearest_matching_rows($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc $d.n > 3 } return { $d } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $d: Doc $d.n > 3 } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -10079,7 +10079,7 @@ query filtered_nearest($q: Vector(4)) {
 ```gq
 gq 3;
 query filtered_nearest($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc { status: "hit" } } return { $d } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $d: Doc { status: "hit" } } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -10100,7 +10100,7 @@ query filtered_nearest($q: Vector(4)) {
 ```gq
 gq 3;
 query filtered_nearest($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc { status: "hit" } } return { $d } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $d: Doc { status: "hit" } } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -10131,7 +10131,7 @@ query recall_two_terms($q1: String, $q2: String) {
         $a: Artifact
         $c chunkOfArtifact $a
         search($c.text, $q1)
-    } return { $c, $a } }  from rrf(bm25($p, text, $q1), bm25($p, text, $q2), k: 60) }
+    } return { $c, $a } }  from rrf(bm25($p, $c.text, $q1), bm25($p, $c.text, $q2), k: 60) }
     return { $c.slug }
     order { $score desc }
     limit 1
@@ -10162,7 +10162,7 @@ query recall_two_terms($q1: String, $q2: String) {
         $a: Artifact
         $c chunkOfArtifact $a
         search($c.text, $q1)
-    } return { $c, $a } }  from rrf(bm25($p, text, $q1), bm25($p, text, $q2), k: 60) }
+    } return { $c, $a } }  from rrf(bm25($p, $c.text, $q1), bm25($p, $c.text, $q2), k: 60) }
     return { $c.slug }
     order { $score desc }
     limit 1
@@ -10358,7 +10358,7 @@ query nearest_after_update($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_after_update($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 6) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 6) }
     return { $d.slug }
     order { $distance }
     limit 6
@@ -10379,7 +10379,7 @@ query nearest_after_update($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_after_update($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 6) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 6) }
     return { $d.slug }
     order { $distance }
     limit 6
@@ -10400,7 +10400,7 @@ query nearest_after_delete($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_after_delete($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -10421,7 +10421,7 @@ query nearest_after_delete($q: Vector(4)) {
 ```gq
 gq 3;
 query nearest_after_delete($q: Vector(4)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 3) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 3) }
     return { $d.slug }
     order { $distance }
     limit 3
@@ -10504,7 +10504,7 @@ query passages($matter: String, $q: String) {
     $r: SourceRevision { matter_number: $matter }
     $p: Passage
     $p passageOfRevision $r
-  } return { $r, $p } }, text, $q) }
+  } return { $r, $p } }, $p.text, $q) }
   return { $r.path, $p.locator }
   order { $score desc }
   limit 5
@@ -10547,7 +10547,7 @@ query similar($q: Vector(4)) {
 ```gq
 gq 3;
 query similar($q: Vector(4)) {
-  match { from nearest({ match { $d: Document } return { $d } }, embedding, $q, k: 10) }
+  match { from nearest({ match { $d: Document } return { $d } }, $d.embedding, $q, k: 10) }
   return { $d.slug, $d.title }
   order { $distance }
   limit 10
@@ -10568,7 +10568,7 @@ query relevant($q: String) {
 ```gq
 gq 3;
 query relevant($q: String) {
-  match { from bm25({ match { $d: Document } return { $d } }, body, $q) }
+  match { from bm25({ match { $d: Document } return { $d } }, $d.body, $q) }
   return { $d.slug, $score as score }
   order { $score desc }
   limit 10
@@ -10589,7 +10589,7 @@ query hybrid($vector: Vector(4), $text: String) {
 ```gq
 gq 3;
 query hybrid($vector: Vector(4), $text: String) {
-  match { let $p = { match { $d: Document } return { $d } }  from rrf(nearest($p, embedding, $vector, k: 10), bm25($p, body, $text), k: 60) }
+  match { let $p = { match { $d: Document } return { $d } }  from rrf(nearest($p, $d.embedding, $vector, k: 10), bm25($p, $d.body, $text), k: 60) }
   return { $d.slug, $d.title }
   order { $score desc }
   limit 10
@@ -10616,7 +10616,7 @@ query passages($matter: String, $q: String) {
   match { from bm25({ match {
     $r: SourceRevision { matter_number: $matter }
     $r hasPassage $p
-  } return { $r, $p } }, text, $q) }
+  } return { $r, $p } }, $p.text, $q) }
   return { $r.path, $p.locator }
   order { $score desc }
   limit 5
@@ -10660,7 +10660,7 @@ query vector_search($q: Vector(3072)) {
 ```gq
 gq 3;
 query vector_search($q: Vector(3072)) {
-    match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 10) }
+    match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 10) }
     return { $d.slug, $d.title }
     order { $distance }
     limit 10
@@ -10681,7 +10681,7 @@ query hybrid_search($vq: Vector(3072), $tq: String) {
 ```gq
 gq 3;
 query hybrid_search($vq: Vector(3072), $tq: String) {
-    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, embedding, $vq, k: 10), bm25($p, title, $tq), k: 60) }
+    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, $d.embedding, $vq, k: 10), bm25($p, $d.title, $tq), k: 60) }
     return { $d.slug, $d.title }
     order { $score desc }
     limit 10
@@ -10742,7 +10742,7 @@ query customer_evidence($slug: String, $q: String) {
         $c: Customer { slug: $slug }
         $a: Assertion
         $a about $c
-    } return { $c, $a } }, embedding, $q, k: 10) }
+    } return { $c, $a } }, $a.embedding, $q, k: 10) }
     return { $a.statement }
     order { $distance }
     limit 10
@@ -10763,7 +10763,7 @@ query nearest_chunks($q: Vector(1536)) {
 ```gq
 gq 3;
 query nearest_chunks($q: Vector(1536)) {
-    match { from nearest({ match { $c: Chunk } return { $c } }, embedding, $q, k: 10) }
+    match { from nearest({ match { $c: Chunk } return { $c } }, $c.embedding, $q, k: 10) }
     return { $c.text }
     order { $distance }
     limit 10
@@ -10784,7 +10784,7 @@ query top_titles($q: String) {
 ```gq
 gq 3;
 query top_titles($q: String) {
-    match { from bm25({ match { $d: Doc } return { $d } }, title, $q) }
+    match { from bm25({ match { $d: Doc } return { $d } }, $d.title, $q) }
     return { $d.slug, $d.title }
     order { $score desc }
     limit 10
@@ -10805,7 +10805,7 @@ query hybrid($vq: Vector(1536), $tq: String) {
 ```gq
 gq 3;
 query hybrid($vq: Vector(1536), $tq: String) {
-    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, embedding, $vq, k: 10), bm25($p, title, $tq), k: 60) }
+    match { let $p = { match { $d: Doc } return { $d } }  from rrf(nearest($p, $d.embedding, $vq, k: 10), bm25($p, $d.title, $tq), k: 60) }
     return { $d.slug, $d.title }
     order { $score desc }
     limit 10
@@ -10826,7 +10826,7 @@ query scored_titles($q: String) {
 ```gq
 gq 3;
 query scored_titles($q: String) {
-    match { from bm25({ match { $d: Doc } return { $d } }, title, $q) }
+    match { from bm25({ match { $d: Doc } return { $d } }, $d.title, $q) }
     return { $d.slug, $score as score }
     order { $score desc }
     limit 10
@@ -10855,7 +10855,7 @@ query related_chunks($artifact_slug: String, $q: Vector(1536)) {
         $c: Chunk                                 // the ranked binding
         $c partOfArtifact $a                      // scope: only this artifact's chunks
         $a.slug = $artifact_slug
-    } return { $c, $a } }, embedding, $q, k: 10) }
+    } return { $c, $a } }, $c.embedding, $q, k: 10) }
     return { $c.text }
     order { $distance }           // rank: vector similarity within scope
     limit 10

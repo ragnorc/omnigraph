@@ -1091,7 +1091,10 @@ fn rewrite_ranking(cx: &mut Cx<'_>, decl: &QueryDecl) {
             };
             let fused_k = args.get(2).map(|k| Piece::Src(*k));
             let arm_call = |a: &(&'static str, String, String, Span)| -> Vec<Piece> {
-                let mut pieces = vec![lit(format!("{}(${p}, ${}.{}, ", a.0, a.1, a.2)), Piece::Src(a.3)];
+                let mut pieces = vec![
+                    lit(format!("{}(${p}, ${}.{}, ", a.0, a.1, a.2)),
+                    Piece::Src(a.3),
+                ];
                 if a.0 == "nearest" {
                     pieces.push(lit(format!(", k: {window_k}")));
                 }

@@ -136,9 +136,10 @@ fn twin_of(body: &str, catalog: &omnigraph_compiler::catalog::Catalog) -> Option
         Some(s) => s,
         None => {
             // A ranking the rewriter refused is reported, not twinned.
-            let r = m.refusals.iter().find(|r| {
-                matches!(r.row, Some(Row::Nearest | Row::Bm25 | Row::Rrf))
-            })?;
+            let r = m
+                .refusals
+                .iter()
+                .find(|r| matches!(r.row, Some(Row::Nearest | Row::Bm25 | Row::Rrf)))?;
             let shape = match r.row {
                 Some(Row::Nearest) => Shape::Nearest,
                 Some(Row::Bm25) => Shape::Bm25,
@@ -412,7 +413,10 @@ fn rank_expr(arm: &omnigraph_compiler::query::normalise3::Arm) -> Expr {
 const ARM_SCAN: u64 = 10_000;
 
 fn is_rank(e: &Expr) -> bool {
-    matches!(e, Expr::Nearest { .. } | Expr::Bm25 { .. } | Expr::Rrf { .. })
+    matches!(
+        e,
+        Expr::Nearest { .. } | Expr::Bm25 { .. } | Expr::Rrf { .. }
+    )
 }
 
 fn mentions_rank(e: &Expr) -> bool {
@@ -593,9 +597,9 @@ fn id_filter(v: &str, ids: &[String]) -> Clause {
         .collect();
     Clause::Filter(Expr::In {
         needle: Box::new(prop(v, "@id")),
-        list: Box::new(Expr::Literal(omnigraph_compiler::query::ast::Literal::List(
-            list,
-        ))),
+        list: Box::new(Expr::Literal(
+            omnigraph_compiler::query::ast::Literal::List(list),
+        )),
     })
 }
 
@@ -609,9 +613,24 @@ async fn rfc_rows(
     params: &ParamMap,
     n: &Normalised,
     catalog: &omnigraph_compiler::catalog::Catalog,
+    type_arms: bool,
 ) -> Result<Vec<Value>, String> {
     let fusion = n.fusion.as_ref().ok_or("no ranking")?;
     let base = &n.decl;
+    // `type_arms`: each `rrf` arm ranks every node of the target's type and
+    // the population filters the fused targets afterwards (the rewrite
+    // `from rrf(nearest({ match { $v: T } return { $v } }, …), …)  P`).
+    let arm_population = if type_arms {
+        let t =
+            type_of(&fusion.target, &fusion.population, catalog).ok_or("the target has no type")?;
+        vec![Clause::Binding(omnigraph_compiler::query::ast::Binding {
+            variable: fusion.target.clone(),
+            type_name: t,
+            prop_matches: Vec::new(),
+        })]
+    } else {
+        fusion.population.clone()
+    };
     let v = &fusion.target;
     // Each arm: its distinct targets ranked by its own score, then target id.
     let mut arm_scores: Vec<Vec<(String, f64)>> = Vec::new();
@@ -620,7 +639,7 @@ async fn rfc_rows(
         let decl = read(
             base,
             &format!("__gq3_arm{i}"),
-            fusion.population.clone(),
+            arm_population.clone(),
             vec![
                 Projection {
                     expr: prop(v, "@id"),
@@ -687,6 +706,26 @@ async fn rfc_rows(
     } else {
         arm_scores[0].iter().cloned().collect()
     };
+    let mut scores = scores;
+    if type_arms {
+        let decl = read(
+            base,
+            "__gq3_eligible",
+            fusion.population.clone(),
+            vec![Projection {
+                expr: prop(v, "@id"),
+                alias: Some("__id".into()),
+            }],
+            Vec::new(),
+            None,
+        );
+        let eligible: std::collections::BTreeSet<String> = rows_of(session, &target, params, &decl)
+            .await?
+            .iter()
+            .filter_map(|r| r.get("__id").map(|x| x.to_string()))
+            .collect();
+        scores.retain(|id, _| eligible.contains(id));
+    }
     let ids: Vec<String> = scores.keys().cloned().collect();
     if ids.is_empty() {
         return Ok(Vec::new());
@@ -704,16 +743,26 @@ async fn rfc_rows(
             vec![v.clone()],
         )
     } else {
-        (fusion.population.clone(), population_vars(&fusion.population))
+        (
+            fusion.population.clone(),
+            population_vars(&fusion.population),
+        )
     };
     let mut clauses = clauses;
     clauses.push(id_filter(v, &ids));
-    let aggregate = base.return_clause.iter().any(|p| contains_aggregate(&p.expr));
+    let aggregate = base
+        .return_clause
+        .iter()
+        .any(|p| contains_aggregate(&p.expr));
     if aggregate {
         // The window or score selected the rows the aggregate reads; the
         // rank key orders nothing and `limit` cuts the groups.
         if base.return_clause.iter().any(|p| mentions_rank(&p.expr))
-            || base.order_clause.iter().skip(1).any(|o| mentions_rank(&o.expr))
+            || base
+                .order_clause
+                .iter()
+                .skip(1)
+                .any(|o| mentions_rank(&o.expr))
         {
             return Err("a score read under an aggregate".into());
         }
@@ -829,7 +878,9 @@ async fn rfc_rows(
                     .and_then(|x| x.get("__v").cloned())
                     .unwrap_or(Value::Null)
             } else {
-                r.get(&format!("__gq3_i{i}")).cloned().unwrap_or(Value::Null)
+                r.get(&format!("__gq3_i{i}"))
+                    .cloned()
+                    .unwrap_or(Value::Null)
             };
             values.push(value);
         }
@@ -868,8 +919,8 @@ async fn rfc_rows(
         }
         for (x, t) in vars.iter().zip(&types) {
             let k = format!("__gq3_r_{x}");
-            let c = (t, a.get(&k).map(|v| v.to_string()))
-                .cmp(&(t, b.get(&k).map(|v| v.to_string())));
+            let c =
+                (t, a.get(&k).map(|v| v.to_string())).cmp(&(t, b.get(&k).map(|v| v.to_string())));
             if c != std::cmp::Ordering::Equal {
                 return c;
             }
@@ -908,7 +959,10 @@ fn settings_prefix(body: &str) -> &str {
 
 fn compare_runs(a: &[&Observed], b: &[&Observed]) -> (String, String) {
     if a.is_empty() || b.is_empty() {
-        return ("not-reached".into(), format!("{} / {} runs", a.len(), b.len()));
+        return (
+            "not-reached".into(),
+            format!("{} / {} runs", a.len(), b.len()),
+        );
     }
     let mut v = ("equal".to_string(), String::new());
     for (x, y) in a.iter().zip(b) {
@@ -952,7 +1006,10 @@ async fn ranked_rewrites_return_the_original_rows() {
             continue;
         }
         let text = std::fs::read_to_string(&file).unwrap();
-        if !["nearest(", "bm25(", "rrf("].iter().any(|w| text.contains(w)) {
+        if !["nearest(", "bm25(", "rrf("]
+            .iter()
+            .any(|w| text.contains(w))
+        {
             continue;
         }
         let stem = file.file_stem().unwrap().to_string_lossy().to_string();
@@ -1015,7 +1072,10 @@ async fn ranked_rewrites_return_the_original_rows() {
             let body = &base[s.body_start..s.body_end];
             let (shape, normalised) = match t {
                 Twin::Refused { shape, reason } => {
-                    *tally.steps.entry((*shape, "bridge", "refused".into())).or_default() += 1;
+                    *tally
+                        .steps
+                        .entry((*shape, "bridge", "refused".into()))
+                        .or_default() += 1;
                     tsv.push(format!(
                         "{name}\t{ordinal}\t{}\tbridge\trefused\t{}",
                         shape.name(),
@@ -1040,10 +1100,16 @@ async fn ranked_rewrites_return_the_original_rows() {
                             if twin.verdict.is_ok() {
                                 twins_green += 1;
                             }
-                            let a: Vec<&Observed> =
-                                original.observed.iter().filter(|o| o.ordinal == ordinal).collect();
-                            let b: Vec<&Observed> =
-                                twin.observed.iter().filter(|o| o.ordinal == ordinal).collect();
+                            let a: Vec<&Observed> = original
+                                .observed
+                                .iter()
+                                .filter(|o| o.ordinal == ordinal)
+                                .collect();
+                            let b: Vec<&Observed> = twin
+                                .observed
+                                .iter()
+                                .filter(|o| o.ordinal == ordinal)
+                                .collect();
                             let (o, d) = compare_runs(&a, &b);
                             let gqt = match (&original.verdict, &twin.verdict) {
                                 (Ok(()), Err(e)) => format!(" [twin red under GQT: {e}]"),
@@ -1054,7 +1120,10 @@ async fn ranked_rewrites_return_the_original_rows() {
                         Err(e) => ("twin-not-run".into(), e),
                     };
                     detail = detail.chars().take(900).collect();
-                    *tally.steps.entry((*shape, "bridge", outcome.clone())).or_default() += 1;
+                    *tally
+                        .steps
+                        .entry((*shape, "bridge", outcome.clone()))
+                        .or_default() += 1;
                     tsv.push(format!(
                         "{name}\t{ordinal}\t{}\tbridge\t{outcome}\t{}",
                         shape.name(),
@@ -1065,6 +1134,7 @@ async fn ranked_rewrites_return_the_original_rows() {
             };
 
             // The RFC route: the step's read under sections 2 and 4.
+            let mut alt_line: Option<(String, String)> = None;
             let rfc = async {
                 if in_loop {
                     return Err(("skipped".to_string(), "inside a loop".to_string()));
@@ -1093,7 +1163,10 @@ async fn ranked_rewrites_return_the_original_rows() {
                     .find(|o| o.ordinal == ordinal)
                     .ok_or(("not-reached".to_string(), String::new()))?;
                 let Ok(original_rows) = &observed.rows else {
-                    return Err(("original-error".into(), observed.rows.clone().err().unwrap()));
+                    return Err((
+                        "original-error".into(),
+                        observed.rows.clone().err().unwrap(),
+                    ));
                 };
                 let decl = match parse_query_diagnostic(body).map(|f| f.body) {
                     Ok(FileBody::Queries(d)) => d.into_iter().next(),
@@ -1104,12 +1177,32 @@ async fn ranked_rewrites_return_the_original_rows() {
                 let params =
                     json_params_to_param_map(json.as_ref(), &decl.params, JsonParamMode::Standard)
                         .map_err(|e| ("skipped".to_string(), format!("params: {e}")))?;
+                if shape == Shape::Rrf {
+                    let alt = match rfc_rows(
+                        session,
+                        ReadTarget::branch(branch.as_str()),
+                        &params,
+                        n,
+                        &catalog,
+                        true,
+                    )
+                    .await
+                    {
+                        Ok(rows) => match compare(original_rows, &rows, observed.ordered) {
+                            Ok(()) => ("equal".to_string(), format!("{} rows", rows.len())),
+                            Err(d) => ("different".to_string(), d),
+                        },
+                        Err(e) => ("rfc-not-evaluated".to_string(), e),
+                    };
+                    alt_line.replace(alt);
+                }
                 let rows = rfc_rows(
                     session,
                     ReadTarget::branch(branch.as_str()),
                     &params,
                     n,
                     &catalog,
+                    false,
                 )
                 .await
                 .map_err(|e| ("rfc-not-evaluated".to_string(), e))?;
@@ -1120,7 +1213,11 @@ async fn ranked_rewrites_return_the_original_rows() {
                         format!(
                             "{} rows{}",
                             rows.len(),
-                            if same_order { ", same order" } else { ", order differs (the case compares unordered)" }
+                            if same_order {
+                                ", same order"
+                            } else {
+                                ", order differs (the case compares unordered)"
+                            }
                         ),
                     )),
                     Err(d) => Ok((
@@ -1139,12 +1236,25 @@ async fn ranked_rewrites_return_the_original_rows() {
                 Ok(x) | Err(x) => x,
             };
             let detail: String = detail.chars().take(1500).collect();
-            *tally.steps.entry((shape, "rfc", outcome.clone())).or_default() += 1;
+            *tally
+                .steps
+                .entry((shape, "rfc", outcome.clone()))
+                .or_default() += 1;
             tsv.push(format!(
                 "{name}\t{ordinal}\t{}\trfc\t{outcome}\t{}",
                 shape.name(),
                 detail.replace(['\n', '\t'], " ")
             ));
+            if let Some((outcome, detail)) = alt_line.take() {
+                *tally
+                    .steps
+                    .entry((shape, "rfc-type-arms", outcome.clone()))
+                    .or_default() += 1;
+                tsv.push(format!(
+                    "{name}\t{ordinal}\trrf\trfc-type-arms\t{outcome}\t{}",
+                    detail.replace(['\n', '\t'], " ")
+                ));
+            }
         }
     }
     let out = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/spike-gq3-exec");
@@ -1155,7 +1265,10 @@ async fn ranked_rewrites_return_the_original_rows() {
         cases_original_red.len()
     );
     for ((shape, route, outcome), n) in &tally.steps {
-        summary.push_str(&format!("| {} | {route} | {outcome} | {n} |\n", shape.name()));
+        summary.push_str(&format!(
+            "| {} | {route} | {outcome} | {n} |\n",
+            shape.name()
+        ));
     }
     std::fs::write(out.join("rows_summary.md"), &summary).unwrap();
     println!("{summary}");

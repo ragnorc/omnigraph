@@ -484,8 +484,11 @@ fn recognise(clauses: &[Clause3]) -> R<Option<Ranked>> {
             } else {
                 "bm25"
             };
-            let [Arg3::Inline(population), Arg3::Expr(field), Arg3::Expr(query)] =
-                call.args.as_slice()
+            let [
+                Arg3::Inline(population),
+                Arg3::Expr(field),
+                Arg3::Expr(query),
+            ] = call.args.as_slice()
             else {
                 return Err(refuse(format!(
                     "`{kind}` whose arguments are not (inline read, $x.f, query)"
@@ -519,8 +522,11 @@ fn recognise(clauses: &[Clause3]) -> R<Option<Ranked>> {
                     "bm25" => "bm25",
                     other => return Err(refuse(format!("an `rrf` arm `{other}(…)`"))),
                 };
-                let [Arg3::Expr(Expr3::Variable(p)), Arg3::Expr(field), Arg3::Expr(query)] =
-                    arm.args.as_slice()
+                let [
+                    Arg3::Expr(Expr3::Variable(p)),
+                    Arg3::Expr(field),
+                    Arg3::Expr(query),
+                ] = arm.args.as_slice()
                 else {
                     return Err(refuse(format!(
                         "an `rrf` arm `{kind}` whose arguments are not (${name}, $x.f, query)"
@@ -655,8 +661,14 @@ fn whole_match_population(population: &ReadBody3) -> R<BTreeSet<String>> {
         }
     }
     if bound != returned {
-        let missing: Vec<String> = bound.difference(&returned).map(|v| format!("${v}")).collect();
-        let extra: Vec<String> = returned.difference(&bound).map(|v| format!("${v}")).collect();
+        let missing: Vec<String> = bound
+            .difference(&returned)
+            .map(|v| format!("${v}"))
+            .collect();
+        let extra: Vec<String> = returned
+            .difference(&bound)
+            .map(|v| format!("${v}"))
+            .collect();
         return Err(refuse(format!(
             "the population's `return` is not every variable its pattern binds (missing {missing:?}, extra {extra:?})"
         )));
@@ -853,10 +865,18 @@ pub fn print_read2(d: &QueryDecl) -> Result<String, String> {
         .collect();
     let _ = write!(out, "query {}({})", d.name, params.join(", "));
     if let Some(desc) = &d.description {
-        let _ = write!(out, " @description({})", print3::literal(&Literal::String(desc.clone())));
+        let _ = write!(
+            out,
+            " @description({})",
+            print3::literal(&Literal::String(desc.clone()))
+        );
     }
     if let Some(ins) = &d.instruction {
-        let _ = write!(out, " @instruction({})", print3::literal(&Literal::String(ins.clone())));
+        let _ = write!(
+            out,
+            " @instruction({})",
+            print3::literal(&Literal::String(ins.clone()))
+        );
     }
     match d.write_mode {
         MutationWriteMode::Publish => {}
@@ -908,7 +928,11 @@ pub fn print_read2(d: &QueryDecl) -> Result<String, String> {
 }
 
 fn clauses2(cs: &[Clause]) -> Result<String, String> {
-    Ok(cs.iter().map(clause2).collect::<Result<Vec<_>, _>>()?.join("  "))
+    Ok(cs
+        .iter()
+        .map(clause2)
+        .collect::<Result<Vec<_>, _>>()?
+        .join("  "))
 }
 
 fn clause2(c: &Clause) -> Result<String, String> {
@@ -922,7 +946,12 @@ fn clause2(c: &Clause) -> Result<String, String> {
                     .iter()
                     .map(|m| format!("{}: {}", m.prop_name, m.value))
                     .collect();
-                format!("${}: {} {{ {} }}", b.variable, b.type_name, items.join(", "))
+                format!(
+                    "${}: {} {{ {} }}",
+                    b.variable,
+                    b.type_name,
+                    items.join(", ")
+                )
             }
         }
         Clause::Traversal(t) => print3::clause(

@@ -229,9 +229,9 @@ gqt cases	crates/omnigraph-gqt/cases/constants_evaluated_per_invocation.gqt#23:m
 gqt cases	crates/omnigraph-gqt/cases/constants_evaluated_per_invocation.gqt#26:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/constants_evaluated_per_invocation.gqt#29:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/constants_evaluated_per_invocation.gqt#33:query	rewritten	
-gqt cases	crates/omnigraph-gqt/cases/count_over_traversal_nearest_counts_window.gqt#3:query	note:population-node-columns	count_nearest_with_edges: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
+gqt cases	crates/omnigraph-gqt/cases/count_over_traversal_nearest_counts_window.gqt#3:query	note:population-node-columns	count_nearest_with_edges: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
 gqt cases	crates/omnigraph-gqt/cases/count_over_traversal_nearest_counts_window.gqt#3:query	note:ranking-under-aggregate	count_nearest_with_edges: an aggregate over a ranked read: in edition 2 the ranking key selects the rows the aggregate reads and orders no group; the rewrite drops it from `order` (the window or score is in `from`), and `limit` stays a cut of the groups
-gqt cases	crates/omnigraph-gqt/cases/count_over_traversal_nearest_counts_window.gqt#3:query	note:ranked-variable-dropped	count_nearest_with_edges: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/count_over_traversal_nearest_counts_window.gqt#3:query	note:ranked-variable-dropped	count_nearest_with_edges: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/count_over_traversal_nearest_counts_window.gqt#3:query	rewritten	Nearestx1
 gqt cases	crates/omnigraph-gqt/cases/delete_conjunction_counts_the_intersection.gqt#3:mutate	rewritten	InfixStartsWithx1,ListContainsx1,Updatex1
 gqt cases	crates/omnigraph-gqt/cases/delete_conjunction_counts_the_intersection.gqt#5:mutate	rewritten	InfixStartsWithx1,ListContainsx1,Deletex1
@@ -682,8 +682,8 @@ gqt cases	crates/omnigraph-gqt/cases/issue_473_merge_net_zero_branch.gqt#9:mutat
 gqt cases	crates/omnigraph-gqt/cases/issue_473_merge_net_zero_branch.gqt#12:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/issue_563_aggregate_uncapped.gqt#3:query	note:ranking-under-aggregate	recall_count: an aggregate over a ranked read: in edition 2 the ranking key selects the rows the aggregate reads and orders no group; the rewrite drops it from `order` (the window or score is in `from`), and `limit` stays a cut of the groups
 gqt cases	crates/omnigraph-gqt/cases/issue_563_aggregate_uncapped.gqt#3:query	rewritten	Bm25x1
-gqt cases	crates/omnigraph-gqt/cases/issue_563_underfill_retry.gqt#3:query	note:population-node-columns	recall: population returns 2 node columns ($c, $a); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/issue_563_underfill_retry.gqt#3:query	note:ranked-variable-dropped	recall: the ranking read `$c`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/issue_563_underfill_retry.gqt#3:query	note:population-node-columns	recall: population returns 2 node columns ($c, $a); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/issue_563_underfill_retry.gqt#3:query	note:ranked-variable-dropped	recall: the ranking read `$c`; the call names `$c` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/issue_563_underfill_retry.gqt#3:query	note:bare-rank-key-desc	recall: bare `bm25($c.text, $q)` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/issue_563_underfill_retry.gqt#3:query	rewritten	Bm25x1
 gqt cases	crates/omnigraph-gqt/cases/issue_566_order_key_binds_to_return_item.gqt#3:query	rewritten	
@@ -695,8 +695,8 @@ gqt cases	crates/omnigraph-gqt/cases/issue_566_order_key_binds_to_return_item.gq
 gqt cases	crates/omnigraph-gqt/cases/issue_566_order_key_binds_to_return_item.gqt#20:query	v2-refused	boolean_key_unbound
 gqt cases	crates/omnigraph-gqt/cases/issue_566_order_key_binds_to_return_item.gqt#20:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/issue_567_filtered_nearest_returns_exact_matches.gqt#3:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/issue_567_traversal_nearest_fills_limit.gqt#3:query	note:population-node-columns	nearest_with_edge: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/issue_567_traversal_nearest_fills_limit.gqt#3:query	note:ranked-variable-dropped	nearest_with_edge: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/issue_567_traversal_nearest_fills_limit.gqt#3:query	note:population-node-columns	nearest_with_edge: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/issue_567_traversal_nearest_fills_limit.gqt#3:query	note:ranked-variable-dropped	nearest_with_edge: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/issue_567_traversal_nearest_fills_limit.gqt#3:query	rewritten	Nearestx1
 gqt cases	crates/omnigraph-gqt/cases/issue_583_keyed_edge_born_on_both_sides_merges_once.gqt#3:mutate	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/issue_583_keyed_edge_born_on_both_sides_merges_once.gqt#5:mutate	rewritten	
@@ -806,8 +806,8 @@ gqt cases	crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#36:qu
 gqt cases	crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#36:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#39:query	v2-refused	alias_projected_again
 gqt cases	crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#39:query	rewritten	
-gqt cases	crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#41:query	note:population-node-columns	nearest_projected_through_traversal: population returns 2 node columns ($p, $f); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#41:query	note:ranked-variable-dropped	nearest_projected_through_traversal: the ranking read `$p`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#41:query	note:population-node-columns	nearest_projected_through_traversal: population returns 2 node columns ($p, $f); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#41:query	note:ranked-variable-dropped	nearest_projected_through_traversal: the ranking read `$p`; the call names `$p` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#41:query	rewritten	Nearestx1
 gqt cases	crates/omnigraph-gqt/cases/issue_640_search_score_projection.gqt#45:query	rewritten	Nearestx1
 gqt cases	crates/omnigraph-gqt/cases/issue_651_boolean_or_in_read_predicates.gqt#3:query	rewritten	
@@ -938,39 +938,39 @@ gqt cases	crates/omnigraph-gqt/cases/issue_659_member_direction_and_types.gqt#15
 gqt cases	crates/omnigraph-gqt/cases/issue_659_member_direction_and_types.gqt#15:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/issue_659_member_direction_and_types.gqt#17:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/issue_659_member_direction_and_types.gqt#20:query	rewritten	InfixContainsx1
-gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#3:query	note:population-node-columns	nearest_named: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#3:query	note:ranked-variable-dropped	nearest_named: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#3:query	note:population-node-columns	nearest_named: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#3:query	note:ranked-variable-dropped	nearest_named: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#3:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#8:query	note:population-node-columns	nearest_alternative: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#8:query	note:ranked-variable-dropped	nearest_alternative: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#8:query	note:population-node-columns	nearest_alternative: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#8:query	note:ranked-variable-dropped	nearest_alternative: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#8:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#13:query	note:population-node-columns	nearest_wildcard: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#13:query	note:ranked-variable-dropped	nearest_wildcard: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#13:query	note:population-node-columns	nearest_wildcard: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#13:query	note:ranked-variable-dropped	nearest_wildcard: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#13:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#18:query	note:population-node-columns	nearest_named_chain: population returns 3 node columns ($d, $t, $m); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#18:query	note:ranked-variable-dropped	nearest_named_chain: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#18:query	note:population-node-columns	nearest_named_chain: population returns 3 node columns ($d, $t, $m); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#18:query	note:ranked-variable-dropped	nearest_named_chain: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#18:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#23:query	note:population-node-columns	nearest_selected_chain: population returns 3 node columns ($d, $t, $m); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#23:query	note:ranked-variable-dropped	nearest_selected_chain: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#23:query	note:population-node-columns	nearest_selected_chain: population returns 3 node columns ($d, $t, $m); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#23:query	note:ranked-variable-dropped	nearest_selected_chain: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#23:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#28:query	note:population-node-columns	fused_sparse_named: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#28:query	note:ranked-variable-dropped	fused_sparse_named: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#28:query	note:population-node-columns	fused_sparse_named: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#28:query	note:ranked-variable-dropped	fused_sparse_named: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#28:query	note:bare-rank-key-desc	fused_sparse_named: bare `rrf(nearest($d.embedding, $q), nearest($d.embedding, $other))` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#28:query	rewritten	Rrfx1
-gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#33:query	note:population-node-columns	fused_sparse_wildcard: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#33:query	note:ranked-variable-dropped	fused_sparse_wildcard: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#33:query	note:population-node-columns	fused_sparse_wildcard: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#33:query	note:ranked-variable-dropped	fused_sparse_wildcard: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#33:query	note:bare-rank-key-desc	fused_sparse_wildcard: bare `rrf(nearest($d.embedding, $q), nearest($d.embedding, $other))` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/issue_659_ranked_selection_differential.gqt#33:query	rewritten	Rrfx1
 gqt cases	crates/omnigraph-gqt/cases/issue_659_rrf_typed_edge_identity.gqt#3:query	refused	fused_types: duplicate arms `bm25($p.text, "needle")`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
-gqt cases	crates/omnigraph-gqt/cases/issue_659_rrf_typed_edge_identity.gqt#3:query	note:population-node-columns	fused_types: population returns 2 node columns ($p, $q); section 5 requires exactly one, and the bare field names none of them
+gqt cases	crates/omnigraph-gqt/cases/issue_659_rrf_typed_edge_identity.gqt#3:query	note:population-node-columns	fused_types: population returns 2 node columns ($p, $q); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
 gqt cases	crates/omnigraph-gqt/cases/issue_659_rrf_typed_edge_identity.gqt#3:query	note:population-edge-column	fused_types: population returns edge binding(s) $e
 gqt cases	crates/omnigraph-gqt/cases/issue_659_rrf_typed_edge_identity.gqt#3:query	partial	
 gqt cases	crates/omnigraph-gqt/cases/issue_659_rrf_typed_edge_identity.gqt#7:query	refused	fused_type_page: duplicate arms `bm25($p.text, "needle")`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
-gqt cases	crates/omnigraph-gqt/cases/issue_659_rrf_typed_edge_identity.gqt#7:query	note:population-node-columns	fused_type_page: population returns 2 node columns ($p, $q); section 5 requires exactly one, and the bare field names none of them
+gqt cases	crates/omnigraph-gqt/cases/issue_659_rrf_typed_edge_identity.gqt#7:query	note:population-node-columns	fused_type_page: population returns 2 node columns ($p, $q); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
 gqt cases	crates/omnigraph-gqt/cases/issue_659_rrf_typed_edge_identity.gqt#7:query	note:population-edge-column	fused_type_page: population returns edge binding(s) $e
 gqt cases	crates/omnigraph-gqt/cases/issue_659_rrf_typed_edge_identity.gqt#7:query	partial	
 gqt cases	crates/omnigraph-gqt/cases/issue_659_rrf_typed_edge_identity.gqt#10:query	refused	fused_wildcard_type_page: duplicate arms `bm25($p.text, "needle")`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
-gqt cases	crates/omnigraph-gqt/cases/issue_659_rrf_typed_edge_identity.gqt#10:query	note:population-node-columns	fused_wildcard_type_page: population returns 2 node columns ($p, $q); section 5 requires exactly one, and the bare field names none of them
+gqt cases	crates/omnigraph-gqt/cases/issue_659_rrf_typed_edge_identity.gqt#10:query	note:population-node-columns	fused_wildcard_type_page: population returns 2 node columns ($p, $q); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
 gqt cases	crates/omnigraph-gqt/cases/issue_659_rrf_typed_edge_identity.gqt#10:query	note:population-edge-column	fused_wildcard_type_page: population returns edge binding(s) $e
 gqt cases	crates/omnigraph-gqt/cases/issue_659_rrf_typed_edge_identity.gqt#10:query	partial	
 gqt cases	crates/omnigraph-gqt/cases/issue_659_shared_operator_admission.gqt#3:query	rewritten	
@@ -995,8 +995,8 @@ gqt cases	crates/omnigraph-gqt/cases/issue_660_exact_edge_deletion.gqt#21:query	
 gqt cases	crates/omnigraph-gqt/cases/issue_660_exact_edge_deletion.gqt#24:mutate	note:edge-binding	delete_by_parameters: target `Knows` is an edge type; `$x: Knows` binds an edge by type, a form the RFC's `binding` rule does not say it admits
 gqt cases	crates/omnigraph-gqt/cases/issue_660_exact_edge_deletion.gqt#24:mutate	rewritten	Deletex1
 gqt cases	crates/omnigraph-gqt/cases/issue_660_exact_edge_deletion.gqt#27:query	rewritten	
-gqt cases	crates/omnigraph-gqt/cases/issue_665_nearest_retry_same_limit.gqt#3:query	note:population-node-columns	nearest_with_edge: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/issue_665_nearest_retry_same_limit.gqt#3:query	note:ranked-variable-dropped	nearest_with_edge: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/issue_665_nearest_retry_same_limit.gqt#3:query	note:population-node-columns	nearest_with_edge: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/issue_665_nearest_retry_same_limit.gqt#3:query	note:ranked-variable-dropped	nearest_with_edge: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/issue_665_nearest_retry_same_limit.gqt#3:query	rewritten	Nearestx1
 gqt cases	crates/omnigraph-gqt/cases/issue_671_date_string_with_time_of_day_refused.gqt#3:mutate	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/issue_671_date_string_with_time_of_day_refused.gqt#6:mutate	v2-refused	touch_on_datetime_literal
@@ -1127,7 +1127,7 @@ gqt cases	crates/omnigraph-gqt/cases/issue_787_rrf_order_keys_after_fused_score.
 gqt cases	crates/omnigraph-gqt/cases/issue_787_rrf_order_keys_after_fused_score.gqt#6:query	note:bare-rank-key-desc	id_breaks_fused_tie: bare `rrf(bm25($d.text, "beta"), bm25($d.text, "alpha"))` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/issue_787_rrf_order_keys_after_fused_score.gqt#6:query	rewritten	Rrfx1
 gqt cases	crates/omnigraph-gqt/cases/issue_787_rrf_order_keys_after_fused_score.gqt#9:query	refused	secondary_key_orders_fanout_rows: duplicate arms `bm25($d.text, "needle")`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
-gqt cases	crates/omnigraph-gqt/cases/issue_787_rrf_order_keys_after_fused_score.gqt#9:query	note:population-node-columns	secondary_key_orders_fanout_rows: population returns 2 node columns ($d, $c); section 5 requires exactly one, and the bare field names none of them
+gqt cases	crates/omnigraph-gqt/cases/issue_787_rrf_order_keys_after_fused_score.gqt#9:query	note:population-node-columns	secondary_key_orders_fanout_rows: population returns 2 node columns ($d, $c); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
 gqt cases	crates/omnigraph-gqt/cases/issue_787_rrf_order_keys_after_fused_score.gqt#9:query	partial	
 gqt cases	crates/omnigraph-gqt/cases/issue_788_search_led_aggregate_order_keys.gqt#3:query	note:ranking-under-aggregate	largest_group: an aggregate over a ranked read: in edition 2 the ranking key selects the rows the aggregate reads and orders no group; the rewrite drops it from `order` (the window or score is in `from`), and `limit` stays a cut of the groups
 gqt cases	crates/omnigraph-gqt/cases/issue_788_search_led_aggregate_order_keys.gqt#3:query	rewritten	Bm25x1
@@ -1922,12 +1922,12 @@ gqt cases	crates/omnigraph-gqt/cases/nearest_bm25_and_rrf_rank_the_search_fixtur
 gqt cases	crates/omnigraph-gqt/cases/nearest_bm25_and_rrf_rank_the_search_fixture.gqt#15:query	rewritten	Rrfx1
 gqt cases	crates/omnigraph-gqt/cases/nearest_corpus_smaller_than_limit.gqt#3:query	rewritten	Nearestx1
 gqt cases	crates/omnigraph-gqt/cases/nearest_interleaves_rows_around_the_query.gqt#3:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/nearest_rank_survives_edge_fanout_and_hops.gqt#3:query	note:population-node-columns	nearest_edges: population returns 2 node columns ($d, $target); section 5 requires exactly one, and the bare field names none of them
+gqt cases	crates/omnigraph-gqt/cases/nearest_rank_survives_edge_fanout_and_hops.gqt#3:query	note:population-node-columns	nearest_edges: population returns 2 node columns ($d, $target); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
 gqt cases	crates/omnigraph-gqt/cases/nearest_rank_survives_edge_fanout_and_hops.gqt#3:query	note:population-edge-column	nearest_edges: population returns edge binding(s) $w
-gqt cases	crates/omnigraph-gqt/cases/nearest_rank_survives_edge_fanout_and_hops.gqt#3:query	note:ranked-variable-dropped	nearest_edges: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/nearest_rank_survives_edge_fanout_and_hops.gqt#3:query	note:ranked-variable-dropped	nearest_edges: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/nearest_rank_survives_edge_fanout_and_hops.gqt#3:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/nearest_rank_survives_edge_fanout_and_hops.gqt#7:query	note:population-node-columns	nearest_hops: population returns 2 node columns ($d, $target); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/nearest_rank_survives_edge_fanout_and_hops.gqt#7:query	note:ranked-variable-dropped	nearest_hops: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/nearest_rank_survives_edge_fanout_and_hops.gqt#7:query	note:population-node-columns	nearest_hops: population returns 2 node columns ($d, $target); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/nearest_rank_survives_edge_fanout_and_hops.gqt#7:query	note:ranked-variable-dropped	nearest_hops: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/nearest_rank_survives_edge_fanout_and_hops.gqt#7:query	rewritten	Nearestx1
 gqt cases	crates/omnigraph-gqt/cases/nearest_ranks_updated_embedding.gqt#3:mutate	rewritten	Updatex1
 gqt cases	crates/omnigraph-gqt/cases/nearest_ranks_updated_embedding.gqt#6:query	rewritten	Nearestx1
@@ -2119,8 +2119,8 @@ gqt cases	crates/omnigraph-gqt/cases/reserved_word_property_in_mutation_predicat
 gqt cases	crates/omnigraph-gqt/cases/reserved_word_property_in_mutation_predicate.gqt#9:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/restart_survives_reopen.gqt#4:mutate	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/restart_survives_reopen.gqt#9:query	rewritten	
-gqt cases	crates/omnigraph-gqt/cases/reverse_traversal_nearest_ranks_targets.gqt#3:query	note:population-node-columns	nearest_edge_targets: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/reverse_traversal_nearest_ranks_targets.gqt#3:query	note:ranked-variable-dropped	nearest_edge_targets: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/reverse_traversal_nearest_ranks_targets.gqt#3:query	note:population-node-columns	nearest_edge_targets: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/reverse_traversal_nearest_ranks_targets.gqt#3:query	note:ranked-variable-dropped	nearest_edge_targets: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/reverse_traversal_nearest_ranks_targets.gqt#3:query	rewritten	Nearestx1
 gqt cases	crates/omnigraph-gqt/cases/rows_survive_history_release_and_reopen.gqt#3:mutate	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/rows_survive_history_release_and_reopen.gqt#5:mutate	rewritten	
@@ -2131,28 +2131,28 @@ gqt cases	crates/omnigraph-gqt/cases/rows_survive_history_release_and_reopen.gqt
 gqt cases	crates/omnigraph-gqt/cases/rows_survive_history_release_and_reopen.gqt#21:mutate	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/rows_survive_history_release_and_reopen.gqt#23:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/rrf_cross_join_batch_order_preserves_rank.gqt#3:query	refused	fused: duplicate arms `bm25($d.text, $t)`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
-gqt cases	crates/omnigraph-gqt/cases/rrf_cross_join_batch_order_preserves_rank.gqt#3:query	note:population-node-columns	fused: population returns 2 node columns ($d, $p); section 5 requires exactly one, and the bare field names none of them
+gqt cases	crates/omnigraph-gqt/cases/rrf_cross_join_batch_order_preserves_rank.gqt#3:query	note:population-node-columns	fused: population returns 2 node columns ($d, $p); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
 gqt cases	crates/omnigraph-gqt/cases/rrf_cross_join_batch_order_preserves_rank.gqt#3:query	partial	
-gqt cases	crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#3:query	note:population-node-columns	recall_two_terms: population returns 2 node columns ($c, $a); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#3:query	note:ranked-variable-dropped	recall_two_terms: the ranking read `$c`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#3:query	note:population-node-columns	recall_two_terms: population returns 2 node columns ($c, $a); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#3:query	note:ranked-variable-dropped	recall_two_terms: the ranking read `$c`; the call names `$c` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#3:query	note:bare-rank-key-desc	recall_two_terms: bare `rrf(bm25($c.text, $q1), bm25($c.text, $q2))` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#3:query	rewritten	Rrfx1
-gqt cases	crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#8:query	note:population-node-columns	recall_alternation: population returns 2 node columns ($c, $a); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#8:query	note:ranked-variable-dropped	recall_alternation: the ranking read `$c`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#8:query	note:population-node-columns	recall_alternation: population returns 2 node columns ($c, $a); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#8:query	note:ranked-variable-dropped	recall_alternation: the ranking read `$c`; the call names `$c` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#8:query	note:bare-rank-key-desc	recall_alternation: bare `rrf(bm25($c.text, $q1), bm25($c.text, $q2))` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#8:query	rewritten	Rrfx1
-gqt cases	crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#13:query	note:population-node-columns	recall_wildcard: population returns 2 node columns ($c, $a); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#13:query	note:ranked-variable-dropped	recall_wildcard: the ranking read `$c`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#13:query	note:population-node-columns	recall_wildcard: population returns 2 node columns ($c, $a); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#13:query	note:ranked-variable-dropped	recall_wildcard: the ranking read `$c`; the call names `$c` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#13:query	note:bare-rank-key-desc	recall_wildcard: bare `rrf(bm25($c.text, $q1), bm25($c.text, $q2))` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/rrf_decoy_flood_does_not_flip_the_fused_winner.gqt#13:query	rewritten	Rrfx1
 gqt cases	crates/omnigraph-gqt/cases/rrf_nearest_and_bm25_agreeing_arms.gqt#3:query	note:bare-rank-key-desc	fused: bare `rrf(nearest($d.embedding, $q), bm25($d.text, $t))` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/rrf_nearest_and_bm25_agreeing_arms.gqt#3:query	rewritten	Rrfx1
-gqt cases	crates/omnigraph-gqt/cases/rrf_nearest_arm_under_traversal.gqt#3:query	note:population-node-columns	nearest_and_text_with_edges: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/rrf_nearest_arm_under_traversal.gqt#3:query	note:ranked-variable-dropped	nearest_and_text_with_edges: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/rrf_nearest_arm_under_traversal.gqt#3:query	note:population-node-columns	nearest_and_text_with_edges: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/rrf_nearest_arm_under_traversal.gqt#3:query	note:ranked-variable-dropped	nearest_and_text_with_edges: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/rrf_nearest_arm_under_traversal.gqt#3:query	note:bare-rank-key-desc	nearest_and_text_with_edges: bare `rrf(nearest($d.embedding, $q), bm25($d.text, $text))` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/rrf_nearest_arm_under_traversal.gqt#3:query	rewritten	Rrfx1
-gqt cases	crates/omnigraph-gqt/cases/rrf_parameter_named_like_binding.gqt#3:query	note:population-node-columns	fused_v2: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/rrf_parameter_named_like_binding.gqt#3:query	note:ranked-variable-dropped	fused_v2: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/rrf_parameter_named_like_binding.gqt#3:query	note:population-node-columns	fused_v2: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/rrf_parameter_named_like_binding.gqt#3:query	note:ranked-variable-dropped	fused_v2: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/rrf_parameter_named_like_binding.gqt#3:query	note:bare-rank-key-desc	fused_v2: bare `rrf(nearest($d.embedding, $q), bm25($d.text, $t))` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/rrf_parameter_named_like_binding.gqt#3:query	rewritten	Rrfx1
 gqt cases	crates/omnigraph-gqt/cases/search_predicate_comparisons_refused.gqt#3:query	v2-refused	refused_0
@@ -2323,46 +2323,46 @@ gqt cases	crates/omnigraph-gqt/cases/traversal_destination_bindings_align_rows.g
 gqt cases	crates/omnigraph-gqt/cases/traversal_destination_bindings_align_rows.gqt#24:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/traversal_destination_bindings_align_rows.gqt#28:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_empty_after_sources_deleted.gqt#3:mutate	rewritten	Deletex1
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_empty_after_sources_deleted.gqt#6:query	note:population-node-columns	nearest_after_source_delete: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_empty_after_sources_deleted.gqt#6:query	note:ranked-variable-dropped	nearest_after_source_delete: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_empty_after_sources_deleted.gqt#6:query	note:population-node-columns	nearest_after_source_delete: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_empty_after_sources_deleted.gqt#6:query	note:ranked-variable-dropped	nearest_after_source_delete: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_empty_after_sources_deleted.gqt#6:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_fanout_counts_rows.gqt#3:query	note:population-node-columns	nearest_counts_rows: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_fanout_counts_rows.gqt#3:query	note:ranked-variable-dropped	nearest_counts_rows: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_fanout_counts_rows.gqt#3:query	note:population-node-columns	nearest_counts_rows: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_fanout_counts_rows.gqt#3:query	note:ranked-variable-dropped	nearest_counts_rows: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_fanout_counts_rows.gqt#3:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_fanout_counts_rows.gqt#7:query	note:population-node-columns	nearest_returns_pairs: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_fanout_counts_rows.gqt#7:query	note:ranked-variable-dropped	nearest_returns_pairs: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_fanout_counts_rows.gqt#7:query	note:population-node-columns	nearest_returns_pairs: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_fanout_counts_rows.gqt#7:query	note:ranked-variable-dropped	nearest_returns_pairs: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_fanout_counts_rows.gqt#7:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_gate_ranks_eligible_docs.gqt#3:query	note:population-node-columns	nearest_eligible_docs: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_gate_ranks_eligible_docs.gqt#3:query	note:ranked-variable-dropped	nearest_eligible_docs: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_gate_ranks_eligible_docs.gqt#3:query	note:population-node-columns	nearest_eligible_docs: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_gate_ranks_eligible_docs.gqt#3:query	note:ranked-variable-dropped	nearest_eligible_docs: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_gate_ranks_eligible_docs.gqt#3:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_over_empty_corpus.gqt#3:query	note:population-node-columns	nearest_empty_graph: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_over_empty_corpus.gqt#3:query	note:ranked-variable-dropped	nearest_empty_graph: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_over_empty_corpus.gqt#3:query	note:population-node-columns	nearest_empty_graph: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_over_empty_corpus.gqt#3:query	note:ranked-variable-dropped	nearest_empty_graph: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_over_empty_corpus.gqt#3:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_overfetch_fills_limit.gqt#3:query	note:population-node-columns	nearest_fills_limit: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_overfetch_fills_limit.gqt#3:query	note:ranked-variable-dropped	nearest_fills_limit: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_overfetch_fills_limit.gqt#3:query	note:population-node-columns	nearest_fills_limit: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_overfetch_fills_limit.gqt#3:query	note:ranked-variable-dropped	nearest_fills_limit: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_overfetch_fills_limit.gqt#3:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_rare_survivors_exact_pass.gqt#3:query	note:population-node-columns	nearest_with_edge: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_rare_survivors_exact_pass.gqt#3:query	note:ranked-variable-dropped	nearest_with_edge: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_rare_survivors_exact_pass.gqt#3:query	note:population-node-columns	nearest_with_edge: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_rare_survivors_exact_pass.gqt#3:query	note:ranked-variable-dropped	nearest_with_edge: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_rare_survivors_exact_pass.gqt#3:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_rare_survivors_exact_pass.gqt#7:query	note:population-node-columns	nearest_with_edge_wide: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_rare_survivors_exact_pass.gqt#7:query	note:ranked-variable-dropped	nearest_with_edge_wide: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_rare_survivors_exact_pass.gqt#7:query	note:population-node-columns	nearest_with_edge_wide: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_rare_survivors_exact_pass.gqt#7:query	note:ranked-variable-dropped	nearest_with_edge_wide: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_rare_survivors_exact_pass.gqt#7:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_single_eligible_doc.gqt#3:query	note:population-node-columns	nearest_single_source: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_single_eligible_doc.gqt#3:query	note:ranked-variable-dropped	nearest_single_source: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_single_eligible_doc.gqt#3:query	note:population-node-columns	nearest_single_source: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_single_eligible_doc.gqt#3:query	note:ranked-variable-dropped	nearest_single_source: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_single_eligible_doc.gqt#3:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_with_source_and_target_filters.gqt#3:query	note:population-node-columns	nearest_with_source_filter: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_with_source_and_target_filters.gqt#3:query	note:ranked-variable-dropped	nearest_with_source_filter: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_with_source_and_target_filters.gqt#3:query	note:population-node-columns	nearest_with_source_filter: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_with_source_and_target_filters.gqt#3:query	note:ranked-variable-dropped	nearest_with_source_filter: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_with_source_and_target_filters.gqt#3:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_with_source_and_target_filters.gqt#7:query	note:population-node-columns	nearest_with_target_filter: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_with_source_and_target_filters.gqt#7:query	note:ranked-variable-dropped	nearest_with_target_filter: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_with_source_and_target_filters.gqt#7:query	note:population-node-columns	nearest_with_target_filter: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_with_source_and_target_filters.gqt#7:query	note:ranked-variable-dropped	nearest_with_target_filter: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_with_source_and_target_filters.gqt#7:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_with_source_and_target_filters.gqt#11:query	note:population-node-columns	nearest_with_source_filter_above_gate: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_with_source_and_target_filters.gqt#11:query	note:ranked-variable-dropped	nearest_with_source_filter_above_gate: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_with_source_and_target_filters.gqt#11:query	note:population-node-columns	nearest_with_source_filter_above_gate: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_with_source_and_target_filters.gqt#11:query	note:ranked-variable-dropped	nearest_with_source_filter_above_gate: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/traversal_nearest_with_source_and_target_filters.gqt#11:query	rewritten	Nearestx1
 gqt cases	crates/omnigraph-gqt/cases/traversal_no_edges_returns_empty.gqt#3:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/traversal_no_edges_returns_empty.gqt#7:query	rewritten	
-gqt cases	crates/omnigraph-gqt/cases/two_hop_nearest_ranks_chain_heads.gqt#3:query	note:population-node-columns	nearest_two_hop_sources: population returns 3 node columns ($d, $t, $u); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/two_hop_nearest_ranks_chain_heads.gqt#3:query	note:ranked-variable-dropped	nearest_two_hop_sources: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/two_hop_nearest_ranks_chain_heads.gqt#3:query	note:population-node-columns	nearest_two_hop_sources: population returns 3 node columns ($d, $t, $u); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/two_hop_nearest_ranks_chain_heads.gqt#3:query	note:ranked-variable-dropped	nearest_two_hop_sources: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/two_hop_nearest_ranks_chain_heads.gqt#3:query	rewritten	Nearestx1
 gqt cases	crates/omnigraph-gqt/cases/typed_block_aggregate_contracts.gqt#3:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/typed_block_aggregate_contracts.gqt#7:query	rewritten	
@@ -2703,8 +2703,8 @@ gqt cases	crates/omnigraph-gqt/cases/v2/bm25_score_ignores_a_filter_over_an_unin
 gqt cases	crates/omnigraph-gqt/cases/v2/bm25_score_ignores_a_filter_over_an_unindexed_fragment.gqt#9:query	rewritten	Bm25x1
 gqt cases	crates/omnigraph-gqt/cases/v2/bm25_score_ignores_a_filter_over_an_unindexed_fragment.gqt#12:query	note:bare-rank-key-desc	filtered: bare `bm25($d.text, "graph")` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/v2/bm25_score_ignores_a_filter_over_an_unindexed_fragment.gqt#12:query	rewritten	Bm25x1
-gqt cases	crates/omnigraph-gqt/cases/v2/bm25_ties_after_traversal.gqt#3:query	note:population-node-columns	recall: population returns 2 node columns ($c, $a); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/v2/bm25_ties_after_traversal.gqt#3:query	note:ranked-variable-dropped	recall: the ranking read `$c`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/v2/bm25_ties_after_traversal.gqt#3:query	note:population-node-columns	recall: population returns 2 node columns ($c, $a); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/v2/bm25_ties_after_traversal.gqt#3:query	note:ranked-variable-dropped	recall: the ranking read `$c`; the call names `$c` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/v2/bm25_ties_after_traversal.gqt#3:query	note:bare-rank-key-desc	recall: bare `bm25($c.text, $q)` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/v2/bm25_ties_after_traversal.gqt#3:query	rewritten	Bm25x1
 gqt cases	crates/omnigraph-gqt/cases/v2/bm25_ties_after_traversal.gqt#7:query	note:bare-rank-key-desc	root_tie: bare `bm25($c.text, $q)` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
@@ -2764,21 +2764,21 @@ gqt cases	crates/omnigraph-gqt/cases/v2/planner/anti_join_sibling_scopes_share_a
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/bound_edge_joins_the_sort_tiebreak.gqt#3:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/conjuncts_placed_per_binding.gqt#3:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/conjuncts_placed_per_binding.gqt#7:query	rewritten	
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#3:query	note:population-node-columns	bm25_order: population returns 2 node columns ($m, $p); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#3:query	note:ranked-variable-dropped	bm25_order: the ranking read `$p`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#3:query	note:population-node-columns	bm25_order: population returns 2 node columns ($m, $p); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#3:query	note:ranked-variable-dropped	bm25_order: the ranking read `$p`; the call names `$p` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#3:query	note:bare-rank-key-desc	bm25_order: bare `bm25($p.text, "law")` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#3:query	rewritten	InfixContainsx1,Bm25x1
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#7:query	note:population-node-columns	nearest_order: population returns 2 node columns ($m, $p); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#7:query	note:ranked-variable-dropped	nearest_order: the ranking read `$p`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#7:query	note:population-node-columns	nearest_order: population returns 2 node columns ($m, $p); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#7:query	note:ranked-variable-dropped	nearest_order: the ranking read `$p`; the call names `$p` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#7:query	rewritten	InfixContainsx1,Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#11:query	note:population-node-columns	rrf_order: population returns 2 node columns ($m, $p); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#11:query	note:ranked-variable-dropped	rrf_order: the ranking read `$p`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#11:query	note:population-node-columns	rrf_order: population returns 2 node columns ($m, $p); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#11:query	note:ranked-variable-dropped	rrf_order: the ranking read `$p`; the call names `$p` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#11:query	note:rrf-let-name	rrf_order: the table's `let $p` collides with a name in this read; written `$p2`
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#11:query	note:bare-rank-key-desc	rrf_order: bare `rrf(nearest($p.embedding, [1.0, 0.0]), bm25($p.text, "law"))` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#11:query	rewritten	InfixContainsx1,Rrfx1
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#15:query	rewritten	InfixContainsx1
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#19:query	note:population-node-columns	bm25_order_on_the_needles: population returns 2 node columns ($m, $p); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#19:query	note:ranked-variable-dropped	bm25_order_on_the_needles: the ranking read `$m`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#19:query	note:population-node-columns	bm25_order_on_the_needles: population returns 2 node columns ($m, $p); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#19:query	note:ranked-variable-dropped	bm25_order_on_the_needles: the ranking read `$m`; the call names `$m` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#19:query	note:bare-rank-key-desc	bm25_order_on_the_needles: bare `bm25($m.number, "case")` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_beside_search_and_ranking.gqt#19:query	rewritten	InfixContainsx1,Bm25x1
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/contains_join_pairs_each_needle_a_text_holds.gqt#3:query	rewritten	InfixContainsx1
@@ -2871,40 +2871,40 @@ gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_750_destination_search_mem
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_750_destination_search_membership.gqt#23:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_750_destination_search_membership.gqt#27:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_750_destination_search_membership.gqt#31:query	rewritten	
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_762_rrf_over_a_reached_binding.gqt#3:query	note:population-node-columns	ranked_destination: population returns 2 node columns ($t, $d); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_762_rrf_over_a_reached_binding.gqt#3:query	note:ranked-variable-dropped	ranked_destination: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_762_rrf_over_a_reached_binding.gqt#3:query	note:population-node-columns	ranked_destination: population returns 2 node columns ($t, $d); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_762_rrf_over_a_reached_binding.gqt#3:query	note:ranked-variable-dropped	ranked_destination: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_762_rrf_over_a_reached_binding.gqt#3:query	note:bare-rank-key-desc	ranked_destination: bare `rrf(nearest($d.embedding, [1.0, 0.0]), bm25($d.body, "needle"))` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_762_rrf_over_a_reached_binding.gqt#3:query	rewritten	Rrfx1
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_775_cross_binding_filter_on_the_contains_join.gqt#3:query	rewritten	InfixContainsx1
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_775_cross_binding_filter_on_the_contains_join.gqt#7:query	rewritten	InfixContainsx1
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#3:query	note:population-node-columns	nearest_on_an_undeclared_destination: population returns 2 node columns ($p, $d); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#3:query	note:ranked-variable-dropped	nearest_on_an_undeclared_destination: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#3:query	note:population-node-columns	nearest_on_an_undeclared_destination: population returns 2 node columns ($p, $d); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#3:query	note:ranked-variable-dropped	nearest_on_an_undeclared_destination: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#3:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#9:query	note:population-node-columns	nearest_on_a_destination_declared_second: population returns 2 node columns ($p, $d); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#9:query	note:ranked-variable-dropped	nearest_on_a_destination_declared_second: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#9:query	note:population-node-columns	nearest_on_a_destination_declared_second: population returns 2 node columns ($p, $d); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#9:query	note:ranked-variable-dropped	nearest_on_a_destination_declared_second: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#9:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#15:query	note:population-node-columns	rrf_over_one_destination: population returns 2 node columns ($p, $d); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#15:query	note:ranked-variable-dropped	rrf_over_one_destination: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#15:query	note:population-node-columns	rrf_over_one_destination: population returns 2 node columns ($p, $d); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#15:query	note:ranked-variable-dropped	rrf_over_one_destination: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#15:query	note:rrf-let-name	rrf_over_one_destination: the table's `let $p` collides with a name in this read; written `$p2`
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#15:query	note:bare-rank-key-desc	rrf_over_one_destination: bare `rrf(nearest($d.embedding, $q), bm25($d.body, "needle"))` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#15:query	rewritten	Rrfx1
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#20:query	note:population-node-columns	nearest_from_a_source_with_no_edges: population returns 2 node columns ($p, $d); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#20:query	note:ranked-variable-dropped	nearest_from_a_source_with_no_edges: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#20:query	note:population-node-columns	nearest_from_a_source_with_no_edges: population returns 2 node columns ($p, $d); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#20:query	note:ranked-variable-dropped	nearest_from_a_source_with_no_edges: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_nearest_and_rrf_rank_a_reached_binding.gqt#20:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#3:query	note:population-node-columns	bm25_on_an_undeclared_destination: population returns 2 node columns ($p, $d); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#3:query	note:ranked-variable-dropped	bm25_on_an_undeclared_destination: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#3:query	note:population-node-columns	bm25_on_an_undeclared_destination: population returns 2 node columns ($p, $d); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#3:query	note:ranked-variable-dropped	bm25_on_an_undeclared_destination: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#3:query	note:bare-rank-key-desc	bm25_on_an_undeclared_destination: bare `bm25($d.body, "needle")` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#3:query	rewritten	Bm25x1
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#8:query	note:population-node-columns	bm25_two_hops_from_the_source: population returns 3 node columns ($p, $x, $d); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#8:query	note:ranked-variable-dropped	bm25_two_hops_from_the_source: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#8:query	note:population-node-columns	bm25_two_hops_from_the_source: population returns 3 node columns ($p, $x, $d); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#8:query	note:ranked-variable-dropped	bm25_two_hops_from_the_source: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#8:query	note:bare-rank-key-desc	bm25_two_hops_from_the_source: bare `bm25($d.body, "needle")` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#8:query	rewritten	Bm25x1
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#13:query	note:population-node-columns	bm25_on_a_traversal_source: population returns 2 node columns ($t, $d); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#13:query	note:ranked-variable-dropped	bm25_on_a_traversal_source: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#13:query	note:population-node-columns	bm25_on_a_traversal_source: population returns 2 node columns ($t, $d); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#13:query	note:ranked-variable-dropped	bm25_on_a_traversal_source: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#13:query	note:bare-rank-key-desc	bm25_on_a_traversal_source: bare `bm25($d.body, "needle")` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#13:query	rewritten	Bm25x1
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#18:query	note:population-node-columns	bm25_over_an_undirected_traversal: population returns 2 node columns ($a, $d); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#18:query	note:ranked-variable-dropped	bm25_over_an_undirected_traversal: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#18:query	note:population-node-columns	bm25_over_an_undirected_traversal: population returns 2 node columns ($a, $d); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#18:query	note:ranked-variable-dropped	bm25_over_an_undirected_traversal: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#18:query	note:bare-rank-key-desc	bm25_over_an_undirected_traversal: bare `bm25($d.body, "needle")` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_789_ranked_binding_roots_its_component.gqt#18:query	rewritten	Bm25x1
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/issue_854_key_index_probe.gqt#3:query	rewritten	
@@ -2979,8 +2979,8 @@ gqt cases	crates/omnigraph-gqt/cases/v2/planner/not_over_contains_null_operand_b
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/not_over_contains_null_operand_both_arms.gqt#17:query	rewritten	InfixContainsx1
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/not_over_contains_null_operand_both_arms.gqt#21:query	rewritten	InfixStartsWithx1
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/not_over_contains_null_operand_both_arms.gqt#24:query	rewritten	ListContainsx1
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/overfetch_ladder_completes_a_traversal_source.gqt#3:query	note:population-node-columns	nearest_citing_docs: population returns 2 node columns ($d, $t); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/overfetch_ladder_completes_a_traversal_source.gqt#3:query	note:ranked-variable-dropped	nearest_citing_docs: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/overfetch_ladder_completes_a_traversal_source.gqt#3:query	note:population-node-columns	nearest_citing_docs: population returns 2 node columns ($d, $t); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/overfetch_ladder_completes_a_traversal_source.gqt#3:query	note:ranked-variable-dropped	nearest_citing_docs: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/overfetch_ladder_completes_a_traversal_source.gqt#3:query	rewritten	Nearestx1
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/projection_demand.gqt#3:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/projection_demand.gqt#7:query	rewritten	
@@ -2995,8 +2995,8 @@ gqt cases	crates/omnigraph-gqt/cases/v2/planner/ranked_access_on_the_scan.gqt#8:
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/ranked_access_on_the_scan.gqt#13:query	rewritten	Nearestx1
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/ranked_access_on_the_scan.gqt#18:query	note:bare-rank-key-desc	fused: bare `rrf(nearest($d.embedding, $q), bm25($d.text, $t))` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/ranked_access_on_the_scan.gqt#18:query	rewritten	Rrfx1
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/ranked_source_over_a_hash_join.gqt#3:query	note:population-node-columns	nearest_person_docs: population returns 2 node columns ($p, $d); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/ranked_source_over_a_hash_join.gqt#3:query	note:ranked-variable-dropped	nearest_person_docs: the ranking read `$p`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/ranked_source_over_a_hash_join.gqt#3:query	note:population-node-columns	nearest_person_docs: population returns 2 node columns ($p, $d); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/ranked_source_over_a_hash_join.gqt#3:query	note:ranked-variable-dropped	nearest_person_docs: the ranking read `$p`; the call names `$p` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/ranked_source_over_a_hash_join.gqt#3:query	rewritten	Nearestx1
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/return_distinct_reads_no_entity_id.gqt#3:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/scalar_index_coercion.gqt#3:query	rewritten	
@@ -3006,17 +3006,17 @@ gqt cases	crates/omnigraph-gqt/cases/v2/planner/scalar_index_coercion.gqt#13:que
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/scan_access_hash_join_build_side_is_sequential.gqt#3:query	rewritten	
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#3:query	v2-refused	connected_rrf_d_first
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#3:query	refused	connected_rrf_d_first: arms over different bindings (`$d`, `$t`): arms over different node columns are an edition-3 type error
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#3:query	note:population-node-columns	connected_rrf_d_first: population returns 3 node columns ($d, $t, $p); section 5 requires exactly one, and the bare field names none of them
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#3:query	note:population-node-columns	connected_rrf_d_first: population returns 3 node columns ($d, $t, $p); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#3:query	partial	
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#6:query	v2-refused	connected_rrf_t_first
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#6:query	refused	connected_rrf_t_first: arms over different bindings (`$d`, `$t`): arms over different node columns are an edition-3 type error
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#6:query	note:population-node-columns	connected_rrf_t_first: population returns 3 node columns ($t, $d, $p); section 5 requires exactly one, and the bare field names none of them
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#6:query	note:population-node-columns	connected_rrf_t_first: population returns 3 node columns ($t, $d, $p); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#6:query	partial	
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#9:query	note:population-node-columns	search_only_order_with_an_unranked_binding: population returns 2 node columns ($c, $z); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#9:query	note:ranked-variable-dropped	search_only_order_with_an_unranked_binding: the ranking read `$c`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#9:query	note:population-node-columns	search_only_order_with_an_unranked_binding: population returns 2 node columns ($c, $z); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#9:query	note:ranked-variable-dropped	search_only_order_with_an_unranked_binding: the ranking read `$c`; the call names `$c` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#9:query	rewritten	Nearestx1
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#14:query	note:population-node-columns	nearest_on_a_traversal_destination: population returns 2 node columns ($p, $d); section 5 requires exactly one, and the bare field names none of them
-gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#14:query	note:ranked-variable-dropped	nearest_on_a_traversal_destination: the ranking read `$d`; the generated bare field does not say which of the population's node columns it names
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#14:query	note:population-node-columns	nearest_on_a_traversal_destination: population returns 2 node columns ($p, $d); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#14:query	note:ranked-variable-dropped	nearest_on_a_traversal_destination: the ranking read `$d`; the call names `$d` among the population's node columns
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_order_on_an_unranked_binding_and_a_destination.gqt#14:query	rewritten	Nearestx1
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_scans_project_needed_columns_and_the_scoring_column.gqt#3:query	rewritten	Nearestx1
 gqt cases	crates/omnigraph-gqt/cases/v2/planner/search_scans_project_needed_columns_and_the_scoring_column.gqt#8:query	note:bare-rank-key-desc	bm25_slug: bare `bm25($d.title, $q)` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
@@ -3047,13 +3047,13 @@ gqt cases	crates/omnigraph-gqt/cases/v2/projected_param_declared_type.gqt#47:que
 gqt cases	crates/omnigraph-gqt/cases/v2/rrf_narrow_limit_memory.gqt#3:query	refused	narrow_fused_limit: duplicate arms `bm25($d.text, "needle")`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
 gqt cases	crates/omnigraph-gqt/cases/v2/rrf_narrow_limit_memory.gqt#3:query	partial	
 gqt cases	crates/omnigraph-gqt/cases/v2/rrf_tied_rows_under_limit.gqt#3:query	refused	fused_v2: duplicate arms `bm25($d.text, $t)`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
-gqt cases	crates/omnigraph-gqt/cases/v2/rrf_tied_rows_under_limit.gqt#3:query	note:population-node-columns	fused_v2: population returns 2 node columns ($d, $p); section 5 requires exactly one, and the bare field names none of them
+gqt cases	crates/omnigraph-gqt/cases/v2/rrf_tied_rows_under_limit.gqt#3:query	note:population-node-columns	fused_v2: population returns 2 node columns ($d, $p); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
 gqt cases	crates/omnigraph-gqt/cases/v2/rrf_tied_rows_under_limit.gqt#3:query	partial	
 gqt cases	crates/omnigraph-gqt/cases/v2/rrf_tied_rows_under_limit.gqt#7:query	refused	fused_explicit_id: duplicate arms `bm25($d.text, $t)`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
-gqt cases	crates/omnigraph-gqt/cases/v2/rrf_tied_rows_under_limit.gqt#7:query	note:population-node-columns	fused_explicit_id: population returns 2 node columns ($d, $p); section 5 requires exactly one, and the bare field names none of them
+gqt cases	crates/omnigraph-gqt/cases/v2/rrf_tied_rows_under_limit.gqt#7:query	note:population-node-columns	fused_explicit_id: population returns 2 node columns ($d, $p); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
 gqt cases	crates/omnigraph-gqt/cases/v2/rrf_tied_rows_under_limit.gqt#7:query	partial	
 gqt cases	crates/omnigraph-gqt/cases/v2/rrf_tied_rows_under_limit.gqt#12:query	refused	fused_covered_return: duplicate arms `bm25($d.text, $t)`: two arms with the same population, field and query are an edition-3 type error (section 4, Fusion)
-gqt cases	crates/omnigraph-gqt/cases/v2/rrf_tied_rows_under_limit.gqt#12:query	note:population-node-columns	fused_covered_return: population returns 2 node columns ($d, $p); section 5 requires exactly one, and the bare field names none of them
+gqt cases	crates/omnigraph-gqt/cases/v2/rrf_tied_rows_under_limit.gqt#12:query	note:population-node-columns	fused_covered_return: population returns 2 node columns ($d, $p); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
 gqt cases	crates/omnigraph-gqt/cases/v2/rrf_tied_rows_under_limit.gqt#12:query	partial	
 gqt cases	crates/omnigraph-gqt/cases/v2/search_filter_under_bm25_order.gqt#3:query	note:bare-rank-key-desc	filtered_rank: bare `bm25($d.body, $q)` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 gqt cases	crates/omnigraph-gqt/cases/v2/search_filter_under_bm25_order.gqt#3:query	rewritten	Bm25x1
@@ -3420,8 +3420,8 @@ benchmarks	benchmarks/fixtures/e2e_query_issues.gqt#6:query	rewritten
 benchmarks	benchmarks/fixtures/e2e_query_shapes.gqt#3:query	rewritten	
 benchmarks	benchmarks/fixtures/e2e_query_shapes.gqt#6:query	rewritten	
 benchmarks	benchmarks/fixtures/e2e_query_wide.gqt#3:query	rewritten	
-benchmarks	benchmarks/fixtures/e2e_rrf_traversal.gqt#3:query	note:population-node-columns	recall_two_terms: population returns 2 node columns ($c, $a); section 5 requires exactly one, and the bare field names none of them
-benchmarks	benchmarks/fixtures/e2e_rrf_traversal.gqt#3:query	note:ranked-variable-dropped	recall_two_terms: the ranking read `$c`; the generated bare field does not say which of the population's node columns it names
+benchmarks	benchmarks/fixtures/e2e_rrf_traversal.gqt#3:query	note:population-node-columns	recall_two_terms: population returns 2 node columns ($c, $a); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+benchmarks	benchmarks/fixtures/e2e_rrf_traversal.gqt#3:query	note:ranked-variable-dropped	recall_two_terms: the ranking read `$c`; the call names `$c` among the population's node columns
 benchmarks	benchmarks/fixtures/e2e_rrf_traversal.gqt#3:query	note:bare-rank-key-desc	recall_two_terms: bare `rrf(bm25($c.text, $q1), bm25($c.text, $q2))` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 benchmarks	benchmarks/fixtures/e2e_rrf_traversal.gqt#3:query	rewritten	Rrfx1
 benchmarks	benchmarks/fixtures/e2e_traversal.gqt#3:query	rewritten	
@@ -4185,12 +4185,12 @@ benchmarks	benchmarks/workloads/e2e_query_wide_scan.gqt#8:query	rewritten
 benchmarks	benchmarks/workloads/e2e_query_wide_scan_served.gqt#1:query	rewritten	
 benchmarks	benchmarks/workloads/e2e_query_wide_scan_served.gqt#4:query	rewritten	
 benchmarks	benchmarks/workloads/e2e_query_wide_scan_served.gqt#7:query	rewritten	
-benchmarks	benchmarks/workloads/e2e_rrf_traversal.gqt#1:query	note:population-node-columns	recall_two_terms: population returns 2 node columns ($c, $a); section 5 requires exactly one, and the bare field names none of them
-benchmarks	benchmarks/workloads/e2e_rrf_traversal.gqt#1:query	note:ranked-variable-dropped	recall_two_terms: the ranking read `$c`; the generated bare field does not say which of the population's node columns it names
+benchmarks	benchmarks/workloads/e2e_rrf_traversal.gqt#1:query	note:population-node-columns	recall_two_terms: population returns 2 node columns ($c, $a); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+benchmarks	benchmarks/workloads/e2e_rrf_traversal.gqt#1:query	note:ranked-variable-dropped	recall_two_terms: the ranking read `$c`; the call names `$c` among the population's node columns
 benchmarks	benchmarks/workloads/e2e_rrf_traversal.gqt#1:query	note:bare-rank-key-desc	recall_two_terms: bare `rrf(bm25($c.text, $q1), bm25($c.text, $q2))` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 benchmarks	benchmarks/workloads/e2e_rrf_traversal.gqt#1:query	rewritten	Rrfx1
-benchmarks	benchmarks/workloads/e2e_rrf_traversal.gqt#7:query	note:population-node-columns	recall_two_terms: population returns 2 node columns ($c, $a); section 5 requires exactly one, and the bare field names none of them
-benchmarks	benchmarks/workloads/e2e_rrf_traversal.gqt#7:query	note:ranked-variable-dropped	recall_two_terms: the ranking read `$c`; the generated bare field does not say which of the population's node columns it names
+benchmarks	benchmarks/workloads/e2e_rrf_traversal.gqt#7:query	note:population-node-columns	recall_two_terms: population returns 2 node columns ($c, $a); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+benchmarks	benchmarks/workloads/e2e_rrf_traversal.gqt#7:query	note:ranked-variable-dropped	recall_two_terms: the ranking read `$c`; the call names `$c` among the population's node columns
 benchmarks	benchmarks/workloads/e2e_rrf_traversal.gqt#7:query	note:bare-rank-key-desc	recall_two_terms: bare `rrf(bm25($c.text, $q1), bm25($c.text, $q2))` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 benchmarks	benchmarks/workloads/e2e_rrf_traversal.gqt#7:query	rewritten	Rrfx1
 benchmarks	benchmarks/workloads/e2e_traversal_hop1.gqt#1:query	rewritten	
@@ -4392,8 +4392,8 @@ benchmarks	benchmarks/workloads/very_long_history_write_unattached.gqt#14:mutate
 docs	docs/dev/case-studies/camel-case-filtering.md#2	rewritten	
 docs	docs/rfcs/0031-comparative-cost-harness.md#0	rewritten	Updatex1
 docs	docs/rfcs/0041-inline-stored-queries.md#2	rewritten	
-docs	docs/rfcs/0047-search-plan-truth.md#1	note:population-node-columns	passages: population returns 2 node columns ($r, $p); section 5 requires exactly one, and the bare field names none of them
-docs	docs/rfcs/0047-search-plan-truth.md#1	note:ranked-variable-dropped	passages: the ranking read `$p`; the generated bare field does not say which of the population's node columns it names
+docs	docs/rfcs/0047-search-plan-truth.md#1	note:population-node-columns	passages: population returns 2 node columns ($r, $p); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+docs	docs/rfcs/0047-search-plan-truth.md#1	note:ranked-variable-dropped	passages: the ranking read `$p`; the call names `$p` among the population's node columns
 docs	docs/rfcs/0047-search-plan-truth.md#1	note:bare-rank-key-desc	passages: bare `bm25($p.text, $q)` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 docs	docs/rfcs/0047-search-plan-truth.md#1	rewritten	Bm25x1
 docs	docs/rfcs/2026-09-24-shared-expression-model.md#1	rewritten	Deletex1
@@ -4430,8 +4430,8 @@ docs	docs/user/search/index.md#0	rewritten	Nearestx1
 docs	docs/user/search/index.md#1	rewritten	Bm25x1
 docs	docs/user/search/index.md#2	note:bare-rank-key-desc	hybrid: bare `rrf(nearest($d.embedding, $vector), bm25($d.body, $text))` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 docs	docs/user/search/index.md#2	rewritten	Rrfx1
-docs	docs/user/search/index.md#3	note:population-node-columns	passages: population returns 2 node columns ($r, $p); section 5 requires exactly one, and the bare field names none of them
-docs	docs/user/search/index.md#3	note:ranked-variable-dropped	passages: the ranking read `$p`; the generated bare field does not say which of the population's node columns it names
+docs	docs/user/search/index.md#3	note:population-node-columns	passages: population returns 2 node columns ($r, $p); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+docs	docs/user/search/index.md#3	note:ranked-variable-dropped	passages: the ranking read `$p`; the call names `$p` among the population's node columns
 docs	docs/user/search/index.md#3	note:bare-rank-key-desc	passages: bare `bm25($p.text, $q)` key sorted descending in edition 2; `$score` alone sorts ascending, so the rewrite writes `desc`
 docs	docs/user/search/index.md#3	rewritten	Bm25x1
 docs	docs/user/queries/catalogue.gq	v2-parse-refused	
@@ -4465,8 +4465,8 @@ skill	skills/omnigraph/references/schema-design.md#9	rewritten
 skill	skills/omnigraph/references/schema-design.md#11	v2-refused	strategic_without_owner
 skill	skills/omnigraph/references/schema-design.md#11	rewritten	
 skill	skills/omnigraph/references/schema-design.md#13	v2-refused	customer_evidence
-skill	skills/omnigraph/references/schema-design.md#13	note:population-node-columns	customer_evidence: population returns 2 node columns ($c, $a); section 5 requires exactly one, and the bare field names none of them
-skill	skills/omnigraph/references/schema-design.md#13	note:ranked-variable-dropped	customer_evidence: the ranking read `$a`; the generated bare field does not say which of the population's node columns it names
+skill	skills/omnigraph/references/schema-design.md#13	note:population-node-columns	customer_evidence: population returns 2 node columns ($c, $a); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+skill	skills/omnigraph/references/schema-design.md#13	note:ranked-variable-dropped	customer_evidence: the ranking read `$a`; the call names `$a` among the population's node columns
 skill	skills/omnigraph/references/schema-design.md#13	rewritten	Nearestx1
 skill	skills/omnigraph/references/search.md#4	rewritten	Nearestx1
 skill	skills/omnigraph/references/search.md#5	v2-refused	top_titles
@@ -4480,6 +4480,6 @@ skill	skills/omnigraph/references/search.md#7	note:bare-rank-key-desc	scored_tit
 skill	skills/omnigraph/references/search.md#7	rewritten	Bm25x1
 skill	skills/omnigraph/references/search.md#9	v2-parse-refused	
 skill	skills/omnigraph/references/search.md#10	v2-refused	related_chunks
-skill	skills/omnigraph/references/search.md#10	note:population-node-columns	related_chunks: population returns 2 node columns ($c, $a); section 5 requires exactly one, and the bare field names none of them
-skill	skills/omnigraph/references/search.md#10	note:ranked-variable-dropped	related_chunks: the ranking read `$c`; the generated bare field does not say which of the population's node columns it names
+skill	skills/omnigraph/references/search.md#10	note:population-node-columns	related_chunks: population returns 2 node columns ($c, $a); the ranking names its column, the others ride as payload (RFC section 3, relation expressions)
+skill	skills/omnigraph/references/search.md#10	note:ranked-variable-dropped	related_chunks: the ranking read `$c`; the call names `$c` among the population's node columns
 skill	skills/omnigraph/references/search.md#10	rewritten	Nearestx1

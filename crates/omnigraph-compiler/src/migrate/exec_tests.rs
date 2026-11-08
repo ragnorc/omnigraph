@@ -58,7 +58,8 @@ fn canon_ir(ir: &mut QueryIR) -> (bool, bool) {
         // A repeated rank key lowers to a reference to the rank's column.
         let rank_ref = matches!(&o.expr, IRExpr::PropAccess { property, .. }
             if property == "_score" || property == "_rrf");
-        if (matches!(o.expr, IRExpr::Bm25 { .. } | IRExpr::Rrf { .. }) || rank_ref) && !o.descending {
+        if (matches!(o.expr, IRExpr::Bm25 { .. } | IRExpr::Rrf { .. }) || rank_ref) && !o.descending
+        {
             o.descending = true;
             dir = true;
         }
@@ -185,11 +186,7 @@ fn ranking_rows_are_typed_ir_equal_after_normalisation() {
         let catalog = s
             .catalogs
             .iter()
-            .find(|c| {
-                originals
-                    .iter()
-                    .all(|d| typecheck_query_decl(c, d).is_ok())
-            })
+            .find(|c| originals.iter().all(|d| typecheck_query_decl(c, d).is_ok()))
             .or(s.catalogs.first())
             .map(|c| c.as_ref());
         let Ok(m) = migrate(&s.text, catalog) else {
@@ -315,7 +312,10 @@ fn ranking_rows_are_typed_ir_equal_after_normalisation() {
                 }
                 Err(e) => print_failures.push(format!("{}: {e}", s.origin)),
             }
-            match (read_ir(original, catalog), read_ir(&normalised.decl, catalog)) {
+            match (
+                read_ir(original, catalog),
+                read_ir(&normalised.decl, catalog),
+            ) {
                 (Ok(mut a), Ok(mut b)) => {
                     let raw_equal = ir_parts(&a) == ir_parts(&b);
                     let (d1, k1) = canon_ir(&mut a);
