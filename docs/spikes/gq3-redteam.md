@@ -365,14 +365,24 @@ Verification on the branch:
   ignored, plus 2 others.
 - `cargo clippy -p omnigraph-compiler --all-targets --locked -- -D warnings -W clippy::dbg_macro` and
   `cargo fmt` are clean.
-- `cargo dev-test -p omnigraph-compiler` (the whole workspace graph) was run with
-  `RUST_MIN_STACK=16777216`; the result is recorded below.
+- `cargo dev-test -p omnigraph-compiler`: the result is below.
 
 The parser spike's edition-2 corpus walk collects every `.gq` file under `docs/`. One change was needed
 in its owner test: the walk now skips `docs/spikes/gq3-redteam`, which holds edition-3 text. Nothing
 under `crates/omnigraph-reference-engine/` changed, and no edition-2 behaviour changed.
 
-DEV-TEST-RESULT
+Result of `cargo dev-test -p omnigraph-compiler --no-fail-fast` (the whole canonical workspace graph,
+`RUST_MIN_STACK=16777216`): 5,184 passed and 10 failed. All of the compiler crate's tests passed in that
+run, including `redteam_corpus_matches_its_pinned_mismatches`. The 10 failures are in crates this branch
+does not change, and none of them reaches the query parser. They are the sandbox failures the parser
+spike already attributed (gVisor, running as root):
+- 5 symlink-refusal tests: `omnigraph-bench` archive and projection, and
+  `cli_cluster::managed_lifecycle_capture_and_retry_records_refuse_symlinks_without_reading_targets`.
+- 4 `omnigraph-bench` machine-identity tests: there is no `Cpus_allowed_list` in `/proc/self/status`.
+- `db::upgrade::tests::interrupted::unreadable_legacy_object_asks_for_a_rerun`, which needs a mode-000
+  file that root still reads.
+
+The two flaky tests the parser spike also saw (the CLI lock test and the telemetry span race) passed here.
 
 ## (c) What I did not get to
 
