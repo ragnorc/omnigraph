@@ -1,0 +1,41 @@
+# issue: 1278
+# notes: A keyed insert that names only some properties of an existing entity.
+# notes: The docs say an upsert "updates the existing row"; this case expects the omitted properties to be kept.
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+    slug: String @key
+    title: String
+    n: I64?
+    emb: Vector(2)?
+}
+
+--- seed
+{"type":"Doc","data":{"slug":"d1","title":"old","n":7,"emb":[1.0,2.0]}}
+
+--- mutate
+query retitle() {
+    insert Doc { slug: "d1", title: "new" }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- query
+query doc() {
+    match { $d: Doc }
+    return { $d.title, $d.n, $d.emb }
+}
+
+--- expect unordered
+{"d.title": "new", "d.n": 7, "d.emb": [1.0, 2.0]}
+
+--- expect shape
+d.title: String
+d.n: I64?
+d.emb: Vector(2)?

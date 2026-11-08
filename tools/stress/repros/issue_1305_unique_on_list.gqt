@@ -1,0 +1,40 @@
+# issue: 1305
+# red_on: 0b468487; the insert fails with `scalar key: unsupported column type List(...) for @unique/@key enforcement`.
+# notes: A body-level @unique on a list property passes schema admission, then a write that sets the property fails.
+# notes: This case expects the write to succeed. If the fix refuses the schema instead, replace this case with a parser test.
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node U {
+    slug: String @key
+    tags: [String]?
+    @unique(tags)
+}
+
+--- seed
+{"type":"U","data":{"slug":"u0"}}
+
+--- mutate
+query add() {
+    insert U { slug: "u1", tags: ["a"] }
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- query
+query all() {
+    match { $u: U }
+    return { $u.slug }
+}
+
+--- expect unordered
+{"u.slug": "u0"}
+{"u.slug": "u1"}
+
+--- expect shape
+u.slug: String
