@@ -259,8 +259,13 @@ enum Step {
         name: String,
         value: SExpr,
     },
-    /// `optional { p }`: the inner term and its new columns.
-    Optional { inner: Term, new_cols: Vec<Col> },
+    /// `optional { p }`: the inner term, its new columns, and the columns
+    /// visible before it (for the padding arm's types).
+    Optional {
+        inner: Term,
+        new_cols: Vec<Col>,
+        before: Vec<Col>,
+    },
 }
 
 #[derive(Clone)]
@@ -1550,10 +1555,12 @@ impl Ctx<'_> {
                 ty: c.ty.with_nullable(true),
             })
             .collect();
+        let before_cols = sc.visible();
         sc.push_binder(
             Step::Optional {
                 inner: term,
                 new_cols: new_cols.clone(),
+                before: before_cols,
             },
             &nullable,
         );
@@ -3167,7 +3174,11 @@ fn apply(acc: Option<Term>, step: Step, _fresh: &mut u32) -> Term {
                 keep: true,
             }
         }
-        Step::Optional { inner, new_cols } => {
+        Step::Optional {
+            inner,
+            new_cols,
+            before,
+        } => {
             // Union(Correlate(R, p), Project(Filter(R, ¬ exists p), nulls)).
             let r = acc.unwrap_or(Term::Unit);
             let matched = Term::Correlate {
@@ -3190,7 +3201,13 @@ fn apply(acc: Option<Term>, step: Step, _fresh: &mut u32) -> Term {
             };
             let mut items = Vec::new();
             for c in output_columns(&r) {
-                items.push((c.clone(), SExpr::new(SKind::Col(c), Ty::scalar(ScalarType::Bool, false))));
+                // A hidden column (a block's count) has no declared type here;
+                // every one is an `I64` count or a reference.
+                let ty = before
+                    .iter()
+                    .find(|b| b.name == c)
+                    .map_or(Ty::scalar(ScalarType::I64, false), |b| b.ty.clone());
+                items.push((c.clone(), SExpr::new(SKind::Col(c), ty)));
             }
             for c in &new_cols {
                 items.push((c.name.clone(), SExpr::new(SKind::Null, c.ty.with_nullable(true))));

@@ -441,7 +441,7 @@ fn t69_both_ways() {
 }
 
 /// Recursive reads in the asset's schema.
-const REACHABLE: &str = "query reachable($from: String) {
+pub(crate) const REACHABLE: &str = "query reachable($from: String) {
   match {
     from union(
       { match { $p: Person { handle: $from }  $p knows $q } return { $q } },
