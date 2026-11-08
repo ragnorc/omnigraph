@@ -1317,3 +1317,21 @@ fn every_edition2_text_type_checks_exactly_as_before() {
     }
     assert!(n > 1500, "{n}");
 }
+
+/// Finding 17: the asset's `weighted` is `T68`; renaming the population at
+/// `let` level, before `$d` is bound, is a legal spelling of it.
+#[test]
+fn weighted_type_checks_with_the_population_renamed_before_d_is_bound() {
+    ok("query weighted($q: String, $v: Vector(3)) {
+  match {
+    let $docs = { match { $d: Doc } return { $d } }
+    let $docs2 = { match { from $docs } return { $d as d2 } }
+    from { match { from distance($docs, $d.embedding, $v) } return { $d, $distance as vec } }
+    from { match { from bm25($docs2, $d2.body, $q) } return { $d2, $score as lex } }
+    $d = $d2
+  }
+  return { $d.title, 0.7 * (1.0 / (1.0 + $vec)) + 0.3 * $lex as s }
+  order { s desc }
+  limit 10
+}");
+}
