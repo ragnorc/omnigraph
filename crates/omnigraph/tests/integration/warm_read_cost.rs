@@ -1560,7 +1560,14 @@ async fn write_invalidates_table_cache_for_changed_table() {
     out.unwrap();
     // The held handle reads through the store it was committed with, which
     // this per-operation meter does not wrap, so only an open would show up
-    // here: a reopen of the landed pin goes through the metered store.
+    // here: a reopen of the landed pin goes through the metered store. The
+    // opener's reads are classified by path, so zero of them does not prove
+    // that nothing opened; the open count at the dataset-open boundary does,
+    // and it is one when the writer does not hold its committed version.
+    assert_eq!(
+        io.data_open_count, 0,
+        "a row read after a write is served by the handle the write committed: no open"
+    );
     assert_eq!(
         io.data_opener_reads, 0,
         "a row read after a write is served by the handle the write committed: no reopen"
