@@ -216,6 +216,10 @@ async fn write_rows_select_what_the_edition_2_where_selects() {
                     .is_err()
                 {
                     tally.skipped += 1;
+                    tsv.push(format!(
+                        "{label}\t{:?}\tskipped\tbranch create failed",
+                        sel.row
+                    ));
                     continue;
                 }
                 let before_rows = session
@@ -263,6 +267,17 @@ async fn write_rows_select_what_the_edition_2_where_selects() {
                             Row::Delete => {
                                 let (Ok(before), Ok(after)) = (&before_rows, &after_rows) else {
                                     tally.skipped += 1;
+                                    let why = before_rows
+                                        .as_ref()
+                                        .err()
+                                        .or(after_rows.as_ref().err())
+                                        .map(|e| e.to_string())
+                                        .unwrap_or_default();
+                                    tsv.push(format!(
+                                        "{label}\t{:?}\tskipped\t{}",
+                                        sel.row,
+                                        why.replace(['\n', '\t'], " ")
+                                    ));
                                     continue;
                                 };
                                 let (before, after) = (ids(before).unwrap(), ids(after).unwrap());

@@ -358,7 +358,11 @@ fn a_ranking_key_under_an_aggregate_leaves_order() {
     order { nearest($d.embedding, $v) }
     limit 2
 }"#);
-    assert!(body(&m).contains("return { count($d) as n }\n    limit 2\n}"), "{}", m.text);
+    assert!(
+        body(&m).contains("return { count($d) as n }\n    limit 2\n}"),
+        "{}",
+        m.text
+    );
     assert!(body(&m).contains("k: 2)"), "{}", m.text);
 }
 
@@ -370,6 +374,10 @@ fn variables_bound_inside_a_block_stay_out_of_the_population() {
     order { nearest($d.embedding, $v) }
     limit 2
 }"#);
-    assert!(body(&m).contains("return { $d } }, embedding"), "{}", m.text);
+    assert!(
+        body(&m).contains("return { $d } }, embedding"),
+        "{}",
+        m.text
+    );
     assert!(m.notes.iter().any(|n| n.kind == "population-block-locals"));
 }

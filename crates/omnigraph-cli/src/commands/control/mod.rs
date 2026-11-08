@@ -535,3 +535,52 @@ pub(crate) fn run_queries_migrate(
         Completion::success()
     })
 }
+
+#[cfg(test)]
+mod migrate_tests {
+    use super::run_queries_migrate;
+
+    #[test]
+    fn queries_migrate_prints_and_writes_the_edition_3_text() {
+        let dir = tempfile::tempdir().unwrap();
+        let schema = dir.path().join("schema.pg");
+        std::fs::write(&schema, "node Doc { slug: String @key  tags: [String] }\n").unwrap();
+        let file = dir.path().join("q.gq");
+        let source = "query q() {\n  match { $d: Doc  $d.tags contains \"x\" }  // c\n  return { $d.slug }\n}\n";
+        std::fs::write(&file, source).unwrap();
+        let mut out = Vec::new();
+        let done =
+            run_queries_migrate(&[file.clone()], Some(&schema), false, false, &mut out).unwrap();
+        assert_eq!(done.code(), 0);
+        let printed = String::from_utf8(out).unwrap();
+        assert!(
+            printed.contains("gq 3;\nquery q() {\n  match { $d: Doc  \"x\" in $d.tags }  // c"),
+            "{printed}"
+        );
+        assert_eq!(std::fs::read_to_string(&file).unwrap(), source);
+
+        let mut out = Vec::new();
+        let done =
+            run_queries_migrate(&[file.clone()], Some(&schema), true, false, &mut out).unwrap();
+        assert_eq!(done.code(), 0);
+        assert!(
+            std::fs::read_to_string(&file)
+                .unwrap()
+                .starts_with("gq 3;\n")
+        );
+    }
+
+    #[test]
+    fn queries_migrate_refuses_a_body_of_several_writes() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("w.gq");
+        let source =
+            "query w() {\n  delete Doc where slug = \"a\"\n  delete Doc where slug = \"b\"\n}\n";
+        std::fs::write(&file, source).unwrap();
+        let mut out = Vec::new();
+        let done = run_queries_migrate(&[file.clone()], None, true, false, &mut out).unwrap();
+        assert_eq!(done.code(), 1);
+        assert_eq!(std::fs::read_to_string(&file).unwrap(), source);
+        assert!(String::from_utf8(out).unwrap().contains("refused"));
+    }
+}

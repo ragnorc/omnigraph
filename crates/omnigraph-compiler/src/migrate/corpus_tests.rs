@@ -255,6 +255,10 @@ fn refusal_class(reason: &str) -> String {
     let classes = [
         ("a body of", "write: several statements in one body"),
         (
+            "T54 in edition 2",
+            "ranking: `asc` on a rank key (edition-2 T54) would become legal",
+        ),
+        (
             "needs the schema",
             "contains: list or String undecidable without a schema",
         ),

@@ -1,0 +1,115 @@
+case	statement	outcome	detail
+blob_external_uri_refused_without_policy.gqt#5:update_to_external_uri	Update	write-refused	external blob URI 's3://assets/external/file.bin' is not allowed: new external Blob URI ingress is denied for this graph
+blob_external_uri_refused_without_policy.gqt#7:update_to_external_uri_matching_no_row	Update	agree-empty	
+blob_update_carries_unassigned_blobs.gqt#3:assign_first_carry_second	Update	agree	1 rows
+blob_update_carries_unassigned_blobs.gqt#5:clear_first_carry_second	Update	agree	1 rows
+blob_update_carries_unassigned_blobs.gqt#7:assign_scalar_carry_both	Update	agree	1 rows
+blob_update_carries_unassigned_blobs.gqt#9:assign_both	Update	agree	1 rows
+blob_update_carries_unassigned_blobs.gqt#13:assign_scalar_over_null_and_stored_blobs	Update	agree	2 rows
+blob_update_carries_unassigned_blobs.gqt#18:null_on_non_nullable_scalar_matching_no_row	Update	write-refused	cannot assign null to non-nullable property 'rank' of Doc
+boolean_literal_refused_where_a_property_is_named_false.gqt#3:shadowed_property	Delete	write-refused	type error: T46: `false` is a Boolean literal here; the property named `false` of `Flag` cannot be named bare in a mutation `where`; rename it in the schema (`@rename_from`)
+boolean_literal_refused_where_a_property_is_named_false.gqt#8:literal_on_a_plain_type	Delete	agree	1 rows
+boolean_precedence_and_binds_tighter_than_or.gqt#18:delete_bare_or_and	Delete	agree	3 rows
+branch_create_at_a_commit.gqt#6:age_alice	Update	agree	1 rows
+branch_create_at_a_commit.gqt#8:remove_bob	Delete	agree	1 rows
+camelcase_property_in_mutation_predicate.gqt#3:delete_open_large_deals	Delete	agree	1 rows
+camelcase_property_in_mutation_predicate.gqt#5:close_large_deals	Update	agree	1 rows
+card_minimum_counts_every_written_source.gqt#9:retitle	Update	agree	1 rows
+catalogue/mixed_joins_and_refusals.gqt#9:rename_scan	Update	write-refused	type error: T10: catalogue type `@Operator` is read-only; the engine owns its rows
+compound_and_bare_boolean_filters.gqt#21:compound_where_runs	Update	agree	2 rows
+constants_evaluated_per_invocation.gqt#9:assign_with_forty	Update	agree	1 rows
+constants_evaluated_per_invocation.gqt#11:assign_with_twenty	Update	agree	1 rows
+constants_evaluated_per_invocation.gqt#16:or_absorbs_null	Update	agree	1 rows
+constants_evaluated_per_invocation.gqt#18:and_absorbs_null	Update	agree	1 rows
+delete_conjunction_counts_the_intersection.gqt#3:note_a_names_tagged_y	Update	agree	2 rows
+delete_conjunction_counts_the_intersection.gqt#5:delete_a_names_tagged_x	Delete	agree	2 rows
+detached_delete_fails_before_primary_delete.gqt#4:delete_bob	Delete	agree	1 rows
+detached_delete_fails_before_primary_delete.gqt#12:delete_bob	Delete	agree-empty	
+detached_error_after_manifest_commit_is_durable_once.gqt#14:older	Update	agree	1 rows
+detached_multitable_delete_cascade_failure_after_table_1.gqt#4:w	Delete	agree	1 rows
+detached_multitable_delete_cascade_failure_after_table_1.gqt#25:w	Delete	agree-empty	
+expression_type_errors.gqt#13:count_in_a_mutation_where	Update	both-refused	type error: T7: filter comparisons require scalar operands, got aggregate and I64
+expression_type_errors.gqt#15:property_leaf_in_an_assignment	Update	write-refused	type error: T45: `age` cannot appear in an assignment value; assignments and binding matches are constants per invocation
+expression_type_errors.gqt#19:search_in_a_mutation_where	Delete	write-refused	type error: T44: `search` cannot appear in a mutation where; a where compares the row's own properties, parameters and now()
+expression_type_errors.gqt#27:string_as_a_mutation_where	Delete	both-refused	type error: T41: a filter must be Boolean, got String
+graph_diff_net_range.gqt#6:alice_ages	Update	agree	1 rows
+graph_diff_net_range.gqt#8:alice_reverts	Update	agree	1 rows
+graph_diff_net_range.gqt#12:gina_leaves	Delete	agree	1 rows
+graph_diff_net_range.gqt#14:hank_leaves	Delete	agree	1 rows
+graph_diff_net_range.gqt#18:ivan_leaves	Delete	agree	1 rows
+graph_diff_net_range.gqt#25:jill_ages	Update	agree	1 rows
+issue_1277_composed_and_wide_predicates_keep_null_rows_out.gqt#9:update_five_properties_tested_twice	Update	write-refused	unsupported expression in mutation predicate: not (["a"] contains $Wide.p1 and ["b"] contains $Wide.p1) or not (["a"] contains $Wide.p2 and ["b"] contains $Wide.p2) or not (["a"] contains $Wide.p3 and ["b"] contains $Wide.p3) or not (["a"] contains $Wide.p4 and ["b"] contains $Wide.p4) or not (["a"] contains $Wide.p5 and ["b"] contains $Wide.p5): a mutation `where` may compare at most 4 properties more than once each with `=`, `!=` or `in`
+issue_1277_composed_and_wide_predicates_keep_null_rows_out.gqt#11:update_four_properties_tested_twice	Update	agree	1 rows
+issue_1277_disjoint_in_lists_keep_null_rows_out.gqt#35:update_or_of_negated_memberships	Update	agree	1 rows
+issue_1277_disjoint_in_lists_keep_null_rows_out.gqt#40:delete_or_of_negated_memberships	Delete	agree	1 rows
+issue_660_exact_edge_deletion.gqt#3:group_the_middle_ranks	Update	agree	2 rows
+issue_671_date_string_with_time_of_day_refused.gqt#5:touch_on_datetime_literal	Update	both-refused	type error: T3: invalid Date literal '2024-01-01T02:00:00+05:00': a Date is a calendar day (YYYY-MM-DD); a string with a time of day belongs in a DateTime
+issue_801_in_predicate_over_a_list.gqt#60:recode	Update	agree	2 rows
+issue_801_in_predicate_over_a_list.gqt#65:recode_no_member	Update	agree-empty	
+issue_801_in_predicate_over_a_list.gqt#67:recode_outside_the_empty_set	Update	agree	3 rows
+issue_857_datetime_sub_millisecond_digits_refused.gqt#12:move_now	Update	both-refused	param '__nanograph_now': reserved for now() and cannot be bound
+issue_857_datetime_sub_millisecond_digits_refused.gqt#14:set_now	Update	agree	1 rows
+issue_969_graph_diff_wider_windows.gqt#6:alice_ages	Update	agree	1 rows
+issue_969_graph_diff_wider_windows.gqt#8:alice_ages_again	Update	agree	1 rows
+issue_969_graph_diff_wider_windows.gqt#12:dave_leaves	Delete	agree	1 rows
+issue_969_graph_diff_wider_windows.gqt#14:carol_leaves	Delete	agree	1 rows
+list_membership_compares_numbers_across_integer_and_float.gqt#3:assign	Update	agree	1 rows
+list_membership_compares_numbers_across_integer_and_float.gqt#8:assign_null_needle	Update	agree	1 rows
+list_membership_over_indexed_columns_across_writes_and_restart.gqt#57:delete_covered_member	Delete	agree	1 rows
+meta_fields_resolve_by_role.gqt#42:birthday	Update	agree	1 rows
+meta_fields_resolve_by_role.gqt#47:absent_edge_identity	Delete	agree-empty	
+meta_fields_resolve_by_role.gqt#49:absent_edge_endpoint	Delete	agree-empty	
+meta_fields_resolve_by_role.gqt#67:update_node_id_property	Update	write-refused	type error: T11: type `Person` has no property `id`; the engine assigns system identity; it cannot be set through a property assignment
+meta_fields_resolve_by_role.gqt#71:delete_by_bare_source	Delete	both-refused	type error: T6: edge `Bare` has no property `src`; the system endpoint is `$x.@src`
+meta_fields_resolve_by_role.gqt#73:delete_by_bare_destination	Delete	both-refused	type error: T6: edge `Bare` has no property `dst`; the system endpoint is `$x.@dst`
+meta_fields_resolve_by_role.gqt#75:delete_node_by_source	Delete	both-refused	type error: T6: binding `$x` has no meta-field `@src`; its meta-fields are `@id`
+meta_fields_resolve_by_role.gqt#77:delete_edge_by_owner	Delete	both-refused	type error: T6: binding `$x` has no meta-field `@owner`; its meta-fields are `@id`, `@src`, `@dst`, `@type`
+meta_fields_resolve_by_role.gqt#79:wrong_identity_type	Delete	both-refused	type error: T7: cannot compare String with I32
+meta_fields_resolve_by_role.gqt#83:unlink	Delete	agree	1 rows
+meta_fields_resolve_by_role.gqt#85:forget	Delete	agree	1 rows
+meta_fields_resolve_by_role.gqt#87:forget_by_bare_id	Delete	both-refused	type error: T6: type `Person` has no property `id`; the system identity is `$x.@id`
+mutation_error_typed.gqt#5:delete_absent	Delete	agree-empty	
+nearest_ranks_updated_embedding.gqt#3:move_embedding	Update	agree	1 rows
+nearest_skips_deleted_rows_and_fills_limit.gqt#3:delete_doc	Delete	agree	1 rows
+nearest_skips_deleted_rows_and_fills_limit.gqt#5:delete_doc	Delete	agree	1 rows
+nearest_skips_deleted_rows_and_fills_limit.gqt#7:delete_doc	Delete	agree	1 rows
+nested_comparison_operands_in_mutation_where.gqt#3:nested_comparison	Update	agree	1 rows
+nested_comparison_operands_in_mutation_where.gqt#5:nested_null_test	Update	agree	1 rows
+nested_comparison_operands_in_mutation_where.gqt#7:nested_not	Delete	agree	1 rows
+null_constant_refused_on_non_nullable_property.gqt#3:null_comparison_on_non_nullable	Update	write-refused	cannot assign null to non-nullable property 'adult' of Person
+null_constant_refused_on_non_nullable_property.gqt#5:null_on_non_nullable_blob_matching_no_row	Update	write-refused	cannot assign null to non-nullable property 'body' of Attachment
+null_constant_refused_on_non_nullable_property.gqt#7:comparison_on_nullable	Update	agree	1 rows
+null_constant_refused_on_non_nullable_property.gqt#12:null_comparison_on_nullable	Update	agree	1 rows
+numeric_comparison_keeps_the_fraction_across_integer_and_float.gqt#6:assign	Update	agree	1 rows
+numeric_comparison_keeps_the_fraction_across_integer_and_float.gqt#17:pushed_mutation	Update	agree-empty	
+omitted_required_param_refused.gqt#12:delete_thing_by_id_without_params	Delete	both-refused	parameter 'id' not provided
+omitted_required_param_refused.gqt#14:rename_thing_by_id_with_empty_params	Update	both-refused	parameter 'id' not provided
+omitted_required_param_refused.gqt#18:unused_required_mutation_param	Update	both-refused	parameter 'unused' not provided
+reserved_word_property_in_mutation_predicate.gqt#3:delete_by_interval	Delete	agree	1 rows
+reserved_word_property_in_mutation_predicate.gqt#5:delete_by_exists	Delete	agree	1 rows
+settings_merge_lineage_modes.gqt#9:birthday	Update	agree	1 rows
+string_contains_in_mutation_where_is_a_substring_test.gqt#3:mark_by_substring	Update	agree	2 rows
+string_contains_in_mutation_where_is_a_substring_test.gqt#8:mark_by_membership	Update	agree	2 rows
+string_contains_in_mutation_where_is_a_substring_test.gqt#13:delete_by_substring	Delete	agree	1 rows
+text_search_fuzzy_and_match_text_filters.gqt#26:retitle_fresh	Update	agree	1 rows
+text_search_fuzzy_and_match_text_filters.gqt#33:drop_first_fresh	Delete	agree	1 rows
+traversal_nearest_empty_after_sources_deleted.gqt#3:delete_doc	Delete	agree	1 rows
+typed_mutation_domains.gqt#3:literal_does_not_narrow_lossily	Update	agree-empty	
+typed_mutation_domains.gqt#5:omitted_nullable_bound	Update	agree-empty	
+typed_mutation_domains.gqt#7:declared_parameter	Update	agree	1 rows
+typed_mutation_domains.gqt#9:fractional_bound	Update	agree	1 rows
+typed_mutation_domains.gqt#14:parameter_assignment_rounding	Update	agree	1 rows
+write_max_bytes.gqt#16:carry_payload	Update	agree	1 rows
+write_max_bytes.gqt#18:removed_ids	Delete	write-refused	resource limit exceeded for retained removed-id bytes per operation: actual 32, limit 1
+write_max_bytes_removed_id_charge.gqt#3:delete_multibyte_under	Delete	write-refused	resource limit exceeded for retained removed-id bytes per operation: actual 27, limit 26
+write_max_bytes_removed_id_charge.gqt#5:delete_multibyte_exact	Delete	agree	1 rows
+write_max_bytes_removed_id_charge.gqt#7:delete_pair_under	Delete	write-refused	resource limit exceeded for retained removed-id bytes per operation: actual 50, limit 49
+write_max_bytes_removed_id_charge.gqt#9:delete_pair_exact	Delete	agree	2 rows
+write_max_bytes_removed_id_charge.gqt#11:delete_hub_under	Delete	write-refused	resource limit exceeded for retained removed-id bytes per operation: actual 75, limit 74
+write_max_bytes_removed_id_charge.gqt#19:delete_hub_exact	Delete	agree	1 rows
+write_max_bytes_update_assignment_aggregate_name.gqt#5:assign_both_rows	Update	write-refused	resource limit exceeded for decoded blob input bytes per operation: actual 31998, limit 30000
+write_max_bytes_update_carried_blob.gqt#13:retitle_alone	Update	agree	1 rows
+write_max_bytes_update_carried_blob.gqt#20:clear_and_retitle	Update	agree	1 rows
+write_max_bytes_update_carried_blob.gqt#25:retitle_indexed_alone	Update	agree	1 rows
+write_max_bytes_update_carried_blob.gqt#27:retitle_packed_alone	Update	agree	1 rows
+write_max_bytes_update_oversize_value_no_match.gqt#5:assign_missing	Update	write-refused	resource limit exceeded for decoded blob input bytes per operation: actual 4095, limit 4093

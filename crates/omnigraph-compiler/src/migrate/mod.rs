@@ -865,6 +865,22 @@ fn rewrite_ranking(cx: &mut Cx<'_>, decl: &QueryDecl) {
         return;
     }
 
+    // `asc` on a `bm25` or `rrf` key is T54 in edition 2; `$score asc` is
+    // legal in edition 3, so a rewrite would turn a refusal into rows.
+    for (o, os) in decl.order_clause.iter().zip(&spans.orderings) {
+        if matches!(o.expr, Expr::Bm25 { .. } | Expr::Rrf { .. }) && o.explicit && !o.descending {
+            cx.refuse(
+                decl,
+                Some(row),
+                os.whole,
+                format!(
+                    "`{}`: `asc` on a rank key is T54 in edition 2, while its rewrite `$score asc` is a legal ascending order in edition 3",
+                    cx.text(os.whole)
+                ),
+            );
+            return;
+        }
+    }
     let taken = dollar_names(decl);
     let score = match row {
         Row::Nearest => "distance",
@@ -1122,9 +1138,7 @@ fn rewrite_ranking(cx: &mut Cx<'_>, decl: &QueryDecl) {
     for span in occurrences {
         // Under an aggregate the ranking key orders no group in edition 2:
         // the key is removed with its separator, or the whole `order`.
-        if aggregate
-            && let Some(i) = spans.orderings.iter().position(|o| o.key == span)
-        {
+        if aggregate && let Some(i) = spans.orderings.iter().position(|o| o.key == span) {
             let removed = if spans.orderings.len() == 1 {
                 let from = spans
                     .limit_clause
@@ -1134,13 +1148,24 @@ fn rewrite_ranking(cx: &mut Cx<'_>, decl: &QueryDecl) {
                     .unwrap_or(spans.order_clause.unwrap_or(span).start);
                 Span::new(from, spans.order_clause.unwrap_or(span).end)
             } else if i == 0 {
-                Span::new(spans.orderings[0].whole.start, spans.orderings[1].whole.start)
+                Span::new(
+                    spans.orderings[0].whole.start,
+                    spans.orderings[1].whole.start,
+                )
             } else {
-                Span::new(spans.orderings[i - 1].whole.end, spans.orderings[i].whole.end)
+                Span::new(
+                    spans.orderings[i - 1].whole.end,
+                    spans.orderings[i].whole.end,
+                )
             };
             let gap = removed.text(cx.source);
             if gap.contains("//") || gap.contains("/*") {
-                cx.refuse(decl, Some(row), removed, "a comment inside the ranking key the rewrite removes");
+                cx.refuse(
+                    decl,
+                    Some(row),
+                    removed,
+                    "a comment inside the ranking key the rewrite removes",
+                );
                 continue;
             }
             cx.edit(removed, Vec::new(), row, body, &generated_refs);
@@ -1826,7 +1851,12 @@ pub fn write_selections(source: &str, catalog: &Catalog) -> Vec<WriteSelection> 
             selection_read: format!(
                 "query __gq3_selection({params}) {{ match {{ {binding}  {phi} }} return {{ ${x}.@id as id }} }}"
             ),
-            all_read: format!("query __gq3_all() {{ match {{ {binding} }} return {{ ${x}.@id as id, ${x} }} }}"),
+            // An edge cannot be projected whole, and edges take no update.
+            all_read: if is_edge {
+                format!("query __gq3_all() {{ match {{ {binding} }} return {{ ${x}.@id as id }} }}")
+            } else {
+                format!("query __gq3_all() {{ match {{ {binding} }} return {{ ${x}.@id as id, ${x} }} }}")
+            },
         });
     }
     out

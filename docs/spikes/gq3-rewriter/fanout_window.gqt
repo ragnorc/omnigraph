@@ -1,0 +1,85 @@
+# issue: none
+# notes: spike probe: does an edition-2 nearest window count rows or targets under fan-out?
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+    slug: String @key
+    embedding: Vector(2) @index
+}
+
+edge Knows: Doc -> Doc {
+}
+
+--- seed
+{"type":"Doc","data":{"slug":"a","embedding":[0.0,0.0]}}
+{"type":"Doc","data":{"slug":"b","embedding":[1.0,0.0]}}
+{"type":"Doc","data":{"slug":"c","embedding":[2.0,0.0]}}
+{"type":"Doc","data":{"slug":"x","embedding":[9.0,0.0]}}
+{"type":"Doc","data":{"slug":"y","embedding":[9.0,1.0]}}
+{"type":"Doc","data":{"slug":"z","embedding":[9.0,2.0]}}
+{"edge":"Knows","id":"e1","from":"a","to":"x","data":{}}
+{"edge":"Knows","id":"e2","from":"a","to":"y","data":{}}
+{"edge":"Knows","id":"e3","from":"a","to":"z","data":{}}
+{"edge":"Knows","id":"e4","from":"b","to":"x","data":{}}
+{"edge":"Knows","id":"e5","from":"c","to":"x","data":{}}
+
+--- query
+query rows($q: Vector(2)) {
+    match { $d: Doc  $d knows $t }
+    return { $d.slug, $t.slug }
+    order { nearest($d.embedding, $q) }
+    limit 2
+}
+
+--- params
+{"q": [0.0, 0.0]}
+
+--- expect ordered
+{"d.slug":"a","t.slug":"x"}
+{"d.slug":"a","t.slug":"y"}
+
+--- expect shape
+d.slug: String
+t.slug: String
+
+--- query
+query counted($q: Vector(2)) {
+    match { $d: Doc  $d knows $t }
+    return { count($t) as n }
+    order { nearest($d.embedding, $q) }
+    limit 2
+}
+
+--- params
+{"q": [0.0, 0.0]}
+
+--- expect unordered
+{"n":4}
+
+--- expect shape
+n: I64
+
+--- query
+query grouped($q: Vector(2)) {
+    match { $d: Doc  $d knows $t }
+    return { $d.slug, count($t) as n }
+    order { nearest($d.embedding, $q) }
+    limit 2
+}
+
+--- params
+{"q": [0.0, 0.0]}
+
+--- expect unordered
+{"d.slug":"a","n":3}
+{"d.slug":"b","n":1}
+
+--- expect shape
+d.slug: String
+n: I64
