@@ -3087,3 +3087,252 @@ async fn nearest_stays_exact_over_a_quantized_index_issue_1297() {
     }
     assert!(result.ranking().unwrap().exhaustive);
 }
+
+/// RFC 0048's numerical reference experiment, before the staged GQ evaluator
+/// exists. Inputs are already-analyzed terms; whitespace only separates those
+/// terms in the fixture. Expected scores were independently evaluated with
+/// 80-digit Decimal arithmetic. This does not qualify tokenizer/index parity,
+/// portable bit identity, resource bounds, or real-world relevance quality.
+#[test]
+fn lexical_scoring_v1_reference_oracle() {
+    use std::collections::{BTreeMap, BTreeSet};
+
+    #[derive(Clone, serde::Deserialize)]
+    struct Case {
+        name: String,
+        docs: Vec<Option<String>>,
+        query: Vec<String>,
+        edits: usize,
+        all_terms: bool,
+        expected_scores: Vec<Option<String>>,
+        expected_features: Vec<Option<String>>,
+        expected_order: Vec<usize>,
+    }
+
+    struct Evaluation {
+        scores: Vec<Option<f64>>,
+        features: Vec<Option<f64>>,
+    }
+
+    // A two-row scalar-value DP, independent of native vocabulary expansion.
+    fn distance(a: &str, b: &str) -> usize {
+        let b: Vec<_> = b.chars().collect();
+        let mut previous: Vec<_> = (0..=b.len()).collect();
+        for (i, left) in a.chars().enumerate() {
+            let mut row = vec![i + 1];
+            for (j, right) in b.iter().enumerate() {
+                row.push(
+                    (row[j] + 1)
+                        .min(previous[j + 1] + 1)
+                        .min(previous[j] + usize::from(left != *right)),
+                );
+            }
+            previous = row;
+        }
+        previous[b.len()]
+    }
+
+    fn evaluate(case: &Case, query: &[String], edits: usize, eligible: &[usize]) -> Evaluation {
+        let query: BTreeSet<_> = query.iter().map(String::as_str).collect();
+        assert!(!query.is_empty());
+        assert!(edits <= 2);
+        let docs: Vec<BTreeMap<&str, u64>> = case
+            .docs
+            .iter()
+            .map(|doc| {
+                let mut frequencies = BTreeMap::new();
+                for term in doc.as_deref().unwrap_or("").split_whitespace() {
+                    *frequencies.entry(term).or_default() += 1;
+                }
+                frequencies
+            })
+            .collect();
+        let n = docs.iter().filter(|doc| !doc.is_empty()).count();
+        if n == 0 {
+            return Evaluation {
+                scores: vec![None; docs.len()],
+                features: case
+                    .docs
+                    .iter()
+                    .enumerate()
+                    .map(|(id, doc)| (eligible.contains(&id) && doc.is_some()).then_some(0.0))
+                    .collect(),
+            };
+        }
+        let avg_length = docs
+            .iter()
+            .map(|doc| doc.values().sum::<u64>())
+            .sum::<u64>() as f64
+            / n as f64;
+        // Each original query term has one union DF, independent of the
+        // full query's all/any membership test and graph eligibility.
+        let dfs: Vec<_> = query
+            .iter()
+            .map(|q| {
+                docs.iter()
+                    .filter(|doc| doc.keys().any(|term| distance(q, term) <= edits))
+                    .count()
+            })
+            .collect();
+        let (scores, features) = docs
+            .iter()
+            .enumerate()
+            .map(|(id, doc)| {
+                if !eligible.contains(&id) || case.docs[id].is_none() {
+                    return (None, None);
+                }
+                if doc.is_empty() {
+                    return (None, Some(0.0));
+                }
+                let length = doc.values().sum::<u64>() as f64;
+                let norm = 1.2 * (0.25 + 0.75 * length / avg_length);
+                let contributions: Vec<_> = query
+                    .iter()
+                    .zip(&dfs)
+                    .map(|(q, &df)| {
+                        let best = doc
+                            .iter()
+                            .filter_map(|(term, &tf)| {
+                                let edit = distance(q, term);
+                                if edit <= edits {
+                                    let penalty = [1.0, 0.5, 0.25][edit];
+                                    Some(penalty * (2.2 * tf as f64 / (tf as f64 + norm)))
+                                } else {
+                                    None
+                                }
+                            })
+                            .reduce(f64::max);
+                        let idf = libm::log1p(((n - df) as f64 + 0.5) / (df as f64 + 0.5));
+                        best.map(|weight| idf * weight)
+                    })
+                    .collect();
+                let matches = if case.all_terms {
+                    contributions.iter().all(Option::is_some)
+                } else {
+                    contributions.iter().any(Option::is_some)
+                };
+                let feature = contributions
+                    .iter()
+                    .fold(0.0, |sum, score| sum + score.unwrap_or(0.0));
+                (matches.then_some(feature), Some(feature))
+            })
+            .unzip();
+        Evaluation { scores, features }
+    }
+
+    let cases: Vec<Case> =
+        serde_json::from_str(include_str!("fixtures/lexical_scoring_v1.json")).unwrap();
+    assert!(!cases.is_empty());
+    for case in &cases {
+        let eligible: Vec<_> = (0..case.docs.len()).collect();
+        let Evaluation { scores, features } = evaluate(case, &case.query, case.edits, &eligible);
+        assert_eq!(scores.len(), case.expected_scores.len());
+        for (id, (score, expected)) in scores.iter().zip(&case.expected_scores).enumerate() {
+            match (score, expected) {
+                (Some(score), Some(expected)) => {
+                    let expected: f64 = expected.parse().unwrap();
+                    assert!(score.is_finite() && *score > 0.0);
+                    assert!(
+                        (score - expected).abs() <= 2e-14 * expected.abs().max(1.0),
+                        "{} doc {id}: {score} != Decimal oracle {expected}",
+                        case.name
+                    );
+                }
+                (None, None) => {}
+                _ => panic!("{} doc {id}: membership differs from oracle", case.name),
+            }
+        }
+        assert_eq!(features.len(), case.expected_features.len());
+        for (id, (feature, expected)) in features.iter().zip(&case.expected_features).enumerate() {
+            match (feature, expected) {
+                (Some(value), Some(expected)) => {
+                    let expected: f64 = expected.parse().unwrap();
+                    assert!(value.is_finite() && *value >= 0.0);
+                    assert!(
+                        (value - expected).abs() <= 2e-14 * expected.abs().max(1.0),
+                        "{} doc {id}: feature {value} != Decimal oracle {expected}",
+                        case.name
+                    );
+                    if let Some(score) = scores[id] {
+                        assert_eq!(score.to_bits(), value.to_bits());
+                    }
+                }
+                (None, None) => assert!(case.docs[id].is_none()),
+                _ => panic!(
+                    "{} doc {id}: feature presence differs from oracle",
+                    case.name
+                ),
+            }
+        }
+        let mut ranked: Vec<_> = scores
+            .iter()
+            .enumerate()
+            .filter_map(|(id, score)| score.map(|score| (id, score)))
+            .collect();
+        ranked.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+        assert_eq!(
+            ranked.iter().map(|(id, _)| *id).collect::<Vec<_>>(),
+            case.expected_order,
+            "{}",
+            case.name
+        );
+
+        // Repeated/reordered query terms are one intent, not extra weight.
+        let mut repeated = case.query.clone();
+        repeated.extend(case.query.iter().rev().cloned());
+        let bits = |values: Vec<Option<f64>>| {
+            values
+                .into_iter()
+                .map(|v| v.map(f64::to_bits))
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            bits(scores.clone()),
+            bits(evaluate(case, &repeated, case.edits, &eligible).scores)
+        );
+        let reordered: Vec<_> = case.query.iter().rev().cloned().collect();
+        assert_eq!(
+            bits(scores.clone()),
+            bits(evaluate(case, &reordered, case.edits, &eligible).scores)
+        );
+        assert_eq!(
+            bits(features.clone()),
+            bits(evaluate(case, &repeated, case.edits, &eligible).features)
+        );
+        // A feature describes term evidence, independently of all/any admission.
+        let other_mode = Case {
+            all_terms: !case.all_terms,
+            ..case.clone()
+        };
+        assert_eq!(
+            bits(features.clone()),
+            bits(evaluate(&other_mode, &case.query, case.edits, &eligible).features)
+        );
+
+        // Narrowing eligibility must not recompute the scoring corpus.
+        let subset: Vec<_> = eligible.iter().copied().step_by(2).collect();
+        let filtered = evaluate(case, &case.query, case.edits, &subset);
+        for id in &subset {
+            assert_eq!(
+                scores[*id].map(f64::to_bits),
+                filtered.scores[*id].map(f64::to_bits)
+            );
+            assert_eq!(
+                features[*id].map(f64::to_bits),
+                filtered.features[*id].map(f64::to_bits)
+            );
+        }
+        // Increasing tolerance may change scores, but cannot remove matches.
+        for edits in 0..2 {
+            let lower = evaluate(case, &case.query, edits, &eligible).scores;
+            let upper = evaluate(case, &case.query, edits + 1, &eligible).scores;
+            assert!(
+                lower
+                    .iter()
+                    .zip(upper)
+                    .all(|(a, b)| a.is_none() || b.is_some())
+            );
+        }
+        println!("{}: {:?}", case.name, case.expected_order);
+    }
+}

@@ -95,6 +95,11 @@ proptest = "1"
 syn = { workspace = true }
 toml = "0.9"
 libc = "0.2"
+# The lexical scoring oracle (tests/search.rs) and the RFC GQ 3 lexical guards
+# (tests/lance_surface_guards.rs): `libm::log1p` is the numeric profile bm25_v1
+# names; NFC is the profiles' normalization step.
+libm = "=0.2.16"
+unicode-normalization = { workspace = true }
 
 [lints]
 workspace = true

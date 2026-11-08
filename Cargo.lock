@@ -5795,6 +5795,7 @@ dependencies = [
  "lance-select",
  "lance-table",
  "libc",
+ "libm",
  "object_store 0.14.2",
  "omnigraph-catalog",
  "omnigraph-compiler",
@@ -5819,6 +5820,7 @@ dependencies = [
  "toml",
  "tracing",
  "ulid",
+ "unicode-normalization",
  "url",
 ]
 
