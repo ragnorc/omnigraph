@@ -297,7 +297,9 @@ the edition window).
   with their fix printed: 293 `update`/`delete … where` (`Q008`) and 53 infix `contains` or
   `starts_with` (`Q012`). No text fails for any other reason.
 - Of the 2,402, 2,229 lower into the edition-2 tree, and every one of them equals the tree
-  edition 2 builds. The other 173 use a construct the prototype does not lower (see section (b)).
+  edition 2 builds. The other 173 are rewriter rows that are type errors in edition 3: 114
+  `nearest` and 55 `bm25` written in `order` or `return` (`rrf` arms included), and 4 positional
+  `fuzzy` edit budgets. The lowering refuses each with `T60`.
 - Every shared example in the asset passes the same equality check.
 - Tests: `every_edition2_text_in_the_repository_parses_as_before`,
   `the_edition2_corpus_read_as_edition_3`, `shared_examples_mean_the_same_in_both_editions`.
@@ -317,7 +319,7 @@ the edition window).
   `let_and_from_are_property_edge_alias_and_assignment_names`.
 
 **P3. The six reserved words are enough.**
-- 75 other keywords of the grammar and registry are legal as a property after a dot, a binding
+- 73 other keywords of the grammar and registry are legal as a property after a dot, a binding
   key, an alias, an edge (`let`, `from`, `true`, `false` quoted, see F8), an insert assignment and
   an update assignment.
 - The six reserved words are refused as an alias and as a bare edge. They are legal after a dot
@@ -343,7 +345,7 @@ the edition window).
 | Builder and diagnostics | `parser3.rs` | Recognizers become typed errors with a printed fix: `Q007` arrow, `Q008` `where` on a statement, `Q009` `mutation`, `Q010` comparison in binding braces, `Q011` `as commit` on a read, `Q012` infix `contains`/`starts_with`, `\|\|`, `CASE`, `for`/`unwind`/`let … in`, `@if_commit`/`@valid`, `Q013` clause after a statement. The numbers are the prototype's own. |
 | Lowering for the type checker | `bridge3.rs` | Edition-3 text whose nodes exist in edition 2 lowers into `ast::QueryFile` and type-checks unchanged. Every new node (`let`, `from`, `optional`, arithmetic, a block as a value, a generic or relation call, `limit $k`, a default, a non-legacy annotation, write clauses, `update $x`, `delete $x`, a catalogue edge) is refused with one placeholder, `T60`. |
 | Printer | `print3.rs` | Minimal. Parenthesises only where precedence requires it; separators come from a `Style`. |
-| Tests | `parser3_tests.rs` (31 tests), `parser3_proptest.rs` (1 property) | Section 10's parser tests, the asset test, the corpus walks, and the property. |
+| Tests | `parser3_tests.rs` (29 tests), `parser3_proptest.rs` (1 property) | Section 10's parser tests, the asset test, the corpus walks, and the property. |
 | Asset copy | `src/query/testdata/2026-11-07-gq-3-before-and-after.md` | A byte copy of the asset at `rfc/gq-3` `ab74f629`, because the RFC branch is not merged. |
 
 Run:
@@ -356,10 +358,30 @@ cargo test -p omnigraph-compiler --lib every_before_and_after -- --nocapture # a
 ```
 
 Verification on the branch:
-- `cargo test -p omnigraph-compiler`: all 525 library tests pass, plus 2 others.
-- `cargo dev-test -p omnigraph-compiler`: the alias carries `--workspace`, so this is the whole
-  canonical workspace graph. Result: DEVTEST_RESULT.
-- `cargo clippy -p omnigraph-compiler --all-targets --locked -- -D warnings`: CLIPPY_RESULT.
+- `cargo test -p omnigraph-compiler`: 523 library tests pass (29 edition-3 parser tests, the
+  property, and every pre-existing test), plus 2 others.
+- `cargo clippy -p omnigraph-compiler --all-targets --locked -- -D warnings -W clippy::dbg_macro`:
+  clean. `cargo fmt` is clean.
+- `cargo dev-test -p omnigraph-compiler`: the alias carries `--workspace`, so this runs the whole
+  canonical workspace graph. It was run with `RUST_MIN_STACK=16777216`, as CI's `Test Workspace`
+  job sets it; without that, the bench library aborts on a stack overflow in
+  `gqt_tests::bounded_equal_current_histories_share_content_identity`, which passes at a 3 MiB
+  stack.
+  - Result: 5,181 passed and 12 failed (`--no-fail-fast`).
+  - The compiler crate's 523 tests all passed in that run.
+  - None of the 12 failures is in a crate this branch changes, and none reaches the query parser.
+    They are facts of this sandbox (gVisor, running as root):
+    - 6 symlink-refusal tests (`omnigraph-bench` archive and projection,
+      `cli_cluster::managed_lifecycle_capture_and_retry_records_refuse_symlinks_without_reading_targets`):
+      the sandbox does not deliver the `O_NOFOLLOW` refusal they expect.
+    - 4 `omnigraph-bench` machine-identity tests: `/proc/self/status` contains no
+      `Cpus_allowed_list`.
+    - 1 CLI lock test (`legacy_pending_import_is_identity_checked_durable_and_idempotent`):
+      `lifecycle_submission_busy` under the sandbox's file locking.
+    - 1 engine test (`unreadable_legacy_object_asks_for_a_rerun`): it sets a file to mode 000,
+      and root reads it anyway.
+    - 1 server test (`telemetry::…_preserve_parent_context_without_payloads`): a span-count race.
+      It passed 5 of 5 when rerun alone, and its handler parses no query.
 
 Only the compiler crate and `Cargo.lock` changed. The lock change adds the `proptest` dev-dependency,
 which was already in the lock graph through the engine.
@@ -372,9 +394,10 @@ which was already in the lock graph through the engine.
 - **Schema declarations in the one grammar.** `declaration = schema_decl | query_decl` and
   F14's `node T: Iface` were not built; schema text still goes through `schema.pest`.
 - **The rewriter, `queries fmt`, the boot rewrite and the rule-set pin test.**
-- **The 173 corpus texts that parse as edition 3 but do not lower.** They hold positional `fuzzy`
-  edit budgets and `nearest`/`bm25`/`rrf` in `order` or `return`, the rewriter rows that are type
-  errors in edition 3. Telling them apart needs the registry.
+- **The 173 corpus texts that parse as edition 3 but do not lower** (P1). Refusing them with
+  their own codes (`T65`, the positional-option error) needs the registry.
+- **A run of the workspace graph outside this sandbox.** The 12 environmental failures above were
+  attributed from their messages; none was rerun on `main` here.
 - **A property over write bodies.** The generator builds reads only. Writes are covered by named
   tests, not generated ones.
 - **The recognizers are partial.** `CASE` is recognised by its keyword alone; `END`, `coalesce` as

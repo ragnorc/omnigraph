@@ -243,7 +243,10 @@ pub(crate) fn diagnostic_at(
     QueryDiagnostic::parse(code, message, Some(position_of(at)))
 }
 
-pub(crate) fn query_error_at(message: impl Into<String>, at: &pest::iterators::Pair<Rule>) -> CompilerError {
+pub(crate) fn query_error_at(
+    message: impl Into<String>,
+    at: &pest::iterators::Pair<Rule>,
+) -> CompilerError {
     CompilerError::query(diagnostic_at(Q005, message, at))
 }
 
@@ -682,7 +685,10 @@ fn parse_branch_name(
 /// A grammar mismatch: positioned at pest's deepest failure, naming the
 /// rules it expected there (pest tracks attempts per rule, so the names are
 /// the grammar's, not tokens).
-pub(crate) fn pest_error_to_diagnostic(input: &str, err: pest::error::Error<Rule>) -> QueryDiagnostic {
+pub(crate) fn pest_error_to_diagnostic(
+    input: &str,
+    err: pest::error::Error<Rule>,
+) -> QueryDiagnostic {
     let byte = match err.location {
         InputLocation::Pos(pos) => pos,
         InputLocation::Span((start, _)) => start,
@@ -713,7 +719,10 @@ pub(crate) fn pest_error_to_diagnostic(input: &str, err: pest::error::Error<Rule
 /// A declaration body the hand-written parser refused: its bare message
 /// names the construct and `Display` adds the one `parse error:` prefix; a
 /// diagnostic it already carries passes through.
-pub(crate) fn compiler_error_to_diagnostic(err: CompilerError, position: Position) -> QueryDiagnostic {
+pub(crate) fn compiler_error_to_diagnostic(
+    err: CompilerError,
+    position: Position,
+) -> QueryDiagnostic {
     match err {
         CompilerError::Query(diagnostic) => *diagnostic,
         other => QueryDiagnostic::parse(Q005, parse_error_message(other), Some(position)),
@@ -1290,7 +1299,9 @@ pub(crate) fn parse_edge_name(pair: pest::iterators::Pair<Rule>) -> Result<Strin
     }
 }
 
-pub(crate) fn parse_traversal_bounds(pair: pest::iterators::Pair<Rule>) -> Result<(u32, Option<u32>)> {
+pub(crate) fn parse_traversal_bounds(
+    pair: pest::iterators::Pair<Rule>,
+) -> Result<(u32, Option<u32>)> {
     let mut inner = pair.into_inner();
     let min_pair = inner
         .next()

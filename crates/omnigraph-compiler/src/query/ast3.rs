@@ -10,9 +10,7 @@
 //! Every node derives `PartialEq`, so a parse, print and parse round trip
 //! compares whole trees ([`super::print3`]). Parentheses leave no node.
 
-use super::ast::{
-    AggFunc, CompOp, FileBody, Literal, MutationWriteMode, SettingStmt, Traversal,
-};
+use super::ast::{AggFunc, CompOp, FileBody, Literal, MutationWriteMode, SettingStmt, Traversal};
 
 /// A source that opened with `gq 3;`.
 #[derive(Debug, Clone, PartialEq)]
@@ -26,7 +24,7 @@ pub enum Body3 {
     Decls(Vec<Decl3>),
     /// `show`, `branch`, `commit` or `load`: the edition-2 statement nodes,
     /// whose grammar edition 3 keeps.
-    Statement(StatementBody),
+    Statement(Box<StatementBody>),
     /// `explain` over one edition-3 declaration.
     Explain(Box<Decl3>),
 }
@@ -153,7 +151,10 @@ pub struct Assignment3 {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Clause3 {
     /// `let $name = value`: a named value or a named relation.
-    Let { name: String, value: LetValue3 },
+    Let {
+        name: String,
+        value: LetValue3,
+    },
     /// `from rel`: rows drawn from a relation.
     From(RelExpr3),
     Not(Vec<Clause3>),

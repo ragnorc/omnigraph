@@ -10,17 +10,15 @@ use pest::iterators::Pair;
 
 use crate::error::CompilerError;
 
-use super::ast::{
-    AggFunc, CompOp, EdgeSelector, FileBody, Literal, MutationWriteMode, Traversal,
-};
+use super::ast::{AggFunc, CompOp, EdgeSelector, FileBody, Literal, MutationWriteMode, Traversal};
 use super::ast3::*;
 use super::codes::{Q002, Q004, Q005, Q006, Q007, Q008, Q009, Q010, Q011, Q012, Q013};
 use super::diagnostic::{Applicability, Position, QueryDiagnostic, Suggestion, TextEdit};
 use super::parser::{
     QueryParser, Rule, compiler_error_to_diagnostic, diagnostic_at, parse_branch_stmt,
-    parse_commit_stmt, parse_edge_name, parse_load_stmt, parse_setting_stmt,
-    parse_setting_target, parse_string_lit, parse_traversal_bounds, parse_unattached_base,
-    pest_error_to_diagnostic, position_of, skip_trivia,
+    parse_commit_stmt, parse_edge_name, parse_load_stmt, parse_setting_stmt, parse_setting_target,
+    parse_string_lit, parse_traversal_bounds, parse_unattached_base, pest_error_to_diagnostic,
+    position_of, skip_trivia,
 };
 
 type R<T> = std::result::Result<T, QueryDiagnostic>;
@@ -31,7 +29,11 @@ pub enum EditionLine {
     /// No `gq N;` line.
     Absent,
     /// `gq N;` spanning `start..end` in the source.
-    Present { edition: u64, start: usize, end: usize },
+    Present {
+        edition: u64,
+        start: usize,
+        end: usize,
+    },
 }
 
 /// Read the edition line: `gq`, word-bounded, an integer and `;`, after
@@ -90,24 +92,24 @@ pub fn parse_query3(input: &str) -> R<File3> {
             }
             Rule::setting_stmt => settings.push(parse_setting_stmt(inner)?),
             Rule::branch_stmt => {
-                statement = Some(Body3::Statement(StatementBody(FileBody::Branch(
+                statement = Some(Body3::Statement(Box::new(StatementBody(FileBody::Branch(
                     parse_branch_stmt(inner)?,
-                ))))
+                )))))
             }
             Rule::commit_stmt => {
-                statement = Some(Body3::Statement(StatementBody(FileBody::Commit(
+                statement = Some(Body3::Statement(Box::new(StatementBody(FileBody::Commit(
                     parse_commit_stmt(inner)?,
-                ))))
+                )))))
             }
             Rule::load_stmt => {
-                statement = Some(Body3::Statement(StatementBody(FileBody::Load(
+                statement = Some(Body3::Statement(Box::new(StatementBody(FileBody::Load(
                     parse_load_stmt(inner)?,
-                ))))
+                )))))
             }
             Rule::show_stmt => {
-                statement = Some(Body3::Statement(StatementBody(FileBody::Show(
+                statement = Some(Body3::Statement(Box::new(StatementBody(FileBody::Show(
                     parse_setting_target(inner)?,
-                ))))
+                )))))
             }
             Rule::explain_stmt3 => {
                 let wrapped = inner
@@ -115,8 +117,8 @@ pub fn parse_query3(input: &str) -> R<File3> {
                     .find(|p| matches!(p.as_rule(), Rule::query_decl3 | Rule::load_stmt))
                     .expect("grammar: explain_stmt3 wraps one declaration or load");
                 statement = Some(match wrapped.as_rule() {
-                    Rule::load_stmt => Body3::Statement(StatementBody(FileBody::ExplainLoad(
-                        parse_load_stmt(wrapped)?,
+                    Rule::load_stmt => Body3::Statement(Box::new(StatementBody(
+                        FileBody::ExplainLoad(parse_load_stmt(wrapped)?),
                     ))),
                     _ => Body3::Explain(Box::new(decl(wrapped)?)),
                 });
@@ -373,12 +375,13 @@ fn read_body(pair: Pair<Rule>) -> R<ReadBody3> {
                     .into_inner()
                     .find(|p| p.as_rule() != Rule::kw_limit)
                     .unwrap();
-                body.limit = Some(match value.as_rule() {
-                    Rule::variable => Limit3::Param(value.as_str()[1..].to_string()),
-                    _ => Limit3::Literal(value.as_str().parse::<u64>().map_err(|e| {
-                        diagnostic_at(Q005, format!("invalid limit: {e}"), &value)
-                    })?),
-                });
+                body.limit =
+                    Some(match value.as_rule() {
+                        Rule::variable => Limit3::Param(value.as_str()[1..].to_string()),
+                        _ => Limit3::Literal(value.as_str().parse::<u64>().map_err(|e| {
+                            diagnostic_at(Q005, format!("invalid limit: {e}"), &value)
+                        })?),
+                    });
             }
             _ => {}
         }
@@ -488,7 +491,13 @@ fn where_statement(s: Pair<Rule>) -> QueryDiagnostic {
             Rule::kw_delete => kind = "delete",
             Rule::type_name => type_name = part.as_str(),
             Rule::variable => bound = Some(part.as_str()),
-            Rule::mutation_assignment3 => set.push(part.as_str().trim().trim_end_matches(',').trim().to_string()),
+            Rule::mutation_assignment3 => set.push(
+                part.as_str()
+                    .trim()
+                    .trim_end_matches(',')
+                    .trim()
+                    .to_string(),
+            ),
             Rule::expr3 => predicate = Some(part),
             _ => {}
         }
@@ -501,7 +510,9 @@ fn where_statement(s: Pair<Rule>) -> QueryDiagnostic {
         };
         return diagnostic_at(
             Q008,
-            format!("a statement takes no `where`; the clauses before it select the rows `{var}` names"),
+            format!(
+                "a statement takes no `where`; the clauses before it select the rows `{var}` names"
+            ),
             &at,
         )
         .with_fix(format!("{}  {statement}", predicate.as_str().trim()));
@@ -642,9 +653,7 @@ fn brace_filter(c: Pair<Rule>) -> QueryDiagnostic {
     };
     diagnostic_at(
         Q010,
-        format!(
-            "the braces of a binding hold `property: value` matches; `{body}` is a comparison"
-        ),
+        format!("the braces of a binding hold `property: value` matches; `{body}` is a comparison"),
         &c,
     )
     .with_fix(format!("{var}: {ty}  {qualified}"))
@@ -724,9 +733,7 @@ fn edge_selector(pair: Pair<Rule>) -> R<EdgeSelector> {
         }
         Rule::edge_wildcard => Ok(EdgeSelector::Wildcard),
         Rule::edge_alternatives3 => Ok(EdgeSelector::Alternation(
-            pair.into_inner()
-                .map(edge_name)
-                .collect::<R<Vec<_>>>()?,
+            pair.into_inner().map(edge_name).collect::<R<Vec<_>>>()?,
         )),
         _ => Ok(EdgeSelector::Named(edge_name(pair)?)),
     }
@@ -862,7 +869,8 @@ fn expr(pair: Pair<Rule>) -> R<Expr3> {
                     }),
                     Rule::infix_string_op => {
                         let right = parts.next().unwrap();
-                        let fix = format!("{}({left_source}, {})", op.as_str(), right.as_str().trim());
+                        let fix =
+                            format!("{}({left_source}, {})", op.as_str(), right.as_str().trim());
                         Err(diagnostic_at(
                             Q012,
                             format!(
@@ -987,14 +995,17 @@ fn operand(pair: Pair<Rule>) -> R<Expr3> {
 
 fn literal(pair: Pair<Rule>) -> R<Literal> {
     let inner = pair.into_inner().next().unwrap();
-    let parse_err = |e: CompilerError, at: &Pair<Rule>| {
-        compiler_error_to_diagnostic(e, position_of(at))
-    };
+    let parse_err =
+        |e: CompilerError, at: &Pair<Rule>| compiler_error_to_diagnostic(e, position_of(at));
     Ok(match inner.as_rule() {
-        Rule::string_lit => Literal::String(parse_string_lit(&inner).map_err(|e| parse_err(e, &inner))?),
-        Rule::integer3 => Literal::Integer(i128::from(inner.as_str().parse::<i64>().map_err(
-            |e| diagnostic_at(Q005, format!("invalid integer: {e}"), &inner),
-        )?)),
+        Rule::string_lit => {
+            Literal::String(parse_string_lit(&inner).map_err(|e| parse_err(e, &inner))?)
+        }
+        Rule::integer3 => {
+            Literal::Integer(i128::from(inner.as_str().parse::<i64>().map_err(|e| {
+                diagnostic_at(Q005, format!("invalid integer: {e}"), &inner)
+            })?))
+        }
         Rule::float_lit3 => Literal::Float(
             inner
                 .as_str()
@@ -1012,12 +1023,7 @@ fn literal(pair: Pair<Rule>) -> R<Literal> {
                 Literal::DateTime(text)
             }
         }
-        Rule::list_lit3 => Literal::List(
-            inner
-                .into_inner()
-                .map(literal)
-                .collect::<R<Vec<_>>>()?,
-        ),
+        Rule::list_lit3 => Literal::List(inner.into_inner().map(literal).collect::<R<Vec<_>>>()?),
         other => unreachable!("grammar: literal3 holds no {other:?}"),
     })
 }

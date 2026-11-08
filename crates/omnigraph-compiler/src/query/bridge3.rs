@@ -29,13 +29,10 @@ fn placeholder(what: impl Into<String>) -> QueryDiagnostic {
 
 pub fn lower_file(file: File3) -> R<QueryFile> {
     let body = match file.body {
-        Body3::Decls(decls) => FileBody::Queries(
-            decls
-                .into_iter()
-                .map(lower_decl)
-                .collect::<R<Vec<_>>>()?,
-        ),
-        Body3::Statement(StatementBody(body)) => body,
+        Body3::Decls(decls) => {
+            FileBody::Queries(decls.into_iter().map(lower_decl).collect::<R<Vec<_>>>()?)
+        }
+        Body3::Statement(statement) => statement.0,
         Body3::Explain(decl) => FileBody::Explain(lower_decl(*decl)?),
     };
     Ok(QueryFile {
@@ -217,8 +214,7 @@ fn lower_clause(clause: Clause3) -> R<Clause> {
         Clause3::Filter(Expr3::Block(block)) if block.func == BlockFunc3::Exists => {
             Clause::Subquery(Subquery::exists_block(lower_clauses(block.clauses)?))
         }
-        Clause3::Filter(Expr3::Compare { op, left, right })
-            if matches!(&*left, Expr3::Block(b) if b.func != BlockFunc3::Exists) =>
+        Clause3::Filter(Expr3::Compare { op, left, right }) if matches!(&*left, Expr3::Block(b) if b.func != BlockFunc3::Exists) =>
         {
             let Expr3::Block(block) = *left else {
                 unreachable!()
@@ -305,7 +301,9 @@ fn lower_call(c: Call3, scope: Scope<'_>) -> R<Expr> {
         match a {
             Arg3::Expr(e) => args.push(lower_expr(e, scope)?),
             Arg3::Inline(_) => {
-                return Err(placeholder(format!("an inline read as an argument of `{name}`")));
+                return Err(placeholder(format!(
+                    "an inline read as an argument of `{name}`"
+                )));
             }
         }
     }

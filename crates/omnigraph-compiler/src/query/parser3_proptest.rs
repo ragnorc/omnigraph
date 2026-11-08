@@ -28,19 +28,38 @@ const PROPS: &[&str] = &[
     "name", "age", "from", "let", "in", "order", "match", "count", "limit", "insert", "not",
 ];
 const EDGES: &[&str] = &[
-    "knows", "worksAt", "from", "let", "limit", "optional", "in", "and", "count", "exists",
-    "true",
+    "knows", "worksAt", "from", "let", "limit", "optional", "in", "and", "count", "exists", "true",
 ];
 const TYPES: &[&str] = &["Person", "Doc", "@Operator"];
-const ALIASES: &[&str] = &["n", "total", "from", "let", "count", "order", "distinct", "limit"];
+const ALIASES: &[&str] = &[
+    "n", "total", "from", "let", "count", "order", "distinct", "limit",
+];
 /// Bare names in operand position. Excludes the reserved six and the two
 /// Boolean literals, which are not names.
-const IDENTS: &[&str] = &["n", "total", "from", "let", "count", "exists", "date", "embedding"];
+const IDENTS: &[&str] = &[
+    "n",
+    "total",
+    "from",
+    "let",
+    "count",
+    "exists",
+    "date",
+    "embedding",
+];
 const CALLS: &[&str] = &[
     // Not `date`/`datetime`: with one string argument the call is the date
     // literal production (F17).
     // Not `let`: `let($a) in …` is the `let (…) in` recognizer (F18).
-    "f", "coalesce", "contains", "starts_with", "nearest", "bm25", "l2", "union", "rrf", "from",
+    "f",
+    "coalesce",
+    "contains",
+    "starts_with",
+    "nearest",
+    "bm25",
+    "l2",
+    "union",
+    "rrf",
+    "from",
     "count",
 ];
 const OPTIONS: &[&str] = &["k", "recall", "max_edits", "weights", "mode", "from"];
@@ -78,34 +97,40 @@ fn leaf() -> impl Strategy<Value = Expr3> {
 }
 
 fn arith_op() -> impl Strategy<Value = ArithOp> {
-    proptest::sample::select(&[
-        ArithOp::Add,
-        ArithOp::Sub,
-        ArithOp::Mul,
-        ArithOp::Div,
-        ArithOp::Rem,
-    ][..])
+    proptest::sample::select(
+        &[
+            ArithOp::Add,
+            ArithOp::Sub,
+            ArithOp::Mul,
+            ArithOp::Div,
+            ArithOp::Rem,
+        ][..],
+    )
 }
 
 fn comp_op() -> impl Strategy<Value = CompOp> {
-    proptest::sample::select(&[
-        CompOp::Eq,
-        CompOp::Ne,
-        CompOp::Gt,
-        CompOp::Lt,
-        CompOp::Ge,
-        CompOp::Le,
-    ][..])
+    proptest::sample::select(
+        &[
+            CompOp::Eq,
+            CompOp::Ne,
+            CompOp::Gt,
+            CompOp::Lt,
+            CompOp::Ge,
+            CompOp::Le,
+        ][..],
+    )
 }
 
 fn agg() -> impl Strategy<Value = AggFunc> {
-    proptest::sample::select(&[
-        AggFunc::Count,
-        AggFunc::Sum,
-        AggFunc::Avg,
-        AggFunc::Min,
-        AggFunc::Max,
-    ][..])
+    proptest::sample::select(
+        &[
+            AggFunc::Count,
+            AggFunc::Sum,
+            AggFunc::Avg,
+            AggFunc::Min,
+            AggFunc::Max,
+        ][..],
+    )
 }
 
 /// Expressions over the whole ladder. `depth` bounds nesting; clause-level
@@ -152,13 +177,16 @@ fn call(depth: u32) -> BoxedStrategy<Call3> {
 
 fn block(depth: u32) -> BoxedStrategy<Block3> {
     prop_oneof![
-        (agg(), proptest::option::of(expr(depth)), clauses(depth, 1..3)).prop_map(
-            |(f, arg, clauses)| Block3 {
+        (
+            agg(),
+            proptest::option::of(expr(depth)),
+            clauses(depth, 1..3)
+        )
+            .prop_map(|(f, arg, clauses)| Block3 {
                 func: BlockFunc3::Agg(f),
                 arg: arg.map(Box::new),
                 clauses,
-            }
-        ),
+            }),
         clauses(depth, 1..3).prop_map(|clauses| Block3 {
             func: BlockFunc3::Exists,
             arg: None,
@@ -188,17 +216,19 @@ fn traversal() -> impl Strategy<Value = Clause3> {
         bounds,
         pick(VARS),
     )
-        .prop_map(|(src, edge_binding, selector, undirected, (min_hops, max_hops), dst)| {
-            Clause3::Traversal(TraversalEq(Traversal {
-                src,
-                selector,
-                dst,
-                min_hops,
-                max_hops,
-                undirected,
-                edge_binding,
-            }))
-        })
+        .prop_map(
+            |(src, edge_binding, selector, undirected, (min_hops, max_hops), dst)| {
+                Clause3::Traversal(TraversalEq(Traversal {
+                    src,
+                    selector,
+                    dst,
+                    min_hops,
+                    max_hops,
+                    undirected,
+                    edge_binding,
+                }))
+            },
+        )
 }
 
 fn relation(depth: u32) -> BoxedStrategy<RelExpr3> {
@@ -298,17 +328,13 @@ fn decl() -> impl Strategy<Value = Decl3> {
             nullable,
             default: default.map(|(negative, value)| ParamDefault { negative, value }),
         });
-    (
-        proptest::collection::vec(param, 0..3),
-        read_body(3),
-    )
-        .prop_map(|(params, body)| Decl3 {
-            name: "q".into(),
-            params,
-            annotations: Vec::new(),
-            write_mode: MutationWriteMode::Publish,
-            body: DeclBody3::Read(body),
-        })
+    (proptest::collection::vec(param, 0..3), read_body(3)).prop_map(|(params, body)| Decl3 {
+        name: "q".into(),
+        params,
+        annotations: Vec::new(),
+        write_mode: MutationWriteMode::Publish,
+        body: DeclBody3::Read(body),
+    })
 }
 
 fn style() -> impl Strategy<Value = Style> {
@@ -374,7 +400,9 @@ fn print_then_parse_is_the_identity_on_generated_reads() {
         panic!("{e}");
     }
     let shadows = shadows.into_inner();
-    eprintln!("{cases} generated reads round-tripped; {shadows} were arrow-shaped filters the recognizer refuses");
+    eprintln!(
+        "{cases} generated reads round-tripped; {shadows} were arrow-shaped filters the recognizer refuses"
+    );
     // The shadow must stay rare: it needs a bare name, a string or a bare
     // meta-field between two minus signs.
     assert!(shadows * 50 < cases as usize, "{shadows} of {cases}");

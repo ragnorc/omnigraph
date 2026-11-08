@@ -422,7 +422,10 @@ pub fn expr(e: &Expr3) -> String {
         Expr3::In { needle, list } => {
             format!("{} in {}", at(needle, Prec::Sum), at(list, Prec::Sum))
         }
-        Expr3::IsNull { expr: inner, negated } => format!(
+        Expr3::IsNull {
+            expr: inner,
+            negated,
+        } => format!(
             "{} is {}null",
             at(inner, Prec::Sum),
             if *negated { "not " } else { "" }

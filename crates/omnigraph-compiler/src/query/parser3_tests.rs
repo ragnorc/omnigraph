@@ -119,12 +119,23 @@ fn the_edition_line_selects_the_grammar() {
     let e = parse_query_diagnostic(&format!("gq 4;\n{e2}")).unwrap_err();
     assert_eq!(e.code.as_str(), "Q006");
     // The line stands before the settings lines.
-    assert!(parse_query3("gq 3;\nset ann_nprobes = 4;\nquery q() { match { $p: P } return { $p } }").is_ok());
-    assert!(parse_query3("set ann_nprobes = 4;\ngq 3;\nquery q() { match { $p: P } return { $p } }").is_err());
+    assert!(
+        parse_query3("gq 3;\nset ann_nprobes = 4;\nquery q() { match { $p: P } return { $p } }")
+            .is_ok()
+    );
+    assert!(
+        parse_query3("set ann_nprobes = 4;\ngq 3;\nquery q() { match { $p: P } return { $p } }")
+            .is_err()
+    );
     // A comment may precede it.
-    assert!(parse_query_diagnostic("// header\ngq 3;\nquery q() { match { $p: P } return { $p } }").is_ok());
+    assert!(
+        parse_query_diagnostic("// header\ngq 3;\nquery q() { match { $p: P } return { $p } }")
+            .is_ok()
+    );
     // `gq` as an identifier elsewhere is unaffected.
-    assert!(parse_query_diagnostic("query gq() { match { $p: P { gq: 3 } } return { $p.gq } }").is_ok());
+    assert!(
+        parse_query_diagnostic("query gq() { match { $p: P { gq: 3 } } return { $p.gq } }").is_ok()
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -198,9 +209,9 @@ fn from_takes_an_inline_read_a_variable_and_a_call() {
         panic!()
     };
     assert_eq!(c.name, "colleagues");
-    let Clause3::From(RelExpr3::Call(c)) =
-        one_clause("from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 20, recall: 0.9)")
-    else {
+    let Clause3::From(RelExpr3::Call(c)) = one_clause(
+        "from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 20, recall: 0.9)",
+    ) else {
         panic!()
     };
     assert_eq!((c.args.len(), c.options.len()), (3, 2));
@@ -221,7 +232,10 @@ fn from_takes_an_inline_read_a_variable_and_a_call() {
 fn let_and_from_are_property_edge_alias_and_assignment_names() {
     for word in ["true", "false"] {
         // F8: the Boolean literals are not bare edge names either.
-        assert!(matches!(one_clause(&format!("$a \"{word}\" $b")), Clause3::Traversal(_)));
+        assert!(matches!(
+            one_clause(&format!("$a \"{word}\" $b")),
+            Clause3::Traversal(_)
+        ));
         let c = match_clauses(&format!("$ok {word} $p: Person"));
         assert_eq!(c.len(), 3, "{word}: {c:#?}");
     }
@@ -245,14 +259,19 @@ fn let_and_from_are_property_edge_alias_and_assignment_names() {
         one_clause(&format!("$a (\"{word}\" | knows) $b"));
         // The bare form is the filter `$ok` and then the clause.
         let c = match_clauses(&format!("$ok {word} $r"));
-        assert!(matches!(&c[0], Clause3::Filter(Expr3::Variable(v)) if v == "ok"), "{c:#?}");
+        assert!(
+            matches!(&c[0], Clause3::Filter(Expr3::Variable(v)) if v == "ok"),
+            "{c:#?}"
+        );
         // A name that merely starts with the word is a bare edge.
         one_clause(&format!("$a {word}s $b"));
         // A bare mutation property.
         let w = write(&format!(
             "query w() {{ insert Person {{ {word}: 1, handle: \"h\" }} }}"
         ));
-        assert!(matches!(&w.statements[0], Stmt3::Insert { assignments, .. } if assignments[0].property == word));
+        assert!(
+            matches!(&w.statements[0], Stmt3::Insert { assignments, .. } if assignments[0].property == word)
+        );
         // A function name touching `(`: only `from` at clause start is the
         // clause; inside an expression it is a call.
         assert!(matches!(
@@ -261,7 +280,8 @@ fn let_and_from_are_property_edge_alias_and_assignment_names() {
         ));
     }
     // The asset's edge insert: `from` and `to` as assignment names.
-    let w = write("query hire($h: String, $slug: String) { insert WorksAt { from: $h, to: $slug } }");
+    let w =
+        write("query hire($h: String, $slug: String) { insert WorksAt { from: $h, to: $slug } }");
     assert_eq!(w.statements.len(), 1);
 }
 
@@ -308,7 +328,11 @@ fn the_ladder_has_the_usual_precedence_and_associativity() {
         filter_expr("$a + $b * $c > 0"),
         cmp(
             CompOp::Gt,
-            arith(ArithOp::Add, var("a"), arith(ArithOp::Mul, var("b"), var("c"))),
+            arith(
+                ArithOp::Add,
+                var("a"),
+                arith(ArithOp::Mul, var("b"), var("c"))
+            ),
             int(0)
         )
     );
@@ -316,7 +340,11 @@ fn the_ladder_has_the_usual_precedence_and_associativity() {
         filter_expr("$a - $b - $c > 0"),
         cmp(
             CompOp::Gt,
-            arith(ArithOp::Sub, arith(ArithOp::Sub, var("a"), var("b")), var("c")),
+            arith(
+                ArithOp::Sub,
+                arith(ArithOp::Sub, var("a"), var("b")),
+                var("c")
+            ),
             int(0)
         )
     );
@@ -324,7 +352,11 @@ fn the_ladder_has_the_usual_precedence_and_associativity() {
         filter_expr("$a / $b % $c > 0"),
         cmp(
             CompOp::Gt,
-            arith(ArithOp::Rem, arith(ArithOp::Div, var("a"), var("b")), var("c")),
+            arith(
+                ArithOp::Rem,
+                arith(ArithOp::Div, var("a"), var("b")),
+                var("c")
+            ),
             int(0)
         )
     );
@@ -338,7 +370,10 @@ fn the_ladder_has_the_usual_precedence_and_associativity() {
     );
     // F5: a filter clause does not begin with `-`; parenthesised, it does.
     assert!(parse3("query q() { match { -$a > 0 } return { 1 } }").is_err());
-    assert_eq!(filter_expr("(-$a) > 0"), cmp(CompOp::Gt, Expr3::Neg(Box::new(var("a"))), int(0)));
+    assert_eq!(
+        filter_expr("(-$a) > 0"),
+        cmp(CompOp::Gt, Expr3::Neg(Box::new(var("a"))), int(0))
+    );
     // Clauses have no separator: after an expression clause, `-` continues
     // it, whatever the line break says.
     assert_eq!(match_clauses("$a.x\n  -$b.y > 0").len(), 1);
@@ -346,7 +381,11 @@ fn the_ladder_has_the_usual_precedence_and_associativity() {
         filter_expr("$a * ($b + $c) > --1"),
         cmp(
             CompOp::Gt,
-            arith(ArithOp::Mul, var("a"), arith(ArithOp::Add, var("b"), var("c"))),
+            arith(
+                ArithOp::Mul,
+                var("a"),
+                arith(ArithOp::Add, var("b"), var("c"))
+            ),
             Expr3::Neg(Box::new(Expr3::Neg(Box::new(int(1)))))
         )
     );
@@ -362,8 +401,12 @@ fn the_ladder_has_the_usual_precedence_and_associativity() {
         "query doubled($min: I32) { match { $p: Person { age: $min + 1 }  $p.age * 2 >= $min  let $born = 2026 - $p.age } return { $p.name, $p.age * 2 as twice, (2026 - $p.age) as born_about } order { -$p.age, $born % 10 desc } }",
     );
     assert_eq!(r.projections.len(), 3);
-    let w = write("query birthday($h: String) { $p: Person { handle: $h }  update $p set { age: $p.age + 1 } }");
-    assert!(matches!(&w.statements[0], Stmt3::Update { assignments, .. } if matches!(assignments[0].value, Expr3::Arith { .. })));
+    let w = write(
+        "query birthday($h: String) { $p: Person { handle: $h }  update $p set { age: $p.age + 1 } }",
+    );
+    assert!(
+        matches!(&w.statements[0], Stmt3::Update { assignments, .. } if matches!(assignments[0].value, Expr3::Arith { .. }))
+    );
 }
 
 #[test]
@@ -407,13 +450,79 @@ fn float_literals_take_an_exponent() {
 /// Every word the edition-3 grammar spells as a keyword, other than the six
 /// reserved ones.
 const CONTEXTUAL: &[&str] = &[
-    "query", "match", "return", "order", "limit", "distinct", "as", "asc", "desc", "let", "from",
-    "optional", "exists", "count", "sum", "avg", "min", "max", "insert", "update", "delete", "set",
-    "where", "commit", "unattached", "branch", "on", "mutation", "gq", "true", "false", "date",
-    "datetime", "now", "nearest", "bm25", "rrf", "l2", "union", "search", "fuzzy", "match_text",
-    "terms", "match_terms", "contains", "starts_with", "if", "coalesce", "concat", "show", "reset",
-    "all", "explain", "load", "csv", "into", "mode", "for", "unwind", "case", "having", "retrieve",
-    "view", "batch", "returning", "recall", "k", "weights", "to", "merge", "diff", "list", "create",
+    "query",
+    "match",
+    "return",
+    "order",
+    "limit",
+    "distinct",
+    "as",
+    "asc",
+    "desc",
+    "let",
+    "from",
+    "optional",
+    "exists",
+    "count",
+    "sum",
+    "avg",
+    "min",
+    "max",
+    "insert",
+    "update",
+    "delete",
+    "set",
+    "where",
+    "commit",
+    "unattached",
+    "branch",
+    "on",
+    "mutation",
+    "gq",
+    "true",
+    "false",
+    "date",
+    "datetime",
+    "now",
+    "nearest",
+    "bm25",
+    "rrf",
+    "l2",
+    "union",
+    "search",
+    "fuzzy",
+    "match_text",
+    "terms",
+    "match_terms",
+    "contains",
+    "starts_with",
+    "if",
+    "coalesce",
+    "concat",
+    "show",
+    "reset",
+    "all",
+    "explain",
+    "load",
+    "csv",
+    "into",
+    "mode",
+    "for",
+    "unwind",
+    "case",
+    "having",
+    "retrieve",
+    "view",
+    "batch",
+    "returning",
+    "recall",
+    "k",
+    "weights",
+    "to",
+    "merge",
+    "diff",
+    "list",
+    "create",
 ];
 const RESERVED: &[&str] = &["and", "or", "not", "is", "null", "in"];
 
@@ -468,10 +577,7 @@ fn the_reserved_set_is_the_six_words() {
         ));
         match *word {
             // `$a in $b` and `$a is …` are filters, not traversals (F19).
-            "in" => assert!(matches!(
-                bare.as_ref().map(|_| ()),
-                Ok(())
-            )),
+            "in" => assert!(matches!(bare.as_ref().map(|_| ()), Ok(()))),
             _ => assert!(
                 bare.is_err()
                     || !matches!(
@@ -510,7 +616,10 @@ fn an_edge_named_in_is_quoted_and_the_bare_form_is_a_membership_filter() {
 fn delete_and_update_with_where_print_the_binding_and_filter() {
     let e = err3("query retire($h: String) { delete WorksAt where @src = $h }");
     assert_eq!(e.code.as_str(), "Q008");
-    assert_eq!(e.fix.as_deref(), Some("$x: WorksAt  $x.@src = $h  delete $x"));
+    assert_eq!(
+        e.fix.as_deref(),
+        Some("$x: WorksAt  $x.@src = $h  delete $x")
+    );
     let e = err3(
         "query retire($h: String) { update Person set { city: \"x\" } where handle = $h and age > 3 }",
     );
@@ -541,7 +650,10 @@ fn the_mutation_keyword_is_refused_with_query_as_the_fix() {
     let edit = &e.suggestion.as_ref().unwrap().edits[0];
     assert_eq!(edit.replacement, "query");
     // A read body under `mutation` gets the same fix.
-    assert_eq!(code3("mutation r() { match { $p: P } return { $p } }"), "Q009");
+    assert_eq!(
+        code3("mutation r() { match { $p: P } return { $p } }"),
+        "Q009"
+    );
     // `mutation` stays an identifier everywhere else.
     read("query mutation() { match { $p: P { mutation: 1 } } return { $p.mutation as mutation } }");
 }
@@ -559,7 +671,9 @@ fn a_comparison_in_binding_braces_prints_the_filter_clause() {
 fn as_commit_is_a_write_body_clause() {
     let d = decl("query retire($h: String) as commit { $p: Person { handle: $h }  delete $p }");
     assert_eq!(d.write_mode, MutationWriteMode::AsCommit);
-    let d = decl("query propose($h: String) as unattached branch on $h { insert Person { handle: $h, name: $h } }");
+    let d = decl(
+        "query propose($h: String) as unattached branch on $h { insert Person { handle: $h, name: $h } }",
+    );
     assert!(matches!(d.write_mode, MutationWriteMode::Unattached { .. }));
     let e = err3("query r() as commit { match { $p: P } return { $p } }");
     assert_eq!(e.code.as_str(), "Q011");
@@ -572,7 +686,9 @@ fn a_clause_after_a_statement_prints_the_order() {
     let e = err3("query w() { $p: Person  delete $p  $q: Person }");
     assert_eq!(e.code.as_str(), "Q013");
     // Several statements after the clauses are fine.
-    let w = write("query close_company($slug: String) { $c: Company { slug: $slug }  $p $k:worksAt $c  delete $k  update $p set { city: null } }");
+    let w = write(
+        "query close_company($slug: String) { $c: Company { slug: $slug }  $p $k:worksAt $c  delete $k  update $p set { city: null } }",
+    );
     assert_eq!((w.clauses.len(), w.statements.len()), (2, 2));
     // `null` is an assignment value (F4); in operand position it stays a
     // reserved word.
@@ -591,21 +707,39 @@ fn other_respellings_print_their_fix() {
         ("$d.tags contains \"rust\"", "contains($d.tags, \"rust\")"),
         ("$a || $b = \"x\"", "concat(a, b)"),
         ("CASE = 1", "if(condition, then, else)"),
-        ("for $x in $list", "`from <relation>` for rows, or `$x in $list` against a binding"),
-        ("unwind $list as $x", "`from <relation>` for rows, or `$x in $list` against a binding"),
-        ("let $x in $r", "`from <relation>` for rows, or `$x in $list` against a binding"),
-        ("let ($a, $b) in $r", "`from <relation>` for rows, or `$x in $list` against a binding"),
+        (
+            "for $x in $list",
+            "`from <relation>` for rows, or `$x in $list` against a binding",
+        ),
+        (
+            "unwind $list as $x",
+            "`from <relation>` for rows, or `$x in $list` against a binding",
+        ),
+        (
+            "let $x in $r",
+            "`from <relation>` for rows, or `$x in $list` against a binding",
+        ),
+        (
+            "let ($a, $b) in $r",
+            "`from <relation>` for rows, or `$x in $list` against a binding",
+        ),
     ] {
-        let e = err3(&format!("query q() {{ match {{ $d: Doc  {src} }} return {{ $d }} }}"));
+        let e = err3(&format!(
+            "query q() {{ match {{ $d: Doc  {src} }} return {{ $d }} }}"
+        ));
         assert_eq!(e.code.as_str(), "Q012", "{src}");
         assert_eq!(e.fix.as_deref(), Some(fix), "{src}");
     }
     assert_eq!(
-        err3("query q() @if_commit($c) { $p: P  delete $p }").code.as_str(),
+        err3("query q() @if_commit($c) { $p: P  delete $p }")
+            .code
+            .as_str(),
         "Q012"
     );
     assert_eq!(
-        err3("query q() @valid(from = 1) { match { $p: P } return { $p } }").code.as_str(),
+        err3("query q() @valid(from = 1) { match { $p: P } return { $p } }")
+            .code
+            .as_str(),
         "Q012"
     );
     // `retrieve`, `having` and `view` are generic parse errors.
@@ -632,7 +766,9 @@ fn one_keyword_and_the_body_shape_is_the_kind() {
         DeclBody3::Write(_)
     ));
     // A write whose clauses come from a ranked read.
-    let w = write("query tag_near($q: Vector(3)) { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 20)  update $d set { tags: [\"near\"] } }");
+    let w = write(
+        "query tag_near($q: Vector(3)) { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 20)  update $d set { tags: [\"near\"] } }",
+    );
     assert_eq!((w.clauses.len(), w.statements.len()), (1, 1));
     // F2: a write body's clauses are bare; `match { }` around them, which
     // section 3's prose ("zero or more `match` clauses") and the freeze list
@@ -647,7 +783,7 @@ fn one_keyword_and_the_body_shape_is_the_kind() {
     let d = decl(
         "query top_people($k: I64 = 10, $neg: I32 = -1, $s: String? = \"x\") @description(\"d\") @budget(rows = 1000, on_exceed = refuse) @cache { match { $p: Person } return { $p.name } order { $p.age desc } limit $k }",
     );
-    assert_eq!(d.params[1].default.as_ref().unwrap().negative, true);
+    assert!(d.params[1].default.as_ref().unwrap().negative);
     assert_eq!(d.annotations.len(), 3);
     let DeclBody3::Read(r) = d.body else { panic!() };
     assert_eq!(r.limit, Some(Limit3::Param("k".into())));
@@ -661,7 +797,10 @@ fn one_keyword_and_the_body_shape_is_the_kind() {
     ));
     // The missing parameter list keeps its fix.
     let e = err3("query a { match { $p: P } return { $p } }");
-    assert_eq!((e.code.as_str(), e.fix.as_deref()), ("Q002", Some("query a()")));
+    assert_eq!(
+        (e.code.as_str(), e.fix.as_deref()),
+        ("Q002", Some("query a()"))
+    );
 }
 
 #[test]
@@ -675,7 +814,9 @@ fn calls_take_positionals_then_options_and_one_distinct_form() {
     // Options only.
     filter_expr("f(k: 1, mode: any)");
     // `distinct` under any aggregate name (the type checker keeps T57).
-    let r = read("query q() { match { $p: P } return { count(distinct $p.city) as c, sum(distinct $p.age) as s } }");
+    let r = read(
+        "query q() { match { $p: P } return { count(distinct $p.city) as c, sum(distinct $p.age) as s } }",
+    );
     assert!(matches!(r.projections[1].expr, Expr3::AggDistinct { .. }));
     // `date("…")` is a literal everywhere, including inside a list.
     assert!(matches!(
@@ -683,7 +824,9 @@ fn calls_take_positionals_then_options_and_one_distinct_form() {
         Expr3::In { .. }
     ));
     // Nested relation functions.
-    one_clause("from rrf(nearest($docs, embedding, $v, k: 50), bm25($docs, body, $q), k: 60, weights: [0.7, 0.3])");
+    one_clause(
+        "from rrf(nearest($docs, embedding, $v, k: 50), bm25($docs, body, $q), k: 60, weights: [0.7, 0.3])",
+    );
     // A block value as an operand, compared with another binding's value.
     let e = filter_expr("count { $d \"in\" $x } + 1 >= $x.min_docs");
     assert!(matches!(e, Expr3::Compare { left, .. } if matches!(*left, Expr3::Arith { .. })));
@@ -778,8 +921,16 @@ fn every_before_and_after_example_parses_in_its_edition() {
             report.push(format!("block {n}: schema, skipped"));
             continue;
         }
-        let e2 = || parse_edition2(&block).map(|_| ()).map_err(|e| e.to_string());
-        let e3 = || parse_query3(&format!("gq 3;\n{block}")).map(|_| ()).map_err(|e| e.to_string());
+        let e2 = || {
+            parse_edition2(&block)
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        };
+        let e3 = || {
+            parse_query3(&format!("gq 3;\n{block}"))
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        };
         match mark.as_deref() {
             Some("edition 2") => {
                 if let Err(e) = e2() {
@@ -897,7 +1048,10 @@ fn collect(dir: &std::path::Path, ext: &str, out: &mut Vec<std::path::PathBuf>) 
     for entry in entries.flatten() {
         let path = entry.path();
         if path.is_dir() {
-            if path.file_name().is_some_and(|n| n == "target" || n == ".git") {
+            if path
+                .file_name()
+                .is_some_and(|n| n == "target" || n == ".git")
+            {
                 continue;
             }
             collect(&path, ext, out);
@@ -913,8 +1067,16 @@ fn collect(dir: &std::path::Path, ext: &str, out: &mut Vec<std::path::PathBuf>) 
 pub(crate) fn edition2_corpus() -> Vec<(String, String)> {
     let mut out = Vec::new();
     let mut files = Vec::new();
-    collect(&root().join("crates/omnigraph-gqt/cases"), "gqt", &mut files);
-    collect(&root().join("crates/omnigraph-gqt/cases_slow"), "gqt", &mut files);
+    collect(
+        &root().join("crates/omnigraph-gqt/cases"),
+        "gqt",
+        &mut files,
+    );
+    collect(
+        &root().join("crates/omnigraph-gqt/cases_slow"),
+        "gqt",
+        &mut files,
+    );
     files.sort();
     for f in &files {
         let text = std::fs::read_to_string(f).unwrap();
@@ -996,8 +1158,15 @@ fn every_edition2_text_in_the_repository_parses_as_before() {
         );
         accepted += usize::from(direct.is_ok());
     }
-    eprintln!("edition-2 corpus: {} texts, {accepted} accepted", corpus.len());
-    assert!(accepted * 10 > corpus.len() * 9, "{accepted} of {}", corpus.len());
+    eprintln!(
+        "edition-2 corpus: {} texts, {accepted} accepted",
+        corpus.len()
+    );
+    assert!(
+        accepted * 10 > corpus.len() * 9,
+        "{accepted} of {}",
+        corpus.len()
+    );
 }
 
 /// The same corpus read as edition 3: which texts parse unchanged, and of
@@ -1022,17 +1191,36 @@ fn the_edition2_corpus_read_as_edition_3() {
         match parse_query3(&source3) {
             Ok(_) => parses3 += 1,
             Err(e) => {
-                let key = format!("{} {}", e.code.as_str(), first_words(&e.message));
+                let kind = if e.code.as_str() == "Q008" {
+                    if e.message.contains("`delete") {
+                        "delete … where"
+                    } else {
+                        "update … where"
+                    }
+                } else {
+                    ""
+                };
+                let key = if kind.is_empty() {
+                    format!("{} {}", e.code.as_str(), first_words(&e.message))
+                } else {
+                    format!("Q008 {kind}")
+                };
                 *refused_by.entry(key).or_default() += 1;
                 continue;
             }
         }
-        if let Ok(three) = parse_query_diagnostic(&source3) {
-            both += 1;
-            if format!("{two:?}") == format!("{three:?}") {
-                equal += 1;
-            } else {
-                differing.push(origin.clone());
+        match parse_query_diagnostic(&source3) {
+            Ok(three) => {
+                both += 1;
+                if format!("{two:?}") == format!("{three:?}") {
+                    equal += 1;
+                } else {
+                    differing.push(origin.clone());
+                }
+            }
+            Err(e) => {
+                let key = format!("lowering {} {}", e.code.as_str(), first_words(&e.message));
+                *refused_by.entry(key).or_default() += 1;
             }
         }
     }
@@ -1048,7 +1236,11 @@ fn the_edition2_corpus_read_as_edition_3() {
 }
 
 fn first_words(message: &str) -> String {
-    message.split_whitespace().take(6).collect::<Vec<_>>().join(" ")
+    message
+        .split_whitespace()
+        .take(6)
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 #[test]
@@ -1076,7 +1268,6 @@ fn the_placeholder_refuses_every_new_node_once() {
     assert!(matches!(f.body, FileBody::Queries(ref q) if q[0].limit == Some(3)));
 }
 
-
 #[test]
 fn a_block_in_clause_position_is_a_filter() {
     // F7: one tree for one text. `count { p } > 1 or $x` is the disjunction,
@@ -1100,7 +1291,10 @@ fn a_block_in_clause_position_is_a_filter() {
         let src = format!("query q() {{ match {{ $p: Person  {text} }} return {{ $p }} }}");
         assert_eq!(
             format!("{:?}", parse_edition2(&src).unwrap()),
-            format!("{:?}", parse_query_diagnostic(&format!("gq 3;\n{src}")).unwrap()),
+            format!(
+                "{:?}",
+                parse_query_diagnostic(&format!("gq 3;\n{src}")).unwrap()
+            ),
             "{text}"
         );
     }
@@ -1141,9 +1335,15 @@ fn a_call_to_contains_after_a_boolean_filter_is_a_call() {
     let c = match_clauses("$p.active  contains($p.name, \"a\")  starts_with($p.name, \"b\")");
     assert_eq!(c.len(), 3, "{c:#?}");
     // The infix form with a space is still recognised.
-    assert_eq!(code3("query q() { match { $p.name contains \"a\" } return { 1 } }"), "Q012");
+    assert_eq!(
+        code3("query q() { match { $p.name contains \"a\" } return { 1 } }"),
+        "Q012"
+    );
     // F6: a triple endpoint is never followed by `.`.
-    assert!(matches!(filter_expr("$a * $a.n = 0"), Expr3::Compare { .. }));
+    assert!(matches!(
+        filter_expr("$a * $a.n = 0"),
+        Expr3::Compare { .. }
+    ));
 }
 
 #[test]
@@ -1154,7 +1354,10 @@ fn a_date_call_is_the_date_literal() {
         filter_expr("$x.d = date(\"2025-01-01\")"),
         cmp(
             CompOp::Eq,
-            Expr3::Prop { variable: "x".into(), property: "d".into() },
+            Expr3::Prop {
+                variable: "x".into(),
+                property: "d".into()
+            },
             Expr3::Literal(super::ast::Literal::Date("2025-01-01".into()))
         )
     );
@@ -1185,5 +1388,8 @@ fn recognizers_shadow_only_ill_typed_text() {
     }
     // F18: `let ($a) in …` is the refused respelling, so a call to a function
     // named `let` with one variable, compared with `in`, is refused too.
-    assert_eq!(code3("query q() { match { let($a) in [1] } return { 1 } }"), "Q012");
+    assert_eq!(
+        code3("query q() { match { let($a) in [1] } return { 1 } }"),
+        "Q012"
+    );
 }
