@@ -1,0 +1,53 @@
+# issue: none
+# notes: SPIKE (spike/gq3-exec) probe, not part of the corpus: does an edition-2 `order { bm25(…) }`
+# notes: keep a row whose field does not match the query? Section 2's `Score` keeps only matching rows,
+# notes: so the normalisation is rows-sound for a population without `search()` only if edition 2 drops it.
+# notes: It does (step 1). Step 2: edition 2 refuses a `bm25` in `return` with no rank key (T33), while
+# notes: the rewriter's `from bm25(…)` with no `order` is a legal edition-3 read.
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Note {
+    slug: String @key
+    body: String @index
+}
+
+--- seed
+{"type":"Note","data":{"slug":"n1","body":"tensor"}}
+{"type":"Note","data":{"slug":"n2","body":"tensor tensor"}}
+{"type":"Note","data":{"slug":"n4","body":"unrelated words"}}
+
+--- query
+query ranked_unfiltered($q: String) {
+    match { $n: Note }
+    return { $n.slug, bm25($n.body, $q) as s }
+    order { bm25($n.body, $q) }
+    limit 10
+}
+
+--- params
+{"q": "tensor"}
+
+--- expect ordered
+{"n.slug": "n2", "s": 0.61183906}
+{"n.slug": "n1", "s": 0.5619608}
+
+--- expect shape
+n.slug: String
+s: F32
+
+--- query
+query scored_unordered($q: String) {
+    match { $n: Note }
+    return { $n.slug, bm25($n.body, $q) as s }
+}
+
+--- params
+{"q": "tensor"}
+
+--- expect error: T33

@@ -93,7 +93,8 @@ pub struct Fusion {
 pub struct Normalised {
     pub decl: QueryDecl,
     pub shape: Shape,
-    /// Present for [`Shape::Rrf`].
+    /// The ranking as the edition-3 text states it: one arm for `nearest`
+    /// and `bm25`, the arms of an `rrf`; `None` for [`Shape::Plain`].
     pub fusion: Option<Fusion>,
 }
 
@@ -240,20 +241,41 @@ pub fn normalise_decl(decl: Decl3) -> R<Normalised> {
                     (None, _) => return Err(refuse("`nearest` without `k` (T17)")),
                 }
                 Expr::Nearest {
-                    variable,
-                    property,
-                    query: Box::new(query),
+                    variable: variable.clone(),
+                    property: property.clone(),
+                    query: Box::new(query.clone()),
                 }
             } else {
                 if k.is_some() {
                     return Err(refuse("`bm25` takes no `k`"));
                 }
                 Expr::Bm25 {
-                    field: Box::new(Expr::PropAccess { variable, property }),
-                    query: Box::new(query),
+                    field: Box::new(Expr::PropAccess {
+                        variable: variable.clone(),
+                        property: property.clone(),
+                    }),
+                    query: Box::new(query.clone()),
                 }
             };
-            (rank, None)
+            let arm_query = match &rank {
+                Expr::Nearest { query, .. } => (**query).clone(),
+                Expr::Bm25 { query, .. } => (**query).clone(),
+                _ => unreachable!(),
+            };
+            let ranking = Fusion {
+                target: variable.clone(),
+                population: out.match_clause.clone(),
+                arms: vec![Arm {
+                    kind,
+                    variable,
+                    property,
+                    query: arm_query,
+                    k,
+                }],
+                k: RRF_DEFAULT_K,
+                weights: None,
+            };
+            (rank, Some(ranking))
         }
         Ranked::Fused {
             let_name,
