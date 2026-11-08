@@ -22,6 +22,15 @@ codes! {
     Q003 = "a settings statement is refused";
     Q004 = "a branch, commit, show or explain statement is misplaced or malformed";
     Q005 = "a declaration body is refused";
+    // Edition 3 (SPIKE, RFC 2026-11-07-gq-3); numbers are the prototype's.
+    Q006 = "the edition line names an edition this compiler does not read";
+    Q007 = "a traversal is written with an arrow; the fix is the triple";
+    Q008 = "an update or delete statement carries a where; the fix binds and filters";
+    Q009 = "`mutation` is not a declaration keyword; the fix is `query`";
+    Q010 = "a binding's braces hold a comparison; the fix is a filter clause";
+    Q011 = "a read body carries `as commit` or `as unattached branch`";
+    Q012 = "a respelling edition 3 refuses; the fix prints the legal form";
+    Q013 = "a clause follows a statement in a write body";
 
     // Typechecker.
     T1 = "unknown node type";
@@ -75,6 +84,9 @@ codes! {
     T57 = "distinct applies only to count";
     T58 = "a Boolean return item compares aggregates with constants only";
     T59 = "an rrf() ranks two bindings one traversal connects";
+    // SPIKE: the one placeholder for every edition-3 node the prototype's
+    // type checker does not check yet.
+    T60 = "an edition-3 construct is parsed but not yet type-checked";
 
     // Planner. P001 and P005 are withdrawn: a ranking roots its traversal at
     // the binding it ranks, and `rrf()` arms one traversal connects are T59.

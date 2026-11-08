@@ -11,7 +11,7 @@ use super::diagnostic::{Applicability, Position, QueryDiagnostic, Suggestion, Te
 
 #[derive(Parser)]
 #[grammar = "query/query.pest"]
-struct QueryParser;
+pub(crate) struct QueryParser;
 
 /// What a bare name in operand position means.
 #[derive(Clone, Copy)]
@@ -70,7 +70,7 @@ pub fn has_settings_prefix(input: &str) -> bool {
 
 /// `input` after the grammar's `WHITESPACE` and `COMMENT`: an unterminated
 /// block comment consumes the rest, as it does in the parser.
-fn skip_trivia(mut input: &str) -> &str {
+pub(crate) fn skip_trivia(mut input: &str) -> &str {
     loop {
         let trimmed = input.trim_start_matches([' ', '\t', '\r', '\n']);
         if let Some(rest) = trimmed.strip_prefix("//") {
@@ -84,7 +84,39 @@ fn skip_trivia(mut input: &str) -> &str {
 }
 
 /// Parse `input` into its file body, refusing with a positioned diagnostic.
+///
+/// SPIKE (RFC 2026-11-07-gq-3, section 6): a source that opens with `gq 3;`
+/// is read by the edition-3 front end and lowered into the edition-2 tree
+/// (`bridge3`), which refuses every node edition 2 has no form for with the
+/// placeholder `T60`; `gq 2;` selects this edition-2 grammar; any other
+/// edition is `Q006`. A source without the line is edition 2, unchanged.
 pub fn parse_query_diagnostic(input: &str) -> std::result::Result<QueryFile, QueryDiagnostic> {
+    use super::parser3::EditionLine;
+    match super::parser3::edition_line(input) {
+        EditionLine::Absent => parse_edition2(input),
+        EditionLine::Present { edition: 3, .. } => {
+            super::parser3::parse_query3(input).and_then(super::bridge3::lower_file)
+        }
+        EditionLine::Present {
+            edition: 2,
+            start,
+            end,
+        } => {
+            let mut blanked = input.to_string();
+            blanked.replace_range(start..end, &" ".repeat(end - start));
+            parse_edition2(&blanked)
+        }
+        EditionLine::Present { edition, start, .. } => Err(QueryDiagnostic::parse(
+            super::codes::Q006,
+            format!("`gq {edition};` names no edition this compiler reads; it reads 2 and 3"),
+            Some(Position::at(input, start)),
+        )
+        .with_fix("gq 3;")),
+    }
+}
+
+/// The edition-2 front end, as it was before the edition line existed.
+pub(crate) fn parse_edition2(input: &str) -> std::result::Result<QueryFile, QueryDiagnostic> {
     let pairs = QueryParser::parse(Rule::query_file, input)
         .map_err(|error| pest_error_to_diagnostic(input, error))?;
 
@@ -198,12 +230,12 @@ fn parse_explain_stmt(
 }
 
 /// The position of `pair`'s start in the source it was parsed from.
-fn position_of(pair: &pest::iterators::Pair<Rule>) -> Position {
+pub(crate) fn position_of(pair: &pest::iterators::Pair<Rule>) -> Position {
     let span = pair.as_span();
     Position::at(span.get_input(), span.start())
 }
 
-fn diagnostic_at(
+pub(crate) fn diagnostic_at(
     code: super::diagnostic::QueryCode,
     message: impl Into<String>,
     at: &pest::iterators::Pair<Rule>,
@@ -211,11 +243,11 @@ fn diagnostic_at(
     QueryDiagnostic::parse(code, message, Some(position_of(at)))
 }
 
-fn query_error_at(message: impl Into<String>, at: &pest::iterators::Pair<Rule>) -> CompilerError {
+pub(crate) fn query_error_at(message: impl Into<String>, at: &pest::iterators::Pair<Rule>) -> CompilerError {
     CompilerError::query(diagnostic_at(Q005, message, at))
 }
 
-fn parse_setting_stmt(
+pub(crate) fn parse_setting_stmt(
     pair: pest::iterators::Pair<Rule>,
 ) -> std::result::Result<SettingStmt, QueryDiagnostic> {
     let form = pair
@@ -248,7 +280,7 @@ fn parse_setting_stmt(
 }
 
 /// The `<name>` or `all` after `reset` or `show`.
-fn parse_setting_target(
+pub(crate) fn parse_setting_target(
     pair: pest::iterators::Pair<Rule>,
 ) -> std::result::Result<Option<SettingId>, QueryDiagnostic> {
     let target = pair
@@ -306,7 +338,7 @@ fn setting_diagnostic(
     diagnostic_at(Q003, error.to_string(), at)
 }
 
-fn parse_branch_stmt(
+pub(crate) fn parse_branch_stmt(
     pair: pest::iterators::Pair<Rule>,
 ) -> std::result::Result<BranchStmt, QueryDiagnostic> {
     let form = pair
@@ -421,7 +453,7 @@ fn parse_diff_page_clause(
     Ok(page)
 }
 
-fn parse_commit_stmt(
+pub(crate) fn parse_commit_stmt(
     pair: pest::iterators::Pair<Rule>,
 ) -> std::result::Result<CommitWrite, QueryDiagnostic> {
     let form = pair
@@ -441,7 +473,7 @@ fn parse_commit_stmt(
     }
 }
 
-fn parse_load_stmt(
+pub(crate) fn parse_load_stmt(
     pair: pest::iterators::Pair<Rule>,
 ) -> std::result::Result<LoadStmt, QueryDiagnostic> {
     let at = pair.clone();
@@ -650,7 +682,7 @@ fn parse_branch_name(
 /// A grammar mismatch: positioned at pest's deepest failure, naming the
 /// rules it expected there (pest tracks attempts per rule, so the names are
 /// the grammar's, not tokens).
-fn pest_error_to_diagnostic(input: &str, err: pest::error::Error<Rule>) -> QueryDiagnostic {
+pub(crate) fn pest_error_to_diagnostic(input: &str, err: pest::error::Error<Rule>) -> QueryDiagnostic {
     let byte = match err.location {
         InputLocation::Pos(pos) => pos,
         InputLocation::Span((start, _)) => start,
@@ -681,7 +713,7 @@ fn pest_error_to_diagnostic(input: &str, err: pest::error::Error<Rule>) -> Query
 /// A declaration body the hand-written parser refused: its bare message
 /// names the construct and `Display` adds the one `parse error:` prefix; a
 /// diagnostic it already carries passes through.
-fn compiler_error_to_diagnostic(err: CompilerError, position: Position) -> QueryDiagnostic {
+pub(crate) fn compiler_error_to_diagnostic(err: CompilerError, position: Position) -> QueryDiagnostic {
     match err {
         CompilerError::Query(diagnostic) => *diagnostic,
         other => QueryDiagnostic::parse(Q005, parse_error_message(other), Some(position)),
@@ -860,7 +892,7 @@ fn parse_query_decl(pair: pest::iterators::Pair<Rule>) -> Result<QueryDecl> {
 /// The `on` operand of an `as_unattached_clause`, `None` when unspelled. A
 /// literal passes the commit-id checks of a commit statement; a variable
 /// records its name for the typechecker to resolve against the parameters.
-fn parse_unattached_base(
+pub(crate) fn parse_unattached_base(
     clause: pest::iterators::Pair<Rule>,
 ) -> std::result::Result<Option<UnattachedBase>, QueryDiagnostic> {
     let Some(operand) = clause
@@ -1236,7 +1268,7 @@ fn parse_edge_selector(pair: pest::iterators::Pair<Rule>) -> Result<EdgeSelector
 
 /// The edge a traversal names, bare or as a string; the string holds what the
 /// bare form would, so `"in"` names the edge a reserved word cannot.
-fn parse_edge_name(pair: pest::iterators::Pair<Rule>) -> Result<String> {
+pub(crate) fn parse_edge_name(pair: pest::iterators::Pair<Rule>) -> Result<String> {
     if pair.as_rule() != Rule::string_lit {
         return Ok(pair.as_str().to_string());
     }
@@ -1258,7 +1290,7 @@ fn parse_edge_name(pair: pest::iterators::Pair<Rule>) -> Result<String> {
     }
 }
 
-fn parse_traversal_bounds(pair: pest::iterators::Pair<Rule>) -> Result<(u32, Option<u32>)> {
+pub(crate) fn parse_traversal_bounds(pair: pest::iterators::Pair<Rule>) -> Result<(u32, Option<u32>)> {
     let mut inner = pair.into_inner();
     let min_pair = inner
         .next()
@@ -1625,7 +1657,7 @@ fn parse_literal(pair: pest::iterators::Pair<Rule>) -> Result<Literal> {
     }
 }
 
-fn parse_string_lit(at: &pest::iterators::Pair<Rule>) -> Result<String> {
+pub(crate) fn parse_string_lit(at: &pest::iterators::Pair<Rule>) -> Result<String> {
     decode_string_literal(at.as_str())
         .map_err(|error| query_error_at(parse_error_message(error), at))
 }
