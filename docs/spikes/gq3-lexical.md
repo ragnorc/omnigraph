@@ -28,7 +28,9 @@ change and pass. What each pins, with the 13.0.0 numbers:
 
 The RFC's section 10 wording ("about 38 times", "doubles a repeated query
 term", "rounds a common term to zero at N = 2^24") is right on 13.0.0.
-Proposed change: mark the guard half of `blocked_on` item 4 satisfied, naming
+They also pass in the release profile, which `docs/dev/testing.md` asks of
+a substrate qualification. Proposed change: mark the guard half of
+`blocked_on` item 4 satisfied, naming
 this branch's commit `f76b5354` until it lands on `main`.
 
 ### 2. The Decimal oracle and its Rust test hold, and the fixtures regenerate byte-identical (section 10)
@@ -188,11 +190,19 @@ gives these counts, unlimited → limited, as ranges over six runs:
 Partitions race on a shared threshold, so the same query on the same
 snapshot does different work from run to run. Median wall time of 15
 alternating runs, debug build: `q0x` 5.4 ms → 1.0–1.3 ms at k = 1, and
-5.4 ms → 1.7 ms at k = 100, where no comparison was saved. Most of the
-wall-time gain is therefore materializing and sorting fewer rows, not
-pruning. The engine's unlimited path materializes every match before its own
-`Order`. Release-profile timings are in
-[What was not done](#c-what-was-not-done).
+5.4 ms → 1.7 ms at k = 100, where no comparison was saved. Release build,
+same measurement:
+
+| Query | k = 1 | k = 10 | k = 100 |
+|---|---|---|---|
+| `q0x` | 3.39 → 0.96 ms | 3.25 → 1.12 ms | 3.22 → 1.27 ms |
+| `q1x q60x q900x` | 2.48 → 0.85 ms | 2.51 → 1.07 ms | 2.65 → 1.33 ms |
+| `qtiex` (40 matches) | 0.93 → 0.83 ms | 0.90 → 0.89 ms | 0.84 → 0.87 ms |
+
+At k = 100 `q0x` saves no comparison and is still 2.5 times faster, so most
+of the wall-time gain is materializing and sorting fewer rows, not pruning.
+The engine's unlimited path materializes every match before its own
+`Order`.
 
 Proposed change: write "may prune scoring work, by an amount that depends on
 k against the matched set and that is not reproducible run to run". State the
@@ -337,12 +347,24 @@ python3 -I crates/omnigraph/tests/fixtures/lexical_scoring_v1.py   # rewrites th
 ```
 
 Both whole suites pass on the branch: `lance_surface_guards` 81 passed and
-2 ignored (the existing ignored guards); `search` 37 passed. The engine's
-own test graph result is under (c).
+2 ignored (the existing ignored guards); `search` 37 passed. The engine
+package on the canonical feature graph,
+`cargo dev-nextest -E 'package(omnigraph-engine)'`, ran 1788 tests: 1779
+passed and 9 failed, all from this box's environment. Eight overflowed the
+default thread stack and pass with CI's `RUST_MIN_STACK=16777216`. The ninth,
+`db::upgrade::tests::interrupted::unreadable_legacy_object_asks_for_a_rerun`,
+marks a file `0o000` to make it unreadable, and this box runs as root, which
+reads it anyway; the test is in-source and untouched here. `cargo dev-clippy`
+and `cargo fmt --all --check` are clean. `scripts/check-docs.py` and `typos`
+1.52.0 pass on the changed files.
 
 ## (c) What was not done
 
-- **Release-profile timings.** RELEASE_PLACEHOLDER
+- **Timings at scale.** Wall times are from 4040 documents on a 2-core box,
+  in debug and release (`cargo test --release --locked -p omnigraph-engine
+  --test lance_surface_guards -- --nocapture gq3_`, where all eight lexical
+  guards also pass). No measurement over a corpus large enough for pruning
+  to dominate materialization.
 - **An engine-level `.gqt` case for finding 10.** The guard is at the Lance
   boundary. A `.gqt` reproduction on `main`'s engine, a `fuzzy($d.title,
   "beta", 1)` that misses the document whose title is `beta`, is not
