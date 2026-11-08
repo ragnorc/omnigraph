@@ -3,6 +3,7 @@ pub mod error;
 pub mod ir;
 pub mod json_output;
 pub mod lint;
+pub mod migrate;
 pub mod query;
 pub mod query_input;
 pub mod result;

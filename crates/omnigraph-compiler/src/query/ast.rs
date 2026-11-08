@@ -471,6 +471,118 @@ pub struct QueryDecl {
     /// The clause before the body. Only `Publish` on a read declaration (the
     /// parser refuses the other two there).
     pub write_mode: MutationWriteMode,
+    /// Where each part of the declaration sits in the source it was parsed
+    /// from. Recorded by the parser for source-preserving rewrites
+    /// (`queries migrate`); no type rule, lowering or plan reads it, so two
+    /// declarations that differ only in layout check and lower alike.
+    pub spans: DeclSpans,
+}
+
+/// A byte range `start..end` of the source a declaration was parsed from.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Span {
+    pub start: usize,
+    pub end: usize,
+}
+
+impl Span {
+    pub fn new(start: usize, end: usize) -> Self {
+        Self { start, end }
+    }
+
+    pub fn contains(&self, other: Span) -> bool {
+        self.start <= other.start && other.end <= self.end
+    }
+
+    pub fn text<'a>(&self, source: &'a str) -> &'a str {
+        &source[self.start..self.end]
+    }
+}
+
+/// The source spans of one declaration. The `Vec`s that mirror an AST list
+/// (`clauses`, `projections`, `orderings`, `mutations`) are parallel to it,
+/// index for index; `exprs` holds every expression node a rewrite needs, in
+/// the order the parser met them (outer before inner).
+#[derive(Debug, Clone, Default)]
+pub struct DeclSpans {
+    /// From `query` to the closing `}`.
+    pub decl: Span,
+    /// Between the declaration's braces.
+    pub body: Span,
+    /// `match { … }`, and the clauses between its braces.
+    pub match_clause: Option<Span>,
+    pub match_inner: Option<Span>,
+    /// One per top-level clause of `match_clause`.
+    pub clauses: Vec<Span>,
+    pub return_clause: Option<Span>,
+    pub projections: Vec<ProjectionSpans>,
+    pub order_clause: Option<Span>,
+    pub orderings: Vec<OrderingSpans>,
+    /// `limit n`, and `n`.
+    pub limit_clause: Option<Span>,
+    pub limit_value: Option<Span>,
+    pub mutations: Vec<MutationSpans>,
+    pub exprs: Vec<ExprSpan>,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ProjectionSpans {
+    /// The projection with its alias, without a trailing comma.
+    pub whole: Span,
+    pub expr: Span,
+    pub alias: Option<Span>,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct OrderingSpans {
+    pub whole: Span,
+    /// The key expression, a `nearest(…)` ordering included.
+    pub key: Span,
+    /// `asc` or `desc` when written.
+    pub direction: Option<Span>,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct MutationSpans {
+    /// The statement, from its keyword to the end of its predicate or `}`.
+    pub stmt: Span,
+    /// `insert`, `update` or `delete`.
+    pub keyword: Span,
+    pub type_name: Span,
+    /// `set { … }` of an update, from `set` to its `}`.
+    pub set_block: Option<Span>,
+    /// One per assignment, without a trailing comma.
+    pub assignments: Vec<Span>,
+    /// The `where` keyword and the predicate after it.
+    pub where_keyword: Option<Span>,
+    pub predicate: Option<Span>,
+}
+
+/// One expression node with its span.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExprSpan {
+    pub span: Span,
+    pub node: SpannedExpr,
+}
+
+/// The expression nodes the parser records a span for.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SpannedExpr {
+    /// `left op right` with an infix operator: a comparison, `contains` or
+    /// `starts_with`.
+    Infix { op: CompOp, left: Span, right: Span },
+    /// `needle in list`.
+    In { needle: Span, list: Span },
+    /// A function call or ranking (`search`, `fuzzy`, `match_text`, `bm25`,
+    /// `nearest`, `rrf`), with the span of each argument.
+    Call { name: String, args: Vec<Span> },
+    /// `$var.property` or `$var.@meta`.
+    PropAccess { variable: String, property: String },
+    /// `$var`.
+    Variable { name: String },
+    /// A bare name or meta-field in a property scope (a mutation `where`, an
+    /// assignment value, a binding's inline match), naming the scope's type.
+    BareName { name: String },
 }
 
 /// Where a mutation's result goes: the branch head (`Publish`), an

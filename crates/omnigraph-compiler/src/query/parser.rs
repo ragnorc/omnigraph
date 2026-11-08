@@ -32,6 +32,66 @@ impl NameScope<'_> {
     }
 }
 
+// The span side table of the declaration being parsed. Set for the
+// duration of `parse_query_decl`, read by nothing else; expression parsers
+// push the nodes a source-preserving rewrite needs.
+thread_local! {
+    static EXPR_SPANS: std::cell::RefCell<Option<Vec<ExprSpan>>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+/// The pair's span without the trailing whitespace a repetition can leave
+/// inside it.
+fn span_of(pair: &pest::iterators::Pair<Rule>) -> Span {
+    let span = pair.as_span();
+    let trimmed = span.as_str().trim_end_matches([' ', '\t', '\r', '\n']);
+    Span::new(span.start(), span.start() + trimmed.len())
+}
+
+fn record_expr(span: Span, node: SpannedExpr) {
+    EXPR_SPANS.with(|spans| {
+        if let Some(spans) = spans.borrow_mut().as_mut() {
+            spans.push(ExprSpan { span, node });
+        }
+    });
+}
+
+/// Restores the enclosing recorder when a declaration's parse ends, on
+/// success or on an early error.
+struct ExprSpanScope(Option<Vec<ExprSpan>>);
+
+impl ExprSpanScope {
+    fn open() -> Self {
+        Self(EXPR_SPANS.with(|spans| spans.borrow_mut().replace(Vec::new())))
+    }
+
+    fn take(&mut self) -> Vec<ExprSpan> {
+        EXPR_SPANS.with(|spans| spans.borrow_mut().replace(Vec::new()).unwrap_or_default())
+    }
+}
+
+impl Drop for ExprSpanScope {
+    fn drop(&mut self) {
+        let outer = self.0.take();
+        EXPR_SPANS.with(|spans| *spans.borrow_mut() = outer);
+    }
+}
+
+/// The first byte at or after `at` that is not whitespace or a comment, as
+/// the grammar's implicit `WHITESPACE` and `COMMENT` skip them.
+fn skip_trivia_from(input: &str, at: usize) -> usize {
+    at + (input[at..].len() - skip_trivia(&input[at..]).len())
+}
+
+/// The span of the literal token `word` that the grammar places at the first
+/// non-trivia byte after `at`.
+fn token_after(input: &str, at: usize, word: &str) -> Option<Span> {
+    let start = skip_trivia_from(input, at);
+    input[start..]
+        .starts_with(word)
+        .then(|| Span::new(start, start + word.len()))
+}
+
 fn reserved_property_error(at: &pest::iterators::Pair<Rule>) -> CompilerError {
     let word = at.as_str();
     query_error_at(
@@ -696,6 +756,12 @@ fn parse_error_message(error: CompilerError) -> String {
 }
 
 fn parse_query_decl(pair: pest::iterators::Pair<Rule>) -> Result<QueryDecl> {
+    let mut recorder = ExprSpanScope::open();
+    let input = pair.as_span().get_input();
+    let mut spans = DeclSpans {
+        decl: span_of(&pair),
+        ..DeclSpans::default()
+    };
     let mut inner = pair.into_inner();
     let name = inner.next().unwrap().as_str().to_string();
 
@@ -755,6 +821,7 @@ fn parse_query_decl(pair: pest::iterators::Pair<Rule>) -> Result<QueryDecl> {
                 }
             }
             Rule::query_body => {
+                spans.body = span_of(&item);
                 let body = item.into_inner().next().ok_or_else(|| {
                     CompilerError::Parse("query body cannot be empty".to_string())
                 })?;
@@ -763,17 +830,28 @@ fn parse_query_decl(pair: pest::iterators::Pair<Rule>) -> Result<QueryDecl> {
                         for section in body.into_inner() {
                             match section.as_rule() {
                                 Rule::match_clause => {
+                                    let whole = span_of(&section);
+                                    spans.match_clause = Some(whole);
+                                    if let Some(open) =
+                                        token_after(input, whole.start + "match".len(), "{")
+                                    {
+                                        spans.match_inner =
+                                            Some(Span::new(open.end, whole.end - 1));
+                                    }
                                     for c in section.into_inner() {
                                         if let Rule::clause = c.as_rule() {
+                                            spans.clauses.push(span_of(&c));
                                             match_clause.push(parse_clause(c)?);
                                         }
                                     }
                                 }
                                 Rule::return_clause => {
+                                    spans.return_clause = Some(span_of(&section));
                                     for proj in section.into_inner() {
                                         match proj.as_rule() {
                                             Rule::kw_distinct => distinct = true,
                                             Rule::projection => {
+                                                spans.projections.push(projection_spans(&proj));
                                                 return_clause.push(parse_projection(proj)?);
                                             }
                                             _ => {}
@@ -781,14 +859,18 @@ fn parse_query_decl(pair: pest::iterators::Pair<Rule>) -> Result<QueryDecl> {
                                     }
                                 }
                                 Rule::order_clause => {
+                                    spans.order_clause = Some(span_of(&section));
                                     for ord in section.into_inner() {
                                         if let Rule::ordering = ord.as_rule() {
+                                            spans.orderings.push(ordering_spans(&ord));
                                             order_clause.push(parse_ordering(ord)?);
                                         }
                                     }
                                 }
                                 Rule::limit_clause => {
+                                    spans.limit_clause = Some(span_of(&section));
                                     let int_pair = section.into_inner().next().unwrap();
+                                    spans.limit_value = Some(span_of(&int_pair));
                                     limit =
                                         Some(int_pair.as_str().parse::<u64>().map_err(|e| {
                                             query_error_at(
@@ -809,6 +891,7 @@ fn parse_query_decl(pair: pest::iterators::Pair<Rule>) -> Result<QueryDecl> {
                                         "mutation statement cannot be empty".to_string(),
                                     )
                                 })?;
+                                spans.mutations.push(mutation_spans(input, &stmt));
                                 mutations.push(parse_mutation_stmt(stmt)?);
                             }
                         }
@@ -842,6 +925,7 @@ fn parse_query_decl(pair: pest::iterators::Pair<Rule>) -> Result<QueryDecl> {
         }
     };
 
+    spans.exprs = recorder.take();
     Ok(QueryDecl {
         name,
         description,
@@ -854,7 +938,82 @@ fn parse_query_decl(pair: pest::iterators::Pair<Rule>) -> Result<QueryDecl> {
         limit,
         mutations,
         write_mode,
+        spans,
     })
+}
+
+fn projection_spans(pair: &pest::iterators::Pair<Rule>) -> ProjectionSpans {
+    let mut parts = pair.clone().into_inner();
+    let expr = parts.next().map(|p| span_of(&p)).unwrap_or_default();
+    let alias = parts.next().map(|p| span_of(&p));
+    ProjectionSpans {
+        whole: Span::new(expr.start, alias.map_or(expr.end, |a| a.end)),
+        expr,
+        alias,
+    }
+}
+
+fn ordering_spans(pair: &pest::iterators::Pair<Rule>) -> OrderingSpans {
+    let mut parts = pair.clone().into_inner();
+    let key = parts.next().map(|p| span_of(&p)).unwrap_or_default();
+    let direction = parts.next().map(|p| span_of(&p));
+    OrderingSpans {
+        whole: span_of(pair),
+        key,
+        direction,
+    }
+}
+
+/// The spans of one `insert`, `update` or `delete` statement. The keywords
+/// `set` and `where` are literal tokens of the grammar, found as the first
+/// non-trivia bytes after the part before them.
+fn mutation_spans(input: &str, pair: &pest::iterators::Pair<Rule>) -> MutationSpans {
+    let stmt = span_of(pair);
+    let keyword_len = match pair.as_rule() {
+        Rule::insert_stmt => "insert".len(),
+        Rule::update_stmt => "update".len(),
+        _ => "delete".len(),
+    };
+    let mut spans = MutationSpans {
+        stmt,
+        keyword: Span::new(stmt.start, stmt.start + keyword_len),
+        ..MutationSpans::default()
+    };
+    for part in pair.clone().into_inner() {
+        match part.as_rule() {
+            Rule::type_name => spans.type_name = span_of(&part),
+            Rule::mutation_assignment => {
+                let whole = span_of(&part);
+                let text = whole.text(input);
+                let trimmed = text.trim_end().trim_end_matches(',').trim_end();
+                spans
+                    .assignments
+                    .push(Span::new(whole.start, whole.start + trimmed.len()));
+            }
+            Rule::mutation_predicate => spans.predicate = Some(span_of(&part)),
+            _ => {}
+        }
+    }
+    if pair.as_rule() == Rule::update_stmt {
+        let set = token_after(input, spans.type_name.end, "set");
+        let close = spans.assignments.last().and_then(|last| {
+            // A trailing comma belongs to the assignment rule.
+            let after = skip_trivia_from(input, last.end);
+            let after = if input[after..].starts_with(',') {
+                after + 1
+            } else {
+                after
+            };
+            token_after(input, after, "}")
+        });
+        if let (Some(set), Some(close)) = (set, close) {
+            spans.set_block = Some(Span::new(set.start, close.end));
+            spans.where_keyword = token_after(input, close.end, "where");
+        }
+    } else if pair.as_rule() == Rule::delete_stmt {
+        spans.where_keyword = token_after(input, spans.type_name.end, "where");
+    }
+    spans
 }
 
 /// The `on` operand of an `as_unattached_clause`, `None` when unspelled. A
@@ -1307,9 +1466,39 @@ fn parse_expr(pair: pest::iterators::Pair<Rule>, scope: NameScope<'_>) -> Result
             }
         }
         Rule::comparison => {
+            let whole = span_of(&pair);
             let mut parts = pair.into_inner();
-            let left = parse_operand(parts.next().unwrap(), scope)?;
-            match parts.next() {
+            let left_pair = parts.next().unwrap();
+            let left_span = span_of(&left_pair);
+            let next = parts.next();
+            match &next {
+                Some(part) if part.as_rule() == Rule::filter_op => {
+                    if let (Ok(op), Some(right)) = (parse_filter_op(part.clone()), parts.peek()) {
+                        record_expr(
+                            whole,
+                            SpannedExpr::Infix {
+                                op,
+                                left: left_span,
+                                right: span_of(&right),
+                            },
+                        );
+                    }
+                }
+                Some(part) if part.as_rule() == Rule::kw_in => {
+                    if let Some(list) = parts.peek() {
+                        record_expr(
+                            whole,
+                            SpannedExpr::In {
+                                needle: left_span,
+                                list: span_of(&list),
+                            },
+                        );
+                    }
+                }
+                _ => {}
+            }
+            let left = parse_operand(left_pair, scope)?;
+            match next {
                 None => Ok(left),
                 Some(part) if part.as_rule() == Rule::filter_op => {
                     let op = parse_filter_op(part)?;
@@ -1368,15 +1557,28 @@ fn parse_operand(pair: pest::iterators::Pair<Rule>, scope: NameScope<'_>) -> Res
         Rule::expr => parse_expr(inner, scope),
         Rule::now_call => Ok(Expr::Now),
         Rule::prop_access => {
+            let whole = span_of(&inner);
             let mut parts = inner.into_inner();
             let var = parts.next().unwrap().as_str();
             let variable = var.strip_prefix('$').unwrap_or(var).to_string();
             let property = parts.next().unwrap().as_str().to_string();
+            record_expr(
+                whole,
+                SpannedExpr::PropAccess {
+                    variable: variable.clone(),
+                    property: property.clone(),
+                },
+            );
             Ok(Expr::PropAccess { variable, property })
         }
         Rule::variable => {
             let v = inner.as_str();
-            Ok(Expr::Variable(v.strip_prefix('$').unwrap_or(v).to_string()))
+            let name = v.strip_prefix('$').unwrap_or(v).to_string();
+            record_expr(
+                span_of(&inner),
+                SpannedExpr::Variable { name: name.clone() },
+            );
+            Ok(Expr::Variable(name))
         }
         Rule::literal => Ok(Expr::Literal(parse_literal(inner)?)),
         Rule::agg_call => {
@@ -1404,7 +1606,17 @@ fn parse_operand(pair: pest::iterators::Pair<Rule>, scope: NameScope<'_>) -> Res
         Rule::nearest_ordering => parse_nearest_ordering(inner, scope),
         Rule::bm25_call => parse_bm25_call(inner, scope),
         Rule::rrf_call => parse_rrf_call(inner, scope),
-        Rule::meta_field | Rule::expr_ident => Ok(scope.bare_name(inner.as_str())),
+        Rule::meta_field | Rule::expr_ident => {
+            if matches!(scope, NameScope::Property(_)) {
+                record_expr(
+                    span_of(&inner),
+                    SpannedExpr::BareName {
+                        name: inner.as_str().to_string(),
+                    },
+                );
+            }
+            Ok(scope.bare_name(inner.as_str()))
+        }
         Rule::reserved_property => Err(reserved_property_error(&inner)),
         _ => Err(CompilerError::Parse(format!(
             "unexpected operand rule: {:?}",
@@ -1414,6 +1626,7 @@ fn parse_operand(pair: pest::iterators::Pair<Rule>, scope: NameScope<'_>) -> Res
 }
 
 fn parse_search_call(pair: pest::iterators::Pair<Rule>, scope: NameScope<'_>) -> Result<Expr> {
+    record_call(&pair, "search");
     let mut args = pair.into_inner();
     let field = args
         .next()
@@ -1433,6 +1646,7 @@ fn parse_search_call(pair: pest::iterators::Pair<Rule>, scope: NameScope<'_>) ->
 }
 
 fn parse_fuzzy_call(pair: pest::iterators::Pair<Rule>, scope: NameScope<'_>) -> Result<Expr> {
+    record_call(&pair, "fuzzy");
     let mut args = pair.into_inner();
     let field = args
         .next()
@@ -1458,6 +1672,7 @@ fn parse_fuzzy_call(pair: pest::iterators::Pair<Rule>, scope: NameScope<'_>) -> 
 }
 
 fn parse_match_text_call(pair: pest::iterators::Pair<Rule>, scope: NameScope<'_>) -> Result<Expr> {
+    record_call(&pair, "match_text");
     let mut args = pair.into_inner();
     let field = args
         .next()
@@ -1477,6 +1692,7 @@ fn parse_match_text_call(pair: pest::iterators::Pair<Rule>, scope: NameScope<'_>
 }
 
 fn parse_bm25_call(pair: pest::iterators::Pair<Rule>, scope: NameScope<'_>) -> Result<Expr> {
+    record_call(&pair, "bm25");
     let mut args = pair.into_inner();
     let field = args
         .next()
@@ -1514,6 +1730,7 @@ fn parse_rank_expr(pair: pest::iterators::Pair<Rule>, scope: NameScope<'_>) -> R
 }
 
 fn parse_rrf_call(pair: pest::iterators::Pair<Rule>, scope: NameScope<'_>) -> Result<Expr> {
+    record_call(&pair, "rrf");
     let mut args = pair.into_inner();
     let primary = args
         .next()
@@ -1536,6 +1753,17 @@ fn parse_rrf_call(pair: pest::iterators::Pair<Rule>, scope: NameScope<'_>) -> Re
         secondary: Box::new(parse_rank_expr(secondary, scope)?),
         k,
     })
+}
+
+fn record_call(pair: &pest::iterators::Pair<Rule>, name: &str) {
+    let args = pair.clone().into_inner().map(|arg| span_of(&arg)).collect();
+    record_expr(
+        span_of(pair),
+        SpannedExpr::Call {
+            name: name.to_string(),
+            args,
+        },
+    );
 }
 
 fn parse_comp_op(pair: pest::iterators::Pair<Rule>) -> Result<CompOp> {
@@ -1686,6 +1914,7 @@ fn parse_ordering(pair: pest::iterators::Pair<Rule>) -> Result<Ordering> {
 }
 
 fn parse_nearest_ordering(pair: pest::iterators::Pair<Rule>, scope: NameScope<'_>) -> Result<Expr> {
+    record_call(&pair, "nearest");
     let mut inner = pair.into_inner();
     let prop = inner
         .next()
