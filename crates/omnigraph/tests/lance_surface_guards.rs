@@ -9782,3 +9782,907 @@ fn native_bm25_idf_can_round_a_common_term_to_zero() {
     assert_eq!(native, 0.0);
     assert!(stable > 0.0);
 }
+
+/// The analysis the GQ 3 lexical guards below use: the `simple` tokenizer
+/// with lowercasing and nothing else, so a fixture's whitespace-separated
+/// lowercase terms are exactly the indexed tokens.
+fn gq3_plain_fts_params() -> InvertedIndexParams {
+    InvertedIndexParams::default()
+        .stem(false)
+        .remove_stop_words(false)
+        .ascii_folding(false)
+        .max_token_length(None)
+}
+
+/// Write `texts` as `(id, body)` rows, `rows_per_file` per fragment, and
+/// build a full-text index on `body` with `params` over every fragment.
+async fn gq3_fts_dataset(
+    uri: &std::path::Path,
+    ids: Vec<String>,
+    texts: Vec<Option<String>>,
+    rows_per_file: usize,
+    params: &InvertedIndexParams,
+) -> lance::Result<Dataset> {
+    let schema = Arc::new(Schema::new(vec![
+        Field::new("id", DataType::Utf8, false),
+        Field::new("body", DataType::Utf8, true),
+    ]));
+    let batch = RecordBatch::try_new(
+        schema.clone(),
+        vec![
+            Arc::new(StringArray::from(ids)),
+            Arc::new(StringArray::from(texts)),
+        ],
+    )
+    .unwrap();
+    let mut dataset = Dataset::write(
+        RecordBatchIterator::new(vec![Ok(batch)], schema),
+        uri.to_str().unwrap(),
+        Some(WriteParams {
+            enable_stable_row_ids: true,
+            data_storage_version: Some(LanceFileVersion::V2_2),
+            max_rows_per_file: rows_per_file.max(1),
+            ..Default::default()
+        }),
+    )
+    .await?;
+    dataset
+        .create_index(&["body"], IndexType::Inverted, None, params, true)
+        .await?;
+    Ok(dataset)
+}
+
+/// `(id, _score)` of one full-text scan, in the order Lance returned them.
+async fn gq3_fts_rows(
+    dataset: &Dataset,
+    query: FullTextSearchQuery,
+    scanner_limit: Option<i64>,
+    counts: Option<Arc<std::sync::Mutex<Vec<lance::dataset::scanner::ExecutionSummaryCounts>>>>,
+) -> lance::Result<Vec<(String, f32)>> {
+    let mut scan = dataset.scan();
+    scan.full_text_search(query)?;
+    scan.project(&["id"])?;
+    if let Some(limit) = scanner_limit {
+        scan.limit(Some(limit), None)?;
+    }
+    if let Some(counts) = counts {
+        scan.scan_stats_callback(Arc::new(move |summary| {
+            counts.lock().unwrap().push(summary.clone());
+        }));
+    }
+    let batch = scan.try_into_batch().await?;
+    let ids = batch.column_by_name("id").unwrap().as_string::<i32>();
+    let scores = batch
+        .column_by_name("_score")
+        .unwrap()
+        .as_primitive::<arrow_array::types::Float32Type>();
+    Ok((0..batch.num_rows())
+        .map(|i| (ids.value(i).to_string(), scores.value(i)))
+        .collect())
+}
+
+/// GQ 3 RFC, section 4 (`bm25_v1`) and section 10 (Native BM25 guards):
+/// the Decimal oracle's fixtures run through native Lance 13 full-text search
+/// over the same terms (the `simple` tokenizer, lowercase, no stemming, stop
+/// words or folding), so the ways native BM25 departs from `bm25_v1` are
+/// pinned case by case rather than asserted in prose. Zero-edit cases agree
+/// with the oracle up to `f32` rounding; edit-tolerant cases do not: native
+/// fuzzy BM25 scores each expansion with its own IDF and sums alternatives
+/// where `bm25_v1` takes one union IDF, the maximum alternative and an edit
+/// penalty. A red assertion here is a changed substrate fact and a design
+/// review of the RFC's "Native Lance BM25 does not supply this contract".
+#[tokio::test]
+async fn gq3_bm25_v1_oracle_fixtures_against_native_lance_scores() {
+    use lance_index::scalar::inverted::query::{FtsQuery, MatchQuery, Operator};
+
+    #[derive(serde::Deserialize)]
+    struct Case {
+        name: String,
+        docs: Vec<Option<String>>,
+        query: Vec<String>,
+        edits: u32,
+        all_terms: bool,
+        expected_scores: Vec<Option<String>>,
+        expected_order: Vec<usize>,
+    }
+
+    #[derive(Debug)]
+    struct Outcome {
+        membership_equal: bool,
+        order_equal: bool,
+        max_relative_error: f64,
+        native: Vec<Option<f32>>,
+    }
+
+    let cases: Vec<Case> =
+        serde_json::from_str(include_str!("fixtures/lexical_scoring_v1.json")).unwrap();
+    let dir = tempfile::tempdir().unwrap();
+    let mut outcomes: HashMap<String, Result<Outcome, String>> = HashMap::new();
+    for case in &cases {
+        let ids: Vec<_> = (0..case.docs.len()).map(|i| format!("d-{i:02}")).collect();
+        let built = gq3_fts_dataset(
+            &dir.path().join(&case.name),
+            ids,
+            case.docs.clone(),
+            usize::MAX,
+            &gq3_plain_fts_params(),
+        )
+        .await;
+        let dataset = match built {
+            Ok(dataset) => dataset,
+            Err(error) => {
+                println!("{}: refused to build: {error}", case.name);
+                outcomes.insert(case.name.clone(), Err(error.to_string()));
+                continue;
+            }
+        };
+        let query = FullTextSearchQuery::new_query(FtsQuery::Match(
+            MatchQuery::new(case.query.join(" "))
+                .with_column(Some("body".to_string()))
+                .with_fuzziness(Some(case.edits))
+                .with_operator(if case.all_terms {
+                    Operator::And
+                } else {
+                    Operator::Or
+                }),
+        ));
+        let rows = match gq3_fts_rows(&dataset, query, None, None).await {
+            Ok(rows) => rows,
+            Err(error) => {
+                println!("{}: refused to search: {error}", case.name);
+                outcomes.insert(case.name.clone(), Err(error.to_string()));
+                continue;
+            }
+        };
+        let mut native = vec![None; case.docs.len()];
+        for (id, score) in &rows {
+            native[id[2..].parse::<usize>().unwrap()] = Some(*score);
+        }
+        let expected: Vec<Option<f64>> = case
+            .expected_scores
+            .iter()
+            .map(|score| score.as_ref().map(|s| s.parse().unwrap()))
+            .collect();
+        let membership_equal = native
+            .iter()
+            .zip(&expected)
+            .all(|(n, e)| n.is_some() == e.is_some());
+        let max_relative_error = native
+            .iter()
+            .zip(&expected)
+            .filter_map(|(n, e)| Some(((f64::from((*n)?) - (*e)?) / (*e)?).abs()))
+            .fold(0.0, f64::max);
+        let mut order: Vec<_> = native
+            .iter()
+            .enumerate()
+            .filter_map(|(i, s)| s.map(|s| (i, s)))
+            .collect();
+        order.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+        let order: Vec<_> = order.into_iter().map(|(i, _)| i).collect();
+        let outcome = Outcome {
+            membership_equal,
+            order_equal: order == case.expected_order,
+            max_relative_error,
+            native,
+        };
+        println!(
+            "{}: edits={} all={} membership_equal={} order_equal={} (native {:?}, oracle {:?}) max_rel_err={:.3e}\n    native={:?}\n    oracle={:?}",
+            case.name,
+            case.edits,
+            case.all_terms,
+            outcome.membership_equal,
+            outcome.order_equal,
+            order,
+            case.expected_order,
+            outcome.max_relative_error,
+            outcome.native,
+            expected
+        );
+        outcomes.insert(case.name.clone(), Ok(outcome));
+    }
+    let outcome = |name: &str| -> &Outcome {
+        outcomes[name]
+            .as_ref()
+            .unwrap_or_else(|error| panic!("{name}: {error}"))
+    };
+    // Zero edits: the same membership and order, the scores `bm25_v1`'s up to
+    // `f32` rounding (Lance's IDF, `ln((N - n + 0.5) / (n + 0.5) + 1)`, and its
+    // `(K1 + 1) tf / (tf + K1 (1 - B + B len / avg))` are the same formula).
+    for name in ["zero_edits", "zero_edits_multi_term"] {
+        let outcome = outcome(name);
+        assert!(outcome.membership_equal && outcome.order_equal, "{name}");
+        assert!(
+            outcome.max_relative_error < 2.0 * f64::from(f32::EPSILON),
+            "{name}: {}",
+            outcome.max_relative_error
+        );
+    }
+    // Membership agrees for every edit-tolerant fixture: at these vocabulary
+    // sizes the pinned expansion is complete, a transposition costs two edits
+    // and an accented letter one, as `bm25_v1` defines them.
+    for case in &cases {
+        if let Ok(outcome) = &outcomes[&case.name] {
+            assert!(outcome.membership_equal, "{}", case.name);
+        }
+    }
+    // Ranking does not: seven of the ten edit-tolerant fixtures order differently.
+    for name in [
+        "rare_variant",
+        "alternatives_do_not_add",
+        "one_term_satisfies_two_groups",
+        "all_counts_each_family_before_query_filter",
+        "any_uses_the_same_statistics",
+        "null_and_token_empty_are_outside_corpus",
+        "unicode_scalar_edit",
+    ] {
+        assert!(!outcome(name).order_equal, "{name} now orders as bm25_v1");
+    }
+    let native = |name: &str, doc: usize| outcome(name).native[doc].unwrap();
+    // A rare expansion outweighs the exact term (its own IDF, not the group's).
+    assert!(native("rare_variant", 3) > 2.0 * native("rare_variant", 0));
+    // Alternatives add: `beta beto` beats `beta beta` natively.
+    assert!(native("alternatives_do_not_add", 1) > native("alternatives_do_not_add", 4));
+    // No edit penalty: zero, one and two edits away from `abcd` score alike.
+    let exact = native("two_edits_and_transposition", 0);
+    for doc in 1..5 {
+        assert_eq!(
+            native("two_edits_and_transposition", doc).to_bits(),
+            exact.to_bits()
+        );
+    }
+    // Null and token-empty values stay outside the corpus, as in `bm25_v1`:
+    // `beto` in a one-token document with N = 3 and avg_len = 4/3.
+    let (n, df, len, avg) = (3.0_f64, 1.0, 1.0, 4.0 / 3.0);
+    let closed =
+        f64::ln_1p((n - df + 0.5) / (df + 0.5)) * 2.2 / (1.0 + 1.2 * (0.25 + 0.75 * len / avg));
+    let observed = f64::from(native("null_and_token_empty_are_outside_corpus", 3));
+    assert!(
+        (observed - closed).abs() < 1e-6 * closed,
+        "{observed} != {closed}"
+    );
+    // An empty or all-empty corpus builds, and answers nothing.
+    for name in [
+        "empty_corpus",
+        "only_missing_and_token_empty",
+        "no_matching_family",
+    ] {
+        assert!(outcome(name).native.iter().all(Option::is_none), "{name}");
+    }
+}
+
+/// GQ 3 RFC, section 4, "Exact execution and qualified acceleration": a `Cut`
+/// over an `Order` over an exact `bm25` may pass its fetch to Lance's
+/// block-max WAND, falling back to the exact scan when the boundary ties or
+/// the result comes back short, with bit-identical scores between the two
+/// paths as part of the qualification. This builds an index with the engine's
+/// parameters over a few thousand generated documents and runs the query the
+/// engine builds (`FullTextSearchQuery::new(text).with_column(prop)`,
+/// `engine/scan.rs`) with and without a fetch, through the scanner, and
+/// measures: score bits, winners, index comparisons and wall time, the k-th
+/// boundary under ties, a k+1 fetch as tie detection, a partially indexed
+/// table, and the native `f32` order against `bm25_v1`'s `f64` order.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn gq3_bm25_fetch_through_block_max_wand() {
+    use std::collections::BTreeMap;
+    use std::sync::Mutex;
+    use std::time::{Duration, Instant};
+
+    type Counts = Arc<Mutex<Vec<lance::dataset::scanner::ExecutionSummaryCounts>>>;
+
+    const DOCS: usize = 4000;
+    const VOCAB: usize = 1500;
+    const TIES: usize = 40;
+    const TAIL: usize = 500;
+    const RUNS: usize = 15;
+
+    let mut state = 0x9E37_79B9_7F4A_7C15_u64;
+    let mut next = move || {
+        state ^= state << 13;
+        state ^= state >> 7;
+        state ^= state << 17;
+        state
+    };
+    let mut generate = |count: usize, prefix: &str| -> (Vec<String>, Vec<Option<String>>) {
+        let mut ids = Vec::new();
+        let mut texts = Vec::new();
+        for i in 0..count {
+            let len = 4 + (next() % 57) as usize;
+            let words: Vec<_> = (0..len)
+                .map(|_| {
+                    let u = (next() >> 11) as f64 / (1u64 << 53) as f64;
+                    format!("q{}x", (VOCAB as f64 * u.powi(3)) as usize)
+                })
+                .collect();
+            ids.push(format!("{prefix}-{i:05}"));
+            texts.push(Some(words.join(" ")));
+        }
+        (ids, texts)
+    };
+    let (mut ids, mut texts) = generate(DOCS, "d");
+    // Identical documents, appended with their ids in reverse row order, so
+    // arrival order and id order disagree at every tie among them.
+    for j in 0..TIES {
+        ids.push(format!("t-{:03}", TIES - 1 - j));
+        texts.push(Some("qtiex qtiex q5x".to_string()));
+    }
+
+    // The engine's index parameters; the generated words are fixed points of
+    // its analysis, which makes the `f64` reference below computable here.
+    let params = InvertedIndexParams::default();
+    {
+        let mut tokenizer = params.build().unwrap();
+        for text in texts.iter().take(50).flatten() {
+            let mut stream = tokenizer.token_stream_for_doc(text);
+            let mut tokens = Vec::new();
+            while stream.advance() {
+                tokens.push(stream.token().text.clone());
+            }
+            assert_eq!(
+                tokens,
+                text.split_whitespace().collect::<Vec<_>>(),
+                "generated words must survive the default analysis"
+            );
+        }
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let dataset = gq3_fts_dataset(
+        &dir.path().join("wand"),
+        ids.clone(),
+        texts.clone(),
+        1000,
+        &params,
+    )
+    .await
+    .unwrap();
+    assert_eq!(dataset.get_fragments().len(), 5);
+
+    let query = |text: &str| {
+        FullTextSearchQuery::new(text.to_string())
+            .with_column("body".to_string())
+            .unwrap()
+    };
+    let exact_order = |rows: &[(String, f32)]| {
+        let mut rows = rows.to_vec();
+        rows.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+        rows
+    };
+    let comparisons = |counts: &Counts| -> usize {
+        counts
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|c| c.index_comparisons)
+            .sum()
+    };
+    let median = |mut samples: Vec<Duration>| {
+        samples.sort();
+        samples[samples.len() / 2]
+    };
+
+    // bm25_v1 over the same corpus in f64 (zero edits, any-term).
+    let corpus: Vec<BTreeMap<&str, u64>> = texts
+        .iter()
+        .map(|text| {
+            let mut tf = BTreeMap::new();
+            for t in text.as_deref().unwrap().split_whitespace() {
+                *tf.entry(t).or_default() += 1;
+            }
+            tf
+        })
+        .collect();
+    let lengths: Vec<u64> = corpus.iter().map(|d| d.values().sum()).collect();
+    let n = corpus.len() as f64;
+    let avg = lengths.iter().sum::<u64>() as f64 / n;
+    let bm25_v1 = |text: &str| -> Vec<(String, f64)> {
+        let terms: std::collections::BTreeSet<_> = text.split_whitespace().collect();
+        let idf: Vec<_> = terms
+            .iter()
+            .map(|t| {
+                let df = corpus.iter().filter(|d| d.contains_key(t)).count() as f64;
+                libm::log1p((n - df + 0.5) / (df + 0.5))
+            })
+            .collect();
+        let mut rows = Vec::new();
+        for (i, doc) in corpus.iter().enumerate() {
+            let norm = 1.2 * (0.25 + 0.75 * lengths[i] as f64 / avg);
+            let mut score = 0.0;
+            let mut matched = false;
+            for (t, idf) in terms.iter().zip(&idf) {
+                if let Some(&tf) = doc.get(t) {
+                    matched = true;
+                    score += idf * 2.2 * tf as f64 / (tf as f64 + norm);
+                }
+            }
+            if matched {
+                rows.push((ids[i].clone(), score));
+            }
+        }
+        rows.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+        rows
+    };
+
+    let queries = ["q0x", "q40x", "q7x", "q2x q300x", "q1x q60x q900x", "qtiex"];
+    let ks = [1usize, 10, 100];
+    let mut report = Vec::new();
+    for text in queries {
+        let unlimited_counts: Counts = Arc::default();
+        let unlimited = gq3_fts_rows(&dataset, query(text), None, Some(unlimited_counts.clone()))
+            .await
+            .unwrap();
+        let by_id: HashMap<_, _> = unlimited.iter().cloned().collect();
+        assert_eq!(by_id.len(), unlimited.len());
+        let exact = exact_order(&unlimited);
+
+        // Native f32 against bm25_v1 f64 over the whole matched set.
+        let reference = bm25_v1(text);
+        assert_eq!(reference.len(), exact.len(), "{text}: membership");
+        let max_rel = reference
+            .iter()
+            .map(|(id, s)| ((f64::from(by_id[id]) - s) / s).abs())
+            .fold(0.0, f64::max);
+        let order_mismatches = reference
+            .iter()
+            .zip(&exact)
+            .filter(|(r, e)| r.0 != e.0)
+            .count();
+        let f32_ties_f64_distinct = reference
+            .windows(2)
+            .filter(|w| w[0].1 != w[1].1 && by_id[&w[0].0] == by_id[&w[1].0])
+            .count();
+        let f32_inversions = reference
+            .windows(2)
+            .filter(|w| w[0].1 > w[1].1 && by_id[&w[0].0] < by_id[&w[1].0])
+            .count();
+        println!(
+            "{text}: matched={} unlimited_comparisons={} | vs bm25_v1 f64: max_rel={max_rel:.2e} order_mismatches={order_mismatches} f32_ties_of_distinct_f64={f32_ties_f64_distinct} f32_inversions={f32_inversions}",
+            unlimited.len(),
+            comparisons(&unlimited_counts),
+        );
+
+        for k in ks {
+            let limited_counts: Counts = Arc::default();
+            let limited = gq3_fts_rows(
+                &dataset,
+                query(text).limit(Some(k as i64)),
+                None,
+                Some(limited_counts.clone()),
+            )
+            .await
+            .unwrap();
+            let scanner_limited = gq3_fts_rows(&dataset, query(text), Some(k as i64), None)
+                .await
+                .unwrap();
+            let next_k = gq3_fts_rows(&dataset, query(text).limit(Some(k as i64 + 1)), None, None)
+                .await
+                .unwrap();
+            let want = k.min(exact.len());
+            let limited_sorted = exact_order(&limited);
+            let bits_identical = limited
+                .iter()
+                .all(|(id, s)| by_id[id].to_bits() == s.to_bits());
+            let score_multiset_equal = limited_sorted
+                .iter()
+                .map(|r| r.1.to_bits())
+                .eq(exact[..want].iter().map(|r| r.1.to_bits()));
+            let winners_equal = limited_sorted
+                .iter()
+                .map(|r| &r.0)
+                .eq(exact[..want].iter().map(|r| &r.0));
+            let boundary_tie = exact.len() > k && exact[k - 1].1 == exact[k].1;
+            let next_sorted = exact_order(&next_k);
+            let detected_tie = next_sorted.len() > k && next_sorted[k - 1].1 == next_sorted[k].1;
+            let v1_winners_equal = reference[..reference.len().min(k)]
+                .iter()
+                .map(|r| &r.0)
+                .eq(exact[..want].iter().map(|r| &r.0));
+            let scanner_limit_equal = exact_order(&scanner_limited) == limited_sorted;
+
+            // Wall time, alternating the two paths after a warm-up.
+            let (mut t_full, mut t_cut) = (Vec::new(), Vec::new());
+            for _ in 0..RUNS {
+                let start = Instant::now();
+                let rows = gq3_fts_rows(&dataset, query(text), None, None)
+                    .await
+                    .unwrap();
+                let _ = exact_order(&rows);
+                t_full.push(start.elapsed());
+                let start = Instant::now();
+                gq3_fts_rows(&dataset, query(text).limit(Some(k as i64)), None, None)
+                    .await
+                    .unwrap();
+                t_cut.push(start.elapsed());
+            }
+            let row = format!(
+                "  k={k}: rows={} bits_identical={bits_identical} scores_equal={score_multiset_equal} winners_equal={winners_equal} boundary_tie={boundary_tie} k+1_detects={detected_tie} scanner_limit_same={scanner_limit_equal} comparisons {}->{} median {:?}->{:?} | bm25_v1 top-k ids equal native={v1_winners_equal}",
+                limited.len(),
+                comparisons(&unlimited_counts),
+                comparisons(&limited_counts),
+                median(t_full),
+                median(t_cut),
+            );
+            println!("{row}");
+            report.push((
+                text,
+                k,
+                limited.len() == want,
+                bits_identical,
+                score_multiset_equal,
+                winners_equal,
+                boundary_tie,
+                detected_tie,
+                scanner_limit_equal,
+                comparisons(&unlimited_counts),
+                comparisons(&limited_counts),
+                v1_winners_equal,
+            ));
+        }
+    }
+
+    // The tie block in detail: which ten of the forty identical documents
+    // does a fetch of ten return?
+    let tie_top = exact_order(
+        &gq3_fts_rows(&dataset, query("qtiex").limit(Some(10)), None, None)
+            .await
+            .unwrap(),
+    );
+    println!(
+        "qtiex k=10 returns {:?}",
+        tie_top.iter().map(|r| r.0.as_str()).collect::<Vec<_>>()
+    );
+
+    // A partially indexed table: a fragment appended after the build is
+    // searched flat beside the indexed segments.
+    let (tail_ids, tail_texts) = generate(TAIL, "u");
+    let schema = Arc::new(Schema::new(vec![
+        Field::new("id", DataType::Utf8, false),
+        Field::new("body", DataType::Utf8, true),
+    ]));
+    let tail = RecordBatch::try_new(
+        schema.clone(),
+        vec![
+            Arc::new(StringArray::from(tail_ids)),
+            Arc::new(StringArray::from(tail_texts)),
+        ],
+    )
+    .unwrap();
+    let mut partial = dataset.clone();
+    partial
+        .append(RecordBatchIterator::new(vec![Ok(tail)], schema), None)
+        .await
+        .unwrap();
+    let mut partial_report = Vec::new();
+    for text in ["q0x", "q40x", "q2x q300x"] {
+        let unlimited = gq3_fts_rows(&partial, query(text), None, None)
+            .await
+            .unwrap();
+        let by_id: HashMap<_, _> = unlimited.iter().cloned().collect();
+        let exact = exact_order(&unlimited);
+        for k in ks {
+            let limited = exact_order(
+                &gq3_fts_rows(&partial, query(text).limit(Some(k as i64)), None, None)
+                    .await
+                    .unwrap(),
+            );
+            let want = k.min(exact.len());
+            let bits_identical = limited
+                .iter()
+                .all(|(id, s)| by_id[id].to_bits() == s.to_bits());
+            let scores_equal = limited
+                .iter()
+                .map(|r| r.1.to_bits())
+                .eq(exact[..want].iter().map(|r| r.1.to_bits()));
+            let tail_in_top = exact[..want]
+                .iter()
+                .filter(|r| r.0.starts_with("u-"))
+                .count();
+            println!(
+                "partial {text} k={k}: rows={} bits_identical={bits_identical} scores_equal={scores_equal} tail_rows_in_exact_top_k={tail_in_top}",
+                limited.len()
+            );
+            partial_report.push((text, k, bits_identical, scores_equal));
+        }
+    }
+    // What held on Lance 13.0.0. Wall time is printed, never asserted.
+    for &(
+        text,
+        k,
+        complete,
+        bits_identical,
+        scores_equal,
+        winners_equal,
+        boundary_tie,
+        detected_tie,
+        scanner_limit_equal,
+        full,
+        cut,
+        _,
+    ) in &report
+    {
+        let at = format!("{text} k={k}");
+        assert!(complete, "{at}: a fetch is never short of min(k, matched)");
+        assert!(bits_identical, "{at}: the fetch changes a score");
+        assert!(scores_equal, "{at}: the fetch changes the top-k scores");
+        assert!(
+            winners_equal || boundary_tie,
+            "{at}: winners differ without a tie"
+        );
+        assert_eq!(
+            detected_tie, boundary_tie,
+            "{at}: a k+1 fetch sees the k-th tie"
+        );
+        assert!(
+            scanner_limit_equal,
+            "{at}: Scanner::limit is the same fetch"
+        );
+        assert!(cut <= full, "{at}: the fetch adds comparisons");
+    }
+    let row = |text: &str, k: usize| report.iter().find(|r| r.0 == text && r.1 == k).unwrap();
+    // A tie at the k-th score can change which tied rows win.
+    assert!(report.iter().any(|r| r.6 && !r.5));
+    // The fetch prunes scoring work at small k, by an amount that varies
+    // from run to run (partitions race on the shared threshold: 512 to 768
+    // of 3424 for `q0x`, 173 to 176 of 2107 for the three-term query, over
+    // six runs)...
+    assert!(row("q0x", 1).10 * 2 < row("q0x", 1).9);
+    assert!(row("q1x q60x q900x", 1).10 * 4 < row("q1x q60x q900x", 1).9);
+    // ...and not necessarily at larger k: here every posting is still scored.
+    assert_eq!(row("q0x", 100).10, row("q0x", 100).9);
+    // Ties keep the first rows to arrive, not the smallest ids.
+    assert_eq!(
+        tie_top.iter().map(|r| r.0.as_str()).collect::<Vec<_>>(),
+        (30..40).map(|i| format!("t-{i:03}")).collect::<Vec<_>>()
+    );
+    for (text, k, bits_identical, scores_equal) in partial_report {
+        assert!(bits_identical && scores_equal, "partial {text} k={k}");
+    }
+}
+
+/// GQ 3 RFC, section 4: `bm25_v1` is `F64` with `libm`'s `log1p`; Lance's
+/// BM25 is `f32`. They agree to about one `f32` ulp, so two documents whose
+/// `f64` scores differ by less than that come back from Lance tied or in the
+/// other order. A WAND fetch that is bit-identical to Lance's own unlimited
+/// scan (`gq3_bm25_fetch_through_block_max_wand`) then returns the wrong
+/// winner for `bm25_v1`'s `Cut`; a k+1 fetch sees the tie, and nothing sees
+/// the inversion. Each corpus is constructed: N = 4040 documents, 130000
+/// tokens, given document frequencies for `qa` and `qb`, and two documents A
+/// and B with given lengths and term frequencies that the other documents
+/// (one query term in about 32 tokens) cannot outrank. The pairs were found by
+/// replaying Lance 13's `f32` operation order (`scorer.rs`: `idf`,
+/// `bm25_doc_norm`, `bm25_doc_weight_with_norm`, `query_weight * doc_weight`).
+#[tokio::test]
+async fn gq3_native_f32_bm25_can_tie_or_invert_the_bm25_v1_order() {
+    const N: usize = 4040;
+    const TOTAL: usize = 130_000;
+    struct Case {
+        name: &'static str,
+        df: (usize, usize),
+        // (length, tf(qa), tf(qb))
+        a: (usize, usize, usize),
+        b: (usize, usize, usize),
+    }
+    let filler = |count: usize, seed: usize| -> Vec<String> {
+        (0..count)
+            .map(|i| format!("qz{}x", (seed * 31 + i) % 997))
+            .collect()
+    };
+    let doc = |(len, tf_a, tf_b): (usize, usize, usize), seed: usize| -> Vec<String> {
+        std::iter::repeat_n("qa".to_string(), tf_a)
+            .chain(std::iter::repeat_n("qb".to_string(), tf_b))
+            .chain(filler(len - tf_a - tf_b, seed))
+            .collect()
+    };
+    let v1 = |(df_a, df_b): (usize, usize), (len, tf_a, tf_b): (usize, usize, usize)| {
+        let n = N as f64;
+        let avg = TOTAL as f64 / n;
+        let norm = 1.2 * (0.25 + 0.75 * len as f64 / avg);
+        let part = |df: usize, tf: usize| {
+            let (df, tf) = (df as f64, tf as f64);
+            libm::log1p((n - df + 0.5) / (df + 0.5)) * 2.2 * tf / (tf + norm)
+        };
+        part(df_a, tf_a) + part(df_b, tf_b)
+    };
+    let dir = tempfile::tempdir().unwrap();
+    for case in [
+        Case {
+            name: "tie",
+            df: (354, 1778),
+            a: (35, 4, 4),
+            b: (26, 3, 4),
+        },
+        Case {
+            name: "inversion",
+            df: (509, 916),
+            a: (29, 1, 4),
+            b: (60, 3, 3),
+        },
+    ] {
+        let mut texts = vec![doc(case.a, 0), doc(case.b, 1)];
+        let rest = N - 2;
+        let mut remaining = TOTAL - case.a.0 - case.b.0;
+        for i in 0..rest {
+            let len = remaining / (rest - i);
+            remaining -= len;
+            let mut words = Vec::new();
+            if i < case.df.0 - 2 {
+                words.push("qa".to_string());
+            }
+            if i >= rest - (case.df.1 - 2) {
+                words.push("qb".to_string());
+            }
+            let pad = len - words.len();
+            words.extend(filler(pad, i + 2));
+            texts.push(words);
+        }
+        assert_eq!(texts.iter().map(Vec::len).sum::<usize>(), TOTAL);
+        let dataset = gq3_fts_dataset(
+            &dir.path().join(case.name),
+            (0..N).map(|i| format!("d-{i:04}")).collect(),
+            texts.iter().map(|t| Some(t.join(" "))).collect(),
+            usize::MAX,
+            &gq3_plain_fts_params(),
+        )
+        .await
+        .unwrap();
+        let query = FullTextSearchQuery::new("qa qb".to_string())
+            .with_column("body".to_string())
+            .unwrap();
+        let unlimited = gq3_fts_rows(&dataset, query.clone(), None, None)
+            .await
+            .unwrap();
+        assert_eq!(unlimited.len(), case.df.0 + case.df.1 - 2);
+        let native: HashMap<_, _> = unlimited.iter().cloned().collect();
+        let (native_a, native_b) = (native["d-0000"], native["d-0001"]);
+        let best_other = unlimited
+            .iter()
+            .filter(|(id, _)| id != "d-0000" && id != "d-0001")
+            .map(|(_, s)| *s)
+            .fold(f32::MIN, f32::max);
+        let limited = gq3_fts_rows(&dataset, query.clone().limit(Some(1)), None, None)
+            .await
+            .unwrap();
+        let limited_2 = gq3_fts_rows(&dataset, query.limit(Some(2)), None, None)
+            .await
+            .unwrap();
+        let (v1_a, v1_b) = (v1(case.df, case.a), v1(case.df, case.b));
+        println!(
+            "{}: bm25_v1 f64 A={v1_a:.17} B={v1_b:.17} (A - B = {:.3e}); native f32 A={native_a} ({:#x}) B={native_b} ({:#x}); best other {best_other}; k=1 fetch {limited:?}; k=2 fetch {limited_2:?}",
+            case.name,
+            v1_a - v1_b,
+            native_a.to_bits(),
+            native_b.to_bits()
+        );
+        assert!(v1_a > v1_b, "{}: bm25_v1 ranks A first", case.name);
+        assert!(best_other < native_a.min(native_b));
+        assert_eq!(limited.len(), 1);
+        assert_eq!(limited_2.len(), 2);
+        match case.name {
+            "tie" => {
+                assert_eq!(native_a.to_bits(), native_b.to_bits(), "an f32 tie");
+                assert_eq!(limited_2[0].1.to_bits(), limited_2[1].1.to_bits());
+            }
+            _ => {
+                assert!(native_b > native_a, "Lance 13 ranks B first, strictly");
+                assert_eq!(limited[0].0, "d-0001", "the WAND fetch returns B");
+                assert_eq!(limited[0].1.to_bits(), native_b.to_bits());
+                assert!(limited_2[0].1 > limited_2[1].1, "no tie for k+1 to see");
+            }
+        }
+    }
+}
+
+/// GQ 3 RFC, sections 4 and 10: "the pinned fuzzy expansion is not complete
+/// membership" and "more than 50 expansion terms ... each a complete result
+/// or a typed failure". Lance 13 keeps the 50 lexicographically smallest
+/// expansions of a query term across an index's partitions
+/// (`collect_fuzzy_candidates_with_automaton`, `MatchQuery::max_expansions`)
+/// and says nothing about the rest. This pins what that does to membership:
+/// with more than 50 one-edit variants that sort before the query term, the
+/// truncated set can exclude the query term itself, so a document holding
+/// the exact term fails a one-edit query that a zero-edit query matches.
+#[tokio::test]
+async fn gq3_native_fuzzy_expansion_truncates_membership_silently() {
+    use lance_index::scalar::inverted::query::{FtsQuery, MatchQuery};
+
+    let alphabet: Vec<char> = ('0'..='9').chain('a'..='z').collect();
+    let mut variants = std::collections::BTreeSet::new();
+    let term: Vec<char> = "beta".chars().collect();
+    for i in 0..=term.len() {
+        for &c in &alphabet {
+            let mut inserted = term.clone();
+            inserted.insert(i, c);
+            variants.insert(inserted.into_iter().collect::<String>());
+        }
+    }
+    for i in 0..term.len() {
+        for &c in &alphabet {
+            let mut substituted = term.clone();
+            substituted[i] = c;
+            variants.insert(substituted.into_iter().collect::<String>());
+        }
+        let mut deleted = term.clone();
+        deleted.remove(i);
+        variants.insert(deleted.into_iter().collect::<String>());
+    }
+    variants.remove("beta");
+    let before = variants.iter().filter(|v| v.as_str() < "beta").count();
+    let mut texts: Vec<Option<String>> = variants.iter().cloned().map(Some).collect();
+    texts.push(Some("beta".to_string()));
+    let ids: Vec<_> = (0..texts.len()).map(|i| format!("d-{i:03}")).collect();
+    let exact_id = ids.last().unwrap().clone();
+    let dir = tempfile::tempdir().unwrap();
+    let dataset = gq3_fts_dataset(
+        &dir.path().join("expansion"),
+        ids,
+        texts,
+        usize::MAX,
+        &gq3_plain_fts_params(),
+    )
+    .await
+    .unwrap();
+    let search = |fuzziness: u32, max_expansions: usize| {
+        FullTextSearchQuery::new_query(FtsQuery::Match(
+            MatchQuery::new("beta".to_string())
+                .with_column(Some("body".to_string()))
+                .with_fuzziness(Some(fuzziness))
+                .with_max_expansions(max_expansions),
+        ))
+    };
+    let exact = gq3_fts_rows(&dataset, search(0, 50), None, None)
+        .await
+        .unwrap();
+    let fuzzy = gq3_fts_rows(&dataset, search(1, 50), None, None)
+        .await
+        .unwrap();
+    let wide = gq3_fts_rows(&dataset, search(1, 10_000), None, None)
+        .await
+        .unwrap();
+    let has_exact = |rows: &[(String, f32)]| rows.iter().any(|(id, _)| *id == exact_id);
+    println!(
+        "{} one-edit variants ({before} sort before `beta`): edits=0 matches {}; edits=1 matches {} (exact doc included: {}); edits=1 with max_expansions=10000 matches {} (exact doc included: {})",
+        variants.len(),
+        exact.len(),
+        fuzzy.len(),
+        has_exact(&fuzzy),
+        wide.len(),
+        has_exact(&wide)
+    );
+    assert!(before > 50);
+    assert_eq!(exact.len(), 1);
+    assert_eq!(fuzzy.len(), 50, "the expansion is cut at 50 terms");
+    assert!(
+        !has_exact(&fuzzy),
+        "edits=0 matches a document that edits=1 does not"
+    );
+    assert_eq!(wide.len(), variants.len() + 1, "a wide budget is complete");
+
+    // The same corpus under the engine's index parameters (Lance's default
+    // analysis: English stemming, stop words, folding, a 40-byte filter).
+    let mut texts: Vec<Option<String>> = variants.iter().cloned().map(Some).collect();
+    texts.push(Some("beta".to_string()));
+    let ids: Vec<_> = (0..texts.len()).map(|i| format!("d-{i:03}")).collect();
+    let stemmed = gq3_fts_dataset(
+        &dir.path().join("expansion_default"),
+        ids,
+        texts,
+        usize::MAX,
+        &InvertedIndexParams::default(),
+    )
+    .await
+    .unwrap();
+    for (text, edits) in [("beta", 0), ("beta", 1), ("betaz", 0), ("betaz", 1)] {
+        let rows = gq3_fts_rows(
+            &stemmed,
+            FullTextSearchQuery::new_fuzzy(text.to_string(), Some(edits))
+                .with_column("body".to_string())
+                .unwrap(),
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+        println!(
+            "default analysis: new_fuzzy({text:?}, Some({edits})) matches {}",
+            rows.len()
+        );
+    }
+}
