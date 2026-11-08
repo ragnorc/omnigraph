@@ -731,6 +731,23 @@ async fn run_bound(
             )
             .await;
         }
+        Command::Queries {
+            command:
+                commands::control::QueriesCommand::Migrate {
+                    files,
+                    schema,
+                    write,
+                    json,
+                },
+        } => {
+            return commands::control::run_queries_migrate(
+                &files,
+                schema.as_deref(),
+                write,
+                json,
+                stdout,
+            );
+        }
         Command::Queries { command } => {
             return commands::control::run_queries(
                 command,

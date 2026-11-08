@@ -28,6 +28,8 @@ use crate::query::ast::{
 use crate::query::parser::parse_query_diagnostic;
 
 #[cfg(test)]
+mod corpus_tests;
+#[cfg(test)]
 mod tests;
 
 /// The seven rows of the rewriter table, the list `contains` and the two
@@ -393,7 +395,8 @@ fn fresh(base: &str, taken: &BTreeSet<String>) -> String {
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum VarType {
     Node(String),
-    Edge(String),
+    /// An edge binding over one edge type or an alternation of several.
+    Edge(Vec<String>),
 }
 
 /// Variable types from bindings at every depth and from the endpoints of
@@ -421,6 +424,19 @@ fn var_types(decl: &QueryDecl, catalog: &Catalog) -> HashMap<String, VarType> {
     for _ in 0..=traversals.len() {
         let mut changed = false;
         for t in &traversals {
+            if let (Some(binding), crate::query::ast::EdgeSelector::Alternation(names)) =
+                (&t.edge_binding, &t.selector)
+                && !types.contains_key(binding)
+            {
+                let members: Option<Vec<String>> = names
+                    .iter()
+                    .map(|n| catalog.lookup_edge_by_name(n).map(|e| e.name.clone()))
+                    .collect();
+                if let Some(members) = members {
+                    types.insert(binding.clone(), VarType::Edge(members));
+                    changed = true;
+                }
+            }
             let crate::query::ast::EdgeSelector::Named(name) = &t.selector else {
                 continue;
             };
@@ -430,7 +446,7 @@ fn var_types(decl: &QueryDecl, catalog: &Catalog) -> HashMap<String, VarType> {
             if let Some(binding) = &t.edge_binding
                 && !types.contains_key(binding)
             {
-                types.insert(binding.clone(), VarType::Edge(edge.name.clone()));
+                types.insert(binding.clone(), VarType::Edge(vec![edge.name.clone()]));
                 changed = true;
             }
             if t.min_hops != 1 || t.max_hops != Some(1) {
@@ -585,11 +601,29 @@ fn operand_is_list(
     let catalog = cx.catalog;
     let prop_list = |ty: &VarType, prop: &str| -> Option<bool> {
         let catalog = catalog?;
-        let props = match ty {
-            VarType::Node(t) => &catalog.query_node_type(t)?.properties,
-            VarType::Edge(t) => &catalog.edge_types.get(t)?.properties,
-        };
-        props.get(prop).map(|p| p.list)
+        match ty {
+            VarType::Node(t) => catalog
+                .query_node_type(t)?
+                .properties
+                .get(prop)
+                .map(|p| p.list),
+            // Every member must agree; a disagreement is the type checker's.
+            VarType::Edge(members) => {
+                let kinds: Option<BTreeSet<bool>> = members
+                    .iter()
+                    .map(|m| {
+                        catalog
+                            .edge_types
+                            .get(m)?
+                            .properties
+                            .get(prop)
+                            .map(|p| p.list)
+                    })
+                    .collect();
+                let kinds = kinds?;
+                (kinds.len() == 1).then(|| *kinds.iter().next().unwrap())
+            }
+        }
     };
     match node {
         SpannedExpr::Variable { name } => decl
@@ -605,7 +639,7 @@ fn operand_is_list(
             let (_, ty) = write_targets.iter().find(|(span, _)| span.contains(left))?;
             let catalog = catalog?;
             let ty = if catalog.edge_types.contains_key(*ty) {
-                VarType::Edge(ty.to_string())
+                VarType::Edge(vec![ty.to_string()])
             } else {
                 VarType::Node(ty.to_string())
             };
@@ -900,6 +934,18 @@ fn rewrite_ranking(cx: &mut Cx<'_>, decl: &QueryDecl) {
             ),
         );
     }
+    let aggregate = decl
+        .return_clause
+        .iter()
+        .any(|p| matches!(p.expr, Expr::Aggregate { .. }));
+    if aggregate {
+        cx.note(
+            decl,
+            row,
+            "ranking-under-aggregate",
+            "an aggregate over a ranked read: in edition 2 the ranking key selects the rows the aggregate reads and orders no group; the rewrite drops it from `order` (the window or score is in `from`), and `limit` stays a cut of the groups",
+        );
+    }
     let return_list = format!(
         "return {{ {} }}",
         pop.iter()
@@ -1074,11 +1120,48 @@ fn rewrite_ranking(cx: &mut Cx<'_>, decl: &QueryDecl) {
         _ => "_rrf",
     };
     for span in occurrences {
+        // Under an aggregate the ranking key orders no group in edition 2:
+        // the key is removed with its separator, or the whole `order`.
+        if aggregate
+            && let Some(i) = spans.orderings.iter().position(|o| o.key == span)
+        {
+            let removed = if spans.orderings.len() == 1 {
+                let from = spans
+                    .limit_clause
+                    .filter(|l| l.end <= spans.order_clause.map_or(0, |o| o.start))
+                    .map(|l| l.end)
+                    .or(spans.return_clause.map(|r| r.end))
+                    .unwrap_or(spans.order_clause.unwrap_or(span).start);
+                Span::new(from, spans.order_clause.unwrap_or(span).end)
+            } else if i == 0 {
+                Span::new(spans.orderings[0].whole.start, spans.orderings[1].whole.start)
+            } else {
+                Span::new(spans.orderings[i - 1].whole.end, spans.orderings[i].whole.end)
+            };
+            let gap = removed.text(cx.source);
+            if gap.contains("//") || gap.contains("/*") {
+                cx.refuse(decl, Some(row), removed, "a comment inside the ranking key the rewrite removes");
+                continue;
+            }
+            cx.edit(removed, Vec::new(), row, body, &generated_refs);
+            continue;
+        }
         let mut pieces = vec![lit(format!("${score}"))];
-        let is_leading_key = leading.is_some() && span == spans.orderings[0].key;
-        if is_leading_key && matches!(row, Row::Bm25 | Row::Rrf) && !decl.order_clause[0].explicit {
-            // A bare rank key read as the rank's own direction, descending.
+        // A bare rank key, leading or not, reads as the rank's own
+        // direction: `bm25` and `rrf` descending.
+        let bare_key = decl
+            .order_clause
+            .iter()
+            .zip(&spans.orderings)
+            .any(|(o, s)| s.key == span && !o.explicit);
+        if bare_key && matches!(row, Row::Bm25 | Row::Rrf) {
             pieces.push(lit(" desc"));
+            cx.note(
+                decl,
+                row,
+                "bare-rank-key-desc",
+                format!("bare `{}` key sorted descending in edition 2; `${score}` alone sorts ascending, so the rewrite writes `desc`", cx.text(span)),
+            );
         }
         if let Some((proj, pspan)) = decl
             .return_clause
@@ -1638,4 +1721,153 @@ fn check_no_residue(text: &str, failures: &mut Vec<String>) -> bool {
         i += 1;
     }
     ok
+}
+
+/// The rows an edition-2 `delete` or `update` selects, as an edition-2 read:
+/// the binding form and φ′ the rewrite writes, with φ′ kept in edition-2
+/// spelling so today's compiler runs it. An edge target, which edition 2
+/// cannot bind by type, is bound through its traversal `$s $x:edge $d`.
+#[derive(Debug, Clone)]
+pub struct WriteSelection {
+    pub decl: String,
+    pub row: Row,
+    pub type_name: String,
+    pub is_edge: bool,
+    /// `query __gq3_selection(<params>) { match { <binding>  φ′ } return { $x.@id as id } }`
+    pub selection_read: String,
+    /// `query __gq3_all() { match { <binding> } return { $x.@id as id, $x } }`:
+    /// every entity of the target type with its whole row.
+    pub all_read: String,
+}
+
+pub fn write_selections(source: &str, catalog: &Catalog) -> Vec<WriteSelection> {
+    let Ok(file) = parse_query_diagnostic(source) else {
+        return Vec::new();
+    };
+    let FileBody::Queries(decls) = &file.body else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    for decl in decls {
+        if decl.mutations.len() != 1 {
+            continue;
+        }
+        let (row, type_name) = match &decl.mutations[0] {
+            Mutation::Delete(d) => (Row::Delete, d.type_name.clone()),
+            Mutation::Update(u) => (Row::Update, u.type_name.clone()),
+            Mutation::Insert(_) => continue,
+        };
+        let Some(predicate) = decl.spans.mutations[0].predicate else {
+            continue;
+        };
+        let is_edge = catalog.edge_types.contains_key(&type_name);
+        let x = fresh("x", &dollar_names(decl));
+        let mut phi = String::new();
+        let mut at = predicate.start;
+        for e in &decl.spans.exprs {
+            let SpannedExpr::BareName { name } = &e.node else {
+                continue;
+            };
+            if !predicate.contains(e.span) || e.span.start < at {
+                continue;
+            }
+            phi.push_str(&source[at..e.span.start]);
+            match (is_edge, name.as_str()) {
+                (true, "from") => phi.push_str(&format!("${x}.@src")),
+                (true, "to") => phi.push_str(&format!("${x}.@dst")),
+                _ => phi.push_str(&format!("${x}.{name}")),
+            }
+            at = e.span.end;
+        }
+        phi.push_str(&source[at..predicate.end]);
+        let binding = if is_edge {
+            let ident = catalog
+                .edge_name_index
+                .iter()
+                .find(|(_, key)| **key == type_name)
+                .map(|(ident, _)| ident.clone())
+                .unwrap_or_else(|| {
+                    let mut c = type_name.chars();
+                    c.next()
+                        .map(|f| f.to_lowercase().collect::<String>() + c.as_str())
+                        .unwrap_or_default()
+                });
+            let s = fresh("s", &dollar_names(decl));
+            let d = fresh("d", &dollar_names(decl));
+            // Edition 2 refuses a traversal with neither endpoint bound
+            // (T5), so the source endpoint is bound by its type.
+            let from = catalog
+                .edge_types
+                .get(&type_name)
+                .map(|e| e.from_type.clone())
+                .unwrap_or_default();
+            format!("${s}: {from}  ${s} ${x}:{ident} ${d}")
+        } else {
+            format!("${x}: {type_name}")
+        };
+        let params = decl
+            .params
+            .iter()
+            .map(|p| {
+                format!(
+                    "${}: {}{}",
+                    p.name,
+                    p.type_name,
+                    if p.nullable { "?" } else { "" }
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(", ");
+        out.push(WriteSelection {
+            decl: decl.name.clone(),
+            row,
+            type_name: type_name.clone(),
+            is_edge,
+            selection_read: format!(
+                "query __gq3_selection({params}) {{ match {{ {binding}  {phi} }} return {{ ${x}.@id as id }} }}"
+            ),
+            all_read: format!("query __gq3_all() {{ match {{ {binding} }} return {{ ${x}.@id as id, ${x} }} }}"),
+        });
+    }
+    out
+}
+
+/// The source with only the edits of `rows` applied and no edition line:
+/// the edition-2 text a row whose output edition 2 already parses (the list
+/// `contains` to `in`) produces, for a typed-IR comparison by today's
+/// compiler.
+pub fn apply_rows_in_edition_2(
+    source: &str,
+    catalog: Option<&Catalog>,
+    rows: &[Row],
+) -> Result<String, MigrateError> {
+    let m = migrate(source, catalog)?;
+    let kept: Vec<Edit> = m
+        .edits
+        .into_iter()
+        .filter(|e| rows.contains(&e.row))
+        .collect();
+    let (text, proof) = apply(source, &kept);
+    if !proof.non_overlapping || !proof.each_edit_rendered_once {
+        return Err(MigrateError(format!("{:?}", proof.failures)));
+    }
+    Ok(text)
+}
+
+/// A declaration's typed IR as a comparable string: the read pipeline,
+/// projections, order and limit, or the mutation IR.
+pub fn typed_ir(decl: &QueryDecl, catalog: &Catalog) -> Result<String, String> {
+    use crate::query::typecheck::{CheckedQuery, typecheck_query_decl};
+    match typecheck_query_decl(catalog, decl).map_err(|e| e.to_string())? {
+        CheckedQuery::Read(read) => {
+            let ir = crate::ir::lower::lower_query(catalog, &read).map_err(|e| e.to_string())?;
+            Ok(format!(
+                "{:?}|{:?}|{:?}|{:?}|{:?}|{:?}",
+                ir.params, ir.pipeline, ir.return_exprs, ir.distinct, ir.order_by, ir.limit
+            ))
+        }
+        CheckedQuery::Mutation(m) => crate::ir::lower::lower_mutation_query(catalog, &m)
+            .map(|ir| format!("{ir:?}"))
+            .map_err(|e| e.to_string()),
+    }
 }

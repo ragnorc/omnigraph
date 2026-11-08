@@ -78,4 +78,24 @@ pub(crate) enum QueriesCommand {
         #[arg(long)]
         json: bool,
     },
+    /// SPIKE: rewrite edition-2 `.gq` sources to edition 3 (GQ 3 RFC,
+    /// "The rewriter"), offline.
+    ///
+    /// Prints each rewritten source, or with `--write` replaces the file. A
+    /// source with a construct the rewriter refuses is left unwritten and
+    /// the refusal named; `--schema` decides list against String `contains`
+    /// and edge targets. Exits non-zero when any source is refused.
+    Migrate {
+        /// The `.gq` files to rewrite.
+        #[arg(required = true)]
+        files: Vec<PathBuf>,
+        /// The `.pg` schema the sources read.
+        #[arg(long)]
+        schema: Option<PathBuf>,
+        /// Replace each file with its edition-3 text.
+        #[arg(long)]
+        write: bool,
+        #[arg(long)]
+        json: bool,
+    },
 }

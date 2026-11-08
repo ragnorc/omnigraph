@@ -49,7 +49,7 @@ prints the exact flags of the installed binary.
 | `repair` | — | Report foreign Lance history without adopting it |
 | `cleanup` | — | Delete table versions no retained graph commit pins (destructive) |
 | `lint` | — | Validate `.gq` source against a schema or a graph |
-| `queries` | `validate` `list` | Check a cluster's stored queries; list a cluster's or a served graph's |
+| `queries` | `validate` `list` `migrate` | Check a cluster's stored queries; list a cluster's or a served graph's; rewrite edition-2 `.gq` files to edition 3 (spike) |
 | `cluster` | `validate` `plan` `apply` `status` `observe` `force-unlock` `upgrade-ledger` `create` `list` `members list` `pull` `push` `delete` `undo-delete` `token` `operation` `history` `cancel` | Deploy and inspect a cluster; the target kind selects the backend |
 | `organization` | `members list` `members set` `members offboard` `invitations list` `invitations send` `invitations resend` `invitations revoke` | Manage the selected organization's members and invitations; requires a profile; `org` is an alias |
 | `policy` | `validate` `test` `explain` | Validate or evaluate a cluster's applied policy |
@@ -384,6 +384,7 @@ deletion and `optimize` leave this reclamation to `cleanup`.
 omnigraph queries validate --target .              # type-check every applied registry
 omnigraph queries list --target . --graph knowledge # list names and typed params
 omnigraph queries list --target prod --graph knowledge --json # a server's catalog
+omnigraph queries migrate --schema schema.pg queries.gq # spike: print the edition-3 rewrite
 ```
 
 `validate` operates on applied cluster state, not a graph URI, and checks every

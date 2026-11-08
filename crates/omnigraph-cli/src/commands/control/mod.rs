@@ -56,6 +56,9 @@ pub(crate) async fn run_queries(
         QueriesCommand::List { json } => {
             execute_queries_list(&binding, scope.graph, json, stdout).await?;
         }
+        QueriesCommand::Migrate { .. } => {
+            unreachable!("`queries migrate` is offline and dispatched before target resolution")
+        }
     }
     Ok(Completion::success())
 }
@@ -438,4 +441,97 @@ mod tests {
         assert!(error.contains("az://omnigraph/clusters/company-brain"));
         assert!(error.contains("query redacted"));
     }
+}
+
+/// SPIKE: `omnigraph queries migrate`, the edition-2 to edition-3 rewriter
+/// (`omnigraph_compiler::migrate`). Offline: reads the files and the schema,
+/// opens nothing.
+pub(crate) fn run_queries_migrate(
+    files: &[std::path::PathBuf],
+    schema: Option<&std::path::Path>,
+    write: bool,
+    json: bool,
+    stdout: &mut dyn Write,
+) -> Result<Completion> {
+    use omnigraph_compiler::migrate::migrate;
+    let catalog = match schema {
+        Some(path) => {
+            let text = std::fs::read_to_string(path)
+                .map_err(|e| color_eyre::eyre::eyre!("read {}: {e}", path.display()))?;
+            let parsed = omnigraph_compiler::schema::parser::parse_schema(&text)
+                .map_err(|e| color_eyre::eyre::eyre!("{}: {e}", path.display()))?;
+            Some(
+                omnigraph_compiler::build_catalog(&parsed)
+                    .map_err(|e| color_eyre::eyre::eyre!("{}: {e}", path.display()))?,
+            )
+        }
+        None => None,
+    };
+    let mut refused = false;
+    let mut reports = Vec::new();
+    for file in files {
+        let source = std::fs::read_to_string(file)
+            .map_err(|e| color_eyre::eyre::eyre!("read {}: {e}", file.display()))?;
+        let migration = migrate(&source, catalog.as_ref())
+            .map_err(|e| color_eyre::eyre::eyre!("{}: {e}", file.display()))?;
+        let ok = migration.refusals.is_empty() && migration.proof.holds();
+        refused |= !ok;
+        if write && ok && !migration.already_edition_3 {
+            std::fs::write(file, &migration.text)
+                .map_err(|e| color_eyre::eyre::eyre!("write {}: {e}", file.display()))?;
+        }
+        if json {
+            reports.push(serde_json::json!({
+                "file": file.display().to_string(),
+                "already_edition_3": migration.already_edition_3,
+                "written": write && ok && !migration.already_edition_3,
+                "edits": migration.edits.iter().map(|e| serde_json::json!({
+                    "start": e.span.start, "end": e.span.end, "row": format!("{:?}", e.row),
+                })).collect::<Vec<_>>(),
+                "refusals": migration.refusals.iter().map(|r| serde_json::json!({
+                    "declaration": r.decl, "start": r.construct.start, "end": r.construct.end, "reason": r.reason,
+                })).collect::<Vec<_>>(),
+                "notes": migration.notes.iter().map(|n| serde_json::json!({
+                    "declaration": n.decl, "kind": n.kind, "detail": n.detail,
+                })).collect::<Vec<_>>(),
+                "proof_failures": migration.proof.failures,
+                "text": (!write).then_some(&migration.text),
+            }));
+            continue;
+        }
+        writeln!(stdout, "// {}", file.display())?;
+        for r in &migration.refusals {
+            writeln!(stdout, "// refused: {}: {}", r.decl, r.reason)?;
+        }
+        for n in &migration.notes {
+            writeln!(stdout, "// note ({}): {}: {}", n.kind, n.decl, n.detail)?;
+        }
+        for f in &migration.proof.failures {
+            writeln!(stdout, "// proof: {f}")?;
+        }
+        if write {
+            writeln!(
+                stdout,
+                "// {}",
+                if ok && !migration.already_edition_3 {
+                    "written"
+                } else {
+                    "not written"
+                }
+            )?;
+        } else {
+            stdout.write_all(migration.text.as_bytes())?;
+            if !migration.text.ends_with('\n') {
+                writeln!(stdout)?;
+            }
+        }
+    }
+    if json {
+        writeln!(stdout, "{}", serde_json::to_string_pretty(&reports)?)?;
+    }
+    Ok(if refused {
+        Completion::exit(1)
+    } else {
+        Completion::success()
+    })
 }

@@ -342,3 +342,34 @@ fn spans_do_not_change_parse_results() {
     assert_eq!(format!("{la:?}"), format!("{lb:?}"));
     assert_ne!(da.spans.decl, db.spans.decl);
 }
+
+#[test]
+fn a_ranking_key_under_an_aggregate_leaves_order() {
+    let m = run(r#"query q($t: String) {
+    match { $d: Doc }
+    return { $d.title, count($d) as n }
+    order { bm25($d.body, $t), n desc }
+    limit 1
+}"#);
+    assert!(body(&m).contains("order { n desc }"), "{}", m.text);
+    let m = run(r#"query q($v: Vector(3)) {
+    match { $p: Person  $p authored $d }
+    return { count($d) as n }
+    order { nearest($d.embedding, $v) }
+    limit 2
+}"#);
+    assert!(body(&m).contains("return { count($d) as n }\n    limit 2\n}"), "{}", m.text);
+    assert!(body(&m).contains("k: 2)"), "{}", m.text);
+}
+
+#[test]
+fn variables_bound_inside_a_block_stay_out_of_the_population() {
+    let m = run(r#"query q($v: Vector(3)) {
+    match { $d: Doc  not { $p authored $d  $p.age > 3 } }
+    return { $d.slug }
+    order { nearest($d.embedding, $v) }
+    limit 2
+}"#);
+    assert!(body(&m).contains("return { $d } }, embedding"), "{}", m.text);
+    assert!(m.notes.iter().any(|n| n.kind == "population-block-locals"));
+}
