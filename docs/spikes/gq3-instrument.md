@@ -336,12 +336,31 @@ process only; the token is never printed or stored. Each edition's three runs to
 minutes with five workers.
 
 Verification on the branch:
-- `cargo build -p omnigraph-compiler --example gq3_instrument`: clean.
-- `rustfmt --edition 2024` applied to the example.
-- `RUST_MIN_STACK=16777216 cargo dev-test -p omnigraph-compiler --no-fail-fast` (the alias runs
-  the whole canonical workspace graph): see the note below.
+- **Build and lint.** `cargo build -p omnigraph-compiler --example gq3_instrument` is clean.
+  `cargo clippy -p omnigraph-compiler --all-targets --locked -- -D warnings -W clippy::dbg_macro`
+  is clean, and `rustfmt` has been applied to the example.
+- **The compiler crate.** `cargo test -p omnigraph-compiler --locked`: 523 library tests and 2
+  doc tests pass.
+- **The workspace.** `RUST_MIN_STACK=16777216 cargo dev-test -p omnigraph-compiler --no-fail-fast`
+  runs the whole canonical workspace graph, because the alias carries `--workspace`. 5,183
+  tests passed and 10 failed. The compiler's 523 tests passed in that run. The 10 failures are
+  in `omnigraph-bench`, `omnigraph-cli` and `omnigraph-engine`, which this branch does not
+  change. They are the sandbox facts that the parser spike's report lists (gVisor, running as
+  root):
+  - 5 symlink-refusal tests (three `archive_*`, `projection::…symlinked_ancestors…`,
+    `cli_cluster::managed_lifecycle_…_refuse_symlinks_…`): the sandbox does not deliver the
+    `O_NOFOLLOW` refusal they expect;
+  - 4 tests that stop on machine-identity capture, because `/proc/self/status` has no
+    `Cpus_allowed_list` (`machine::…captures_a_complete_identity…`,
+    `real_graph_run::worker_machine_identity…`, `real_graph_run::native_finbench_delta…`,
+    `runner::warm_and_post_reopen…`);
+  - 1 test that relies on a mode-000 file being unreadable, which root reads anyway
+    (`unreadable_legacy_object_asks_for_a_rerun`).
+- **The recheck.** After the clippy fixes, a `--recheck` of all six runs reproduced every number
+  above.
 
-No existing source changed: the only Rust addition is the example file. `crates/omnigraph-reference-engine/` is untouched.
+The only Rust change is the new example file: no existing source changed, and
+`crates/omnigraph-reference-engine/` is untouched.
 
 ## (c) What I did not get to
 

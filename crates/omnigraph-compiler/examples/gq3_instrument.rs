@@ -213,7 +213,7 @@ fn semantic2(catalog: &Catalog, text: &str, truth: &str) -> Value {
     };
     json!({
         "ir_renamed": ir_level().unwrap_or(false),
-        "strict": level(false).map_err(|e| e).unwrap_or(false),
+        "strict": level(false).unwrap_or(false),
         "renamed": match level(true) { Ok(b) => json!(b), Err(e) => json!(e) },
     })
 }
@@ -735,9 +735,9 @@ fn alpha(text: &str, params: &HashSet<String>, decls: &[String], rename_vars: bo
             let word = &text[s..e];
             let next = text[e..].chars().find(|ch| !ch.is_whitespace());
             let touches_paren = b.get(e) == Some(&b'(');
-            let replaced: Option<String> = if prev_word == "query" {
-                decl_map.get(word).cloned()
-            } else if touches_paren && decl_map.contains_key(word) && prev_char != '.' {
+            let replaced: Option<String> = if prev_word == "query"
+                || (touches_paren && decl_map.contains_key(word) && prev_char != '.')
+            {
                 decl_map.get(word).cloned()
             } else if rename_vars && prev_word == "as" && !KEYWORDS.contains(&word) {
                 aliases.insert(word.to_string());
