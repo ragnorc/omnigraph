@@ -272,3 +272,196 @@ string_char = @{ !("\"" | "\\") ~ ANY | "\\" ~ ANY }
 float_lit = @{ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ }
 integer = @{ ASCII_DIGIT+ }
 bool_lit = @{ ("true" | "false") ~ !(ASCII_ALPHANUMERIC | "_") }
+
+// ===========================================================================
+// GQ edition 3 (SPIKE, RFC 2026-11-07-gq-3 sections 3, 6 and 7).
+//
+// Selected by the edition line `gq 3;`; a file without it parses with
+// `query_file` above, unchanged. Rules whose RFC name collides with an
+// edition-2 rule of a different body carry a `3` suffix, because both
+// editions live in one grammar for the one release in which `gq 2;` still
+// selects edition 2. Where this grammar departs from the RFC's text the rule
+// is marked `SPIKE-DEVIATION (Fn)`, n being the finding in
+// docs/spikes/gq3-parser.md.
+// ===========================================================================
+
+gq3_file = { SOI ~ edition_line ~ setting_stmt* ~ (show_stmt ~ statement_trailer3? | branch_stmt ~ ";"? ~ statement_trailer3? | commit_stmt ~ ";"? ~ statement_trailer3? | load_stmt ~ ";"? ~ statement_trailer3? | explain_stmt3 ~ statement_trailer3? | declaration3* ~ missing_param_list3?) ~ EOI }
+edition_line = { kw_gq ~ integer ~ ";" }
+explain_stmt3 = { kw_explain ~ (query_decl3 | load_stmt) }
+statement_trailer3 = { (setting_stmt | show_stmt | branch_stmt | commit_stmt | load_stmt | explain_stmt3 | declaration3)+ }
+missing_param_list3 = { (kw_query | kw_mutation) ~ ident ~ !"(" ~ ANY* }
+
+// `mutation` is recognised at declaration start only to print `query` as the
+// fix (RFC section 7).
+declaration3 = { query_decl3 | mutation_decl }
+mutation_decl = { kw_mutation ~ ident ~ param_list3 ~ annotation* ~ (as_commit_clause | as_unattached_clause)? ~ "{" ~ (read_body | mutation_body3) ~ "}" }
+
+query_decl3 = { kw_query ~ ident ~ param_list3 ~ annotation* ~ (as_commit_clause | as_unattached_clause)? ~ "{" ~ (read_body | mutation_body3) ~ "}" }
+param_list3 = { "(" ~ (param3 ~ ("," ~ param3)*)? ~ ")" }
+// SPIKE-DEVIATION (F12): the RFC keeps parameter defaults "as revised on
+// 2026-11-01" without a production here; a default is a literal, and a
+// negative default is unary minus over a numeric literal.
+param3 = { variable ~ ":" ~ type_ref ~ ("=" ~ param_default)? }
+param_default = { neg_sign? ~ literal3 }
+neg_sign = { "-" }
+// SPIKE-DEVIATION (F12): `annotation_args` is not defined in this RFC; the
+// `.pg` spelling (`=` for named arguments) is used.
+annotation = { annotation_name ~ ("(" ~ (annotation_arg ~ ("," ~ annotation_arg)*)? ~ ")")? }
+annotation_name = @{ "@" ~ ident }
+annotation_arg = { annotation_kwarg | annotation_value }
+annotation_kwarg = { ident ~ "=" ~ annotation_value }
+annotation_value = { literal3 | variable | meta_field | ident }
+
+// Read body (RFC section 7).
+read_body     = { match_clause3 ~ return_clause3 ~ order_clause3? ~ limit_clause3? }
+match_clause3 = { kw_match ~ "{" ~ clause3+ ~ "}" }
+return_clause3 = { kw_return ~ kw_distinct? ~ "{" ~ projection3+ ~ "}" }
+projection3   = { expr3 ~ (kw_as ~ (reserved_alias | expr_ident))? ~ ","? }
+order_clause3 = { kw_order ~ "{" ~ ordering3 ~ ("," ~ ordering3)* ~ "}" }
+ordering3     = { expr3 ~ order_dir3? }
+order_dir3    = @{ ("asc" | "desc") ~ !(ASCII_ALPHANUMERIC | "_") }
+limit_clause3 = { kw_limit ~ (integer3 | variable) }
+
+// Clauses. The recognizers (`arrow_traversal`, `binding_brace_filter`,
+// `list_to_rows`) exist only to print a fix and are tried before the forms
+// they would otherwise be read as.
+// SPIKE-DEVIATION (F7): the RFC keeps `subquery_predicate` and
+// `exists_block` in `clause`. With `block_value` an operand they are second
+// spellings of a filter, and `subquery_predicate`'s right side is a whole
+// `expr`, so `count { p } > 1 or $x` reads as `count { p } > (1 or $x)`
+// while the same text as a filter reads `(count { p } > 1) or $x`. A block
+// in clause position is a filter here.
+clause3 = { arrow_traversal | list_to_rows | let_clause | from_clause | negation3 | optional_block | binding_brace_filter | binding3 | traversal3 | filter3 }
+let_clause     = { kw_let ~ variable ~ "=" ~ (inline_read | expr3) }
+// `from` is the clause when the next token is `{`, `$` or an identifier
+// touching `(`; otherwise it is an identifier (RFC section 7).
+from_clause    = { kw_from ~ &("{" | "$" | call_head) ~ relation_expr }
+relation_expr  = { inline_read | call | variable }
+inline_read    = { "{" ~ read_body ~ "}" }
+optional_block = { kw_optional ~ "{" ~ clause3+ ~ "}" }
+negation3      = { kw_not ~ "{" ~ clause3+ ~ "}" }
+subquery_block3 = { "{" ~ clause3+ ~ "}" }
+
+// SPIKE-DEVIATION: the RFC writes `type_ref` here, which in this grammar is
+// the parameter type rule; a node binding names a `type_name`.
+binding3 = { variable ~ ":" ~ type_name ~ ("{" ~ prop_match_list3 ~ "}")? }
+prop_match_list3 = { prop_match3 ~ ("," ~ prop_match3)* ~ ","? }
+prop_match3 = { ident ~ ":" ~ expr3 }
+// `$d: Doc { year >= 2025 }`: braces whose body is not a property match list.
+// Recognised to print `$d: Doc  $d.year >= 2025`.
+binding_brace_filter = { variable ~ ":" ~ type_name ~ "{" ~ !(prop_match_list3 ~ "}") ~ brace_body ~ "}" }
+brace_body = @{ (("{" ~ brace_body ~ "}") | (!("{" | "}") ~ ANY))* }
+// `for $x in $list`, `unwind $list as $x`, `let $x in rel`,
+// `let ($a, $b) in rel`: recognised to print the fix (RFC section 3,
+// refused respellings).
+list_to_rows = { (kw_for ~ variable ~ kw_in ~ expr3) | (kw_unwind ~ expr3 ~ kw_as ~ variable) | (kw_let ~ ("(" ~ variable ~ ("," ~ variable)* ~ ")" | variable) ~ kw_in ~ (inline_read | expr3)) }
+
+// SPIKE-DEVIATION (F6): `$a * $b` is both the wildcard triple and a
+// product; the RFC names only the `-` collision. The bare wildcard triple is
+// a triple only when no operator follows it, so `$a * $b > 2` is arithmetic.
+traversal3 = { !(variable ~ edge_wildcard ~ variable ~ continuation) ~ variable ~ edge_binding? ~ (undirected_edge3 | edge_sel3) ~ traversal_bounds? ~ variable }
+continuation = { "." | concat_bars | sum_op | product_op | comp_op | infix_string_op | kw_in | kw_is | kw_and | kw_or }
+undirected_edge3 = { "<" ~ (edge_alternatives3 | edge_sel3) ~ ">" }
+edge_sel3 = { edge_alternation3 | edge_wildcard | catalogue_edge | edge_ident3 | string_lit }
+// SPIKE-DEVIATION (F8): `let` and `from` are not bare edge names. A filter
+// that is one Boolean variable followed by a `from` or `let` clause,
+// `$ok  from $r`, has the shape of a triple over an edge named `from`, and
+// clauses have no separator to tell them apart; the edge is written quoted,
+// `$a "from" $b`, as the reserved `"in"` is. `true` and `false` likewise:
+// `$ok  false  $p: Person` is two well-typed filters and a binding.
+edge_ident3 = @{ !((kw_let | kw_from | "true" | "false") ~ !(ASCII_ALPHANUMERIC | "_")) ~ edge_ident }
+edge_alternation3 = { "(" ~ edge_alternatives3 ~ ")" }
+edge_alternatives3 = { edge_name3 ~ ("|" ~ edge_name3)+ }
+edge_name3 = _{ catalogue_edge | edge_ident3 | string_lit }
+catalogue_edge = @{ "@" ~ ident }
+// Recognised only to print the triple as the fix: `-e->`, `<-e-`, `-e-`.
+arrow_traversal = { variable ~ arrow_open ~ edge_binding? ~ edge_sel3 ~ traversal_bounds? ~ arrow_close ~ variable }
+arrow_open  = { "<-" | "-" }
+arrow_close = { "->" | "-" }
+
+// SPIKE-DEVIATION (F5): a filter clause never begins with `-`. Clauses have
+// no separator, so `X  -Y` after an expression clause is already the binary
+// `X - Y` (the ladder is greedy); refusing a leading `-` makes the same text
+// mean the same after a traversal or binding, where it could not continue.
+filter3 = { !"-" ~ expr3 }
+
+// Write body (RFC section 7): a read's clauses, then statements.
+mutation_body3 = { (!stmt_keyword ~ clause3)* ~ mutation_stmt3+ ~ clause_after_stmt? }
+stmt_keyword   = @{ ("insert" | "update" | "delete") ~ !(ASCII_ALPHANUMERIC | "_") }
+// SPIKE-DEVIATION (F11): `where_stmt` is tried first and also takes a bound
+// variable, so `delete $x where φ` prints its fix instead of reading `where`
+// as a bare-name filter after the statement.
+mutation_stmt3 = { where_stmt | insert_stmt3 | update_stmt3 | delete_stmt3 }
+insert_stmt3   = { kw_insert ~ type_name ~ "{" ~ mutation_assignment3+ ~ "}" }
+update_stmt3   = { kw_update ~ variable ~ kw_set ~ "{" ~ mutation_assignment3+ ~ "}" }
+delete_stmt3   = { kw_delete ~ variable }
+// Edition 2's form, recognised to print the fix.
+where_stmt     = { (kw_update ~ (type_name | variable) ~ kw_set ~ "{" ~ mutation_assignment3+ ~ "}" | kw_delete ~ (type_name | variable)) ~ kw_where ~ expr3 }
+// A clause after the first statement, recognised to print the order.
+clause_after_stmt = { (!"}" ~ (mutation_stmt3 | clause3))+ }
+// SPIKE-DEVIATION (F4): the freeze list makes `null` an assignment value,
+// but no production admits it (edition 2 refuses `set { city: null }` too).
+mutation_assignment3 = { ident ~ ":" ~ (null_value | expr3) ~ ","? }
+null_value = { kw_null ~ &("," | "}" | ident ~ ":") }
+
+// Expressions: edition 2's ladder with the arithmetic ladder between
+// `comparison` and `operand` (RFC section 7).
+expr3       = { or_expr3 }
+or_expr3    = { and_expr3 ~ (kw_or ~ and_expr3)* }
+and_expr3   = { not_expr3 ~ (kw_and ~ not_expr3)* }
+not_expr3   = { (kw_not ~ not_expr3) | comparison3 }
+// `contains` / `starts_with` infix are recognised to print the call.
+comparison3 = { sum ~ ((comp_op ~ sum) | (infix_string_op ~ sum) | (kw_in ~ sum) | null_test)? }
+// SPIKE-DEVIATION (F16): not when the word touches `(`. Clauses have no
+// separator, so `$p.active  contains($p.name, "a")`, a Boolean filter and
+// then the edition-3 call, would otherwise read as the infix form.
+infix_string_op = @{ ("contains" | "starts_with") ~ !(ASCII_ALPHANUMERIC | "_" | "(") }
+sum         = { product ~ (sum_op ~ product)* }
+sum_op      = { "+" | "-" | concat_bars }
+// `a || b` is recognised to print `concat(a, b)`.
+concat_bars = { "||" }
+product     = { unary ~ (product_op ~ unary)* }
+product_op  = { "*" | "/" | "%" }
+unary       = { unary_minus ~ unary | operand3 }
+unary_minus = { "-" }
+operand3    = { "(" ~ expr3 ~ ")" | block_value | agg_distinct | literal3 | case_keyword | call | prop_access3 | meta_field | variable | reserved_property | expr_ident }
+block_value = { (agg_name ~ ("(" ~ expr3 ~ ")")? | kw_exists) ~ subquery_block3 }
+agg_name    = @{ ("count" | "sum" | "avg" | "min" | "max") ~ !(ASCII_ALPHANUMERIC | "_") }
+agg_distinct = { agg_name ~ "(" ~ kw_distinct ~ expr3 ~ ")" }
+// SPIKE-DEVIATION (F9): the call's name touches its `(`.
+call        = { call_head ~ call_args? ~ ")" }
+call_head   = ${ call_name ~ "(" }
+call_name   = @{ !reserved ~ ident }
+// Positional arguments then `name: value` options; a positional is never
+// `ident :` (the 2026-11-01 spike's G1). SPIKE-DEVIATION (F1): a positional
+// is an inline read or an expression; the RFC's grammar reaches `inline_read`
+// only through `relation_expr`, so `nearest({ … }, e, $q, k: 20)` does not
+// parse as written.
+call_args   = { positional ~ ("," ~ positional)* ~ ("," ~ call_option)* | call_option ~ ("," ~ call_option)* }
+positional  = { !(ident ~ ":") ~ (inline_read | expr3) }
+call_option = { ident ~ ":" ~ expr3 }
+case_keyword = @{ ("CASE" | "case") ~ !(ASCII_ALPHANUMERIC | "_") }
+prop_access3 = { variable ~ "." ~ (meta_field | ident) }
+
+literal3   = { list_lit3 | datetime_lit | date_lit | string_lit | float_lit3 | integer3 | bool_lit }
+list_lit3  = { "[" ~ (literal3 ~ ("," ~ literal3)*)? ~ "]" }
+// SPIKE-DEVIATION (F10): both literals end at a word boundary. Edition 2's
+// `integer` does not, so `return { 1e3 }` there is two items, `1` and the
+// bare name `e3`.
+float_lit3 = @{ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ ~ (("e" | "E") ~ ("+" | "-")? ~ ASCII_DIGIT+)? ~ !(ASCII_ALPHANUMERIC | "_") }
+integer3   = @{ ASCII_DIGIT+ ~ !(ASCII_ALPHANUMERIC | "_") }
+
+kw_gq       = @{ "gq" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_query    = @{ "query" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_mutation = @{ "mutation" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_match    = @{ "match" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_return   = @{ "return" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_order    = @{ "order" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_let      = @{ "let" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_optional = @{ "optional" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_exists   = @{ "exists" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_insert   = @{ "insert" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_update   = @{ "update" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_where    = @{ "where" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_for      = @{ "for" ~ !(ASCII_ALPHANUMERIC | "_") }
+kw_unwind   = @{ "unwind" ~ !(ASCII_ALPHANUMERIC | "_") }

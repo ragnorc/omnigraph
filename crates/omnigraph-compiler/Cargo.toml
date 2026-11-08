@@ -25,5 +25,9 @@ ahash = { workspace = true }
 sha2 = { workspace = true }
 ulid = { workspace = true }
 
+[dev-dependencies]
+# SPIKE: the edition-3 parse/print/parse property (src/query/parser3_proptest.rs).
+proptest = "1"
+
 [lints]
 workspace = true
