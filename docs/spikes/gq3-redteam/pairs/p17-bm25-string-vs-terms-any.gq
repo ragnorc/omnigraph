@@ -2,11 +2,11 @@
 // covered: none
 // rfc: §4: a String means terms(q, mode: any)
 query q($q: String) {
-  match { from bm25({ match { $d: Doc } return { $d } }, body, $q) }
+  match { from bm25({ match { $d: Doc } return { $d } }, $d.body, $q) }
   return { $d.title }
 }
 // ---
 query q($q: String) {
-  match { from bm25({ match { $d: Doc } return { $d } }, body, terms($q, mode: any)) }
+  match { from bm25({ match { $d: Doc } return { $d } }, $d.body, terms($q, mode: any)) }
   return { $d.title }
 }

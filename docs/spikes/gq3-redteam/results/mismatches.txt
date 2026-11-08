@@ -1,0 +1,6 @@
+2-08-bare-in-edge                             # accepted, expected a refusal; parsed `$x: Collection { slug: $s } | $d in $x` returning `$d.title`
+2-14-edge-named-not                           # accepted, expected a refusal; parsed `$a: Person | $a | not $b` returning `$b.name`
+7-12-schema-in-query-grammar                  # refused, expected accept: Q001 expected the end of the source, a settings line or a declaration `query name(…) { … }`; found `node`
+9-25-infix-contains-list                      # fix changes meaning: // task: edition 2's list contains // kind: adversarial // expect: refuse-with-fix:"rust" in $d.tags // habit: GQ edition 2 // rfc: §6 rewr
+9-79-chained-path                             # no suggestion printed; fix text "match { … $p <edge> $q } return { $q.<property> }"
+9-83-missing-return                           # fix changes meaning: // task: a read with no return // kind: adversarial // expect: refuse-with-fix:return { $p.name } // habit: Datalog query q() { match { $p:

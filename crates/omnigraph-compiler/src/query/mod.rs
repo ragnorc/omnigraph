@@ -5,6 +5,7 @@ pub mod checked;
 pub mod codes;
 pub mod descriptor;
 pub mod diagnostic;
+pub mod habits3;
 pub mod lint;
 pub mod parser;
 pub mod parser3;

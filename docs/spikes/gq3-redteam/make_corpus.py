@@ -907,11 +907,115 @@ pair("p26-from-call-vs-inline-body", "none", "a declared read called, against it
      "query friends($h: String) {\n  match { $p: Person { handle: $h }  $p knows $q }\n  return { $q }\n}\n\nquery q($h: String) {\n  match { from { match { $p: Person { handle: $h }  $p knows $q } return { $q } } }\n  return { $q.name }\n}",
      "§2 Call is inlined")
 
+case("1-31-bare-property-in-filter", 1, 'refuse-with-fix:$p.name = "x"',
+     "a filter on a bare property name, edition 2's mutation habit in a read",
+     m('$p: Person  name = "x"'), rfc="§7: a bare identifier is not an operand in match (2026-11-08)",
+     amended="added by spike/gq3-grammar2: the bare-name refusal (Q018) and its guess")
+case("1-32-bare-parameter-name", 1, "refuse-with-fix:$h",
+     "a parameter written without its `$`",
+     m("$p: Person { handle: h }", params="$h: String"), rfc="§7: a bare identifier is not an operand",
+     amended="added by spike/gq3-grammar2: the bare-name refusal (Q018) names the parameter")
+
+
+# ---------------------------------------------------------------------------
+# Amendments of 2026-11-08 (spike/gq3-grammar2). The RFC adopted decisions
+# that change what some cases expect; each amended case says so in its
+# `amended` header, and docs/spikes/gq3-grammar2.md lists them. The cases
+# above are kept as the red team wrote them.
+# ---------------------------------------------------------------------------
+
+RANKED = "the ranked column is a property access and `l2` is `distance` (RFC §3, 2026-11-08)"
+
+
+def ranked_column(body):
+    """The RFC's 2026-11-08 spelling of a ranking call: `$d.embedding`, not `embedding`."""
+    out = body.replace("l2(", "distance(")
+    out = re.sub(r"(\}|\$\w+|\d),(\s*)(embedding|body|title),", r"\1,\2$d.\3,", out)
+    out = out.replace("},\n      text, $q)", "},\n      $p.text, $q)")
+    return out
+
+
+AMENDMENTS = {
+    "1-11-minus-literal-glued": dict(
+        expect="refuse-with-fix:$n - 1 > 0", shape=None,
+        amended="`$n -1` is refused with `$n - 1` as the fix (RFC §3, 2026-11-08)"),
+    "1-13-newline-items-leading-minus": dict(
+        expect="refuse-with-fix:$p.age, -$p.age", returns=None,
+        amended="`X  -Y` is refused (RFC §3, 2026-11-08); the intended text is two items"),
+    "1-22-leading-minus-filter": dict(
+        expect="refuse-with-fix:$p.age  (-1) < $x",
+        amended="`$p.age  -1` is refused (RFC §3, 2026-11-08); the intended text is a let, then the filter"),
+    "1-29-let-absorbs-leading-minus": dict(
+        expect="refuse-with-fix:$p.age  (-1) < $x", shape=None,
+        amended="`$p.age  -1` is refused (RFC §3, 2026-11-08); the intended text is a let, then the filter"),
+    "2-09-edge-named-from": dict(
+        expect='refuse-with-fix:$a "from" $b', shape=None,
+        amended="`from` is never a bare edge name; the quoted edge is the fix (RFC §7, 2026-11-08)"),
+    "2-10-edge-named-let": dict(
+        expect='refuse-with-fix:$a "let" $b', shape=None,
+        amended="`let` is never a bare edge name; the quoted edge is the fix (RFC §7, 2026-11-08)"),
+    "2-16-edge-named-insert-in-write": dict(
+        expect='refuse-with-fix:$a "insert" $b', shape=None,
+        amended="grammar2 G8: a statement word is never a bare edge name"),
+    "6-31-edge-named-update-in-write": dict(
+        expect='refuse-with-fix:$p "update" $q', shape=None,
+        amended="grammar2 G8: a statement word is never a bare edge name"),
+    "2-27-open-upper-bound": dict(
+        expect="accept", later="T15 (RFC §5, 2026-11-08: the type-level door with a pinned test)",
+        amended="an open bound is a later form whose door is the type checker's T15 (RFC §5, 2026-11-08)"),
+    "4-04-asset-colleagues-of-colleagues": dict(
+        body="query colleagues($of: String) {\n  match { $p: Person { handle: $of }  $p worksAt $c  $q worksAt $c  $q != $p }\n  return { $q }\n}\n\nquery colleagues_of_colleagues($of: String) {\n  match {\n    from { match { from colleagues($of) } return { $q as c } }\n    from { match { from colleagues($c.handle) } return { $q as r } }\n  }\n  return distinct { $r.name }\n}",
+        note=None, amended="the asset's text of 2026-11-08 (the inner reads open with match)"),
+    "5-10-asset-weighted": dict(
+        body="query weighted($q: String, $v: Vector(3)) {\n  match {\n    let $docs = { match { $d: Doc } return { $d } }\n    from { match { from distance($docs, $d.embedding, $v) } return { $d, $distance as vec } }\n    from { match { from bm25($docs, $d.body, $q) } return { $d as d2, $score as lex } }\n    $d = $d2\n  }\n  return { $d.title, 0.7 * (1.0 / (1.0 + $vec)) + 0.3 * $lex as s }\n  order { s desc }\n  limit 10\n}",
+        note=None, amended="the asset's text of 2026-11-08"),
+    "4-20-from-call-space-before-paren": dict(
+        expect="refuse-with-fix:from colleagues($h)", shape=None,
+        amended="a space before a call's `(` is refused with the touching form (RFC §3, 2026-11-08)"),
+    "4-21-from-nearest-space-before-paren": dict(
+        expect="refuse-with-fix:nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 5)", shape=None,
+        amended="a space before a call's `(` is refused with the touching form (RFC §3, 2026-11-08)"),
+    "5-23-field-as-prop-access": dict(
+        later=None, amended="the property access is the RFC's spelling of the ranked column (2026-11-08)"),
+    "7-03-unknown-annotation": dict(
+        expect="refuse-with-fix:<empty>",
+        amended="an unknown annotation is refused (RFC §5, 2026-11-08)"),
+    "7-06-budget-rows": dict(
+        expect="refuse", note=None,
+        amended="`@budget(rows = …)` is refused naming stage N (RFC §5, 2026-11-08)"),
+    "7-13-annotation-colon-args": dict(
+        expect="refuse-with-fix:@budget(plan = 1000)",
+        body="query q() @budget(plan: 1000) {\n  match { $p: Person }\n  return { $p.name }\n}",
+        amended="`rows` is stage N's; `plan` is this release's, so the fix leads to accepted text"),
+    "9-37-exists-function": dict(
+        expect="refuse-with-fix:$p.city is not null", later=None,
+        amended="a registry row is never named `exists` (RFC §5, 2026-11-08)"),
+}
+
+
+def amend():
+    for c in CASES:
+        body = ranked_column(c["body"])
+        if body != c["body"]:
+            c["body"] = body
+            c["amended"] = RANKED
+        for key, value in AMENDMENTS.get(c["name"], {}).items():
+            if value is None:
+                c.pop(key, None)
+            elif key == "amended" and "amended" in c:
+                c["amended"] = c["amended"] + "; " + value
+            else:
+                c[key] = value
+    for p in PAIRS:
+        p["a"] = ranked_column(p["a"])
+        p["b"] = ranked_column(p["b"])
+
 
 def main():
     if os.path.isdir(OUT):
         shutil.rmtree(OUT)
     os.makedirs(OUT)
+    amend()
     names = set()
     for c in CASES:
         assert c["name"] not in names, c["name"]
@@ -922,7 +1026,7 @@ def main():
         lines.append(f"// expect: {expect}")
         if c["kind"] == 9 or "habit" in c:
             lines.append(f"// habit: {c.get('habit', 'GQ edition 2')}")
-        for key in ("raw", "rfc", "shape", "returns", "later", "note"):
+        for key in ("raw", "rfc", "shape", "returns", "later", "note", "amended"):
             if key in c:
                 lines.append(f"// {key}: {c[key]}")
         with open(os.path.join(OUT, c["name"] + ".gq"), "w") as f:

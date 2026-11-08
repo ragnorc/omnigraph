@@ -126,10 +126,10 @@ pub fn lower_decl(decl: Decl3) -> R<QueryDecl> {
             };
         }
         DeclBody3::Write(body) => {
-            if !body.clauses.is_empty() {
+            if body.groups.iter().any(|g| !g.clauses.is_empty()) {
                 return Err(placeholder("a write body's clauses"));
             }
-            for s in body.statements {
+            for s in body.groups.into_iter().flat_map(|g| g.statements) {
                 out.mutations.push(match s {
                     Stmt3::Insert {
                         type_name,

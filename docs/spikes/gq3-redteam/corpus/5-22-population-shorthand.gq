@@ -3,7 +3,8 @@
 // expect: accept
 // rfc: unresolved question 1
 // later: T69
+// amended: the ranked column is a property access and `l2` is `distance` (RFC §3, 2026-11-08)
 query q($q: Vector(3)) {
-  match { $d: Doc  $d.year > 2020  from nearest($d, embedding, $q, k: 5) }
+  match { $d: Doc  $d.year > 2020  from nearest($d, $d.embedding, $q, k: 5) }
   return { $d.title }
 }

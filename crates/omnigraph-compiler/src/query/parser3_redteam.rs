@@ -2,10 +2,13 @@
 //!
 //! Parses every `.gq` file under `docs/spikes/gq3-redteam/corpus/` as
 //! edition 3 and compares the outcome with the file's `// expect:` header.
-//! For every refusal it also plays the agent: it takes the printed fix,
-//! applies it literally over the construct the diagnostic points at, parses
-//! the result, and, when the header names the fix it expected, compares the
-//! two repaired texts' trees. The one-spelling pairs under `pairs/` are
+//! For every refusal it also plays the agent: it applies the diagnostic's
+//! `suggestion` (byte-range edits), parses the result, and, when the header
+//! names the fix it expected, checks that the repaired text is the intended
+//! one: the original with one span replaced by the header's fix (ignoring
+//! whitespace), or the same tree as the header's fix spliced over the
+//! construct the refusal names. The repaired trees are pinned in
+//! `fixed-trees.txt` (`redteam_suggestions_reparse_to_their_pinned_trees`). The one-spelling pairs under `pairs/` are
 //! parsed both ways and reported as the same tree or two trees.
 //!
 //! `redteam_corpus_matches_its_pinned_mismatches` passes while the set of
@@ -18,13 +21,12 @@ use std::collections::BTreeSet;
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
-use pest::Parser;
-use pest::iterators::Pair;
-
 use super::ast3::*;
-use super::diagnostic::QueryDiagnostic;
-use super::parser::{QueryParser, Rule, parse_query_diagnostic};
-use super::parser3::{EditionLine, edition_line, parse_query3};
+use super::diagnostic::TextEdit;
+use super::parser::parse_query_diagnostic;
+use super::parser3::{
+    EditionLine, Refusal3, apply_edits, edition_line, edition_near_miss, parse_query3_detailed,
+};
 use super::print3::{self, Style};
 
 /// The RFC's section 8 schema in today's `.pg` spelling (`implements`, no
@@ -70,7 +72,12 @@ fn typecheck(text: &str) -> String {
 }
 
 fn root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/spikes/gq3-redteam")
+    // `GQ3_REDTEAM_ROOT` points the instrument at another copy of the corpus
+    // (the red team's original text, to measure against it).
+    match std::env::var("GQ3_REDTEAM_ROOT") {
+        Ok(dir) => PathBuf::from(dir),
+        Err(_) => Path::new(env!("CARGO_MANIFEST_DIR")).join("../../docs/spikes/gq3-redteam"),
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -141,12 +148,18 @@ fn files(dir: &Path) -> Vec<PathBuf> {
     out
 }
 
-/// Parse-level outcome: edition 3 through its own parser; any other edition
-/// line (or none, for a raw file) through the front door.
-fn parse(text: &str) -> Result<Option<File3>, QueryDiagnostic> {
+/// Parse-level outcome: a malformed edition line is refused first; edition 3
+/// through its own parser; any other edition line (or none, for a raw file)
+/// through the front door.
+fn parse(text: &str) -> Result<Option<File3>, Refusal3> {
+    if let Some(r) = edition_near_miss(text) {
+        return Err(r);
+    }
     match edition_line(text) {
-        EditionLine::Present { edition: 3, .. } => parse_query3(text).map(Some),
-        _ => parse_query_diagnostic(text).map(|_| None),
+        EditionLine::Present { edition: 3, .. } => parse_query3_detailed(text).map(Some),
+        _ => parse_query_diagnostic(text)
+            .map(|_| None)
+            .map_err(Refusal3::from),
     }
 }
 
@@ -184,8 +197,9 @@ fn shape_of(file: &File3) -> (String, String) {
                 .join(" | "),
         ),
         DeclBody3::Write(w) => (
-            w.clauses
+            w.groups
                 .iter()
+                .flat_map(|g| g.clauses.iter())
                 .map(|c| print3::clause(c, style))
                 .collect::<Vec<_>>()
                 .join(" | "),
@@ -194,138 +208,212 @@ fn shape_of(file: &File3) -> (String, String) {
     }
 }
 
-/// The span of the construct a diagnostic points at, found the way an agent
-/// reads it: the innermost recognised construct that contains the position.
-fn construct_span(text: &str, d: &QueryDiagnostic) -> Option<(usize, usize)> {
-    let byte = d.position.as_ref()?.byte as usize;
-    if d.code.as_str() == "Q006" {
-        if let EditionLine::Present { start, end, .. } = edition_line(text) {
-            return Some((start, end));
-        }
-    }
-    let rules: &[Rule] = match d.code.as_str() {
-        "Q002" => &[Rule::missing_param_list3],
-        "Q007" => &[Rule::arrow_traversal],
-        "Q008" => &[Rule::where_stmt],
-        "Q009" => &[Rule::mutation_decl],
-        "Q010" => &[Rule::binding_brace_filter],
-        "Q011" => &[Rule::as_commit_clause, Rule::as_unattached_clause],
-        "Q012" => &[
-            Rule::comparison3,
-            Rule::sum,
-            Rule::list_to_rows,
-            Rule::case_keyword,
-            Rule::annotation,
-        ],
-        "Q013" => &[Rule::clause_after_stmt],
-        _ => return None,
-    };
-    let pairs = QueryParser::parse(Rule::gq3_file, text).ok()?;
-    let mut best: Option<Pair<Rule>> = None;
-    for p in pairs.flatten() {
-        let s = p.as_span();
-        if rules.contains(&p.as_rule()) && s.start() <= byte && byte < s.end().max(s.start() + 1) {
-            let narrower = best
-                .as_ref()
-                .is_none_or(|b| s.end() - s.start() < b.as_span().end() - b.as_span().start());
-            // For `||` the innermost `sum` holding the operator is wanted, but
-            // for an infix `contains` the comparison holds it, not a sum.
-            if narrower {
-                best = Some(p);
-            }
-        }
-    }
-    let p = best?;
-    if p.as_rule() == Rule::missing_param_list3 {
-        let ident = p
-            .clone()
-            .into_inner()
-            .find(|i| i.as_rule() == Rule::ident)?;
-        return Some((p.as_span().start(), ident.as_span().end()));
-    }
-    Some((p.as_span().start(), p.as_span().end()))
-}
-
-fn splice(text: &str, span: (usize, usize), with: &str) -> String {
-    format!("{}{}{}", &text[..span.0], with, &text[span.1..])
-}
-
 #[derive(Debug, Clone, PartialEq)]
 enum FixVerdict {
-    /// The diagnostic printed no fix.
+    /// The diagnostic printed no suggestion (only prose, or nothing).
     NoFix,
-    /// A fix was printed, but no construct span could be found to apply it to.
-    NoSpan,
-    /// Applied literally, the text does not parse.
+    /// Applied, the suggestion's text does not parse.
     DoesNotParse(String),
-    /// It parses, and its tree differs from the tree of the expected fix.
+    /// It parses, and it is not the text the header's fix intends.
     ChangesMeaning,
-    /// It parses, and either matches the expected fix's tree or no expected
-    /// fix was given.
+    /// It parses, and either is the intended text or no intended fix was
+    /// given.
     Parses,
 }
 
 struct Row {
     case: Case,
-    actual: Result<(), QueryDiagnostic>,
+    actual: Result<(), Refusal3>,
     pipeline: String,
     mismatch: Option<String>,
     fix: Option<FixVerdict>,
     applied: Option<String>,
+    tree: Option<String>,
 }
 
 fn verdict_name(v: &FixVerdict) -> String {
     match v {
         FixVerdict::NoFix => "no fix".into(),
-        FixVerdict::NoSpan => "fix, no span".into(),
         FixVerdict::DoesNotParse(c) => format!("fix does not parse ({c})"),
         FixVerdict::ChangesMeaning => "fix changes meaning".into(),
         FixVerdict::Parses => "fix parses".into(),
     }
 }
 
-fn audit_fix(case: &Case, d: &QueryDiagnostic) -> (FixVerdict, Option<String>) {
-    // A machine-applicable suggestion is what a tool applies first.
-    let repaired = if let Some(s) = &d.suggestion {
-        let mut t = case.text.clone();
-        let mut edits = s.edits.clone();
-        edits.sort_by_key(|e| std::cmp::Reverse(e.start));
-        for e in edits {
-            t.replace_range(e.start..e.end, &e.replacement);
+/// `s` without its `//` comment lines (a case's headers name its fix) and
+/// without whitespace.
+fn strip(s: &str) -> String {
+    s.lines()
+        .filter(|l| !l.trim_start().starts_with("//"))
+        .flat_map(str::chars)
+        .filter(|c| !c.is_whitespace())
+        .collect()
+}
+
+/// Whether `repaired` is `original` with one span replaced by `fix`, ignoring
+/// whitespace.
+fn is_splice_of(original: &str, repaired: &str, fix: &str) -> bool {
+    let (o, r, f) = (strip(original), strip(repaired), strip(fix));
+    if r.len() < f.len() {
+        return false;
+    }
+    (0..=r.len() - f.len()).any(|a| {
+        r.is_char_boundary(a) && r.is_char_boundary(a + f.len()) && r[a..a + f.len()] == f && {
+            let tail = r.len() - a - f.len();
+            tail <= o.len()
+                && a <= o.len() - tail
+                && o.is_char_boundary(a)
+                && o.is_char_boundary(o.len() - tail)
+                && o[..a] == r[..a]
+                && o[o.len() - tail..] == r[a + f.len()..]
         }
-        Some(t)
-    } else {
-        None
+    })
+}
+
+/// `text` with whitespace removed and every `$name` renamed `$v1`, `$v2`, …
+/// in order of first appearance.
+fn canonical(text: &str) -> String {
+    let mut names: Vec<String> = Vec::new();
+    let mut out = String::new();
+    let body: String = text
+        .lines()
+        .filter(|l| !l.trim_start().starts_with("//"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let mut chars = body.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c.is_whitespace() {
+            continue;
+        }
+        if c == '$' {
+            let mut name = String::new();
+            while let Some(&n) = chars.peek() {
+                if n.is_ascii_alphanumeric() || n == '_' {
+                    name.push(n);
+                    chars.next();
+                } else {
+                    break;
+                }
+            }
+            let i = names.iter().position(|n| *n == name).unwrap_or_else(|| {
+                names.push(name.clone());
+                names.len() - 1
+            });
+            out.push_str(&format!("$v{i}"));
+        } else {
+            out.push(c);
+        }
+    }
+    out
+}
+
+fn tree(text: &str) -> Option<Option<File3>> {
+    parse(text).ok()
+}
+
+/// Whether the suggestion's text is what the header's fix intends: the same
+/// text up to whitespace, or the same tree as the fix spliced over the
+/// construct (with the suggestion's other edits), or as the construct's text
+/// replaced by the fix wherever it occurs.
+fn is_intended(case: &Case, r: &Refusal3, repaired: &str, fix: &str) -> bool {
+    // A deletion (`<empty>`) is checked by tree below: an empty splice would
+    // admit any deletion.
+    if !fix.is_empty() && is_splice_of(&case.text, repaired, fix) {
+        return true;
+    }
+    let Some(got) = tree(repaired) else {
+        return false;
     };
-    let span = construct_span(&case.text, d);
-    let repaired = match (repaired, &d.fix, span) {
-        (Some(t), _, _) => t,
-        (None, None, _) => return (FixVerdict::NoFix, None),
-        (None, Some(_), None) => return (FixVerdict::NoSpan, None),
-        (None, Some(fix), Some(span)) => splice(&case.text, span, fix),
+    let Some(span) = r.span else { return false };
+    let mut edits: Vec<TextEdit> = r
+        .edits()
+        .iter()
+        .filter(|e| e.end <= span.0 || e.start >= span.1)
+        .cloned()
+        .collect();
+    edits.push(TextEdit {
+        start: span.0,
+        end: span.1,
+        replacement: fix.to_string(),
+    });
+    let intended = apply_edits(&case.text, &edits);
+    if tree(&intended).is_some_and(|t| t == got) {
+        return true;
+    }
+    // A fix that invents a variable may pick another name than the header:
+    // equal up to a renaming of variables is the intended text.
+    if canonical(&intended) == canonical(repaired) {
+        return true;
+    }
+    let construct = &case.text[span.0..span.1];
+    if !construct.is_empty() && tree(&case.text.replace(construct, fix)).is_some_and(|t| t == got) {
+        return true;
+    }
+    // The fix applied at every site the suggestion edits: each edit widened
+    // to the word it sits in (`$P` → `$p` at the binding and in `return`).
+    let word = |at: usize, forward: bool| {
+        let b = case.text.as_bytes();
+        let mut i = at;
+        let ok = |c: u8| c.is_ascii_alphanumeric() || c == b'_' || c == b'$' || c == b'?';
+        if forward {
+            while i < b.len() && ok(b[i]) {
+                i += 1;
+            }
+        } else {
+            while i > 0 && ok(b[i - 1]) {
+                i -= 1;
+            }
+        }
+        i
     };
+    let sites: Vec<TextEdit> = r
+        .edits()
+        .iter()
+        .map(|e| TextEdit {
+            start: word(e.start, false),
+            end: word(e.end, true),
+            replacement: fix.to_string(),
+        })
+        .collect();
+    let overlapping = sites.windows(2).any(|w| w[1].start < w[0].end);
+    !overlapping && strip(&apply_edits(&case.text, &sites)) == strip(repaired)
+}
+
+fn printed(file: &Option<File3>) -> String {
+    match file {
+        Some(f) => norm(&print3::print_file(f, Style::default())),
+        None => "(edition 2)".to_string(),
+    }
+}
+
+fn audit_fix(case: &Case, r: &Refusal3) -> (FixVerdict, Option<String>, Option<String>) {
+    if r.edits().is_empty() {
+        return (FixVerdict::NoFix, None, None);
+    }
+    let repaired = apply_edits(&case.text, r.edits());
     let got = match parse(&repaired) {
         Err(e) => {
+            let code = e.diagnostic.code.as_str().to_string();
             return (
-                FixVerdict::DoesNotParse(e.code.as_str().to_string()),
+                FixVerdict::DoesNotParse(code.clone()),
                 Some(repaired),
+                Some(format!("refused {code}")),
             );
         }
         Ok(f) => f,
     };
-    if let (Expect::RefuseWithFix(expected), Some(span)) = (&case.expect, span) {
+    let tree = Some(printed(&got));
+    if let Expect::RefuseWithFix(expected) = &case.expect {
         let with = if expected == "<empty>" {
             ""
         } else {
             expected.as_str()
         };
-        if let Ok(want) = parse(&splice(&case.text, span, with)) {
-            if want != got {
-                return (FixVerdict::ChangesMeaning, Some(repaired));
-            }
+        if !is_intended(case, r, &repaired, with) {
+            return (FixVerdict::ChangesMeaning, Some(repaired), tree);
         }
     }
-    (FixVerdict::Parses, Some(repaired))
+    (FixVerdict::Parses, Some(repaired), tree)
 }
 
 fn run_case(case: Case) -> Row {
@@ -337,6 +425,7 @@ fn run_case(case: Case) -> Row {
     let mut mismatch = None;
     let mut fix = None;
     let mut applied = None;
+    let mut fixed_tree = None;
     match (&case.expect, &parsed) {
         (Expect::Accept, Ok(file)) => {
             if let Some(file) = file {
@@ -356,8 +445,8 @@ fn run_case(case: Case) -> Row {
         (Expect::Accept, Err(e)) => {
             mismatch = Some(format!(
                 "refused, expected accept: {} {}",
-                e.code.as_str(),
-                e.message
+                e.diagnostic.code.as_str(),
+                e.diagnostic.message
             ))
         }
         (Expect::Refuse | Expect::RefuseWithFix(_), Ok(file)) => {
@@ -367,16 +456,28 @@ fn run_case(case: Case) -> Row {
             ));
         }
         (Expect::Refuse, Err(_)) => {}
-        (Expect::RefuseWithFix(want), Err(e)) => match &e.fix {
-            Some(f) if norm(f) == norm(want) => {}
-            Some(f) => mismatch = Some(format!("fix differs: printed `{f}`")),
-            None => mismatch = Some("no fix printed".to_string()),
-        },
+        (Expect::RefuseWithFix(_), Err(_)) => {}
     }
     if let Err(d) = &parsed {
-        let (v, t) = audit_fix(&case, d);
+        let (v, t, tr) = audit_fix(&case, d);
+        if matches!(case.expect, Expect::RefuseWithFix(_)) && v != FixVerdict::Parses {
+            mismatch = Some(match &v {
+                FixVerdict::NoFix => format!(
+                    "no suggestion printed; fix text {:?}",
+                    d.diagnostic.fix.as_deref().unwrap_or("")
+                ),
+                other => format!(
+                    "{}: {}",
+                    verdict_name(other),
+                    t.as_deref()
+                        .map(|t| norm(t.trim_start_matches("gq 3;")))
+                        .unwrap_or_default()
+                ),
+            });
+        }
         fix = Some(v);
         applied = t;
+        fixed_tree = tr;
     }
     Row {
         actual: parsed.map(|_| ()),
@@ -385,6 +486,7 @@ fn run_case(case: Case) -> Row {
         mismatch,
         fix,
         applied,
+        tree: fixed_tree,
     }
 }
 
@@ -397,6 +499,7 @@ struct Report {
     table: String,
     fixes: String,
     pairs: String,
+    trees: String,
 }
 
 fn run_all() -> Report {
@@ -418,9 +521,9 @@ fn run_all() -> Report {
             Ok(()) => ("accept", String::new(), String::new(), String::new()),
             Err(e) => (
                 "refuse",
-                e.code.as_str().to_string(),
-                md_cell(&e.message),
-                e.fix.as_deref().map(md_cell).unwrap_or_default(),
+                e.diagnostic.code.as_str().to_string(),
+                md_cell(&e.diagnostic.message),
+                e.diagnostic.fix.as_deref().map(md_cell).unwrap_or_default(),
             ),
         };
         let verdict = match &r.mismatch {
@@ -465,59 +568,51 @@ fn run_all() -> Report {
     };
     let generic = refusals
         .iter()
-        .filter(|r| matches!(&r.actual, Err(e) if e.code.as_str() == "Q001"))
+        .filter(|r| matches!(&r.actual, Err(e) if e.diagnostic.code.as_str() == "Q001"))
         .count();
     let mut fixes = String::new();
     let _ = writeln!(fixes, "refusals: {}", refusals.len());
     let _ = writeln!(
         fixes,
-        "  generic Q001 (grammar rule names, no fix): {generic}"
+        "  generic Q001 (constructs named, no fix): {generic}"
     );
     let _ = writeln!(
         fixes,
-        "  no fix printed: {}",
+        "  no suggestion printed: {}",
         count(&|v| *v == FixVerdict::NoFix)
     );
     let _ = writeln!(
         fixes,
-        "  fix printed: {}",
+        "  suggestion printed: {}",
         count(&|v| *v != FixVerdict::NoFix)
     );
     let _ = writeln!(
         fixes,
-        "    applied literally, parses with the expected meaning: {}",
+        "    applied, parses with the intended meaning: {}",
         count(&|v| *v == FixVerdict::Parses)
     );
     let _ = writeln!(
         fixes,
-        "    applied literally, parses but changes meaning: {}",
+        "    applied, parses but is not the intended text: {}",
         count(&|v| *v == FixVerdict::ChangesMeaning)
     );
     let _ = writeln!(
         fixes,
-        "    applied literally, does not parse: {}",
+        "    applied, does not parse: {}",
         count(&|v| matches!(v, FixVerdict::DoesNotParse(_)))
-    );
-    let _ = writeln!(
-        fixes,
-        "    no construct span to apply it to: {}",
-        count(&|v| *v == FixVerdict::NoSpan)
     );
     let _ = writeln!(fixes);
     for r in &refusals {
         let Err(e) = &r.actual else { continue };
         if let Some(v) = &r.fix {
-            if matches!(
-                v,
-                FixVerdict::DoesNotParse(_) | FixVerdict::ChangesMeaning | FixVerdict::NoSpan
-            ) {
+            if matches!(v, FixVerdict::DoesNotParse(_) | FixVerdict::ChangesMeaning) {
                 let _ = writeln!(
                     fixes,
                     "{}: {} `{}`\n  fix: {:?}\n  verdict: {}\n  repaired: {}\n",
                     r.case.name,
-                    e.code.as_str(),
-                    e.message,
-                    e.fix,
+                    e.diagnostic.code.as_str(),
+                    e.diagnostic.message,
+                    e.diagnostic.fix,
                     verdict_name(v),
                     r.applied
                         .as_deref()
@@ -540,8 +635,8 @@ fn run_all() -> Report {
             (Ok(_), Ok(_)) => "two trees".to_string(),
             (x, y) => format!(
                 "refused: {:?} / {:?}",
-                x.err().map(|e| e.code.as_str()),
-                y.err().map(|e| e.code.as_str())
+                x.err().map(|e| e.diagnostic.code.as_str()),
+                y.err().map(|e| e.diagnostic.code.as_str())
             ),
         };
         let _ = writeln!(
@@ -553,11 +648,28 @@ fn run_all() -> Report {
         );
     }
 
+    // The pinned repaired trees: every refusal's code, its suggestion applied
+    // and reparsed, printed.
+    let mut trees = String::from(
+        "# Each refusal of the red-team corpus: its code, and the tree its suggestion\n# reparses to (printed), pinned by parser3_redteam::redteam_suggestions_reparse_to_their_pinned_trees.\n# Regenerate with GQ3_REDTEAM_BLESS=1.\n",
+    );
+    for r in &rows {
+        let Err(e) = &r.actual else { continue };
+        let _ = writeln!(
+            trees,
+            "{}\t{}\t{}",
+            r.case.name,
+            e.diagnostic.code.as_str(),
+            r.tree.as_deref().unwrap_or("(no suggestion)")
+        );
+    }
+
     Report {
         rows,
         table,
         fixes,
         pairs,
+        trees,
     }
 }
 
@@ -568,7 +680,23 @@ fn write_out(report: &Report) {
         std::fs::write(dir.join("results.md"), &report.table).unwrap();
         std::fs::write(dir.join("fix-audit.txt"), &report.fixes).unwrap();
         std::fs::write(dir.join("pairs.md"), &report.pairs).unwrap();
+        std::fs::write(dir.join("mismatches.txt"), mismatch_lines(report)).unwrap();
     }
+}
+
+fn mismatch_lines(report: &Report) -> String {
+    let mut out = String::new();
+    for r in &report.rows {
+        if let Some(m) = &r.mismatch {
+            let _ = writeln!(
+                out,
+                "{:<45} # {}",
+                r.case.name,
+                norm(m).chars().take(160).collect::<String>()
+            );
+        }
+    }
+    out
 }
 
 fn mismatches(report: &Report) -> BTreeSet<String> {
@@ -614,4 +742,78 @@ fn redteam_corpus_strict() {
     let got = mismatches(&report);
     println!("{} cases, {} mismatches", report.rows.len(), got.len());
     assert!(got.is_empty(), "{} mismatches: {got:?}", got.len());
+}
+
+#[test]
+fn redteam_suggestions_reparse_to_their_pinned_trees() {
+    let report = run_all();
+    let path = root().join("fixed-trees.txt");
+    if std::env::var("GQ3_REDTEAM_BLESS").is_ok() {
+        std::fs::write(&path, &report.trees).unwrap();
+        return;
+    }
+    let pinned = std::fs::read_to_string(&path).unwrap_or_default();
+    let pinned: Vec<&str> = pinned.lines().filter(|l| !l.starts_with('#')).collect();
+    let got: Vec<&str> = report
+        .trees
+        .lines()
+        .filter(|l| !l.starts_with('#'))
+        .collect();
+    let moved: Vec<String> = got
+        .iter()
+        .filter(|l| !pinned.contains(l))
+        .map(|l| format!("now:    {l}"))
+        .chain(
+            pinned
+                .iter()
+                .filter(|l| !got.contains(l))
+                .map(|l| format!("pinned: {l}")),
+        )
+        .collect();
+    assert!(
+        moved.is_empty(),
+        "repaired trees moved (rerun with GQ3_REDTEAM_BLESS=1 if intended):\n{}",
+        moved.join("\n")
+    );
+}
+
+#[test]
+#[ignore = "instrument: one case's verdict, `CASE=<name>`"]
+fn debug_one_case() {
+    let case = load_case(
+        &root()
+            .join("corpus")
+            .join(std::env::var("CASE").unwrap() + ".gq"),
+    );
+    let r = parse(&case.text).unwrap_err();
+    let repaired = apply_edits(&case.text, r.edits());
+    let Expect::RefuseWithFix(fix) = &case.expect else {
+        panic!()
+    };
+    eprintln!("span {:?} edits {:?}", r.span, r.edits());
+    eprintln!("splice {}", is_splice_of(&case.text, &repaired, fix));
+    eprintln!("intended {}", is_intended(&case, &r, &repaired, fix));
+}
+
+/// Every edition-3 refusal code is printed with a suggestion by at least one
+/// corpus case, and that suggestion reparses (RFC section 5, as adopted on
+/// 2026-11-08: every fix is a suggestion of byte-range edits).
+#[test]
+fn every_refusal_code_has_a_corpus_case_whose_suggestion_reparses() {
+    let report = run_all();
+    let mut covered = BTreeSet::new();
+    for r in &report.rows {
+        if let (Err(e), Some(FixVerdict::Parses)) = (&r.actual, &r.fix) {
+            covered.insert(e.diagnostic.code.as_str());
+        }
+    }
+    let wanted = [
+        "Q002", "Q005", "Q006", "Q007", "Q008", "Q009", "Q010", "Q011", "Q012", "Q013", "Q014",
+        "Q015", "Q016", "Q017", "Q018", "Q019", "Q020", "Q021",
+    ];
+    let missing: Vec<&&str> = wanted.iter().filter(|c| !covered.contains(**c)).collect();
+    assert!(
+        missing.is_empty(),
+        "codes with no reparsing suggestion in the corpus: {missing:?}"
+    );
 }

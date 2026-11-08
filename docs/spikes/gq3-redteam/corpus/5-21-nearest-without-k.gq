@@ -3,7 +3,8 @@
 // expect: accept
 // rfc: §4 Errors
 // later: T17
+// amended: the ranked column is a property access and `l2` is `distance` (RFC §3, 2026-11-08)
 query q($q: Vector(3)) {
-  match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q) }
+  match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q) }
   return { $d.title }
 }

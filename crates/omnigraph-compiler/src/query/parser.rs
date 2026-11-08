@@ -93,7 +93,13 @@ pub(crate) fn skip_trivia(mut input: &str) -> &str {
 pub fn parse_query_diagnostic(input: &str) -> std::result::Result<QueryFile, QueryDiagnostic> {
     use super::parser3::EditionLine;
     match super::parser3::edition_line(input) {
-        EditionLine::Absent => parse_edition2(input),
+        // A malformed edition line (`gq 3` without `;`, `GQ 3;`, a settings
+        // line before it) is refused with `gq 3;` as the fix; no edition-2
+        // text opens with `gq`, so edition 2 is unchanged.
+        EditionLine::Absent => match super::parser3::edition_near_miss(input) {
+            Some(refusal) => Err(refusal.diagnostic),
+            None => parse_edition2(input),
+        },
         EditionLine::Present { edition: 3, .. } => {
             super::parser3::parse_query3(input).and_then(super::bridge3::lower_file)
         }
@@ -106,12 +112,24 @@ pub fn parse_query_diagnostic(input: &str) -> std::result::Result<QueryFile, Que
             blanked.replace_range(start..end, &" ".repeat(end - start));
             parse_edition2(&blanked)
         }
-        EditionLine::Present { edition, start, .. } => Err(QueryDiagnostic::parse(
+        EditionLine::Present {
+            edition,
+            start,
+            end,
+        } => Err(QueryDiagnostic::parse(
             super::codes::Q006,
             format!("`gq {edition};` names no edition this compiler reads; it reads 2 and 3"),
             Some(Position::at(input, start)),
         )
-        .with_fix("gq 3;")),
+        .with_fix("gq 3;")
+        .with_suggestion(Suggestion {
+            applicability: Applicability::NeedsReview,
+            edits: vec![TextEdit {
+                start,
+                end,
+                replacement: "gq 3;".to_string(),
+            }],
+        })),
     }
 }
 

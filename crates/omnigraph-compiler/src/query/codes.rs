@@ -31,6 +31,14 @@ codes! {
     Q011 = "a read body carries `as commit` or `as unattached branch`";
     Q012 = "a respelling edition 3 refuses; the fix prints the legal form";
     Q013 = "a clause follows a statement in a write body";
+    Q014 = "a spelling from another language; the fix prints the GQ form";
+    Q015 = "a form a later stage adds; the message names the stage";
+    Q016 = "a binary minus with whitespace on one side only; the fix spaces both";
+    Q017 = "a contextual keyword or literal as a bare edge name; the fix quotes it";
+    Q018 = "a bare name where a value is read; a bare name is a return alias in order only";
+    Q019 = "a call whose name does not touch its parenthesis, or a call named by a clause keyword";
+    Q020 = "a read body's clauses are missing, misplaced or unbraced";
+    Q021 = "an annotation edition 3 does not admit";
 
     // Typechecker.
     T1 = "unknown node type";

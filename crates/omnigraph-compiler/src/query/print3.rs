@@ -113,15 +113,20 @@ pub fn print_decl(d: &Decl3, style: Style) -> String {
     match &d.body {
         DeclBody3::Read(body) => out.push_str(&read_body(body, style)),
         DeclBody3::Write(body) => {
-            for c in &body.clauses {
-                out.push_str(&clause(c, style));
-                out.push_str(style.clause_sep);
-            }
-            for (i, s) in body.statements.iter().enumerate() {
-                if i > 0 {
+            for (g, group) in body.groups.iter().enumerate() {
+                if g > 0 {
                     out.push_str(style.clause_sep);
                 }
-                out.push_str(&statement(s, style));
+                for c in &group.clauses {
+                    out.push_str(&clause(c, style));
+                    out.push_str(style.clause_sep);
+                }
+                for (i, s) in group.statements.iter().enumerate() {
+                    if i > 0 {
+                        out.push_str(style.clause_sep);
+                    }
+                    out.push_str(&statement(s, style));
+                }
             }
         }
     }
@@ -295,7 +300,12 @@ fn leading_minus_guarded(text: String) -> String {
 const RESERVED: &[&str] = &["and", "or", "not", "is", "null", "in"];
 
 fn edge(name: &str) -> String {
-    if RESERVED.contains(&name) || matches!(name, "let" | "from" | "true" | "false") {
+    if RESERVED.contains(&name)
+        || matches!(
+            name,
+            "let" | "from" | "true" | "false" | "insert" | "update" | "delete"
+        )
+    {
         format!("\"{name}\"")
     } else {
         name.to_string()

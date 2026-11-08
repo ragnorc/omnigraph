@@ -2,11 +2,11 @@
 // covered: none
 // rfc: §4 Fusion: weights default 1.0
 query q($s: String, $v: Vector(3)) {
-  match { let $docs = { match { $d: Doc } return { $d } }  from rrf(nearest($docs, embedding, $v, k: 50), bm25($docs, body, $s), k: 60) }
+  match { let $docs = { match { $d: Doc } return { $d } }  from rrf(nearest($docs, $d.embedding, $v, k: 50), bm25($docs, $d.body, $s), k: 60) }
   return { $d.title }
 }
 // ---
 query q($s: String, $v: Vector(3)) {
-  match { let $docs = { match { $d: Doc } return { $d } }  from rrf(nearest($docs, embedding, $v, k: 50), bm25($docs, body, $s), k: 60, weights: [1.0, 1.0]) }
+  match { let $docs = { match { $d: Doc } return { $d } }  from rrf(nearest($docs, $d.embedding, $v, k: 50), bm25($docs, $d.body, $s), k: 60, weights: [1.0, 1.0]) }
   return { $d.title }
 }

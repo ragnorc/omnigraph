@@ -29,13 +29,15 @@ const PROPS: &[&str] = &[
 ];
 const EDGES: &[&str] = &[
     "knows", "worksAt", "from", "let", "limit", "optional", "in", "and", "count", "exists", "true",
+    "delete", "update",
 ];
 const TYPES: &[&str] = &["Person", "Doc", "@Operator"];
 const ALIASES: &[&str] = &[
     "n", "total", "from", "let", "count", "order", "distinct", "limit",
 ];
-/// Bare names in operand position. Excludes the reserved six and the two
-/// Boolean literals, which are not names.
+/// Bare names, legal only as a whole `order` key (a return alias) and as a
+/// whole option value (an enumerated word). Excludes the reserved six and the
+/// two Boolean literals, which are not names.
 const IDENTS: &[&str] = &[
     "n",
     "total",
@@ -45,11 +47,14 @@ const IDENTS: &[&str] = &[
     "exists",
     "date",
     "embedding",
+    "any",
+    "refuse",
 ];
 const CALLS: &[&str] = &[
     // Not `date`/`datetime`: with one string argument the call is the date
     // literal production (F17).
-    // Not `let`: `let($a) in …` is the `let (…) in` recognizer (F18).
+    // Not `let`, `from`, `optional`, `exists`: a registry row is never named a
+    // clause keyword (section 5).
     "f",
     "coalesce",
     "contains",
@@ -59,8 +64,8 @@ const CALLS: &[&str] = &[
     "l2",
     "union",
     "rrf",
-    "from",
     "count",
+    "distance",
 ];
 const OPTIONS: &[&str] = &["k", "recall", "max_edits", "weights", "mode", "from"];
 
@@ -92,7 +97,6 @@ fn leaf() -> impl Strategy<Value = Expr3> {
         3 => pick(VARS).prop_map(Expr3::Variable),
         3 => (pick(VARS), pick(PROPS)).prop_map(|(variable, property)| Expr3::Prop { variable, property }),
         1 => (pick(VARS), Just("@id".to_string())).prop_map(|(variable, property)| Expr3::Prop { variable, property }),
-        1 => pick(IDENTS).prop_map(Expr3::Ident),
     ]
 }
 
@@ -165,7 +169,13 @@ fn call(depth: u32) -> BoxedStrategy<Call3> {
     (
         pick(CALLS),
         proptest::collection::vec(arg, 0..3),
-        proptest::collection::vec((pick(OPTIONS), expr(depth)), 0..2),
+        proptest::collection::vec(
+            (
+                pick(OPTIONS),
+                prop_oneof![4 => expr(depth), 1 => pick(IDENTS).prop_map(Expr3::Ident)],
+            ),
+            0..2,
+        ),
     )
         .prop_map(|(name, args, options)| Call3 {
             name,
@@ -265,9 +275,14 @@ fn clause(depth: u32) -> BoxedStrategy<Clause3> {
             // edge of a triple; it is never Boolean.
             .prop_filter("lone non-Boolean leaf", |e| !matches!(e,
                 Expr3::Ident(_) | Expr3::Meta(_) | Expr3::Literal(super::ast::Literal::String(_))))
-            .prop_filter("a lone product of two variables", |e| !matches!(e,
-                Expr3::Arith { op: ArithOp::Mul, left, right }
-                    if matches!(**left, Expr3::Variable(_)) && matches!(**right, Expr3::Variable(_))))
+            // ... and `not` over one is the brace-less `not` over that
+            // triple, refused (Q014); `not` of a number is never Boolean.
+            .prop_filter("a lone product of two variables", |e| {
+                let product = |e: &Expr3| matches!(e,
+                    Expr3::Arith { op: ArithOp::Mul, left, right }
+                        if matches!(**left, Expr3::Variable(_)) && matches!(**right, Expr3::Variable(_)));
+                !(product(e) || matches!(e, Expr3::Not(inner) if product(inner)))
+            })
             .prop_map(Clause3::Filter),
     ];
     if depth == 0 {
@@ -285,14 +300,36 @@ fn clause(depth: u32) -> BoxedStrategy<Clause3> {
     .boxed()
 }
 
+/// A lone-variable filter, then `from $b`, or a Boolean literal and another
+/// lone-variable filter, is refused (Q017): it is the shape of a triple over
+/// an edge named `from`, `let`, `true` or `false`, which are written quoted.
+fn bare_edge_shape(cs: &[Clause3]) -> bool {
+    let lone = |c: &Clause3| matches!(c, Clause3::Filter(Expr3::Variable(_)));
+    cs.windows(2)
+        .any(|w| lone(&w[0]) && matches!(w[1], Clause3::From(RelExpr3::Variable(_))))
+        || cs.windows(3).any(|w| {
+            lone(&w[0])
+                && matches!(
+                    w[1],
+                    Clause3::Filter(Expr3::Literal(super::ast::Literal::Bool(_)))
+                )
+                && lone(&w[2])
+        })
+}
+
 fn clauses(depth: u32, n: std::ops::Range<usize>) -> BoxedStrategy<Vec<Clause3>> {
-    proptest::collection::vec(clause(depth), n).boxed()
+    proptest::collection::vec(clause(depth), n)
+        .prop_filter("a bare-edge shape (Q017)", |cs| !bare_edge_shape(cs))
+        .boxed()
 }
 
 fn read_body(depth: u32) -> BoxedStrategy<ReadBody3> {
     let projection = (expr(depth.min(2)), proptest::option::of(pick(ALIASES)))
         .prop_map(|(expr, alias)| Projection3 { expr, alias });
-    let ordering = (expr(depth.min(1)), proptest::option::of(any::<bool>()))
+    let ordering = (
+        prop_oneof![4 => expr(depth.min(1)), 1 => pick(IDENTS).prop_map(Expr3::Ident)],
+        proptest::option::of(any::<bool>()),
+    )
         .prop_map(|(expr, descending)| Ordering3 { expr, descending });
     let limit = proptest::option::of(prop_oneof![
         (0u64..100).prop_map(Limit3::Literal),
@@ -328,13 +365,67 @@ fn decl() -> impl Strategy<Value = Decl3> {
             nullable,
             default: default.map(|(negative, value)| ParamDefault { negative, value }),
         });
-    (proptest::collection::vec(param, 0..3), read_body(3)).prop_map(|(params, body)| Decl3 {
-        name: "q".into(),
-        params,
-        annotations: Vec::new(),
-        write_mode: MutationWriteMode::Publish,
-        body: DeclBody3::Read(body),
-    })
+    let body = prop_oneof![
+        3 => read_body(3).prop_map(DeclBody3::Read),
+        1 => write_body().prop_map(DeclBody3::Write),
+    ];
+    (proptest::collection::vec(param, 0..3), body, any::<bool>()).prop_map(
+        |(params, body, commit)| Decl3 {
+            name: "q".into(),
+            params,
+            annotations: Vec::new(),
+            write_mode: if commit && matches!(body, DeclBody3::Write(_)) {
+                MutationWriteMode::AsCommit
+            } else {
+                MutationWriteMode::Publish
+            },
+            body,
+        },
+    )
+}
+
+fn statement() -> impl Strategy<Value = Stmt3> {
+    let value = prop_oneof![
+        4 => expr(1),
+        1 => Just(Expr3::Literal(Literal::Null)),
+    ];
+    let assignments = proptest::collection::vec(
+        (pick(PROPS), value).prop_map(|(property, value)| Assignment3 { property, value }),
+        1..3,
+    )
+    .boxed();
+    prop_oneof![
+        (pick(TYPES), assignments.clone()).prop_map(|(type_name, assignments)| Stmt3::Insert {
+            type_name,
+            assignments
+        }),
+        (pick(VARS), assignments).prop_map(|(variable, assignments)| Stmt3::Update {
+            variable,
+            assignments
+        }),
+        pick(VARS).prop_map(|variable| Stmt3::Delete { variable }),
+    ]
+}
+
+/// Write groups. A group after the first has at least one clause: two
+/// adjacent groups with no clause between them print as one group with more
+/// statements (G7 in the report).
+fn write_body() -> BoxedStrategy<WriteBody3> {
+    let group = |min: usize| {
+        (
+            clauses(1, min..3),
+            proptest::collection::vec(statement(), 1..3),
+        )
+            .prop_map(|(clauses, statements)| WriteGroup3 {
+                clauses,
+                statements,
+            })
+    };
+    (group(0), proptest::collection::vec(group(1), 0..2))
+        .prop_map(|(first, rest)| WriteBody3 {
+            groups: std::iter::once(first).chain(rest).collect(),
+        })
+        .boxed()
 }
 
 fn style() -> impl Strategy<Value = Style> {

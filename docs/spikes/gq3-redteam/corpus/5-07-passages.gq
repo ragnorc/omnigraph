@@ -3,12 +3,13 @@
 // expect: accept
 // rfc: §6
 // later: core spike F9: two node columns in the population
+// amended: the ranked column is a property access and `l2` is `distance` (RFC §3, 2026-11-08)
 query passages($matter: String, $q: String, $k: I64 = 5) {
   match {
     from bm25(
       { match { $r: SourceRevision { matter_number: $matter }  $r hasPassage $p  contains($p.text, "tariff") }
         return { $r, $p } },
-      text, $q)
+      $p.text, $q)
   }
   return { $r.path, $p.locator, $score }
   order { $score desc }

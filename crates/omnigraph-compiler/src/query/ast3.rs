@@ -123,6 +123,28 @@ pub enum Limit3 {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct WriteBody3 {
+    /// One or more groups: each a run of clauses, then the statements that
+    /// write over its rows (RFC section 2, the write groups).
+    pub groups: Vec<WriteGroup3>,
+}
+
+impl WriteBody3 {
+    /// Every group's clauses, in order.
+    pub fn all_clauses(&self) -> Vec<&Clause3> {
+        self.groups.iter().flat_map(|g| g.clauses.iter()).collect()
+    }
+
+    /// Every group's statements, in order.
+    pub fn all_statements(&self) -> Vec<&Stmt3> {
+        self.groups
+            .iter()
+            .flat_map(|g| g.statements.iter())
+            .collect()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WriteGroup3 {
     pub clauses: Vec<Clause3>,
     pub statements: Vec<Stmt3>,
 }
