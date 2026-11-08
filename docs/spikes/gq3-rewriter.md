@@ -6,9 +6,11 @@ assets (`2026-11-07-gq-3-before-and-after.md`, `2026-11-07-gq-3-grammar-comparis
 **Earlier spike reused:** `spike/gq3-1202` (`docs/spikes/gq3-1202.md`): the idea of
 byte-range edits over the edition-2 parse and a corpus harness, rewritten here because
 that rewriter worked on pest pairs and targeted the withdrawn `retrieve` rows.
-**Edition-3 parser:** `spike/gq3-parser` did not exist on the fork at any point of this
-run (`git ls-remote fork` listed only `spike/gq3-1202`), so no rewritten text was
-compiled under `gq 3;`. What could be proved without it is listed per finding.
+**Edition-3 parser:** `spike/gq3-parser` appeared on the fork near the end of this run
+(`0162a330`). Every rewritten text was parsed with it, and the rewrites its bridge can
+lower were compared in typed IR (finding 18); it has no type checker for `from`, `let`
+or `$x`-statements, so rows 5 to 9 are proved by parse, by the confinement and residue
+checks, and (rows 8 and 9) by the engine, not by typed IR.
 
 ## (a) Findings
 
@@ -206,7 +208,26 @@ schema; with it, every `contains` in the corpus resolved, including an edge alte
 whose members agree (`$e:(knows | likes)`). **Proposal:** make the schema a required
 input of `queries migrate`, not an option.
 
-**18. Byte-range edits over the edition-2 AST work, with two additions to the AST.** The
+**18. Every rewritten text parses under the edition-3 parser, and rows 1 to 4 keep
+their typed IR.** Run with `spike/gq3-parser` `0162a330`: its `parse_query3` over all
+4,018 parseable texts (`gq3-rewriter/gq3_rewriter_check.rs.txt`, added as
+`crates/omnigraph-compiler/tests/` on a worktree of that branch, fed
+[`gq3-rewriter/corpus.jsonl`](gq3-rewriter/corpus.jsonl); results in
+[`gq3-rewriter/edition3_parse_summary.txt`](gq3-rewriter/edition3_parse_summary.txt)):
+**599 of 599 fully rewritten sources parse**, covering every rewritten construct of every
+row (`nearest` 111, `bm25` 39, `rrf` 28, `delete` 106, `update` 254, the four expression
+rows 82); the 3,369 untouched sources parse with the edition line; of the 50 sources
+with a refusal, 22 parse (their refused construct is legal syntax that edition 3 refuses
+by type, such as duplicate `rrf` arms) and 28 do not, all of them finding 1's
+multi-statement writes, which that parser's `where` recognizer refuses with `Q008`.
+Through its bridge into the edition-2 tree (which lowers only nodes edition 2 has, and
+refuses `from`, `let` and the `$x` statements with `T60`), **48 declarations whose
+rewrite uses only rows 1 to 4 compile to typed IR equal to the original's, 0 differ**
+(`contains()`, `starts_with()`, `in`, `max_edits:`). The two branches also agree on the
+write fix: that parser's `where` recognizer prints `$x: WorksAt  $x.@src = $h  delete $x`
+for `delete WorksAt where @src = $h`, the rewriter's text.
+
+**19. Byte-range edits over the edition-2 AST work, with two additions to the AST.** The
 span side table (`DeclSpans`) leaves `Expr` and every parse result unchanged; two
 facts were needed that pest does not give: the positions of the literal keywords `set`
 and `where` (found by skipping trivia from the token before), and trailing whitespace,
@@ -216,7 +237,7 @@ once, every edit confined to its construct, no edition-2 spelling left where not
 was refused; idempotent (the edition line makes a second run a no-op, and the residue
 scan shows it would find nothing). The RFC is right that layout and comments survive.
 
-**19. Doc fragments carry edition-2 spellings the tool cannot reach.** Section 6:
+**20. Doc fragments carry edition-2 spellings the tool cannot reach.** Section 6:
 "The bundled skill, the user guide and the GQT corpus are edition 3 in the release
 that ships it". 10 fenced `gq` blocks under `docs/` and `skills/omnigraph` are not
 whole files (a lone `match { … }`, a statement list, `return … order … limit` without
@@ -229,7 +250,7 @@ declaration, rewrite, unwrap), or name these blocks as hand edits in the release
 checklist; the skill is exported byte-for-byte, so a stale block is a user-facing
 bug (`AGENTS.md`).
 
-**20. How often each spelling is used.** Declarations using each spelling (rewritten or
+**21. How often each spelling is used.** Declarations using each spelling (rewritten or
 refused), over all stored texts: infix `contains` 35, `starts_with` 25, list
 `contains` 18, positional `fuzzy` 4, `nearest` 112, `bm25` 40,
 `rrf` 46, `delete … where` 108, `update … where` 280. Of 3,231
@@ -247,7 +268,7 @@ and the doc blocks whose page has no ```pg block; only `contains` needs one, and
 those texts holds a `contains`. The doc and skill rows marked "refused by today's type
 checker" are blocks checked against a schema block of their page that does not
 describe them, not expect-error steps. The 11 doc and skill texts that do not parse
-under edition 2 are 10 fragments (finding 19) and `docs/user/queries/catalogue.gq`,
+under edition 2 are 10 fragments (finding 20) and `docs/user/queries/catalogue.gq`,
 which holds schema declarations.
 
 | | benchmarks | docs | gqt cases | skill | total |
@@ -358,8 +379,9 @@ which holds schema declarations.
 | The rewriter | `crates/omnigraph-compiler/src/migrate/mod.rs` | `migrate(source, catalog) -> Migration`: parses under edition 2, builds byte-range edits per row, applies the outermost edits highest offset first, prepends `gq 3;`. A replacement is literal text plus source ranges it copies (`Src`, carrying the edits nested in the range, or `Raw`, verbatim), so a moved predicate keeps its own rewrites and nothing is re-printed. Refusals and notes are typed per declaration. |
 | Proof per source | same module | `Proof`: the outermost edits never overlap; every edit is rendered exactly once (none lost in a deleted range, none duplicated by a copy); every edit and every range it copies lies inside the construct it names, and its literal text uses only the row's vocabulary, names the construct holds and the variables it generated; no edition-2 spelling of a row survives (a lexical residue scan). `apply_rows_in_edition_2` and `typed_ir` give the typed-IR comparison for the one row whose output edition 2 parses. `write_selections` builds, for a single-statement write, the edition-2 read of the rewrite's clauses. |
 | Unit tests | `crates/omnigraph-compiler/src/migrate/tests.rs` | 19 tests: each row, comments and layout, bare-key direction, aliases, fresh names, refusals, block-local variables, aggregates, the proof's own negative cases. |
-| Corpus run | `crates/omnigraph-compiler/src/migrate/corpus_tests.rs` | Every query text in `crates/omnigraph-gqt/cases/**/*.gqt` (`--- query`, `--- mutate`, `--- concurrent` sessions) and `benchmarks/**/*.gqt`, every fenced `gq` block and `.gq` file under `docs/` and `skills/omnigraph`. Fails on any proof failure or `in` IR difference. Writes `target/spike-gq3-rewriter/{summary.md,corpus.tsv,rewrites.md}`; copies are in [`gq3-rewriter/`](gq3-rewriter/). |
+| Corpus run | `crates/omnigraph-compiler/src/migrate/corpus_tests.rs` | Every query text in `crates/omnigraph-gqt/cases/**/*.gqt` (`--- query`, `--- mutate`, `--- concurrent` sessions) and `benchmarks/**/*.gqt`, every fenced `gq` block and `.gq` file under `docs/` and `skills/omnigraph`. Fails on any proof failure or `in` IR difference. Writes `target/spike-gq3-rewriter/{summary.md,corpus.tsv,rewrites.md,corpus.jsonl}`; copies are in [`gq3-rewriter/`](gq3-rewriter/). |
 | Write-row check on the engine | `crates/omnigraph-gqt/tests/gq3_write_rows.rs` | Replays each case's main-branch mutate steps on its fixture; before each single-statement `delete`/`update … where`, runs the edition-2 read of `$x: T  φ′` on main, runs the statement on a fresh branch, and compares the ids a delete removes, or the affected count and changed rows of an update, with that selection. Fails on any disagreement. Writes `target/spike-gq3-rewriter/write_rows.tsv`. |
+| Edition-3 cross-check | [`gq3-rewriter/gq3_rewriter_check.rs.txt`](gq3-rewriter/gq3_rewriter_check.rs.txt), run on a worktree of `spike/gq3-parser` | Parses every rewritten text of `corpus.jsonl` (written by the corpus run, with each text's schema) with that branch's `parse_query3`, and compares typed IR through its bridge where the bridge can lower the rewrite. Not committed to either branch's code: it needs both. |
 | CLI | `omnigraph queries migrate [--schema S.pg] [--write] [--json] FILE…` (`crates/omnigraph-cli/src/commands/control/mod.rs`, `run_queries_migrate`) | Offline: prints the edition-3 text with the refusals, notes and proof failures as comments, or replaces each file whose rewrite has no refusal. Exits 1 when any source is refused. Registered as CLI-only (`omnigraph-api-types` operations inventory) and in the skill's command index. |
 
 Run:
@@ -368,6 +390,11 @@ Run:
 cargo test -p omnigraph-compiler --lib migrate::                      # unit tests + corpus table (add -- --nocapture to print it)
 cargo test -p omnigraph-gqt --test gq3_write_rows -- --nocapture       # the write rows against the engine
 cargo run -p omnigraph-cli --bin omnigraph -- queries migrate --schema schema.pg queries.gq
+
+# edition-3 cross-check, from a worktree of spike/gq3-parser outside this checkout
+cp docs/spikes/gq3-rewriter/gq3_rewriter_check.rs.txt <wt>/crates/omnigraph-compiler/tests/gq3_rewriter_check.rs
+cd <wt>/crates/omnigraph-compiler && GQ3_CORPUS=<this>/target/spike-gq3-rewriter/corpus.jsonl GQ3_OUT=/tmp \
+  cargo test --test gq3_rewriter_check -- --nocapture
 ```
 
 ### Test runs
@@ -396,11 +423,9 @@ cargo run -p omnigraph-cli --bin omnigraph -- queries migrate --schema schema.pg
 
 ## (c) What I did not get to
 
-- **Compiling the rewrites under `gq 3;`.** `spike/gq3-parser` never appeared on the
-  fork during the run. Every claim that a rewrite *parses* or *type-checks* in edition 3,
-  and the RFC's typed-IR proof for rows 1, 2, 4 to 9, is therefore unproved here. The
-  rewriter's output for the whole corpus is in [`gq3-rewriter/rewrites.md`](gq3-rewriter/rewrites.md),
-  ready to feed to that parser.
+- **Type-checking the ranking and write rewrites in edition 3.** They parse under
+  `spike/gq3-parser` (finding 18), but that branch's bridge refuses `from`, `let` and the
+  `$x` statements, so the RFC's typed-IR proof for rows 5 to 9 is unproved here.
 - **The `rrf` rows-equality proof.** It needs an edition-3 executor; the corpus cases
   that exercise the row are listed in finding 16.
 - **The edition-2 boot rewrite, `cluster plan` output, and `queries migrate --target`.**

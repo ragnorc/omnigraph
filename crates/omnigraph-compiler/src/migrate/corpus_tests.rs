@@ -24,6 +24,8 @@ pub(crate) struct Source {
     pub origin: String,
     pub text: String,
     pub catalogs: Vec<Rc<Catalog>>,
+    /// The schema text of each catalog, index for index.
+    pub schemas: Vec<String>,
 }
 
 pub(crate) fn root() -> PathBuf {
@@ -37,9 +39,10 @@ fn collect(dir: &Path, ext: &str, out: &mut Vec<PathBuf>) {
     for entry in entries.flatten() {
         let path = entry.path();
         if path.is_dir() {
+            // This spike's own artifacts quote every rewritten text.
             if path
                 .file_name()
-                .is_some_and(|n| n == "target" || n == "node_modules")
+                .is_some_and(|n| n == "target" || n == "node_modules" || n == "gq3-rewriter")
             {
                 continue;
             }
@@ -80,12 +83,20 @@ pub(crate) fn gqt_sources(group: &'static str, dir: &Path, out: &mut Vec<Source>
                 body.push_str(line);
             }
         }
-        let catalogs: Vec<Rc<Catalog>> = sections
+        let schema_text = sections
             .iter()
             .find(|(h, _)| h.trim() == "schema")
-            .and_then(|(_, s)| catalog_of(s))
+            .map(|(_, s)| s.clone());
+        let catalogs: Vec<Rc<Catalog>> = schema_text
+            .as_deref()
+            .and_then(catalog_of)
             .into_iter()
             .collect();
+        let schemas: Vec<String> = if catalogs.is_empty() {
+            Vec::new()
+        } else {
+            schema_text.into_iter().collect()
+        };
         let name = rel(&f);
         for (i, (header, body)) in sections.iter().enumerate() {
             let kind = header.split_whitespace().next().unwrap_or("");
@@ -95,6 +106,7 @@ pub(crate) fn gqt_sources(group: &'static str, dir: &Path, out: &mut Vec<Source>
                     origin: format!("{name}#{i}:{kind}"),
                     text: body.trim_end_matches('\n').to_string() + "\n",
                     catalogs: catalogs.clone(),
+                    schemas: schemas.clone(),
                 }),
                 "concurrent" => {
                     for (j, line) in body.lines().enumerate() {
@@ -107,6 +119,7 @@ pub(crate) fn gqt_sources(group: &'static str, dir: &Path, out: &mut Vec<Source>
                                 origin: format!("{name}#{i}.{j}:concurrent"),
                                 text: query.to_string(),
                                 catalogs: catalogs.clone(),
+                                schemas: schemas.clone(),
                             });
                         }
                     }
@@ -156,11 +169,19 @@ pub(crate) fn doc_sources(group: &'static str, dir: &Path, out: &mut Vec<Source>
             .filter(|(l, _)| l == "pg")
             .map(|(_, b)| b.as_str())
             .collect();
-        let mut catalogs: Vec<Rc<Catalog>> = schemas.iter().filter_map(|s| catalog_of(s)).collect();
+        let mut catalogs: Vec<Rc<Catalog>> = Vec::new();
+        let mut schema_texts: Vec<String> = Vec::new();
+        for text in &schemas {
+            if let Some(c) = catalog_of(text) {
+                catalogs.push(c);
+                schema_texts.push(text.to_string());
+            }
+        }
         if schemas.len() > 1
             && let Some(all) = catalog_of(&schemas.join("\n"))
         {
             catalogs.push(all);
+            schema_texts.push(schemas.join("\n"));
         }
         let name = rel(&f);
         for (n, (lang, body)) in blocks.iter().enumerate() {
@@ -170,6 +191,7 @@ pub(crate) fn doc_sources(group: &'static str, dir: &Path, out: &mut Vec<Source>
                     origin: format!("{name}#{n}"),
                     text: body.clone(),
                     catalogs: catalogs.clone(),
+                    schemas: schema_texts.clone(),
                 });
             }
         }
@@ -183,6 +205,7 @@ pub(crate) fn doc_sources(group: &'static str, dir: &Path, out: &mut Vec<Source>
             origin: rel(&f),
             text: std::fs::read_to_string(&f).unwrap(),
             catalogs: Vec::new(),
+            schemas: Vec::new(),
         });
     }
 }
@@ -202,23 +225,22 @@ pub(crate) fn all_sources() -> Vec<Source> {
 
 /// The catalog the declarations of `text` type-check against, the first
 /// that admits every declaration; else the first one; else none.
-fn pick_catalog<'a>(text: &str, catalogs: &'a [Rc<Catalog>]) -> Option<&'a Catalog> {
+fn pick_catalog(text: &str, catalogs: &[Rc<Catalog>]) -> Option<usize> {
     if catalogs.len() <= 1 {
-        return catalogs.first().map(|c| c.as_ref());
+        return (!catalogs.is_empty()).then_some(0);
     }
     let file = parse_query_diagnostic(text).ok()?;
     let FileBody::Queries(decls) = &file.body else {
-        return catalogs.first().map(|c| c.as_ref());
+        return Some(0);
     };
     catalogs
         .iter()
-        .find(|c| {
+        .position(|c| {
             decls
                 .iter()
                 .all(|d| crate::query::typecheck::typecheck_query_decl(c, d).is_ok())
         })
-        .or(catalogs.first())
-        .map(|c| c.as_ref())
+        .or(Some(0))
 }
 
 #[derive(Default)]
@@ -303,6 +325,7 @@ fn whole_corpus_through_the_rewriter() {
     let mut tallies: BTreeMap<&'static str, Tally> = BTreeMap::new();
     let mut tsv = vec!["group\torigin\toutcome\tdetail".to_string()];
     let mut rewrites = String::new();
+    let mut export: Vec<String> = Vec::new();
     let mut failures = Vec::new();
     for s in &sources {
         let t = tallies.entry(s.group).or_default();
@@ -327,7 +350,9 @@ fn whole_corpus_through_the_rewriter() {
         if decl_count == 0 {
             t.statements += 1;
         }
-        let catalog = pick_catalog(&s.text, &s.catalogs);
+        let picked = pick_catalog(&s.text, &s.catalogs);
+        let catalog = picked.map(|i| s.catalogs[i].as_ref());
+        let schema = picked.and_then(|i| s.schemas.get(i).cloned());
         let m: Migration = migrate(&s.text, catalog).expect("parsed above");
         // Idempotence: the output already carries the edition line, so a
         // second run is a no-op, and the residue check shows nothing is
@@ -456,6 +481,18 @@ fn whole_corpus_through_the_rewriter() {
             },
             rows.join(",")
         ));
+        export.push(
+            serde_json::json!({
+                "group": s.group,
+                "origin": s.origin,
+                "schema": schema,
+                "before": s.text,
+                "after": m.text,
+                "rows": m.decls.iter().flat_map(|d| d.rows.keys().map(|r| format!("{r:?}"))).collect::<BTreeSet<_>>(),
+                "refused": !m.refusals.is_empty(),
+            })
+            .to_string(),
+        );
         if !m.edits.is_empty() {
             let _ = writeln!(
                 rewrites,
@@ -475,6 +512,7 @@ fn whole_corpus_through_the_rewriter() {
     }
     std::fs::write(out_dir.join("corpus.tsv"), tsv.join("\n") + "\n").unwrap();
     std::fs::write(out_dir.join("rewrites.md"), rewrites).unwrap();
+    std::fs::write(out_dir.join("corpus.jsonl"), export.join("\n") + "\n").unwrap();
     let summary = summarize(&tallies);
     std::fs::write(out_dir.join("summary.md"), &summary).unwrap();
     println!("{summary}");

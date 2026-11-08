@@ -1,0 +1,107 @@
+//! Cross-spike check: every text the `spike/gq3-rewriter` rewriter wrote, parsed
+//! by this branch's edition-3 parser; where the edition-3 bridge lowers the
+//! rewrite into the edition-2 tree, its typed IR compared with the original's.
+//! Input: GQ3_CORPUS (JSONL from the rewriter's corpus run).
+
+use std::collections::BTreeMap;
+
+use omnigraph_compiler::catalog::build_catalog;
+use omnigraph_compiler::query::ast::{FileBody, QueryDecl};
+use omnigraph_compiler::query::parser::parse_query_diagnostic;
+use omnigraph_compiler::query::parser3::parse_query3;
+use omnigraph_compiler::query::typecheck::{CheckedQuery, typecheck_query_decl};
+use omnigraph_compiler::schema::parser::parse_schema;
+
+fn typed_ir(decl: &QueryDecl, catalog: &omnigraph_compiler::catalog::Catalog) -> Result<String, String> {
+    match typecheck_query_decl(catalog, decl).map_err(|e| e.to_string())? {
+        CheckedQuery::Read(read) => {
+            let ir = omnigraph_compiler::lower_query(catalog, &read).map_err(|e| e.to_string())?;
+            Ok(format!(
+                "{:?}|{:?}|{:?}|{:?}|{:?}|{:?}",
+                ir.params, ir.pipeline, ir.return_exprs, ir.distinct, ir.order_by, ir.limit
+            ))
+        }
+        CheckedQuery::Mutation(m) => omnigraph_compiler::lower_mutation_query(catalog, &m)
+            .map(|ir| format!("{ir:?}"))
+            .map_err(|e| e.to_string()),
+    }
+}
+
+fn decls(body: FileBody) -> Vec<QueryDecl> {
+    match body {
+        FileBody::Queries(d) => d,
+        FileBody::Explain(d) => vec![d],
+        _ => Vec::new(),
+    }
+}
+
+#[test]
+fn rewritten_corpus_under_the_edition_3_parser() {
+    let path = std::env::var("GQ3_CORPUS").expect("GQ3_CORPUS");
+    let out = std::env::var("GQ3_OUT").expect("GQ3_OUT");
+    let mut tally: BTreeMap<String, usize> = BTreeMap::new();
+    let mut rows: Vec<String> = vec!["origin\trows\toutcome\tdetail".into()];
+    let mut bump = |k: String| *tally.entry(k).or_default() += 1;
+    for line in std::fs::read_to_string(path).unwrap().lines() {
+        let v: serde_json::Value = serde_json::from_str(line).unwrap();
+        let origin = v["origin"].as_str().unwrap();
+        let after = v["after"].as_str().unwrap();
+        let before = v["before"].as_str().unwrap();
+        let refused = v["refused"].as_bool().unwrap();
+        let row_set: Vec<String> = v["rows"].as_array().unwrap().iter().map(|r| r.as_str().unwrap().to_string()).collect();
+        let rows_label = if row_set.is_empty() { "none".to_string() } else { row_set.join(",") };
+        let class = if refused { "with a refusal" } else if row_set.is_empty() { "untouched" } else { "rewritten" };
+        match parse_query3(after) {
+            Ok(_) => {
+                bump(format!("parse ok: {class}"));
+                for r in &row_set {
+                    bump(format!("parse ok, row {r}"));
+                }
+            }
+            Err(e) => {
+                bump(format!("parse refused: {class}"));
+                for r in &row_set {
+                    bump(format!("parse refused, row {r}"));
+                }
+                rows.push(format!("{origin}\t{rows_label}\tparse-refused\t{} {}", e.code, e.message.replace(['\n', '\t'], " ")));
+                continue;
+            }
+        }
+        // Typed IR through the bridge, where a schema exists and the rewrite is
+        // one edition 2 already has nodes for.
+        let Some(schema) = v["schema"].as_str() else { continue };
+        let Some(catalog) = parse_schema(schema).ok().and_then(|s| build_catalog(&s).ok()) else { continue };
+        if refused || row_set.is_empty() {
+            continue;
+        }
+        let new = match parse_query_diagnostic(after) {
+            Ok(f) => decls(f.body),
+            Err(e) => {
+                bump(format!("bridge refuses ({}): {rows_label}", e.code));
+                continue;
+            }
+        };
+        let old = match parse_query_diagnostic(before) {
+            Ok(f) => decls(f.body),
+            Err(_) => continue,
+        };
+        for o in &old {
+            let Some(n) = new.iter().find(|n| n.name == o.name) else { continue };
+            match (typed_ir(o, &catalog), typed_ir(n, &catalog)) {
+                (Ok(a), Ok(b)) if a == b => bump(format!("typed IR equal: {rows_label}")),
+                (Err(_), Err(_)) => bump(format!("both refused by the type checker: {rows_label}")),
+                (a, b) => {
+                    bump(format!("typed IR differs: {rows_label}"));
+                    rows.push(format!("{origin}\t{rows_label}\tir-differs\t{:?} / {:?}", a.err(), b.err()));
+                }
+            }
+        }
+    }
+    let mut summary = String::new();
+    for (k, n) in &tally {
+        summary.push_str(&format!("{n}\t{k}\n"));
+    }
+    std::fs::write(format!("{out}/edition3_parse.tsv"), rows.join("\n") + "\n").unwrap();
+    std::fs::write(format!("{out}/edition3_parse_summary.txt"), &summary).unwrap();
+    println!("{summary}");
+}

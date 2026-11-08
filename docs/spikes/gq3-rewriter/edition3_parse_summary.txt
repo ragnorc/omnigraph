@@ -1,0 +1,33 @@
+34	bridge refuses (T60): Bm25
+2	bridge refuses (T60): Bm25,InfixContains
+100	bridge refuses (T60): Delete
+1	bridge refuses (T60): Delete,InfixContains
+1	bridge refuses (T60): Delete,InfixStartsWith,ListContains
+3	bridge refuses (T60): InfixContains,Nearest
+1	bridge refuses (T60): InfixContains,Rrf
+1	bridge refuses (T60): InfixContains,Update
+1	bridge refuses (T60): InfixStartsWith,ListContains,Update
+3	bridge refuses (T60): InfixStartsWith,Nearest
+3	bridge refuses (T60): ListContains,Update
+95	bridge refuses (T60): Nearest
+23	bridge refuses (T60): Rrf
+238	bridge refuses (T60): Update
+39	parse ok, row Bm25
+106	parse ok, row Delete
+4	parse ok, row FuzzyMaxEdits
+35	parse ok, row InfixContains
+25	parse ok, row InfixStartsWith
+18	parse ok, row ListContains
+111	parse ok, row Nearest
+28	parse ok, row Rrf
+254	parse ok, row Update
+599	parse ok: rewritten
+3369	parse ok: untouched
+22	parse ok: with a refusal
+28	parse refused: with a refusal
+4	typed IR equal: FuzzyMaxEdits
+26	typed IR equal: InfixContains
+1	typed IR equal: InfixContains,ListContains
+5	typed IR equal: InfixStartsWith
+1	typed IR equal: InfixStartsWith,ListContains
+11	typed IR equal: ListContains
