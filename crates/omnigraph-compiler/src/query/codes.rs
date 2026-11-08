@@ -84,15 +84,32 @@ codes! {
     T57 = "distinct applies only to count";
     T58 = "a Boolean return item compares aggregates with constants only";
     T59 = "an rrf() ranks two bindings one traversal connects";
-    // SPIKE: the one placeholder for every edition-3 node the prototype's
-    // type checker does not check yet.
-    T60 = "an edition-3 construct is parsed but not yet type-checked";
+    // Edition 3 (SPIKE, RFC 2026-11-07-gq-3, section 5). T65, T68, T69 and
+    // T70 are the RFC's names; T71 to T79 are this prototype's allocation of
+    // the refusals section 5 states without a code. T60 was the parser
+    // spike's placeholder and is gone.
+    T65 = "a ranking is written as a call in order or return; it is a relation function";
+    T68 = "a name drawn into scope, or bound inside an inner read, is already in scope";
+    T69 = "a relation where a scalar is read, or a scalar where a relation is read";
+    T70 = "a call cycle is not monotone, passes a computed argument, or exceeds the plan budget";
+    T71 = "an option is unknown, out of range or written positionally";
+    T72 = "an arithmetic operand is not numeric";
+    T73 = "the arms of a union disagree on a column";
+    T74 = "a name is refused as a relation: a write, a registry shadow, or a column that is not variable-shaped";
+    T75 = "rrf arms are invalid: count, duplicates, unranked arms, two target columns, or weights";
+    T76 = "two effects of one write conflict, or a write mixes constructive and destructive statements";
+    T77 = "a statement's variable is not a bound node or edge reference";
+    T78 = "an endpoint assignment is neither a key of the endpoint type nor a bound reference of it";
+    T79 = "a ranking's column is not a node column of its population";
+    T80 = "an annotation is not one edition 3 reads, or names a later stage";
 
     // Planner. P001 and P005 are withdrawn: a ranking roots its traversal at
     // the binding it ranks, and `rrf()` arms one traversal connects are T59.
     P002 = "an edge alternation or wildcard traversal needs a finite traversal work limit";
     P003 = "the traversal work limit is out of range or recorded twice";
     P004 = "an edge alternation or wildcard traversal cannot run in CSR traversal mode";
+    // SPIKE (edition 3): the core IR's new nodes have no plan node yet.
+    P006 = "an edition-3 core node the planner does not lower yet";
 }
 
 #[cfg(test)]

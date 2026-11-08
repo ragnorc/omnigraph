@@ -413,29 +413,38 @@ fn projection(pair: Pair<Rule>) -> R<Projection3> {
 }
 
 fn write_body(pair: Pair<Rule>) -> R<WriteBody3> {
-    let mut clauses = Vec::new();
-    let mut statements = Vec::new();
+    let mut groups = Vec::new();
     for part in pair.into_inner() {
         match part.as_rule() {
-            Rule::clause3 => clauses.push(clause(part)?),
-            Rule::mutation_stmt3 => statements.push(statement(part)?),
+            Rule::write_group3 => {
+                let mut clauses = Vec::new();
+                let mut statements = Vec::new();
+                for p in part.into_inner() {
+                    match p.as_rule() {
+                        Rule::clause3 => clauses.push(clause(p)?),
+                        Rule::mutation_stmt3 => statements.push(statement(p)?),
+                        _ => {}
+                    }
+                }
+                groups.push(WriteGroup3 {
+                    clauses,
+                    statements,
+                });
+            }
             Rule::clause_after_stmt => {
                 return Err(diagnostic_at(
                     Q013,
-                    "a clause follows a statement; a write body is its clauses, then its statements",
+                    "a clause follows the last statement; every group of a write body ends with its statements",
                     &part,
                 )
                 .with_fix(
-                    "move every binding, traversal and filter above the first `insert`, `update` or `delete`",
+                    "move the binding, traversal or filter above the `insert`, `update` or `delete` it selects for",
                 ));
             }
             _ => {}
         }
     }
-    Ok(WriteBody3 {
-        clauses,
-        statements,
-    })
+    Ok(WriteBody3 { groups })
 }
 
 fn statement(pair: Pair<Rule>) -> R<Stmt3> {

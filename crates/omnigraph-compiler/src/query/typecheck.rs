@@ -2209,7 +2209,7 @@ fn typecheck_traversal(
     Ok(resolved)
 }
 
-fn resolve_traversal(
+pub(crate) fn resolve_traversal(
     catalog: &Catalog,
     traversal: &Traversal,
     bindings: &HashMap<String, BoundVariable>,
@@ -3999,7 +3999,7 @@ fn membership_over_a_node(
 
 /// The type of a literal payload, computed once per occurrence (list
 /// elements included) and retained on the typed node.
-fn literal_type(lit: &Literal) -> Result<PropType> {
+pub(crate) fn literal_type(lit: &Literal) -> Result<PropType> {
     visits::literal(lit);
     match lit {
         // Null is compatible with any nullable type; default to String for inference.
@@ -4062,7 +4062,7 @@ fn literal_type(lit: &Literal) -> Result<PropType> {
 /// A literal against the property it is assigned to or matched with;
 /// `lit_type` is the type the resolver computed for `lit`, so the payload
 /// is inspected here (null, vector width, enum values) but never typed again.
-fn check_literal_type(
+pub(crate) fn check_literal_type(
     lit: &Literal,
     lit_type: &PropType,
     expected: &PropType,
@@ -4148,14 +4148,14 @@ fn check_literal_type(
 
 /// `types_compatible`, plus a String parameter assigned to a Blob property
 /// (the blob's URI).
-fn assignment_compatible(actual: &PropType, expected: &PropType) -> bool {
+pub(crate) fn assignment_compatible(actual: &PropType, expected: &PropType) -> bool {
     types_compatible(actual, expected)
         || (matches!(expected.scalar, ScalarType::Blob)
             && matches!(actual.scalar, ScalarType::String)
             && !actual.list)
 }
 
-fn types_compatible(a: &PropType, b: &PropType) -> bool {
+pub(crate) fn types_compatible(a: &PropType, b: &PropType) -> bool {
     if a.list != b.list {
         return false;
     }

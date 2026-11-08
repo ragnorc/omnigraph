@@ -121,8 +121,16 @@ pub enum Limit3 {
     Param(String),
 }
 
+/// A write body: one or more groups (RFC section 2, sinks; section 3,
+/// writes fed by reads).
 #[derive(Debug, Clone, PartialEq)]
 pub struct WriteBody3 {
+    pub groups: Vec<WriteGroup3>,
+}
+
+/// One run of clauses and the statements over its relation.
+#[derive(Debug, Clone, PartialEq)]
+pub struct WriteGroup3 {
     pub clauses: Vec<Clause3>,
     pub statements: Vec<Stmt3>,
 }

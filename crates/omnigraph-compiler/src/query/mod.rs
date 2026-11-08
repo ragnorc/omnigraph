@@ -10,8 +10,13 @@ pub mod parser;
 pub mod parser3;
 pub mod print3;
 pub mod typecheck;
+pub mod typeck3;
 
 #[cfg(test)]
 mod parser3_proptest;
 #[cfg(test)]
 mod parser3_tests;
+#[cfg(test)]
+mod typeck3_tests;
+#[cfg(test)]
+mod desugar3_tests;

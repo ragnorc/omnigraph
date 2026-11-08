@@ -48,10 +48,26 @@ fn read(src: &str) -> ReadBody3 {
     }
 }
 
+/// A write body with its groups flattened, for the tests that predate the
+/// group rule and read every clause and statement of a one-group body.
+struct FlatWrite {
+    groups: usize,
+    clauses: Vec<Clause3>,
+    statements: Vec<Stmt3>,
+}
+
 #[track_caller]
-fn write(src: &str) -> WriteBody3 {
+fn write(src: &str) -> FlatWrite {
     match decl(src).body {
-        DeclBody3::Write(w) => w,
+        DeclBody3::Write(w) => FlatWrite {
+            groups: w.groups.len(),
+            clauses: w.groups.iter().flat_map(|g| g.clauses.clone()).collect(),
+            statements: w
+                .groups
+                .iter()
+                .flat_map(|g| g.statements.clone())
+                .collect(),
+        },
         other => panic!("not a write: {other:?}"),
     }
 }
@@ -685,6 +701,10 @@ fn as_commit_is_a_write_body_clause() {
 fn a_clause_after_a_statement_prints_the_order() {
     let e = err3("query w() { $p: Person  delete $p  $q: Person }");
     assert_eq!(e.code.as_str(), "Q013");
+    // A clause between two statements starts a second group (RFC
+    // 2026-11-08); only clauses after the last statement are refused.
+    let w = write("query w() { $p: Person  delete $p  $q: Company  delete $q }");
+    assert_eq!((w.groups, w.clauses.len(), w.statements.len()), (2, 2, 2));
     // Several statements after the clauses are fine.
     let w = write(
         "query close_company($slug: String) { $c: Company { slug: $slug }  $p $k:worksAt $c  delete $k  update $p set { city: null } }",
@@ -973,10 +993,9 @@ fn every_before_and_after_example_parses_in_its_edition() {
     for line in &report {
         eprintln!("{line}");
     }
-    // F3: the asset's `colleagues_of_colleagues` and `weighted` examples
-    // write an inline read without `match { }` (`{ from … return … }`),
-    // which `inline_read = "{" ~ read_body ~ "}"` refuses. F4: its
-    // edition-2 `retire` assigns `null`, which edition 2 refuses.
+    // F3 and F4 of the parser spike are fixed in the asset at `rfc/gq-3` of
+    // 2026-11-08 (the inner reads carry `match`, edition 2's `retire` no
+    // longer assigns `null`): every block parses in its edition.
     let blocks = asset_blocks();
     let name_of = |failure: &String| -> String {
         let n: usize = failure
@@ -996,16 +1015,7 @@ fn every_before_and_after_example_parses_in_its_edition() {
     };
     let mut failing: Vec<String> = failures.iter().map(name_of).collect();
     failing.sort();
-    assert_eq!(
-        failing,
-        vec![
-            "colleagues (edition 3)".to_string(),
-            "retire (edition 2)".to_string(),
-            "weighted (edition 3)".to_string(),
-        ],
-        "{}",
-        failures.join("\n")
-    );
+    assert_eq!(failing, Vec::<String>::new(), "{}", failures.join("\n"));
 }
 
 /// Every shared example, and every edition-2 example that is also legal
@@ -1258,7 +1268,7 @@ fn the_placeholder_refuses_every_new_node_once() {
         "query q() { match { $p: P } return { count { $p knows $q } as n } }",
     ] {
         let e = parse_query_diagnostic(&format!("gq 3;\n{src}")).unwrap_err();
-        assert_eq!(e.code.as_str(), codes::T60.as_str(), "{src}: {e:?}");
+        assert_eq!(e.code.as_str(), codes::P006.as_str(), "{src}: {e:?}");
     }
     // The edition-2 nodes lower and type-check as before.
     let f = parse_query_diagnostic(

@@ -385,8 +385,13 @@ arrow_close = { "->" | "-" }
 // mean the same after a traversal or binding, where it could not continue.
 filter3 = { !"-" ~ expr3 }
 
-// Write body (RFC section 7): a read's clauses, then statements.
-mutation_body3 = { (!stmt_keyword ~ clause3)* ~ mutation_stmt3+ ~ clause_after_stmt? }
+// Write body (RFC section 7, 2026-11-08): one or more groups, each a read's
+// clauses then statements; a later group sees the earlier groups' effects.
+// SPIKE (typeck): the parser spike predates the group rule and refused a
+// clause after a statement (Q013); a clause after the last statement, which
+// starts a group with no statement, still is.
+mutation_body3 = { write_group3+ ~ clause_after_stmt? }
+write_group3   = { (!stmt_keyword ~ clause3)* ~ mutation_stmt3+ }
 stmt_keyword   = @{ ("insert" | "update" | "delete") ~ !(ASCII_ALPHANUMERIC | "_") }
 // SPIKE-DEVIATION (F11): `where_stmt` is tried first and also takes a bound
 // variable, so `delete $x where φ` prints its fix instead of reading `where`

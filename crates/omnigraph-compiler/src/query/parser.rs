@@ -88,7 +88,8 @@ pub(crate) fn skip_trivia(mut input: &str) -> &str {
 /// SPIKE (RFC 2026-11-07-gq-3, section 6): a source that opens with `gq 3;`
 /// is read by the edition-3 front end and lowered into the edition-2 tree
 /// (`bridge3`), which refuses every node edition 2 has no form for with the
-/// placeholder `T60`; `gq 2;` selects this edition-2 grammar; any other
+/// planner code `P006` (the edition-3 type checker, `typeck3`, types them into
+/// the core IR); `gq 2;` selects this edition-2 grammar; any other
 /// edition is `Q006`. A source without the line is edition 2, unchanged.
 pub fn parse_query_diagnostic(input: &str) -> std::result::Result<QueryFile, QueryDiagnostic> {
     use super::parser3::EditionLine;

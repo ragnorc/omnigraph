@@ -1,30 +1,47 @@
-//! SPIKE: lower an edition-3 tree into the edition-2 tree the type checker
-//! reads.
+//! SPIKE: lower an edition-3 tree into the edition-2 tree the planner runs.
 //!
 //! The part of edition 3 that edition 2 already has a node for (bindings,
 //! triples, filters, the blocks as predicates, `return`, `order`, a literal
 //! `limit`, `insert`, the registry calls with an edition-2 node) lowers to
-//! that node, so the existing type checker checks it unchanged. Every other
-//! node (`let`, `from`, `optional`, arithmetic, a block as a value, a generic
-//! call, `limit $k`, a parameter default, a non-legacy annotation, clauses in
-//! a write, `update $x`, `delete $x`) is refused with the one placeholder code
-//! `T60`: type checking the new nodes is outside the prototype.
+//! that node, so the existing type checker, lowering and planner run it
+//! unchanged. Every other node has no edition-2 form: the edition-3 type
+//! checker (`typeck3`) types it into the core IR (`ir::core3`), which the
+//! planner does not lower yet, and this bridge reports it with `P006`.
+//! A ranking written as a scalar call is the RFC's `T65` and a positional
+//! option `T71`, both decided without the catalog.
 
 use super::ast::*;
 use super::ast3::*;
-use super::codes::T60;
+use super::codes::{P006, T65, T71};
 use super::diagnostic::QueryDiagnostic;
 
 type R<T> = std::result::Result<T, QueryDiagnostic>;
 
 fn placeholder(what: impl Into<String>) -> QueryDiagnostic {
     QueryDiagnostic::typecheck(
-        T60,
+        P006,
         format!(
-            "{} is edition-3 syntax this prototype parses but does not type-check",
+            "{} has no edition-2 plan node; it type-checks into the core IR, which the planner does not lower yet",
             what.into()
         ),
     )
+}
+
+/// The RFC's `T65`: a ranking written as a call in `order` or `return`.
+pub(crate) fn ranking_as_scalar(name: &str) -> QueryDiagnostic {
+    let fix = match name {
+        "nearest" => "from nearest(<population>, $x.field, $q, k: <limit>)  and  order { $distance }",
+        "bm25" => "from bm25(<population>, $x.field, $q)  and  order { $score desc }",
+        "rrf" => "from rrf(<arm>, <arm>, k: 60)  and  order { $score desc }",
+        _ => "from distance(<population>, $x.field, $q)  and  order { $distance }",
+    };
+    QueryDiagnostic::typecheck(
+        T65,
+        format!(
+            "`{name}` is a relation function in edition 3; a ranking is drawn with `from`, and its score is a column"
+        ),
+    )
+    .with_fix(fix)
 }
 
 pub fn lower_file(file: File3) -> R<QueryFile> {
@@ -126,10 +143,10 @@ pub fn lower_decl(decl: Decl3) -> R<QueryDecl> {
             };
         }
         DeclBody3::Write(body) => {
-            if !body.clauses.is_empty() {
+            if body.groups.iter().any(|g| !g.clauses.is_empty()) {
                 return Err(placeholder("a write body's clauses"));
             }
-            for s in body.statements {
+            for s in body.groups.into_iter().flat_map(|g| g.statements) {
                 out.mutations.push(match s {
                     Stmt3::Insert {
                         type_name,
@@ -360,15 +377,13 @@ fn lower_call(c: Call3, scope: Scope<'_>) -> R<Expr> {
                 max_edits: Some(Box::new(edits.clone())),
             }),
             ([_, _, _], []) => Err(QueryDiagnostic::typecheck(
-                T60,
+                T71,
                 "`fuzzy`'s edit budget is an option in edition 3".to_string(),
             )
             .with_fix("fuzzy(field, query, max_edits: n)")),
             _ => Err(placeholder("`fuzzy` with these arguments")),
         },
-        "nearest" | "bm25" | "rrf" | "l2" => Err(placeholder(format!(
-            "`{name}` (a relation function; RFC T65 when written as a scalar)"
-        ))),
+        "nearest" | "bm25" | "rrf" | "distance" => Err(ranking_as_scalar(&name)),
         _ => Err(placeholder(format!("the call `{name}(…)`"))),
     }
 }
