@@ -1,0 +1,12 @@
+// pair: a triple in schema order and reversed
+// covered: fmt
+// rfc: §6 fmt
+query q() {
+  match { $p worksAt $c }
+  return { $p.name }
+}
+// ---
+query q() {
+  match { $c worksAt $p }
+  return { $p.name }
+}

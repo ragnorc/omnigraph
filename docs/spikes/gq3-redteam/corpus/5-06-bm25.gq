@@ -1,0 +1,10 @@
+// task: documents ranked by BM25
+// kind: ranking-and-search
+// expect: accept
+// rfc: asset §5
+query q($q: String) {
+  match { from bm25({ match { $d: Doc } return { $d } }, body, $q) }
+  return { $d.title, $score as s }
+  order { $score desc }
+  limit 10
+}

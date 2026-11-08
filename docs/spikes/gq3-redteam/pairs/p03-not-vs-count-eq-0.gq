@@ -1,0 +1,12 @@
+// pair: not { p } against count { p } = 0
+// covered: fmt
+// rfc: §6 fmt; core spike F14
+query q() {
+  match { $p: Person  not { $p knows $q } }
+  return { $p.name }
+}
+// ---
+query q() {
+  match { $p: Person  count { $p knows $q } = 0 }
+  return { $p.name }
+}

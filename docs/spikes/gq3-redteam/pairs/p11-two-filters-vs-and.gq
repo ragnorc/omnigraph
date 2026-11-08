@@ -1,0 +1,12 @@
+// pair: two filter clauses against one conjunction
+// covered: none
+// rfc: §2 Filter
+query q() {
+  match { $p: Person  $p.age >= 18  $p.age < 65 }
+  return { $p.name }
+}
+// ---
+query q() {
+  match { $p: Person  $p.age >= 18 and $p.age < 65 }
+  return { $p.name }
+}

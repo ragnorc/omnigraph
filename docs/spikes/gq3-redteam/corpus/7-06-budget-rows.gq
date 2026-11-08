@@ -1,0 +1,9 @@
+// task: @budget with rows and on_exceed (retained until stage N)
+// kind: catalogue-and-declarations
+// expect: accept
+// rfc: §6 freeze list
+// note: parser spike F13: a later stage gives this accepted text a meaning
+query bounded() @budget(rows = 1000, on_exceed = refuse) {
+  match { $p: Person }
+  return { $p.handle }
+}

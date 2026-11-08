@@ -1,0 +1,15 @@
+// task: a window scoped by a collection, then a traversal, the RFC's §8 text
+// kind: ranking-and-search
+// expect: accept
+// rfc: §8
+query cited_near($coll: String, $q: Vector(3)) {
+  match {
+    from nearest(
+      { match { $d "in" $x  $x: Collection { slug: $coll } } return { $d } },
+      embedding, $q, k: 20
+    )
+    $d cites $other
+  }
+  return { $d.title, $distance, count($other) as cites }
+  order { $distance }
+}

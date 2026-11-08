@@ -1,0 +1,17 @@
+// task: the asset's colleagues_of_colleagues, inner read without match
+// kind: shapes-of-a-result
+// expect: accept
+// rfc: asset §4
+// note: parser spike F3 and core spike F2 report the missing match; it is still in the asset
+query colleagues($of: String) {
+  match { $p: Person { handle: $of }  $p worksAt $c  $q worksAt $c  $q != $p }
+  return { $q }
+}
+
+query colleagues_of_colleagues($of: String) {
+  match {
+    from colleagues($of)
+    from { from colleagues($q.handle) return { $q as r } }
+  }
+  return distinct { $r.name }
+}

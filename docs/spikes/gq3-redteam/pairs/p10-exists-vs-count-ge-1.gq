@@ -1,0 +1,12 @@
+// pair: exists { p } against count { p } >= 1
+// covered: none
+// rfc: §6 fmt lists only `> 0`
+query q() {
+  match { $p: Person  exists { $p knows $q } }
+  return { $p.name }
+}
+// ---
+query q() {
+  match { $p: Person  count { $p knows $q } >= 1 }
+  return { $p.name }
+}

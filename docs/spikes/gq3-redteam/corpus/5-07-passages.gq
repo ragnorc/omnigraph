@@ -1,0 +1,16 @@
+// task: the RFC's §6 passages example
+// kind: ranking-and-search
+// expect: accept
+// rfc: §6
+// later: core spike F9: two node columns in the population
+query passages($matter: String, $q: String, $k: I64 = 5) {
+  match {
+    from bm25(
+      { match { $r: SourceRevision { matter_number: $matter }  $r hasPassage $p  contains($p.text, "tariff") }
+        return { $r, $p } },
+      text, $q)
+  }
+  return { $r.path, $p.locator, $score }
+  order { $score desc }
+  limit $k
+}

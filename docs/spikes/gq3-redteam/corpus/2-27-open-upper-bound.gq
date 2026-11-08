@@ -1,0 +1,9 @@
+// task: unbounded reachability as an open hop range `knows{1,}`
+// kind: traversal
+// expect: refuse
+// rfc: §2 Expand: an open upper bound is a later change
+// note: additive later; must be refused now with a message that does not pretend it exists
+query q() {
+  match { $a: Person  $a knows{1,} $b }
+  return { $b.name }
+}

@@ -1,0 +1,14 @@
+// pair: limit 10 against limit $k with $k = 10
+// covered: a6
+// rfc: A6
+query q() {
+  match { $p: Person }
+  return { $p.name }
+  limit 10
+}
+// ---
+query q($k: I64 = 10) {
+  match { $p: Person }
+  return { $p.name }
+  limit $k
+}

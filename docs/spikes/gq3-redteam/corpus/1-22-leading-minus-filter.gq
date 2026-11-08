@@ -1,0 +1,9 @@
+// task: a filter that begins with a negative literal, `-1 < $x`
+// kind: lookups-and-filters
+// expect: accept
+// rfc: §3 arithmetic; parser spike F5
+// note: nothing in the RFC refuses a filter that begins with `-`
+query q() {
+  match { $p: Person  let $x = $p.age  -1 < $x }
+  return { $p.name }
+}

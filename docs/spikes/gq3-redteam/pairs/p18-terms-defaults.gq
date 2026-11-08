@@ -1,0 +1,12 @@
+// pair: terms with its defaults omitted or written
+// covered: none
+// rfc: §4 the lexical query
+query q($q: String) {
+  match { $d: Doc  match_terms($d.body, terms($q)) }
+  return { $d.title }
+}
+// ---
+query q($q: String) {
+  match { $d: Doc  match_terms($d.body, terms($q, mode: all, max_edits: 0)) }
+  return { $d.title }
+}

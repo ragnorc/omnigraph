@@ -1,0 +1,12 @@
+// pair: a property equality in the braces or as a filter clause
+// covered: fmt
+// rfc: §6 queries fmt
+query q($h: String) {
+  match { $p: Person { handle: $h } }
+  return { $p.name }
+}
+// ---
+query q($h: String) {
+  match { $p: Person  $p.handle = $h }
+  return { $p.name }
+}

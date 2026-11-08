@@ -1050,7 +1050,9 @@ fn collect(dir: &std::path::Path, ext: &str, out: &mut Vec<std::path::PathBuf>) 
         if path.is_dir() {
             if path
                 .file_name()
-                .is_some_and(|n| n == "target" || n == ".git")
+                // The red-team corpus is edition-3 text with its own runner
+                // (`parser3_redteam`), not edition-2 text.
+                .is_some_and(|n| n == "target" || n == ".git" || n == "gq3-redteam")
             {
                 continue;
             }

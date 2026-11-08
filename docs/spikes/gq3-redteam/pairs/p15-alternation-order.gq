@@ -1,0 +1,12 @@
+// pair: an alternation in two orders
+// covered: none
+// rfc: §2 derived forms: (e1 | e2) is a Union
+query q() {
+  match { $p (knows | worksAt) $q }
+  return { $p.name }
+}
+// ---
+query q() {
+  match { $p (worksAt | knows) $q }
+  return { $p.name }
+}

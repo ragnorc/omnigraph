@@ -1,0 +1,9 @@
+// task: `$n -1`, which the RFC says is one subtraction
+// kind: lookups-and-filters
+// expect: accept
+// rfc: §3 arithmetic: `$n -1` and `$n - 1` are one subtraction
+// shape: $p: Person | let $n = $p.age | $n - 1 > 0
+query q() {
+  match { $p: Person  let $n = $p.age  $n -1 > 0 }
+  return { $p.name }
+}

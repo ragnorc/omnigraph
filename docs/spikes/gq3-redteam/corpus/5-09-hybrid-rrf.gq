@@ -1,0 +1,13 @@
+// task: hybrid fused ranking with a named population
+// kind: ranking-and-search
+// expect: accept
+// rfc: asset §5
+query hybrid($q: String, $v: Vector(3)) {
+  match {
+    let $docs = { match { $d: Doc } return { $d } }
+    from rrf(nearest($docs, embedding, $v, k: 50), bm25($docs, body, $q), k: 60)
+  }
+  return { $d.title, $score }
+  order { $score desc }
+  limit 10
+}

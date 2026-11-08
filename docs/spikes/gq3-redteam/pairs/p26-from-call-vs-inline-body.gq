@@ -1,0 +1,22 @@
+// pair: a declared read called, against its body written inline
+// covered: none
+// rfc: §2 Call is inlined
+query friends($h: String) {
+  match { $p: Person { handle: $h }  $p knows $q }
+  return { $q }
+}
+
+query q($h: String) {
+  match { from friends($h) }
+  return { $q.name }
+}
+// ---
+query friends($h: String) {
+  match { $p: Person { handle: $h }  $p knows $q }
+  return { $q }
+}
+
+query q($h: String) {
+  match { from { match { $p: Person { handle: $h }  $p knows $q } return { $q } } }
+  return { $q.name }
+}

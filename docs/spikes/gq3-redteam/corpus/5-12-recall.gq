@@ -1,0 +1,8 @@
+// task: a declared recall on nearest
+// kind: ranking-and-search
+// expect: accept
+// rfc: §3 relation expressions
+query q($q: Vector(3)) {
+  match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 20, recall: 0.9) }
+  return { $d.title, $distance }
+}

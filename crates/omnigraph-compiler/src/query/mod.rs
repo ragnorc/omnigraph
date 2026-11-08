@@ -14,4 +14,6 @@ pub mod typecheck;
 #[cfg(test)]
 mod parser3_proptest;
 #[cfg(test)]
+mod parser3_redteam;
+#[cfg(test)]
 mod parser3_tests;

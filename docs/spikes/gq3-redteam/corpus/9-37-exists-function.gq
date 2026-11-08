@@ -1,0 +1,9 @@
+// task: exists() as a property test
+// kind: adversarial
+// expect: accept
+// habit: Cypher
+// later: unknown function; the fix is `$p.city is not null`
+query q() {
+  match { $p: Person  exists($p.city) }
+  return { $p.name }
+}

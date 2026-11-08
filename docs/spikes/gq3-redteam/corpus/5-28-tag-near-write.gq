@@ -1,0 +1,8 @@
+// task: a write whose targets come from a ranked read
+// kind: ranking-and-search
+// expect: accept
+// rfc: asset §6
+query tag_near($q: Vector(3)) {
+  from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 20)
+  update $d set { tags: ["near"] }
+}

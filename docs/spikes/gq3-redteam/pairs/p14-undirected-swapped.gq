@@ -1,0 +1,12 @@
+// pair: an undirected triple with its ends swapped
+// covered: none
+// rfc: §2 derived forms: <e> is the union of the orientations
+query q() {
+  match { $p: Person  $p <knows> $q }
+  return { $p.name }
+}
+// ---
+query q() {
+  match { $p: Person  $q <knows> $p }
+  return { $p.name }
+}

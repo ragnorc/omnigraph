@@ -1,0 +1,12 @@
+// pair: a binding before or after the traversal that uses it
+// covered: none
+// rfc: §2 derived forms: composed in dependency order; core spike F17
+query q() {
+  match { $p: Person  $p knows $q }
+  return { $p.name }
+}
+// ---
+query q() {
+  match { $p knows $q  $p: Person }
+  return { $p.name }
+}

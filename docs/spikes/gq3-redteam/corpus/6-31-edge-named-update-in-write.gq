@@ -1,0 +1,9 @@
+// task: a write traversing an edge named update
+// kind: writes
+// expect: accept
+// rfc: §7 stmt_keyword
+// shape: $p: Person | $p update $q
+query w() {
+  $p: Person  $p update $q
+  delete $q
+}

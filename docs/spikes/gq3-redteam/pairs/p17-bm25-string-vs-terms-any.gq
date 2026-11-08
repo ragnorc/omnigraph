@@ -1,0 +1,12 @@
+// pair: bm25 over a String against bm25 over terms(q, mode: any)
+// covered: none
+// rfc: §4: a String means terms(q, mode: any)
+query q($q: String) {
+  match { from bm25({ match { $d: Doc } return { $d } }, body, $q) }
+  return { $d.title }
+}
+// ---
+query q($q: String) {
+  match { from bm25({ match { $d: Doc } return { $d } }, body, terms($q, mode: any)) }
+  return { $d.title }
+}

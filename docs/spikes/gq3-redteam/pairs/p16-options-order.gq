@@ -1,0 +1,12 @@
+// pair: nearest's options in two orders
+// covered: none
+// rfc: §3 relation expressions
+query q($q: Vector(3)) {
+  match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 20, recall: 0.9) }
+  return { $d.title }
+}
+// ---
+query q($q: Vector(3)) {
+  match { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, recall: 0.9, k: 20) }
+  return { $d.title }
+}

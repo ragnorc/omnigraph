@@ -1,0 +1,8 @@
+// task: an unknown annotation retained as metadata
+// kind: catalogue-and-declarations
+// expect: accept
+// rfc: §5: an unknown annotation is retained
+query q() @owner("search-team") {
+  match { $p: Person }
+  return { $p.name }
+}

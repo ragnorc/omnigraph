@@ -1,0 +1,12 @@
+// pair: let $r = rel then from $r against from rel
+// covered: a6
+// rfc: A6
+query q() {
+  match { let $r = { match { $p: Person } return { $p } }  from $r }
+  return { $p.name }
+}
+// ---
+query q() {
+  match { from { match { $p: Person } return { $p } } }
+  return { $p.name }
+}

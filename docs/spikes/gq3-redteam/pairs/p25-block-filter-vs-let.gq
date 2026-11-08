@@ -1,0 +1,12 @@
+// pair: a block compared inline against a let then a filter (rows equal; core terms differ by a Project)
+// covered: none
+// rfc: §2 derived forms: let is a Project
+query q() {
+  match { $p: Person  count { $p knows $q } > 2 }
+  return { $p.name }
+}
+// ---
+query q() {
+  match { $p: Person  let $n = count { $p knows $q }  $n > 2 }
+  return { $p.name }
+}

@@ -1,0 +1,79 @@
+refusals: 154
+  generic Q001 (grammar rule names, no fix): 109
+  no fix printed: 118
+  fix printed: 36
+    applied literally, parses with the expected meaning: 22
+    applied literally, parses but changes meaning: 5
+    applied literally, does not parse: 9
+    no construct span to apply it to: 0
+
+6-12-clause-after-statement: Q013 `a clause follows a statement; a write body is its clauses, then its statements`
+  fix: Some("move every binding, traversal and filter above the first `insert`, `update` or `delete`")
+  verdict: fix does not parse (Q001)
+  repaired: // task: a binding written after its statement // kind: writes // expect: refuse-with-fix:$p: Person { handle: $h } delete $p // rfc: §5: a statement before a clause … prints the order query w($h: String) { delete $p move every binding, traversal and filter above the first `insert`, `update` or `delete`}
+
+6-14-as-commit-on-read: Q011 ``as commit` applies to a write; the body of `q` ends in `return`, so it is a read with no statement to commit`
+  fix: Some("remove `as commit`, or end the body in `insert`, `update` or `delete`")
+  verdict: fix does not parse (Q001)
+  repaired: // task: as commit on a read body // kind: writes // expect: refuse-with-fix:<empty> // rfc: §5: a type error naming the missing sink query q() remove `as commit`, or end the body in `insert`, `update` or `delete` { match { $p: Person } return { $p.name } }
+
+6-34-where-fix-captures-param: Q008 ``delete Person … where …` is edition 2's form; in edition 3 a statement names a bound variable and the clauses select its rows`
+  fix: Some("$x: Person  $x.handle = $x  delete $x")
+  verdict: fix changes meaning
+  repaired: // task: edition 2's delete whose parameter is named $x, the name the fix binds // kind: writes // expect: refuse-with-fix:$p: Person $p.handle = $x delete $p // rfc: §6 rewriter row: `$x: T φ′ delete $x` // note: the fixed binding name collides with the parameter query w($x: String) { $x: Person $x.handle = $x delete $x}
+
+6-35-where-fix-bare-in-assignment: Q008 ``update Person … where …` is edition 2's form; in edition 3 a statement names a bound variable and the clauses select its rows`
+  fix: Some("$x: Person  $x.age > 3  update $x set { name: handle }")
+  verdict: fix changes meaning
+  repaired: // task: an update by predicate whose assignment reads another property bare // kind: writes // expect: refuse-with-fix:$x: Person $x.age > 3 update $x set { name: $x.handle } // rfc: §6 rewriter row; §3: assignments read `$x.prop` query w() { $x: Person $x.age > 3 update $x set { name: handle }}
+
+9-13-unwind: Q012 ``unwind … as $x` is not GQ: `let` names one value and `from` draws rows from a relation; a list has no row form`
+  fix: Some("`from <relation>` for rows, or `$x in $list` against a binding")
+  verdict: fix does not parse (Q001)
+  repaired: // task: unwind a list // kind: adversarial // expect: refuse-with-fix:$x in $list // habit: Cypher // rfc: §3 refused respellings query q($list: [String]) { match { `from <relation>` for rows, or `$x in $list` against a binding $p: Person { city: $x } } return { $p.name } }
+
+9-14-for-in-list: Q012 ``for $x in …` is not GQ: `let` names one value and `from` draws rows from a relation; a list has no row form`
+  fix: Some("`from <relation>` for rows, or `$x in $list` against a binding")
+  verdict: fix does not parse (Q001)
+  repaired: // task: for over a list // kind: adversarial // expect: refuse-with-fix:$x in $list // habit: GQL // rfc: §3 refused respellings query q($list: [String]) { match { `from <relation>` for rows, or `$x in $list` against a binding$p: Person { city: $x } } return { $p.name } }
+
+9-16-let-in-relation: Q012 ``let … in …` is not GQ: `let` names one value and `from` draws rows from a relation; a list has no row form`
+  fix: Some("`from <relation>` for rows, or `$x in $list` against a binding")
+  verdict: fix does not parse (Q001)
+  repaired: // task: PR 1244's let … in // kind: adversarial // expect: refuse-with-fix:from { match { $p: Person } return { $p } } // habit: GQ edition 2 // rfc: §3 refused respellings query q() { match { `from <relation>` for rows, or `$x in $list` against a binding } return { $x.name } }
+
+9-17-let-tuple-in: Q012 ``let … in …` is not GQ: `let` names one value and `from` draws rows from a relation; a list has no row form`
+  fix: Some("`from <relation>` for rows, or `$x in $list` against a binding")
+  verdict: fix does not parse (Q001)
+  repaired: // task: positional destructuring // kind: adversarial // expect: refuse-with-fix:from { match { $p worksAt $c } return { $p, $c } } // habit: GQ edition 2 // rfc: §3 refused respellings query q() { match { `from <relation>` for rows, or `$x in $list` against a binding } return { $a.name } }
+
+9-19-case-lower: Q012 ``CASE` is not GQ: a conditional is the registry call `if``
+  fix: Some("if(condition, then, else)")
+  verdict: fix changes meaning
+  repaired: // task: a lowercase case expression // kind: adversarial // expect: refuse-with-fix:if($p.age > 65, "senior", "active") // habit: Cypher // rfc: §3 refused respellings query q() { match { $p: Person } return { $p.name, if(condition, then, else) when $p.age > 65 then "senior" else "active" end as band } }
+
+9-20-concat-bars: Q012 ``||` is not an operator: concatenation is the registry call `concat``
+  fix: Some("concat(a, b)")
+  verdict: fix changes meaning
+  repaired: // task: string concatenation with || // kind: adversarial // expect: refuse-with-fix:concat($p.name, " ", $p.handle) // habit: SQL // rfc: §3 refused respellings query q() { match { $p: Person } return { concat(a, b)as label } }
+
+9-25-infix-contains-list: Q012 ``contains` is a function in edition 3, called with its operands`
+  fix: Some("contains($d.tags, \"rust\")")
+  verdict: fix changes meaning
+  repaired: // task: edition 2's list contains // kind: adversarial // expect: refuse-with-fix:"rust" in $d.tags // habit: GQ edition 2 // rfc: §6 rewriter row: list contains → in query q() { match { $d: Doc contains($d.tags, "rust")} return { $d.title } }
+
+9-73-brace-comparison-two: Q010 `the braces of a binding hold `property: value` matches; `city: "Berlin", age > 30` is a comparison`
+  fix: Some("$p: Person  $p.city: \"Berlin\", age > 30")
+  verdict: fix does not parse (Q001)
+  repaired: // task: an equality and a comparison inside binding braces // kind: adversarial // expect: refuse-with-fix:$p: Person { city: "Berlin" } $p.age > 30 // habit: Cypher // rfc: §3 refused respellings query q() { match { $p: Person $p.city: "Berlin", age > 30 } return { $p.name } }
+
+9-74-brace-colon-comparison: Q010 `the braces of a binding hold `property: value` matches; `age: > 30` is a comparison`
+  fix: Some("$p: Person  $p.age: > 30")
+  verdict: fix does not parse (Q001)
+  repaired: // task: `age: > 30` inside braces // kind: adversarial // expect: refuse-with-fix:$p: Person $p.age > 30 // habit: GraphQL query q() { match { $p: Person $p.age: > 30 } return { $p.name } }
+
+9-92-numbered-param: Q010 `the braces of a binding hold `property: value` matches; `handle: $1` is a comparison`
+  fix: Some("$p: Person  $p.handle: $1")
+  verdict: fix does not parse (Q001)
+  repaired: // task: a numbered parameter // kind: adversarial // expect: refuse // habit: Cypher query q() { match { $p: Person $p.handle: $1 } return { $p.name } }
+

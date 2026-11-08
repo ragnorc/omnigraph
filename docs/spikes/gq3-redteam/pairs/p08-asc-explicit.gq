@@ -1,0 +1,14 @@
+// pair: order with asc written or omitted
+// covered: none
+// rfc: §3 Kept: order
+query q() {
+  match { $p: Person }
+  return { $p.name }
+  order { $p.age asc }
+}
+// ---
+query q() {
+  match { $p: Person }
+  return { $p.name }
+  order { $p.age }
+}

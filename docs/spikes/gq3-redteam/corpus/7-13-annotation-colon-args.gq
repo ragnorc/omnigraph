@@ -1,0 +1,8 @@
+// task: @budget written with call-style `:` options
+// kind: catalogue-and-declarations
+// expect: refuse-with-fix:@budget(rows = 1000)
+// rfc: §6 freeze list; parser spike F12
+query q() @budget(rows: 1000) {
+  match { $p: Person }
+  return { $p.name }
+}

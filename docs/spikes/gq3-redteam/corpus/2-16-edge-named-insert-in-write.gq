@@ -1,0 +1,9 @@
+// task: a write whose clause traverses an edge named `insert`
+// kind: traversal
+// expect: accept
+// rfc: §7 stmt_keyword
+// shape: $a: Person | $a insert $b
+query w() {
+  $a: Person  $a insert $b
+  delete $b
+}

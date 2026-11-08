@@ -1,0 +1,12 @@
+// pair: optional { p } against its derived union: not a pair, the null padding has no read spelling
+// covered: n/a
+// rfc: §2 derived forms: optional
+query q() {
+  match { $p: Person  optional { $p worksAt $c } }
+  return { $p.name }
+}
+// ---
+query q() {
+  match { from union({ match { $p: Person  $p worksAt $c } return { $p, $c } }, { match { $p: Person  not { $p worksAt $c } } return { $p, $c } }) }
+  return { $p.name }
+}

@@ -1,0 +1,8 @@
+// task: an option written before a positional argument
+// kind: ranking-and-search
+// expect: refuse
+// rfc: §6 freeze list: name(positional…, option: value…)
+query q($q: Vector(3)) {
+  match { from nearest({ match { $d: Doc } return { $d } }, k: 20, embedding, $q) }
+  return { $d.title }
+}

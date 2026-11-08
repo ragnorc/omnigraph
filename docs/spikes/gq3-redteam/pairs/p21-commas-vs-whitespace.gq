@@ -1,0 +1,12 @@
+// pair: return items with commas or with whitespace
+// covered: same-tree
+// rfc: §3 Kept
+query q() {
+  match { $p: Person }
+  return { $p.name, $p.city }
+}
+// ---
+query q() {
+  match { $p: Person }
+  return { $p.name  $p.city }
+}

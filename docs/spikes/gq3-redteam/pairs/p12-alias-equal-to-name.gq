@@ -1,0 +1,12 @@
+// pair: an inner return item aliased to its own name
+// covered: none
+// rfc: §3 from: columns by name
+query q() {
+  match { from { match { $p: Person } return { $p } } }
+  return { $p.name }
+}
+// ---
+query q() {
+  match { from { match { $p: Person } return { $p as p } } }
+  return { $p.name }
+}

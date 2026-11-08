@@ -1,0 +1,12 @@
+// pair: a single hop written bare or as {1,1}
+// covered: none
+// rfc: §2 Expand: the single hop is m = n = 1
+query q() {
+  match { $p knows $q }
+  return { $p.name }
+}
+// ---
+query q() {
+  match { $p knows{1,1} $q }
+  return { $p.name }
+}

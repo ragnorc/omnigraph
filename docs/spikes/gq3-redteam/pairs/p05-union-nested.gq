@@ -1,0 +1,12 @@
+// pair: union(a, b, c) against union(union(a, b), c)
+// covered: none
+// rfc: §3 union folded from the left; core spike F14
+query q() {
+  match { from union({ match { $p: Person } return { $p } }, { match { $p: Person } return { $p } }, { match { $p: Person } return { $p } }) }
+  return { $p.name }
+}
+// ---
+query q() {
+  match { from union(union({ match { $p: Person } return { $p } }, { match { $p: Person } return { $p } }), { match { $p: Person } return { $p } }) }
+  return { $p.name }
+}

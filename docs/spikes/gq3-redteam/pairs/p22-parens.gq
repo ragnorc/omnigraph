@@ -1,0 +1,12 @@
+// pair: redundant parentheses
+// covered: same-tree
+// rfc: §7 operand
+query q() {
+  match { $p: Person  $p.age > 3 }
+  return { $p.name }
+}
+// ---
+query q() {
+  match { $p: Person  ($p.age > 3) }
+  return { $p.name }
+}

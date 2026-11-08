@@ -1,0 +1,8 @@
+// task: an optional from that keeps targets an arm missed
+// kind: shapes-of-a-result
+// expect: accept
+// rfc: §4 Fusion: optional { from … }
+query q($q: Vector(3)) {
+  match { $d: Doc  optional { from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 5) } }
+  return { $d.title, $distance }
+}

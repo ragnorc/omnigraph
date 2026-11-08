@@ -1,0 +1,16 @@
+// pair: two write statements in two orders
+// covered: none
+// rfc: §3 Writes: every sink sees one snapshot
+query w($h: String) {
+  $p: Person { handle: $h }
+  $p $k:worksAt $c
+  delete $k
+  update $p set { city: null }
+}
+// ---
+query w($h: String) {
+  $p: Person { handle: $h }
+  $p $k:worksAt $c
+  update $p set { city: null }
+  delete $k
+}

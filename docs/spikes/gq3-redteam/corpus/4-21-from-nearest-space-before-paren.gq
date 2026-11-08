@@ -1,0 +1,9 @@
+// task: a from over nearest with a space before the parenthesis
+// kind: shapes-of-a-result
+// expect: accept
+// rfc: §7 from lookahead
+// shape: from nearest({ match { $d: Doc } return { $d } }, embedding, $q, k: 5)
+query q($q: Vector(3)) {
+  match { from nearest ({ match { $d: Doc } return { $d } }, embedding, $q, k: 5) }
+  return { $d.title }
+}

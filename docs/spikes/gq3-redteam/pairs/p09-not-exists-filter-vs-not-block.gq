@@ -1,0 +1,12 @@
+// pair: not { p } against the filter not exists { p }
+// covered: none
+// rfc: §2 derived forms: not { p } is Filter(¬ exists { p })
+query q() {
+  match { $p: Person  not { $p knows $q } }
+  return { $p.name }
+}
+// ---
+query q() {
+  match { $p: Person  not exists { $p knows $q } }
+  return { $p.name }
+}
