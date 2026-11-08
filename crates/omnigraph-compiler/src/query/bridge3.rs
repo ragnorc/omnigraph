@@ -30,7 +30,9 @@ fn placeholder(what: impl Into<String>) -> QueryDiagnostic {
 /// The RFC's `T65`: a ranking written as a call in `order` or `return`.
 pub(crate) fn ranking_as_scalar(name: &str) -> QueryDiagnostic {
     let fix = match name {
-        "nearest" => "from nearest(<population>, $x.field, $q, k: <limit>)  and  order { $distance }",
+        "nearest" => {
+            "from nearest(<population>, $x.field, $q, k: <limit>)  and  order { $distance }"
+        }
         "bm25" => "from bm25(<population>, $x.field, $q)  and  order { $score desc }",
         "rrf" => "from rrf(<arm>, <arm>, k: 60)  and  order { $score desc }",
         _ => "from distance(<population>, $x.field, $q)  and  order { $distance }",

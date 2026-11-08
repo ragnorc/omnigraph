@@ -62,11 +62,7 @@ fn write(src: &str) -> FlatWrite {
         DeclBody3::Write(w) => FlatWrite {
             groups: w.groups.len(),
             clauses: w.groups.iter().flat_map(|g| g.clauses.clone()).collect(),
-            statements: w
-                .groups
-                .iter()
-                .flat_map(|g| g.statements.clone())
-                .collect(),
+            statements: w.groups.iter().flat_map(|g| g.statements.clone()).collect(),
         },
         other => panic!("not a write: {other:?}"),
     }

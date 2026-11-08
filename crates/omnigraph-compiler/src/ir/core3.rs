@@ -29,8 +29,14 @@ pub enum Ty {
     Value(PropType),
     /// A node reference; `type_name` may name an interface (a polymorphic
     /// column).
-    Node { type_name: String, nullable: bool },
-    Edge { type_name: String, nullable: bool },
+    Node {
+        type_name: String,
+        nullable: bool,
+    },
+    Edge {
+        type_name: String,
+        nullable: bool,
+    },
 }
 
 impl Ty {
@@ -547,7 +553,7 @@ pub struct CoreWrite {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum CoreDecl {
-    Read(CoreRead),
+    Read(Box<CoreRead>),
     Write(CoreWrite),
 }
 

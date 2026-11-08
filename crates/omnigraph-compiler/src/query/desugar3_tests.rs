@@ -31,7 +31,8 @@ fn catalog() -> Catalog {
 
 #[track_caller]
 fn lower(src: &str) -> CoreDecl {
-    let out = compile3(&catalog(), &format!("gq 3;\n{src}")).unwrap_or_else(|e| panic!("{e}\n{src}"));
+    let out =
+        compile3(&catalog(), &format!("gq 3;\n{src}")).unwrap_or_else(|e| panic!("{e}\n{src}"));
     out.into_iter()
         .last()
         .unwrap()
@@ -62,7 +63,10 @@ fn term(c: &CoreDecl) -> &Term {
 /// `Project(Cut?(Order?(Extend(R, items))), items)`.
 fn match_term(c: &CoreDecl) -> &Term {
     let mut t = term(c);
-    if let Term::Project { input, keep: false, .. } = t {
+    if let Term::Project {
+        input, keep: false, ..
+    } = t
+    {
         t = input;
     }
     if let Term::Cut { input, .. } = t {
@@ -72,7 +76,10 @@ fn match_term(c: &CoreDecl) -> &Term {
         t = input;
     }
     match t {
-        Term::Project { input, keep: true, .. } | Term::Group { input, .. } => input,
+        Term::Project {
+            input, keep: true, ..
+        }
+        | Term::Group { input, .. } => input,
         other => other,
     }
 }
@@ -179,7 +186,11 @@ fn block(r: Term, inner: Term, c: &str) -> Term {
     )
 }
 fn exists(c: &str) -> SExpr {
-    cmp(CompOp::Gt, col(c, val(ScalarType::I64, false)), int(0, ScalarType::I64))
+    cmp(
+        CompOp::Gt,
+        col(c, val(ScalarType::I64, false)),
+        int(0, ScalarType::I64),
+    )
 }
 fn inline_ret(input: Term, cols: &[(&str, Ty)]) -> Term {
     Term::Project {
@@ -204,7 +215,13 @@ fn age() -> Ty {
     Ty::Value(PropType::scalar(ScalarType::I32, true))
 }
 fn knows_q_from_env() -> Term {
-    expand(env(&[("p", node("Person"))]), "p", "q", "Person", &[("Knows", Direction::Out)])
+    expand(
+        env(&[("p", node("Person"))]),
+        "p",
+        "q",
+        "Person",
+        &[("Knows", Direction::Out)],
+    )
 }
 
 /// Section 2's derived-forms table, row by row: each surface form lowers to
@@ -212,12 +229,23 @@ fn knows_q_from_env() -> Term {
 #[test]
 fn every_surface_form_lowers_to_the_term_the_table_names() {
     use CompOp::*;
-    let p_knows_q = || expand(scan("p", "Person"), "p", "q", "Person", &[("Knows", Direction::Out)]);
+    let p_knows_q = || {
+        expand(
+            scan("p", "Person"),
+            "p",
+            "q",
+            "Person",
+            &[("Knows", Direction::Out)],
+        )
+    };
     let rows: Vec<(&str, &str, Term)> = vec![
         (
             "match { … }: binders in written order, a filter after the last variable it names",
             "query f() { match { $p: Person  $q.age > 3  $p knows $q } return { $q } }",
-            filter(p_knows_q(), cmp(Gt, prop("q", "age", age()), int(3, ScalarType::I32))),
+            filter(
+                p_knows_q(),
+                cmp(Gt, prop("q", "age", age()), int(3, ScalarType::I32)),
+            ),
         ),
         (
             "count { p } as a value: Correlate(R, Group(p, [], [agg])), the aggregate column",
@@ -231,24 +259,40 @@ fn every_surface_form_lowers_to_the_term_the_table_names() {
         (
             "exists { p }: count { p } > 0",
             "query f() { match { $p: Person  exists { $p knows $q } } return { $p } }",
-            filter(block(scan("p", "Person"), knows_q_from_env(), "_b1"), exists("_b1")),
+            filter(
+                block(scan("p", "Person"), knows_q_from_env(), "_b1"),
+                exists("_b1"),
+            ),
         ),
         (
             "not { p }: Filter(¬ exists { p })",
             "query f() { match { $p: Person  not { $p knows $q } } return { $p } }",
-            filter(block(scan("p", "Person"), knows_q_from_env(), "_b1"), not(exists("_b1"))),
+            filter(
+                block(scan("p", "Person"), knows_q_from_env(), "_b1"),
+                not(exists("_b1")),
+            ),
         ),
         (
             "optional { p }: Union(Correlate(R, p), Project(Filter(R, ¬ exists p), nulls))",
             "query f() { match { $p: Person  optional { $p worksAt $c } } return { $p, $c } }",
             {
                 let works = || {
-                    expand(env(&[("p", node("Person"))]), "p", "c", "Company", &[("WorksAt", Direction::Out)])
+                    expand(
+                        env(&[("p", node("Person"))]),
+                        "p",
+                        "c",
+                        "Company",
+                        &[("WorksAt", Direction::Out)],
+                    )
                 };
                 Term::Union {
                     left: corr(scan("p", "Person"), works()).boxed(),
                     right: Term::Project {
-                        input: filter(block(scan("p", "Person"), works(), "_opt"), not(exists("_opt"))).boxed(),
+                        input: filter(
+                            block(scan("p", "Person"), works(), "_opt"),
+                            not(exists("_opt")),
+                        )
+                        .boxed(),
                         items: vec![
                             ("p".into(), col("p", node("Person"))),
                             (
@@ -287,7 +331,13 @@ fn every_surface_form_lowers_to_the_term_the_table_names() {
         (
             "$a <e> $b: one Expand whose selector holds both orientations",
             "query f() { match { $p: Person  $p <knows> $q } return { $q } }",
-            expand(scan("p", "Person"), "p", "q", "Person", &[("Knows", Direction::Both)]),
+            expand(
+                scan("p", "Person"),
+                "p",
+                "q",
+                "Person",
+                &[("Knows", Direction::Both)],
+            ),
         ),
         (
             "$k: E: Scan over the edge type",
@@ -312,7 +362,10 @@ fn every_surface_form_lowers_to_the_term_the_table_names() {
         (
             "from rel: Correlate",
             "query f() { match { $p: Person  from { match { $c: Company } return { $c } } } return { $p, $c } }",
-            corr(scan("p", "Person"), inline_ret(scan("c", "Company"), &[("c", node("Company"))])),
+            corr(
+                scan("p", "Person"),
+                inline_ret(scan("c", "Company"), &[("c", node("Company"))]),
+            ),
         ),
         (
             "union(rel, rel, …): Union, folded from the left",
@@ -393,7 +446,9 @@ fn every_surface_form_lowers_to_the_term_the_table_names() {
 
     // `return { … }`, `order`, `limit`:
     // Project(Cut(Order(Extend(R, items), keys), k), items).
-    let got = lower("query f() { match { $p: Person } return { $p.name } order { $p.age desc } limit 3 }");
+    let got = lower(
+        "query f() { match { $p: Person } return { $p.name } order { $p.age desc } limit 3 }",
+    );
     let name = val(ScalarType::String, false);
     let want = Term::Project {
         input: Term::Cut {
@@ -424,21 +479,31 @@ fn every_surface_form_lowers_to_the_term_the_table_names() {
     let got = lower(
         "query f($s: String, $v: Vector(3)) { match { let $docs = { match { $d: Doc } return { $d } }  from rrf(nearest($docs, $d.embedding, $v, k: 5), bm25($docs, $d.body, $s)) } return { $d } }",
     );
-    assert!(matches!(match_term(&got), Term::Fuse { arms, k: 60, weights, .. } if arms.len() == 2 && weights == &vec![1.0, 1.0]));
-    let got = lower("query g($h: String) { match { $p: Person { handle: $h } } return { $p } }\nquery f() { match { from g(\"a\") } return { $p } }");
+    assert!(
+        matches!(match_term(&got), Term::Fuse { arms, k: 60, weights, .. } if arms.len() == 2 && weights == &vec![1.0, 1.0])
+    );
+    let got = lower(
+        "query g($h: String) { match { $p: Person { handle: $h } } return { $p } }\nquery f() { match { from g(\"a\") } return { $p } }",
+    );
     assert!(matches!(match_term(&got), Term::Call { name, .. } if name == "g"));
     let got = lower(super::typeck3_tests::REACHABLE);
     assert!(matches!(term(&got), Term::Fix { .. }));
     // A write body: one group per run of clauses and statements, the clauses'
     // term then one sink per statement.
-    let got = lower("query w($h: String) { $p: Person { handle: $h }  update $p set { city: null }  $c: Company { slug: $h }  update $c set { name: $h } }");
+    let got = lower(
+        "query w($h: String) { $p: Person { handle: $h }  update $p set { city: null }  $c: Company { slug: $h }  update $c set { name: $h } }",
+    );
     let CoreDecl::Write(w) = &got else { panic!() };
     assert_eq!(w.groups.len(), 2);
     assert_eq!(
         w.groups[0].input,
         filter(
             scan("p", "Person"),
-            cmp(Eq, prop("p", "handle", name_ty()), SExpr::new(SKind::Param("h".into()), name_ty()))
+            cmp(
+                Eq,
+                prop("p", "handle", name_ty()),
+                SExpr::new(SKind::Param("h".into()), name_ty())
+            )
         )
     );
     // Edition 2's `delete T where φ`, as the rewriter writes it:
@@ -447,7 +512,10 @@ fn every_surface_form_lowers_to_the_term_the_table_names() {
     let CoreDecl::Write(w) = &got else { panic!() };
     assert_eq!(
         w.groups[0].input,
-        filter(scan("x", "Person"), cmp(Gt, prop("x", "age", age()), int(3, ScalarType::I32)))
+        filter(
+            scan("x", "Person"),
+            cmp(Gt, prop("x", "age", age()), int(3, ScalarType::I32))
+        )
     );
     assert!(matches!(&w.groups[0].sinks[0], Sink::Delete { var, .. } if var == "x"));
 }
@@ -459,47 +527,161 @@ fn name_ty() -> Ty {
 /// The forms of section 3, each a declaration; `meaning` groups the forms a
 /// reader would call one query.
 const FORMS: &[(&str, &str)] = &[
-    ("braces", "query f($h: String) { match { $p: Person { handle: $h } } return { $p } }"),
-    ("braces_as_filter", "query f($h: String) { match { $p: Person  $p.handle = $h } return { $p } }"),
+    (
+        "braces",
+        "query f($h: String) { match { $p: Person { handle: $h } } return { $p } }",
+    ),
+    (
+        "braces_as_filter",
+        "query f($h: String) { match { $p: Person  $p.handle = $h } return { $p } }",
+    ),
     // With neither end typed, the written order is the schema order (as
     // today): `$c worksAt $p` alone makes `$c` the Person. The reversal the
     // formatter rewrites is of a triple whose ends are typed.
-    ("triple_schema_order", "query f() { match { $c: Company  $p worksAt $c } return { $p, $c } }"),
-    ("triple_reversed", "query f() { match { $c: Company  $c worksAt $p } return { $p, $c } }"),
-    ("exists", "query f() { match { $p: Person  exists { $p knows $q } } return { $p } }"),
-    ("count_gt_0", "query f() { match { $p: Person  count { $p knows $q } > 0 } return { $p } }"),
-    ("count_ge_1", "query f() { match { $p: Person  count { $p knows $q } >= 1 } return { $p } }"),
-    ("not_block", "query f() { match { $p: Person  not { $p knows $q } } return { $p } }"),
-    ("not_exists_filter", "query f() { match { $p: Person  not exists { $p knows $q } } return { $p } }"),
-    ("count_eq_0", "query f() { match { $p: Person  count { $p knows $q } = 0 } return { $p } }"),
-    ("union_flat", "query f() { match { from union({ match { $c: Company } return { $c } }, { match { $d: Company } return { $d as c } }, { match { $e: Company } return { $e as c } }) } return { $c } }"),
-    ("union_nested", "query f() { match { from union(union({ match { $c: Company } return { $c } }, { match { $d: Company } return { $d as c } }), { match { $e: Company } return { $e as c } }) } return { $c } }"),
-    ("alternation", "query f() { match { $p: Person  $p (knows | likes) $q } return { $q } }"),
-    ("alternation_reordered", "query f() { match { $p: Person  $p (likes | knows) $q } return { $q } }"),
-    ("undirected", "query f() { match { $p: Person  $p <knows> $q } return { $q } }"),
-    ("undirected_ends_swapped", "query f() { match { $p: Person  $q <knows> $p } return { $q } }"),
-    ("order_asc", "query f() { match { $p: Person } return { $p } order { $p.age asc } }"),
-    ("order_default", "query f() { match { $p: Person } return { $p } order { $p.age } }"),
-    ("alias_same_name", "query f() { match { $p: Person } return { $p as p } }"),
-    ("no_alias", "query f() { match { $p: Person } return { $p } }"),
-    ("and_one_clause", "query f() { match { $p: Person  $p.age > 3 and $p.city = \"x\" } return { $p } }"),
-    ("and_two_clauses", "query f() { match { $p: Person  $p.age > 3  $p.city = \"x\" } return { $p } }"),
-    ("bm25_string", "query f($s: String) { match { from bm25({ match { $d: Doc } return { $d } }, $d.body, $s) } return { $d } }"),
-    ("bm25_terms_any", "query f($s: String) { match { from bm25({ match { $d: Doc } return { $d } }, $d.body, terms($s, mode: any)) } return { $d } }"),
-    ("bm25_terms_all", "query f($s: String) { match { from bm25({ match { $d: Doc } return { $d } }, $d.body, terms($s)) } return { $d } }"),
-    ("rrf_default_k", "query f($s: String, $v: Vector(3)) { match { let $docs = { match { $d: Doc } return { $d } }  from rrf(nearest($docs, $d.embedding, $v, k: 5), bm25($docs, $d.body, $s)) } return { $d } }"),
-    ("rrf_k_60", "query f($s: String, $v: Vector(3)) { match { let $docs = { match { $d: Doc } return { $d } }  from rrf(nearest($docs, $d.embedding, $v, k: 5), bm25($docs, $d.body, $s), k: 60) } return { $d } }"),
-    ("let_rel_then_from", "query f() { match { let $r = { match { $c: Company } return { $c } }  from $r } return { $c } }"),
-    ("from_inline", "query f() { match { from { match { $c: Company } return { $c } } } return { $c } }"),
-    ("filter_written_late", "query f() { match { $p: Person  $q: Person  $p.age > 3 } return { $p, $q } }"),
-    ("filter_written_early", "query f() { match { $p: Person  $p.age > 3  $q: Person } return { $p, $q } }"),
-    ("filter_before_binder", "query f() { match { $p.age > 3  $p: Person  $q: Person } return { $p, $q } }"),
-    ("two_bindings", "query f() { match { $p: Person  $q: Person } return { $p, $q } }"),
-    ("two_bindings_swapped", "query f() { match { $q: Person  $p: Person } return { $p, $q } }"),
-    ("let_value", "query f() { match { $p: Person  let $a = $p.age } return { $a } }"),
-    ("return_expression", "query f() { match { $p: Person } return { $p.age as a } }"),
-    ("fuzzy_default", "query f($s: String) { match { $d: Doc  fuzzy($d.body, $s) } return { $d } }"),
-    ("fuzzy_two_edits", "query f($s: String) { match { $d: Doc  fuzzy($d.body, $s, max_edits: 2) } return { $d } }"),
+    (
+        "triple_schema_order",
+        "query f() { match { $c: Company  $p worksAt $c } return { $p, $c } }",
+    ),
+    (
+        "triple_reversed",
+        "query f() { match { $c: Company  $c worksAt $p } return { $p, $c } }",
+    ),
+    (
+        "exists",
+        "query f() { match { $p: Person  exists { $p knows $q } } return { $p } }",
+    ),
+    (
+        "count_gt_0",
+        "query f() { match { $p: Person  count { $p knows $q } > 0 } return { $p } }",
+    ),
+    (
+        "count_ge_1",
+        "query f() { match { $p: Person  count { $p knows $q } >= 1 } return { $p } }",
+    ),
+    (
+        "not_block",
+        "query f() { match { $p: Person  not { $p knows $q } } return { $p } }",
+    ),
+    (
+        "not_exists_filter",
+        "query f() { match { $p: Person  not exists { $p knows $q } } return { $p } }",
+    ),
+    (
+        "count_eq_0",
+        "query f() { match { $p: Person  count { $p knows $q } = 0 } return { $p } }",
+    ),
+    (
+        "union_flat",
+        "query f() { match { from union({ match { $c: Company } return { $c } }, { match { $d: Company } return { $d as c } }, { match { $e: Company } return { $e as c } }) } return { $c } }",
+    ),
+    (
+        "union_nested",
+        "query f() { match { from union(union({ match { $c: Company } return { $c } }, { match { $d: Company } return { $d as c } }), { match { $e: Company } return { $e as c } }) } return { $c } }",
+    ),
+    (
+        "alternation",
+        "query f() { match { $p: Person  $p (knows | likes) $q } return { $q } }",
+    ),
+    (
+        "alternation_reordered",
+        "query f() { match { $p: Person  $p (likes | knows) $q } return { $q } }",
+    ),
+    (
+        "undirected",
+        "query f() { match { $p: Person  $p <knows> $q } return { $q } }",
+    ),
+    (
+        "undirected_ends_swapped",
+        "query f() { match { $p: Person  $q <knows> $p } return { $q } }",
+    ),
+    (
+        "order_asc",
+        "query f() { match { $p: Person } return { $p } order { $p.age asc } }",
+    ),
+    (
+        "order_default",
+        "query f() { match { $p: Person } return { $p } order { $p.age } }",
+    ),
+    (
+        "alias_same_name",
+        "query f() { match { $p: Person } return { $p as p } }",
+    ),
+    (
+        "no_alias",
+        "query f() { match { $p: Person } return { $p } }",
+    ),
+    (
+        "and_one_clause",
+        "query f() { match { $p: Person  $p.age > 3 and $p.city = \"x\" } return { $p } }",
+    ),
+    (
+        "and_two_clauses",
+        "query f() { match { $p: Person  $p.age > 3  $p.city = \"x\" } return { $p } }",
+    ),
+    (
+        "bm25_string",
+        "query f($s: String) { match { from bm25({ match { $d: Doc } return { $d } }, $d.body, $s) } return { $d } }",
+    ),
+    (
+        "bm25_terms_any",
+        "query f($s: String) { match { from bm25({ match { $d: Doc } return { $d } }, $d.body, terms($s, mode: any)) } return { $d } }",
+    ),
+    (
+        "bm25_terms_all",
+        "query f($s: String) { match { from bm25({ match { $d: Doc } return { $d } }, $d.body, terms($s)) } return { $d } }",
+    ),
+    (
+        "rrf_default_k",
+        "query f($s: String, $v: Vector(3)) { match { let $docs = { match { $d: Doc } return { $d } }  from rrf(nearest($docs, $d.embedding, $v, k: 5), bm25($docs, $d.body, $s)) } return { $d } }",
+    ),
+    (
+        "rrf_k_60",
+        "query f($s: String, $v: Vector(3)) { match { let $docs = { match { $d: Doc } return { $d } }  from rrf(nearest($docs, $d.embedding, $v, k: 5), bm25($docs, $d.body, $s), k: 60) } return { $d } }",
+    ),
+    (
+        "let_rel_then_from",
+        "query f() { match { let $r = { match { $c: Company } return { $c } }  from $r } return { $c } }",
+    ),
+    (
+        "from_inline",
+        "query f() { match { from { match { $c: Company } return { $c } } } return { $c } }",
+    ),
+    (
+        "filter_written_late",
+        "query f() { match { $p: Person  $q: Person  $p.age > 3 } return { $p, $q } }",
+    ),
+    (
+        "filter_written_early",
+        "query f() { match { $p: Person  $p.age > 3  $q: Person } return { $p, $q } }",
+    ),
+    (
+        "filter_before_binder",
+        "query f() { match { $p.age > 3  $p: Person  $q: Person } return { $p, $q } }",
+    ),
+    (
+        "two_bindings",
+        "query f() { match { $p: Person  $q: Person } return { $p, $q } }",
+    ),
+    (
+        "two_bindings_swapped",
+        "query f() { match { $q: Person  $p: Person } return { $p, $q } }",
+    ),
+    (
+        "let_value",
+        "query f() { match { $p: Person  let $a = $p.age } return { $a } }",
+    ),
+    (
+        "return_expression",
+        "query f() { match { $p: Person } return { $p.age as a } }",
+    ),
+    (
+        "fuzzy_default",
+        "query f($s: String) { match { $d: Doc  fuzzy($d.body, $s) } return { $d } }",
+    ),
+    (
+        "fuzzy_two_edits",
+        "query f($s: String) { match { $d: Doc  fuzzy($d.body, $s, max_edits: 2) } return { $d } }",
+    ),
 ];
 
 /// The formatter's list (section 6): each pair is (non-canonical form,
@@ -550,14 +732,22 @@ fn two_forms_share_a_term_only_when_the_formatter_names_one() {
     // typed IR". Two of its rows do change it (finding 9).
     let mut changes_ir = BTreeSet::new();
     for (x, y) in FORMATTER.iter().chain(LITERAL_AND_REFERENCE) {
-        let (tx, ty) = (&lowered.iter().find(|(i, _)| i == x).unwrap().1, &lowered.iter().find(|(i, _)| i == y).unwrap().1);
+        let (tx, ty) = (
+            &lowered.iter().find(|(i, _)| i == x).unwrap().1,
+            &lowered.iter().find(|(i, _)| i == y).unwrap().1,
+        );
         if tx != ty {
             changes_ir.insert(format!("{x} -> {y}"));
         }
     }
-    let want_changes: BTreeSet<String> =
-        ["count_eq_0 -> not_block", "count_ge_1 -> exists"].into_iter().map(String::from).collect();
-    assert_eq!(changes_ir, want_changes, "formatter rows whose two forms lower to different terms");
+    let want_changes: BTreeSet<String> = ["count_eq_0 -> not_block", "count_ge_1 -> exists"]
+        .into_iter()
+        .map(String::from)
+        .collect();
+    assert_eq!(
+        changes_ir, want_changes,
+        "formatter rows whose two forms lower to different terms"
+    );
     // The collisions no list names: each is an A6 violation the RFC must
     // either list in `fmt` or design out (finding 8). A new one fails here.
     let want: BTreeSet<(String, String)> = [
@@ -572,7 +762,10 @@ fn two_forms_share_a_term_only_when_the_formatter_names_one() {
     // Forms a reader might call one query that are different terms: kept
     // apart, no A6 question (clause order of binders, `let` against a return
     // expression).
-    for (a, b) in [("two_bindings", "two_bindings_swapped"), ("let_value", "return_expression")] {
+    for (a, b) in [
+        ("two_bindings", "two_bindings_swapped"),
+        ("let_value", "return_expression"),
+    ] {
         let ta = &lowered.iter().find(|(i, _)| *i == a).unwrap().1;
         let tb = &lowered.iter().find(|(i, _)| *i == b).unwrap().1;
         assert_ne!(ta, tb, "{a} / {b}");
@@ -620,7 +813,9 @@ fn the_closure_table() {
     );
     rows.insert(
         "Expand source, a node column",
-        accept(&format!("query q() {{ match {{ from {GROUPED}  $x worksAt $c }} return {{ $x, $n }} }}")),
+        accept(&format!(
+            "query q() {{ match {{ from {GROUPED}  $x worksAt $c }} return {{ $x, $n }} }}"
+        )),
     );
     rows.insert(
         "Expand source, no node column",
@@ -666,7 +861,10 @@ fn the_closure_table() {
         "Call argument, a scalar",
         accept("query g($c: String) { match { $x: Company { slug: $c } } return { $x } }\nquery q() { match { $p: Person  from g($p.handle) } return { $x } }"),
     );
-    rows.insert("Fix body, monotone", accept(super::typeck3_tests::REACHABLE));
+    rows.insert(
+        "Fix body, monotone",
+        accept(super::typeck3_tests::REACHABLE),
+    );
     rows.insert(
         "Fix body, a negation over it",
         refuse(
@@ -678,14 +876,18 @@ fn the_closure_table() {
     rows.insert(
         "a column of a relation, a relation",
         refuse(
-            &format!("query q() {{ match {{ let $r = {GROUPED}  $x: Company }} return {{ $x, $r }} }}"),
+            &format!(
+                "query q() {{ match {{ let $r = {GROUPED}  $x: Company }} return {{ $x, $r }} }}"
+            ),
             "T69",
             "is a relation",
         ),
     );
     rows.insert(
         "a sink's input",
-        accept(&format!("query w() {{ from {GROUPED}  $n > 100  update $c set {{ name: \"big\" }} }}")),
+        accept(&format!(
+            "query w() {{ from {GROUPED}  $n > 100  update $c set {{ name: \"big\" }} }}"
+        )),
     );
     rows.insert(
         "a sink's input, a ranked relation",
@@ -699,7 +901,11 @@ fn the_closure_table() {
     // the type checker refuses the bare word.
     rows.insert(
         "a sink inside a read, in the body",
-        refuse("query q() { match { $p: Person  delete $p } return { $p } }", "T6", "bare identifier `delete`"),
+        refuse(
+            "query q() { match { $p: Person  delete $p } return { $p } }",
+            "T6",
+            "bare identifier `delete`",
+        ),
     );
     rows.insert(
         "a sink inside a read, through a call",

@@ -86,11 +86,11 @@ pub fn typecheck_file3(
         .collect()
 }
 
+/// Each declaration's name and its checked form or refusal.
+pub type Checked3s = Vec<(String, Result<Checked3, QueryDiagnostic>)>;
+
 /// Parse an edition-3 source (it must open with `gq 3;`) and type-check it.
-pub fn compile3(
-    catalog: &Catalog,
-    source: &str,
-) -> Result<Vec<(String, Result<Checked3, QueryDiagnostic>)>, QueryDiagnostic> {
+pub fn compile3(catalog: &Catalog, source: &str) -> Result<Checked3s, QueryDiagnostic> {
     let file = super::parser3::parse_query3(source)?;
     Ok(typecheck_file3(catalog, &file))
 }
@@ -126,13 +126,13 @@ pub fn typecheck_decl3(
     ctx.in_write = matches!(decl.body, DeclBody3::Write(_));
     let out = match &decl.body {
         DeclBody3::Read(_) => ctx.read_decl(decl).map(|r| {
-            CoreDecl::Read(CoreRead {
+            CoreDecl::Read(Box::new(CoreRead {
                 name: decl.name.clone(),
                 params: r.params,
                 term: r.rel.term,
                 result: r.rel.ty,
                 plan_budget: r.budget,
-            })
+            }))
         }),
         DeclBody3::Write(w) => ctx.write_decl(decl, w).map(CoreDecl::Write),
     };
@@ -425,6 +425,9 @@ fn param_types(params: &[Param3]) -> R<Vec<(String, PropType)>> {
     Ok(out)
 }
 
+/// A statement index and, for an update, its assignments (a delete has none).
+type Seen = (usize, Option<Vec<(String, AssignValue)>>);
+
 struct ReadOut {
     params: Vec<(String, PropType)>,
     rel: Rel,
@@ -511,7 +514,10 @@ impl Ctx<'_> {
         let DeclBody3::Read(body) = &decl.body else {
             return Err(err(
                 T74,
-                format!("`{}` is a write; a read cannot draw rows from a write (A7)", decl.name),
+                format!(
+                    "`{}` is a write; a read cannot draw rows from a write (A7)",
+                    decl.name
+                ),
             ));
         };
         let params = param_types(&decl.params)?;
@@ -558,7 +564,9 @@ impl Ctx<'_> {
                         chain.join(" → ")
                     }
                 ),
-                format!("declare `@budget(plan = {size})` on `{name}`, or share a relation with `let`"),
+                format!(
+                    "declare `@budget(plan = {size})` on `{name}`, or share a relation with `let`"
+                ),
             ));
         }
         Ok(ReadOut {
@@ -582,8 +590,7 @@ impl Ctx<'_> {
             self.clauses(&mut sc, &group.clauses)?;
             let input = self.finish(&mut sc)?.unwrap_or(Term::Unit);
             let mut sinks = Vec::new();
-            let mut seen: HashMap<String, (usize, Option<Vec<(String, AssignValue)>>)> =
-                HashMap::new();
+            let mut seen: HashMap<String, Seen> = HashMap::new();
             for (i, s) in group.statements.iter().enumerate() {
                 let (sink, this) = self.statement(&mut sc, s)?;
                 let label = format!("statement {} of group {}", i + 1, g + 1);
@@ -717,11 +724,17 @@ impl Ctx<'_> {
                 let mut hidden = Vec::new();
                 let rewritten = self.extract_aggs(&mut sc, &p.expr, &mut hidden)?;
                 for (n, a) in &hidden {
-                    sc.cols.push(Col { name: n.clone(), ty: a.ty.clone() });
+                    sc.cols.push(Col {
+                        name: n.clone(),
+                        ty: a.ty.clone(),
+                    });
                 }
                 let e = self.expr(&mut sc, &rewritten, At::Value)?;
                 if p.alias.is_none() {
-                    return Err(err(T43, "an expression over aggregates in return needs an alias"));
+                    return Err(err(
+                        T43,
+                        "an expression over aggregates in return needs an alias",
+                    ));
                 }
                 aggs.extend(hidden);
                 post.push((format!("^{name}"), e));
@@ -752,7 +765,10 @@ impl Ctx<'_> {
                 at,
                 Step::Filter {
                     blocks,
-                    pred: SExpr::new(SKind::Lit(Literal::Bool(true)), Ty::scalar(ScalarType::Bool, false)),
+                    pred: SExpr::new(
+                        SKind::Lit(Literal::Bool(true)),
+                        Ty::scalar(ScalarType::Bool, false),
+                    ),
                 },
             );
         }
@@ -891,7 +907,10 @@ impl Ctx<'_> {
                     if t.list || !is_integer(t.scalar) {
                         return Err(err(
                             T7,
-                            format!("`limit ${p}` needs an integer parameter, got {}", t.display_name()),
+                            format!(
+                                "`limit ${p}` needs an integer parameter, got {}",
+                                t.display_name()
+                            ),
                         ));
                     }
                     Count::Param(p.clone())
@@ -907,7 +926,12 @@ impl Ctx<'_> {
             items: ext_names
                 .iter()
                 .zip(&out_cols)
-                .map(|(n, c)| (c.name.clone(), SExpr::new(SKind::Col(n.clone()), c.ty.clone())))
+                .map(|(n, c)| {
+                    (
+                        c.name.clone(),
+                        SExpr::new(SKind::Col(n.clone()), c.ty.clone()),
+                    )
+                })
                 .collect(),
             keep: false,
         };
@@ -938,7 +962,10 @@ impl Ctx<'_> {
     fn order_key(&mut self, sc: &mut Scope, e: &Expr3) -> R<SExpr> {
         let k = self.expr(sc, e, At::Value)?;
         if !sc.block_buf.is_empty() {
-            return Err(err(T42, "a block cannot be an order key; bind it with `let`"));
+            return Err(err(
+                T42,
+                "a block cannot be an order key; bind it with `let`",
+            ));
         }
         Ok(k)
     }
@@ -957,9 +984,11 @@ impl Ctx<'_> {
             hidden.push((n.clone(), a));
             return Ok(Expr3::Variable(n));
         }
-        let b = |x: &Expr3, this: &mut Self, sc: &mut Scope, h: &mut Vec<(String, Agg)>| -> R<Box<Expr3>> {
-            Ok(Box::new(this.extract_aggs(sc, x, h)?))
-        };
+        let b = |x: &Expr3,
+                 this: &mut Self,
+                 sc: &mut Scope,
+                 h: &mut Vec<(String, Agg)>|
+         -> R<Box<Expr3>> { Ok(Box::new(this.extract_aggs(sc, x, h)?)) };
         Ok(match e {
             Expr3::Compare { op, left, right } => Expr3::Compare {
                 op: *op,
@@ -1006,7 +1035,10 @@ impl Ctx<'_> {
                 let Arg3::Expr(a) = &c.args[0] else {
                     return Err(err(
                         T69,
-                        format!("`{}` aggregates a column; an inline read is a relation", c.name),
+                        format!(
+                            "`{}` aggregates a column; an inline read is a relation",
+                            c.name
+                        ),
                     ));
                 };
                 (agg_func(&c.name), false, a)
@@ -1254,7 +1286,10 @@ impl Ctx<'_> {
         }
         let mut named = Vec::new();
         expr_vars(value, &mut named);
-        if let Some(v) = named.iter().find(|v| !sc.params.contains_key(*v) || sc.is_bound(v)) {
+        if let Some(v) = named
+            .iter()
+            .find(|v| !sc.params.contains_key(*v) || sc.is_bound(v))
+        {
             return Err(err(
                 T45,
                 format!(
@@ -1294,7 +1329,14 @@ impl Ctx<'_> {
             let mut elem = prop_ty.clone();
             elem.list = false;
             if !types_compatible(vt, &elem) {
-                return Err(err(T3, format!("property `{prop}` holds {} but got {}", elem.display_name(), vt.display_name())));
+                return Err(err(
+                    T3,
+                    format!(
+                        "property `{prop}` holds {} but got {}",
+                        elem.display_name(),
+                        vt.display_name()
+                    ),
+                ));
             }
             return Ok(SExpr::new(
                 SKind::In {
@@ -1456,9 +1498,21 @@ impl Ctx<'_> {
         // Orientation: from the bound end; with neither bound, from the
         // edge's source for a directed member, the smaller name for `<e>`.
         let (from, to, to_type, sel, from_bound) = if src_bound {
-            (t.src.clone(), t.dst.clone(), resolved.dst_type.clone(), forward, true)
+            (
+                t.src.clone(),
+                t.dst.clone(),
+                resolved.dst_type.clone(),
+                forward,
+                true,
+            )
         } else if dst_bound {
-            (t.dst.clone(), t.src.clone(), resolved.src_type.clone(), reverse(&members), true)
+            (
+                t.dst.clone(),
+                t.src.clone(),
+                resolved.src_type.clone(),
+                reverse(&members),
+                true,
+            )
         } else {
             let flip = match members.as_slice() {
                 [(_, Direction::In)] => true,
@@ -1466,9 +1520,21 @@ impl Ctx<'_> {
                 _ => false,
             };
             if flip {
-                (t.dst.clone(), t.src.clone(), resolved.src_type.clone(), reverse(&members), false)
+                (
+                    t.dst.clone(),
+                    t.src.clone(),
+                    resolved.src_type.clone(),
+                    reverse(&members),
+                    false,
+                )
             } else {
-                (t.src.clone(), t.dst.clone(), resolved.dst_type.clone(), forward, false)
+                (
+                    t.src.clone(),
+                    t.dst.clone(),
+                    resolved.dst_type.clone(),
+                    forward,
+                    false,
+                )
             }
         };
         let from_type = if from == t.src {
@@ -1734,7 +1800,9 @@ impl Ctx<'_> {
             )),
             name => Err(err(
                 T6,
-                format!("`{name}` is neither a relation function nor a declared read of this source"),
+                format!(
+                    "`{name}` is neither a relation function nor a declared read of this source"
+                ),
             )),
         }
     }
@@ -1861,7 +1929,11 @@ impl Ctx<'_> {
         let (column, property) = match &c.args[1] {
             Arg3::Expr(Expr3::Prop { variable, property }) => (variable.clone(), property.clone()),
             Arg3::Expr(Expr3::Ident(field)) => {
-                let col = pop.ty.node_columns().first().map_or("x".to_string(), |c| c.name.clone());
+                let col = pop
+                    .ty
+                    .node_columns()
+                    .first()
+                    .map_or("x".to_string(), |c| c.name.clone());
                 return Err(err_fix(
                     if name == "bm25" { T27 } else { T15 },
                     format!(
@@ -1873,12 +1945,19 @@ impl Ctx<'_> {
             _ => {
                 return Err(err(
                     T79,
-                    format!("`{name}`'s second argument is a property access, `$x.field`, on a node column of the population"),
+                    format!(
+                        "`{name}`'s second argument is a property access, `$x.field`, on a node column of the population"
+                    ),
                 ));
             }
         };
         let Some(col) = pop.ty.get(&column).cloned() else {
-            let nodes: Vec<String> = pop.ty.node_columns().iter().map(|c| format!("${}", c.name)).collect();
+            let nodes: Vec<String> = pop
+                .ty
+                .node_columns()
+                .iter()
+                .map(|c| format!("${}", c.name))
+                .collect();
             return Err(err(
                 T79,
                 format!(
@@ -1901,7 +1980,10 @@ impl Ctx<'_> {
             ));
         };
         let type_name = type_name.clone();
-        let prop = match self.node_props(&type_name).and_then(|p| p.get(&property).cloned()) {
+        let prop = match self
+            .node_props(&type_name)
+            .and_then(|p| p.get(&property).cloned())
+        {
             Some(p) => p,
             None => {
                 return Err(err(
@@ -1913,7 +1995,10 @@ impl Ctx<'_> {
         let query_arg = match &c.args[2] {
             Arg3::Expr(e) => e,
             Arg3::Inline(_) => {
-                return Err(err(T69, format!("`{name}`'s query is a scalar, not a relation")));
+                return Err(err(
+                    T69,
+                    format!("`{name}`'s query is a scalar, not a relation"),
+                ));
             }
         };
         let (kind, out) = match name {
@@ -1931,7 +2016,10 @@ impl Ctx<'_> {
             if !matches!(prop.scalar, ScalarType::String) || prop.list {
                 return Err(err(
                     T27,
-                    format!("`bm25` ranks a String with a full-text index; `{type_name}.{property}` is {}", prop.display_name()),
+                    format!(
+                        "`bm25` ranks a String with a full-text index; `{type_name}.{property}` is {}",
+                        prop.display_name()
+                    ),
                 ));
             }
             if !self
@@ -1950,7 +2038,10 @@ impl Ctx<'_> {
             let ScalarType::Vector(dim) = prop.scalar else {
                 return Err(err(
                     T15,
-                    format!("`{name}` ranks a Vector field; `{type_name}.{property}` is {}", prop.display_name()),
+                    format!(
+                        "`{name}` ranks a Vector field; `{type_name}.{property}` is {}",
+                        prop.display_name()
+                    ),
                 ));
             };
             let q = self.expr(sc, query_arg, At::Value)?;
@@ -1963,7 +2054,10 @@ impl Ctx<'_> {
                     if items.len() as u32 != dim {
                         return Err(err(
                             T15,
-                            format!("`{type_name}.{property}` is Vector({dim}); the query vector has {} elements", items.len()),
+                            format!(
+                                "`{type_name}.{property}` is Vector({dim}); the query vector has {} elements",
+                                items.len()
+                            ),
                         ));
                     }
                 }
@@ -1975,14 +2069,19 @@ impl Ctx<'_> {
                     if !embedded {
                         return Err(err(
                             T15,
-                            format!("a String query needs `@embed` on `{type_name}.{property}`; pass a Vector({dim})"),
+                            format!(
+                                "a String query needs `@embed` on `{type_name}.{property}`; pass a Vector({dim})"
+                            ),
                         ));
                     }
                 }
                 other => {
                     return Err(err(
                         T15,
-                        format!("`{name}`'s query must be a Vector({dim}) or an embedded String, got {}", other.display()),
+                        format!(
+                            "`{name}`'s query must be a Vector({dim}) or an embedded String, got {}",
+                            other.display()
+                        ),
                     ));
                 }
             }
@@ -1999,7 +2098,11 @@ impl Ctx<'_> {
         });
         let mut shaped = pop.shaped.clone();
         shaped.push(true);
-        let identity = Some((pop.term.clone(), format!("{column}.{property}"), query.clone()));
+        let identity = Some((
+            pop.term.clone(),
+            format!("{column}.{property}"),
+            query.clone(),
+        ));
         let term = if name == "nearest" {
             let Some((_, k)) = c.options.iter().find(|(o, _)| o == "k") else {
                 return Err(err_fix(
@@ -2063,7 +2166,12 @@ impl Ctx<'_> {
             Expr3::Literal(Literal::Integer(n)) if *n >= min && max.is_none_or(|m| *n <= m) => {
                 Ok(Count::Literal(*n as u64))
             }
-            Expr3::Variable(p) if sc.params.get(p).is_some_and(|t| !t.list && is_integer(t.scalar)) => {
+            Expr3::Variable(p)
+                if sc
+                    .params
+                    .get(p)
+                    .is_some_and(|t| !t.list && is_integer(t.scalar)) =>
+            {
                 Ok(Count::Param(p.clone()))
             }
             _ => Err(err(
@@ -2190,10 +2298,17 @@ impl Ctx<'_> {
         let mut weights = vec![1.0; n];
         for (o, v) in &c.options {
             match (o.as_str(), v) {
-                ("k", Expr3::Literal(Literal::Integer(x))) if *x >= 1 && *x <= RRF_MAX_K as i128 => {
+                ("k", Expr3::Literal(Literal::Integer(x)))
+                    if *x >= 1 && *x <= RRF_MAX_K as i128 =>
+                {
                     k = *x as u64
                 }
-                ("k", _) => return Err(err(T71, "`rrf`'s `k:` is an integer literal in 1..=1000000")),
+                ("k", _) => {
+                    return Err(err(
+                        T71,
+                        "`rrf`'s `k:` is an integer literal in 1..=1000000",
+                    ));
+                }
                 ("weights", Expr3::Literal(Literal::List(ws))) => {
                     if ws.len() != n {
                         return Err(err(
@@ -2216,7 +2331,10 @@ impl Ctx<'_> {
                 }
                 ("weights", _) => return Err(err(T71, "`weights:` is a list literal of numbers")),
                 (other, _) => {
-                    return Err(err(T71, format!("`rrf` has no option `{other}`; it admits k, weights")));
+                    return Err(err(
+                        T71,
+                        format!("`rrf` has no option `{other}`; it admits k, weights"),
+                    ));
                 }
             }
         }
@@ -2273,11 +2391,17 @@ impl Ctx<'_> {
         if let DeclBody3::Write(_) = decl.body {
             return Err(err(
                 T74,
-                format!("`{}` is a write; a read draws rows only from reads (A7)", c.name),
+                format!(
+                    "`{}` is a write; a read draws rows only from reads (A7)",
+                    c.name
+                ),
             ));
         }
         if let Some((o, _)) = c.options.first() {
-            return Err(err(T71, format!("a declared read takes positional arguments; got `{o}:`")));
+            return Err(err(
+                T71,
+                format!("a declared read takes positional arguments; got `{o}:`"),
+            ));
         }
         let params = param_types(&decl.params)?;
         let required = decl.params.iter().filter(|p| p.default.is_none()).count();
@@ -2299,7 +2423,10 @@ impl Ctx<'_> {
                 Some(Arg3::Inline(_)) => {
                     return Err(err_fix(
                         T69,
-                        format!("`{}`'s parameter `${pname}` is a scalar; an inline read is a relation", c.name),
+                        format!(
+                            "`{}`'s parameter `${pname}` is a scalar; an inline read is a relation",
+                            c.name
+                        ),
                         "pass a scalar, and draw the relation with `from` inside the read",
                     ));
                 }
@@ -2307,16 +2434,26 @@ impl Ctx<'_> {
                     if is_relation_expr(e, sc, self.unit) {
                         return Err(err(
                             T69,
-                            format!("`{}`'s parameter `${pname}` is a scalar; relation arguments are refused (the closure table)", c.name),
+                            format!(
+                                "`{}`'s parameter `${pname}` is a scalar; relation arguments are refused (the closure table)",
+                                c.name
+                            ),
                         ));
                     }
                     let v = self.expr(sc, e, At::Value)?;
                     if !sc.block_buf.is_empty() {
-                        return Err(err(T69, "a block is not a call argument; bind it with `let`"));
+                        return Err(err(
+                            T69,
+                            "a block is not a call argument; bind it with `let`",
+                        ));
                     }
                     let v = adapt(v, &Ty::Value(pty.clone()));
                     match &v.ty {
-                        Ty::Value(t) if types_compatible(t, pty) && (pty.nullable || !t.nullable || matches!(v.kind, SKind::Param(_))) => {}
+                        Ty::Value(t)
+                            if types_compatible(t, pty)
+                                && (pty.nullable
+                                    || !t.nullable
+                                    || matches!(v.kind, SKind::Param(_))) => {}
                         other => {
                             return Err(err(
                                 T7,
@@ -2366,7 +2503,13 @@ impl Ctx<'_> {
             });
         }
         if self.frames.len() > 64 {
-            return Err(err(T70, format!("the call chain through `{}` is deeper than 64 reads", c.name)));
+            return Err(err(
+                T70,
+                format!(
+                    "the call chain through `{}` is deeper than 64 reads",
+                    c.name
+                ),
+            ));
         }
         self.frames.push(Frame {
             decl: c.name.clone(),
@@ -2376,11 +2519,17 @@ impl Ctx<'_> {
         let out = self.read_decl(decl);
         self.frames.pop();
         let out = out?;
-        let Rel { term, ty, shaped, .. } = out.rel;
+        let Rel {
+            term, ty, shaped, ..
+        } = out.rel;
         Ok(Rel {
             term: Term::Call {
                 name: c.name.clone(),
-                bindings: params.iter().map(|(p, _)| p.clone()).zip(bindings).collect(),
+                bindings: params
+                    .iter()
+                    .map(|(p, _)| p.clone())
+                    .zip(bindings)
+                    .collect(),
                 body: term.boxed(),
             },
             ty,
@@ -2440,7 +2589,12 @@ impl Ctx<'_> {
                 assignments,
             } => {
                 if crate::catalog::catalogue::is_catalogue_type_name(type_name) {
-                    return Err(err(T10, format!("catalogue type `{type_name}` is read-only; the engine owns its rows")));
+                    return Err(err(
+                        T10,
+                        format!(
+                            "catalogue type `{type_name}` is read-only; the engine owns its rows"
+                        ),
+                    ));
                 }
                 if assignments.is_empty() {
                     return Err(err(T10, "insert requires at least one assignment"));
@@ -2450,11 +2604,18 @@ impl Ctx<'_> {
                     let mut out = Vec::new();
                     for a in assignments {
                         let Some(pt) = node.properties.get(&a.property).cloned() else {
-                            return Err(err(T11, format!("type `{type_name}` has no property `{}`", a.property)));
+                            return Err(err(
+                                T11,
+                                format!("type `{type_name}` has no property `{}`", a.property),
+                            ));
                         };
-                        out.push((a.property.clone(), self.assign(sc, &a.value, &pt, &a.property)?));
+                        out.push((
+                            a.property.clone(),
+                            self.assign(sc, &a.value, &pt, &a.property)?,
+                        ));
                     }
-                    let assigned: HashSet<&str> = assignments.iter().map(|a| a.property.as_str()).collect();
+                    let assigned: HashSet<&str> =
+                        assignments.iter().map(|a| a.property.as_str()).collect();
                     for (p, t) in &node.properties {
                         if t.nullable || assigned.contains(p.as_str()) {
                             continue;
@@ -2464,11 +2625,18 @@ impl Ctx<'_> {
                         {
                             continue;
                         }
-                        return Err(err(T12, format!("insert for `{type_name}` must provide non-nullable property `{p}`")));
+                        return Err(err(
+                            T12,
+                            format!(
+                                "insert for `{type_name}` must provide non-nullable property `{p}`"
+                            ),
+                        ));
                     }
                     return Ok((
                         Sink::Insert {
-                            target: MutationTarget::Node { type_name: type_name.clone() },
+                            target: MutationTarget::Node {
+                                type_name: type_name.clone(),
+                            },
                             assignments: out,
                         },
                         WriteClass::Constructive,
@@ -2480,13 +2648,24 @@ impl Ctx<'_> {
                     for a in assignments {
                         let v = match a.property.as_str() {
                             end @ ("from" | "to") => {
-                                if end == "from" { from = true } else { to = true }
-                                let endpoint = if end == "from" { &edge.from_type } else { &edge.to_type };
+                                if end == "from" {
+                                    from = true
+                                } else {
+                                    to = true
+                                }
+                                let endpoint = if end == "from" {
+                                    &edge.from_type
+                                } else {
+                                    &edge.to_type
+                                };
                                 self.endpoint(sc, &a.value, endpoint, end, type_name)?
                             }
                             p => {
                                 let Some(pt) = edge.properties.get(p).cloned() else {
-                                    return Err(err(T11, format!("type `{type_name}` has no property `{p}`")));
+                                    return Err(err(
+                                        T11,
+                                        format!("type `{type_name}` has no property `{p}`"),
+                                    ));
                                 };
                                 self.assign(sc, &a.value, &pt, p)?
                             }
@@ -2496,17 +2675,27 @@ impl Ctx<'_> {
                     if !from || !to {
                         return Err(err(
                             T12,
-                            format!("insert for `{type_name}` must provide required endpoint `{}`", if from { "to" } else { "from" }),
+                            format!(
+                                "insert for `{type_name}` must provide required endpoint `{}`",
+                                if from { "to" } else { "from" }
+                            ),
                         ));
                     }
                     for (p, t) in &edge.properties {
                         if !t.nullable && !assignments.iter().any(|a| &a.property == p) {
-                            return Err(err(T12, format!("insert for `{type_name}` must provide non-nullable property `{p}`")));
+                            return Err(err(
+                                T12,
+                                format!(
+                                    "insert for `{type_name}` must provide non-nullable property `{p}`"
+                                ),
+                            ));
                         }
                     }
                     return Ok((
                         Sink::Insert {
-                            target: MutationTarget::Edge { type_name: type_name.clone() },
+                            target: MutationTarget::Edge {
+                                type_name: type_name.clone(),
+                            },
                             assignments: out,
                         },
                         WriteClass::Constructive,
@@ -2533,9 +2722,15 @@ impl Ctx<'_> {
                 let mut out = Vec::new();
                 for a in assignments {
                     let Some(pt) = props.get(&a.property).cloned() else {
-                        return Err(err(T11, format!("type `{type_name}` has no property `{}`", a.property)));
+                        return Err(err(
+                            T11,
+                            format!("type `{type_name}` has no property `{}`", a.property),
+                        ));
                     };
-                    out.push((a.property.clone(), self.assign(sc, &a.value, &pt, &a.property)?));
+                    out.push((
+                        a.property.clone(),
+                        self.assign(sc, &a.value, &pt, &a.property)?,
+                    ));
                 }
                 Ok((
                     Sink::Update {
@@ -2563,10 +2758,18 @@ impl Ctx<'_> {
         match sc.col(var) {
             Some(Ty::Node { type_name, .. }) => {
                 if self.catalog.interfaces.contains_key(&type_name) {
-                    return Err(err(T77, format!("`{what} ${var}`: `${var}` is an interface binding; a write targets a declared type")));
+                    return Err(err(
+                        T77,
+                        format!(
+                            "`{what} ${var}`: `${var}` is an interface binding; a write targets a declared type"
+                        ),
+                    ));
                 }
                 if crate::catalog::catalogue::is_catalogue_type_name(&type_name) {
-                    return Err(err(T10, format!("catalogue type `{type_name}` is read-only")));
+                    return Err(err(
+                        T10,
+                        format!("catalogue type `{type_name}` is read-only"),
+                    ));
                 }
                 Ok(MutationTarget::Node { type_name })
             }
@@ -2575,7 +2778,10 @@ impl Ctx<'_> {
             }
             Some(other) => Err(err(
                 T77,
-                format!("`{what} ${var}`: `${var}` is {}, not a node or edge reference of one type", other.display()),
+                format!(
+                    "`{what} ${var}`: `${var}` is {}, not a node or edge reference of one type",
+                    other.display()
+                ),
             )),
             None => Err(err_fix(
                 T77,
@@ -2585,10 +2791,19 @@ impl Ctx<'_> {
         }
     }
 
-    fn assign(&mut self, sc: &mut Scope, value: &Expr3, pt: &PropType, prop: &str) -> R<AssignValue> {
+    fn assign(
+        &mut self,
+        sc: &mut Scope,
+        value: &Expr3,
+        pt: &PropType,
+        prop: &str,
+    ) -> R<AssignValue> {
         if matches!(value, Expr3::Literal(Literal::Null)) {
             if !pt.nullable {
-                return Err(err(T3, format!("property `{prop}` is non-nullable but got null")));
+                return Err(err(
+                    T3,
+                    format!("property `{prop}` is non-nullable but got null"),
+                ));
             }
             return Ok(AssignValue::Null);
         }
@@ -2597,11 +2812,17 @@ impl Ctx<'_> {
             check_literal_type(l, &lt, pt, prop)?;
             let mut want = pt.clone();
             want.nullable = false;
-            return Ok(AssignValue::Expr(SExpr::new(SKind::Lit(l.clone()), Ty::Value(want))));
+            return Ok(AssignValue::Expr(SExpr::new(
+                SKind::Lit(l.clone()),
+                Ty::Value(want),
+            )));
         }
         let v = self.expr(sc, value, At::Value)?;
         if !sc.block_buf.is_empty() {
-            return Err(err(T44, "a block is not an assignment value; bind it with `let` in the clauses"));
+            return Err(err(
+                T44,
+                "a block is not an assignment value; bind it with `let` in the clauses",
+            ));
         }
         let v = adapt(v, &Ty::Value(pt.clone()));
         let ok = match &v.ty {
@@ -2615,13 +2836,24 @@ impl Ctx<'_> {
         if !ok {
             return Err(err(
                 T3,
-                format!("property `{prop}` has type {} but the value is {}", pt.display_name(), v.ty.display()),
+                format!(
+                    "property `{prop}` has type {} but the value is {}",
+                    pt.display_name(),
+                    v.ty.display()
+                ),
             ));
         }
         Ok(AssignValue::Expr(v))
     }
 
-    fn endpoint(&mut self, sc: &mut Scope, value: &Expr3, endpoint: &str, end: &str, edge: &str) -> R<AssignValue> {
+    fn endpoint(
+        &mut self,
+        sc: &mut Scope,
+        value: &Expr3,
+        endpoint: &str,
+        end: &str,
+        edge: &str,
+    ) -> R<AssignValue> {
         let key_ty = self
             .catalog
             .node_types
@@ -2632,13 +2864,21 @@ impl Ctx<'_> {
             && let Some(ty) = sc.col(v)
         {
             return match ty {
-                Ty::Node { type_name, .. } if type_name == endpoint => Ok(AssignValue::Expr(SExpr::new(
-                    SKind::Col(v.clone()),
-                    Ty::Node { type_name, nullable: false },
-                ))),
+                Ty::Node { type_name, .. } if type_name == endpoint => {
+                    Ok(AssignValue::Expr(SExpr::new(
+                        SKind::Col(v.clone()),
+                        Ty::Node {
+                            type_name,
+                            nullable: false,
+                        },
+                    )))
+                }
                 other => Err(err(
                     T78,
-                    format!("`{end}` of `{edge}` is a `{endpoint}`; `${v}` is {}", other.display()),
+                    format!(
+                        "`{end}` of `{edge}` is a `{endpoint}`; `${v}` is {}",
+                        other.display()
+                    ),
                 )),
             };
         }
@@ -2646,7 +2886,11 @@ impl Ctx<'_> {
         let v = adapt(v, &Ty::Value(key_ty.clone()));
         match &v.ty {
             // A String names any key, as today (`from: "0"` on an I64 key).
-            Ty::Value(t) if !t.list && (types_compatible(t, &key_ty) || t.scalar == ScalarType::String) => Ok(AssignValue::Expr(v)),
+            Ty::Value(t)
+                if !t.list && (types_compatible(t, &key_ty) || t.scalar == ScalarType::String) =>
+            {
+                Ok(AssignValue::Expr(v))
+            }
             other => Err(err(
                 T78,
                 format!(
@@ -2665,34 +2909,56 @@ impl Ctx<'_> {
         self.catalog
             .query_node_type(type_name)
             .map(|n| &n.properties)
-            .or_else(|| self.catalog.interfaces.get(type_name).map(|i| &i.properties))
+            .or_else(|| {
+                self.catalog
+                    .interfaces
+                    .get(type_name)
+                    .map(|i| &i.properties)
+            })
     }
 
     /// The type of `prop` on a reference of type `ty`, and its owner's name.
     fn property(&self, ty: &Ty, prop: &str, var: &str) -> R<(PropType, String)> {
         match ty {
-            Ty::Node { type_name, nullable } => {
+            Ty::Node {
+                type_name,
+                nullable,
+            } => {
                 let Some(props) = self.node_props(type_name) else {
                     return Err(err(T6, format!("type `{type_name}` not found")));
                 };
                 let Some(p) = props.get(prop) else {
-                    return Err(err(T6, format!("type `{type_name}` has no property `{prop}`")));
+                    return Err(err(
+                        T6,
+                        format!("type `{type_name}` has no property `{prop}`"),
+                    ));
                 };
                 let mut p = p.clone();
                 p.nullable |= *nullable;
                 Ok((p, type_name.clone()))
             }
-            Ty::Edge { type_name, nullable } => {
+            Ty::Edge {
+                type_name,
+                nullable,
+            } => {
                 let names: Vec<String> = type_name.split('|').map(str::to_string).collect();
-                let Some(mut p) = crate::traversal::common_edge_property(self.catalog, &names, prop) else {
-                    return Err(err(T6, format!("edge `{type_name}` has no property `{prop}`")));
+                let Some(mut p) =
+                    crate::traversal::common_edge_property(self.catalog, &names, prop)
+                else {
+                    return Err(err(
+                        T6,
+                        format!("edge `{type_name}` has no property `{prop}`"),
+                    ));
                 };
                 p.nullable |= *nullable;
                 Ok((p, type_name.clone()))
             }
             Ty::Value(t) => Err(err(
                 T6,
-                format!("`${var}` is {}; only a node or edge reference has properties", t.display_name()),
+                format!(
+                    "`${var}` is {}; only a node or edge reference has properties",
+                    t.display_name()
+                ),
             )),
         }
     }
@@ -2707,7 +2973,10 @@ impl Ctx<'_> {
         let boolean = Ty::scalar(ScalarType::Bool, false);
         Ok(match e {
             Expr3::Literal(Literal::Null) => {
-                return Err(err(T7, "`null` is not a value in a read; test it with `is null`"));
+                return Err(err(
+                    T7,
+                    "`null` is not a value in a read; test it with `is null`",
+                ));
             }
             Expr3::Literal(l) => SExpr::new(SKind::Lit(l.clone()), Ty::Value(literal_type(l)?)),
             Expr3::Variable(v) => {
@@ -2719,7 +2988,9 @@ impl Ctx<'_> {
                     return Err(err_fix(
                         T69,
                         format!("`${v}` is a relation; a scalar is read here"),
-                        format!("draw it with `from ${v}`, or aggregate over it: `count {{ from ${v} }}`"),
+                        format!(
+                            "draw it with `from ${v}`, or aggregate over it: `count {{ from ${v} }}`"
+                        ),
                     ));
                 } else {
                     return Err(err(T6, format!("variable `${v}` is not bound")));
@@ -2728,7 +2999,10 @@ impl Ctx<'_> {
             Expr3::Prop { variable, property } => {
                 let Some(ty) = sc.col(variable) else {
                     if sc.params.contains_key(variable) {
-                        return Err(err(T6, format!("`${variable}` is a parameter and has no properties")));
+                        return Err(err(
+                            T6,
+                            format!("`${variable}` is a parameter and has no properties"),
+                        ));
                     }
                     return Err(err(T6, format!("variable `${variable}` is not bound")));
                 };
@@ -2739,34 +3013,61 @@ impl Ctx<'_> {
                         Ty::Value(_) => false,
                     };
                     if !admitted {
-                        return Err(err(T6, format!("`${variable}` has no meta-field `{property}`")));
+                        return Err(err(
+                            T6,
+                            format!("`${variable}` has no meta-field `{property}`"),
+                        ));
                     }
                     SExpr::new(
-                        SKind::Meta { col: variable.clone(), field: property.clone() },
+                        SKind::Meta {
+                            col: variable.clone(),
+                            field: property.clone(),
+                        },
                         Ty::scalar(ScalarType::String, ty.nullable()),
                     )
                 } else {
                     let (p, _) = self.property(&ty, property, variable)?;
                     if p.scalar == ScalarType::Blob && !matches!(at, At::Value) {
-                        return Err(err(T24, format!("Blob property `{variable}.{property}` is not a read value")));
+                        return Err(err(
+                            T24,
+                            format!("Blob property `{variable}.{property}` is not a read value"),
+                        ));
                     }
-                    SExpr::new(SKind::Prop { col: variable.clone(), prop: property.clone() }, Ty::Value(p))
+                    SExpr::new(
+                        SKind::Prop {
+                            col: variable.clone(),
+                            prop: property.clone(),
+                        },
+                        Ty::Value(p),
+                    )
                 }
             }
             Expr3::Meta(m) => {
-                return Err(err(T6, format!("a bare meta-field `@{m}` names no binding; write `$x.@{m}`")));
+                return Err(err(
+                    T6,
+                    format!("a bare meta-field `@{m}` names no binding; write `$x.@{m}`"),
+                ));
             }
             Expr3::Ident(i) => {
-                return Err(err(T6, format!("a bare identifier `{i}` is not a value in a read")));
+                return Err(err(
+                    T6,
+                    format!("a bare identifier `{i}` is not a value in a read"),
+                ));
             }
             Expr3::Call(c) => return self.call_scalar(sc, c, at, top),
             Expr3::AggDistinct { func, .. } => {
-                return Err(err(T8, format!("`{func}(distinct …)` is an aggregate; it belongs in `return`")));
+                return Err(err(
+                    T8,
+                    format!("`{func}(distinct …)` is an aggregate; it belongs in `return`"),
+                ));
             }
             Expr3::Block(b) => {
                 let (term, free, arg) = self.block_scope_arg(sc, &b.clauses, b.arg.as_deref())?;
                 if free.is_empty() {
-                    return Err(err(T39, "an exists or aggregate block must reference an outer-bound variable"));
+                    return Err(err(
+                        T39,
+                        "an exists or aggregate block must reference an outer-bound variable",
+                    ));
                 }
                 let col = self.fresh("b");
                 let (agg, value) = match b.func {
@@ -2774,11 +3075,21 @@ impl Ctx<'_> {
                     BlockFunc3::Agg(func) => {
                         let agg = match (arg, func) {
                             (None, AggFunc::Count) => count_rows(),
-                            (None, f) => return Err(err(T40, format!("`{f} {{ }}` needs its argument: `{f}($x.p) {{ … }}`"))),
+                            (None, f) => {
+                                return Err(err(
+                                    T40,
+                                    format!("`{f} {{ }}` needs its argument: `{f}($x.p) {{ … }}`"),
+                                ));
+                            }
                             (Some(arg), f) => {
                                 let ty = agg_type(f, &arg.ty)?;
                                 let ty = ty.with_nullable(f != AggFunc::Count);
-                                Agg { func: f, distinct: false, arg: Some(arg), ty }
+                                Agg {
+                                    func: f,
+                                    distinct: false,
+                                    arg: Some(arg),
+                                    ty,
+                                }
                             }
                         };
                         let ty = agg.ty.clone();
@@ -2808,18 +3119,24 @@ impl Ctx<'_> {
                 let n = self.expr(sc, needle, sub)?;
                 let l = self.expr(sc, list, sub)?;
                 let l = match &n.ty {
-                    Ty::Value(t) if !t.list => adapt(l, &Ty::Value(PropType::list_of(t.scalar, false))),
+                    Ty::Value(t) if !t.list => {
+                        adapt(l, &Ty::Value(PropType::list_of(t.scalar, false)))
+                    }
                     _ => l,
                 };
                 let n = adapt(n, &l.ty.clone());
                 match &l.ty {
                     Ty::Node { .. } => {
-                        let (Expr3::Variable(a), Expr3::Variable(b)) = (needle.as_ref(), list.as_ref()) else {
+                        let (Expr3::Variable(a), Expr3::Variable(b)) =
+                            (needle.as_ref(), list.as_ref())
+                        else {
                             return Err(err(T7, "`in` reads a list"));
                         };
                         return Err(err_fix(
                             T7,
-                            format!("`${b}` is a node, so `${a} in ${b}` is a traversal over the edge named `in`, which is reserved"),
+                            format!(
+                                "`${b}` is a node, so `${a} in ${b}` is a traversal over the edge named `in`, which is reserved"
+                            ),
                             format!("${a} \"in\" ${b}"),
                         ));
                     }
@@ -2839,19 +3156,36 @@ impl Ctx<'_> {
                             other => {
                                 return Err(err(
                                     T7,
-                                    format!("`in` over {} needs a {} needle, got {}", t.display_name(), elem.display_name(), other.display()),
+                                    format!(
+                                        "`in` over {} needs a {} needle, got {}",
+                                        t.display_name(),
+                                        elem.display_name(),
+                                        other.display()
+                                    ),
                                 ));
                             }
                         }
                         let nullable = n.ty.nullable() || l.ty.nullable();
-                        SExpr::new(SKind::In { needle: n.boxed(), list: l.boxed() }, Ty::scalar(ScalarType::Bool, nullable))
+                        SExpr::new(
+                            SKind::In {
+                                needle: n.boxed(),
+                                list: l.boxed(),
+                            },
+                            Ty::scalar(ScalarType::Bool, nullable),
+                        )
                     }
                     Ty::Edge { .. } => return Err(err(T7, "`in` reads a list, not an edge")),
                 }
             }
             Expr3::IsNull { expr, negated } => {
                 let v = self.expr(sc, expr, sub)?;
-                SExpr::new(SKind::IsNull { expr: v.boxed(), negated: *negated }, boolean)
+                SExpr::new(
+                    SKind::IsNull {
+                        expr: v.boxed(),
+                        negated: *negated,
+                    },
+                    boolean,
+                )
             }
             Expr3::Not(inner) => {
                 let v = self.expr(sc, inner, sub)?;
@@ -2889,25 +3223,33 @@ impl Ctx<'_> {
         if AGGREGATES.contains(&name) {
             return Err(err(
                 T8,
-                format!("`{name}(…)` is an aggregate; it belongs in `return`, or as a block `{name}($x.p) {{ … }}`"),
+                format!(
+                    "`{name}(…)` is an aggregate; it belongs in `return`, or as a block `{name}($x.p) {{ … }}`"
+                ),
             ));
         }
         let mut args = Vec::new();
         for a in &c.args {
             match a {
                 Arg3::Expr(e) => {
-                    if matches!(e, Expr3::Call(t) if t.name == "terms") && matches!(name, "match_terms") {
+                    if matches!(e, Expr3::Call(t) if t.name == "terms")
+                        && matches!(name, "match_terms")
+                    {
                         continue;
                     }
                     args.push(self.expr(sc, e, At::Value)?)
                 }
                 Arg3::Inline(_) => {
-                    return Err(err(T69, format!("`{name}` reads scalars; an inline read is a relation")));
+                    return Err(err(
+                        T69,
+                        format!("`{name}` reads scalars; an inline read is a relation"),
+                    ));
                 }
             }
         }
         let bool_ty = |nullable| Ty::scalar(ScalarType::Bool, nullable);
-        let string = |t: &Ty| matches!(t, Ty::Value(p) if p.scalar == ScalarType::String && !p.list);
+        let string =
+            |t: &Ty| matches!(t, Ty::Value(p) if p.scalar == ScalarType::String && !p.list);
         let no_options = |c: &Call3| -> R<()> {
             match c.options.first() {
                 Some((o, _)) => Err(err(T71, format!("`{}` has no option `{o}`", c.name))),
@@ -2915,14 +3257,31 @@ impl Ctx<'_> {
             }
         };
         let search_field = |this: &Self, args: &[SExpr]| -> R<()> {
-            let Some(SExpr { kind: SKind::Prop { col, prop }, .. }) = args.first() else {
-                return Err(err(T19, format!("`{name}`'s first argument is a property of a node binding")));
+            let Some(SExpr {
+                kind: SKind::Prop { col, prop },
+                ..
+            }) = args.first()
+            else {
+                return Err(err(
+                    T19,
+                    format!("`{name}`'s first argument is a property of a node binding"),
+                ));
             };
-            let ty = sc.local(col).or_else(|| sc.outer_col(col)).map(|c| c.ty.clone());
+            let ty = sc
+                .local(col)
+                .or_else(|| sc.outer_col(col))
+                .map(|c| c.ty.clone());
             match ty {
                 Some(Ty::Node { type_name, .. }) => {
-                    if !this.catalog.query_node_type(&type_name).is_some_and(|n| n.has_full_text_index(prop)) {
-                        return Err(err(T27, format!("`{name}` needs a full-text index on `{type_name}.{prop}`")));
+                    if !this
+                        .catalog
+                        .query_node_type(&type_name)
+                        .is_some_and(|n| n.has_full_text_index(prop))
+                    {
+                        return Err(err(
+                            T27,
+                            format!("`{name}` needs a full-text index on `{type_name}.{prop}`"),
+                        ));
                     }
                     Ok(())
                 }
@@ -2939,20 +3298,48 @@ impl Ctx<'_> {
                     && t.list
                     && name == "contains"
                 {
-                    return Err(err_fix(T7, "`contains` tests a substring of a String; a list is matched with `in`", "<value> in <list>"));
+                    return Err(err_fix(
+                        T7,
+                        "`contains` tests a substring of a String; a list is matched with `in`",
+                        "<value> in <list>",
+                    ));
                 }
                 if !string(&a.ty) || !string(&b.ty) {
-                    return Err(err(T7, format!("`{name}` takes two Strings, got {} and {}", a.ty.display(), b.ty.display())));
+                    return Err(err(
+                        T7,
+                        format!(
+                            "`{name}` takes two Strings, got {} and {}",
+                            a.ty.display(),
+                            b.ty.display()
+                        ),
+                    ));
                 }
                 let ty = bool_ty(a.ty.nullable() || b.ty.nullable());
-                SExpr::new(SKind::Call { func: name.into(), args, options: Vec::new() }, ty)
+                SExpr::new(
+                    SKind::Call {
+                        func: name.into(),
+                        args,
+                        options: Vec::new(),
+                    },
+                    ty,
+                )
             }
             "search" | "match_text" | "fuzzy" => {
                 if !top {
-                    return Err(err(T38, format!("`{name}` is a search predicate; it must stand alone as a filter clause")));
+                    return Err(err(
+                        T38,
+                        format!(
+                            "`{name}` is a search predicate; it must stand alone as a filter clause"
+                        ),
+                    ));
                 }
                 if args.len() != 2 {
-                    return Err(err(T71, format!("`{name}` takes a field and a query; an edit budget is the option `max_edits:`")));
+                    return Err(err(
+                        T71,
+                        format!(
+                            "`{name}` takes a field and a query; an edit budget is the option `max_edits:`"
+                        ),
+                    ));
                 }
                 search_field(self, &args)?;
                 if !string(&args[1].ty) {
@@ -2975,19 +3362,35 @@ impl Ctx<'_> {
                     // `fuzzy(f, q)` with no budget is two edits, as today.
                     options.push(("max_edits".into(), int_lit(2)));
                 }
-                SExpr::new(SKind::Call { func: name.into(), args, options }, bool_ty(false))
+                SExpr::new(
+                    SKind::Call {
+                        func: name.into(),
+                        args,
+                        options,
+                    },
+                    bool_ty(false),
+                )
             }
             "match_terms" => {
                 if !top {
-                    return Err(err(T38, "`match_terms` is a predicate; it must stand alone as a filter clause"));
+                    return Err(err(
+                        T38,
+                        "`match_terms` is a predicate; it must stand alone as a filter clause",
+                    ));
                 }
                 no_options(c)?;
                 search_field(self, &args)?;
                 let Some(Arg3::Expr(Expr3::Call(t))) = c.args.get(1) else {
-                    return Err(err(T19, "`match_terms(field, terms(…))` takes a `terms` value"));
+                    return Err(err(
+                        T19,
+                        "`match_terms(field, terms(…))` takes a `terms` value",
+                    ));
                 };
                 if t.name != "terms" {
-                    return Err(err(T19, "`match_terms(field, terms(…))` takes a `terms` value"));
+                    return Err(err(
+                        T19,
+                        "`match_terms(field, terms(…))` takes a `terms` value",
+                    ));
                 }
                 let q = self.terms(sc, t)?;
                 let mut args = args;
@@ -2997,7 +3400,15 @@ impl Ctx<'_> {
                         func: "match_terms".into(),
                         args,
                         options: vec![
-                            ("mode".into(), SExpr::new(SKind::Lit(Literal::String(if q.mode_all { "all" } else { "any" }.into())), Ty::scalar(ScalarType::String, false))),
+                            (
+                                "mode".into(),
+                                SExpr::new(
+                                    SKind::Lit(Literal::String(
+                                        if q.mode_all { "all" } else { "any" }.into(),
+                                    )),
+                                    Ty::scalar(ScalarType::String, false),
+                                ),
+                            ),
                             ("max_edits".into(), q.max_edits),
                         ],
                     },
@@ -3005,14 +3416,24 @@ impl Ctx<'_> {
                 )
             }
             "terms" => {
-                return Err(err(T19, "`terms(…)` is a lexical query; it is read by `match_terms` and `bm25` only"));
+                return Err(err(
+                    T19,
+                    "`terms(…)` is a lexical query; it is read by `match_terms` and `bm25` only",
+                ));
             }
             "now" => {
                 no_options(c)?;
                 if !args.is_empty() {
                     return Err(err(T7, "`now()` takes no argument"));
                 }
-                SExpr::new(SKind::Call { func: "now".into(), args, options: Vec::new() }, Ty::scalar(ScalarType::DateTime, false))
+                SExpr::new(
+                    SKind::Call {
+                        func: "now".into(),
+                        args,
+                        options: Vec::new(),
+                    },
+                    Ty::scalar(ScalarType::DateTime, false),
+                )
             }
             "if" => {
                 no_options(c)?;
@@ -3022,7 +3443,14 @@ impl Ctx<'_> {
                 require_bool(cnd, "`if`'s condition")?;
                 let ty = common(a, b, "if")?;
                 let (a, b) = (adapt(a.clone(), &ty), adapt(b.clone(), &ty));
-                SExpr::new(SKind::Call { func: "if".into(), args: vec![cnd.clone(), a, b], options: Vec::new() }, ty)
+                SExpr::new(
+                    SKind::Call {
+                        func: "if".into(),
+                        args: vec![cnd.clone(), a, b],
+                        options: Vec::new(),
+                    },
+                    ty,
+                )
             }
             "coalesce" => {
                 no_options(c)?;
@@ -3036,7 +3464,14 @@ impl Ctx<'_> {
                 let all_null = args.iter().all(|a| a.ty.nullable());
                 let ty = ty.with_nullable(all_null);
                 let args = args.into_iter().map(|a| adapt(a, &ty)).collect();
-                SExpr::new(SKind::Call { func: "coalesce".into(), args, options: Vec::new() }, ty)
+                SExpr::new(
+                    SKind::Call {
+                        func: "coalesce".into(),
+                        args,
+                        options: Vec::new(),
+                    },
+                    ty,
+                )
             }
             "concat" => {
                 no_options(c)?;
@@ -3044,10 +3479,20 @@ impl Ctx<'_> {
                     return Err(err(T7, "`concat` takes one or more Strings"));
                 }
                 let nullable = args.iter().any(|a| a.ty.nullable());
-                SExpr::new(SKind::Call { func: "concat".into(), args, options: Vec::new() }, Ty::scalar(ScalarType::String, nullable))
+                SExpr::new(
+                    SKind::Call {
+                        func: "concat".into(),
+                        args,
+                        options: Vec::new(),
+                    },
+                    Ty::scalar(ScalarType::String, nullable),
+                )
             }
             other => {
-                return Err(err(T6, format!("`{other}` is not a registry row or a declared read")));
+                return Err(err(
+                    T6,
+                    format!("`{other}` is not a registry row or a declared read"),
+                ));
             }
         };
         let _ = at;
@@ -3210,7 +3655,10 @@ fn apply(acc: Option<Term>, step: Step, _fresh: &mut u32) -> Term {
                 items.push((c.clone(), SExpr::new(SKind::Col(c), ty)));
             }
             for c in &new_cols {
-                items.push((c.name.clone(), SExpr::new(SKind::Null, c.ty.with_nullable(true))));
+                items.push((
+                    c.name.clone(),
+                    SExpr::new(SKind::Null, c.ty.with_nullable(true)),
+                ));
             }
             Term::Union {
                 left: matched.boxed(),
@@ -3248,7 +3696,11 @@ fn output_columns(t: &Term) -> Vec<String> {
             output_columns(input)
         }
         Term::Project { input, items, keep } => {
-            let mut v = if *keep { output_columns(input) } else { Vec::new() };
+            let mut v = if *keep {
+                output_columns(input)
+            } else {
+                Vec::new()
+            };
             v.extend(items.iter().map(|(n, _)| n.clone()));
             v
         }
@@ -3289,7 +3741,9 @@ fn monotone(name: &str, body: &Term, rounds: Option<u64>) -> R<Vec<String>> {
     let mut own = body;
     loop {
         match own {
-            Term::Project { input, keep: false, .. } => own = input,
+            Term::Project {
+                input, keep: false, ..
+            } => own = input,
             Term::Cut { input, .. } | Term::Order { input, .. } => {
                 if depends(input, name) {
                     return Err(t70(name, "an `order` or `limit` over the recursive rows"));
@@ -3308,7 +3762,9 @@ fn monotone(name: &str, body: &Term, rounds: Option<u64>) -> R<Vec<String>> {
                     f => {
                         return Err(t70(
                             name,
-                            &format!("the aggregate `{f}` in its return; a recursive read returns `distinct` or `min`/`max`"),
+                            &format!(
+                                "the aggregate `{f}` in its return; a recursive read returns `distinct` or `min`/`max`"
+                            ),
                         ));
                     }
                 }
@@ -3320,13 +3776,10 @@ fn monotone(name: &str, body: &Term, rounds: Option<u64>) -> R<Vec<String>> {
             }
             (input, lat)
         }
-        Term::Project { input, .. } => {
+        Term::Project { .. } => {
             return Err(t70(
                 name,
-                &format!(
-                    "a return that is neither `distinct` nor `min`/`max`; over a bag the fixpoint does not exist{}",
-                    if depends(input, name) { "" } else { "" }
-                ),
+                "a return that is neither `distinct` nor `min`/`max`; over a bag the fixpoint does not exist",
             ));
         }
         other => (other, Vec::new()),
@@ -3343,10 +3796,15 @@ fn monotone(name: &str, body: &Term, rounds: Option<u64>) -> R<Vec<String>> {
     // and a round budget declared.
     if let Term::Group { keys, aggs, .. } = own {
         for (n, k) in keys {
-            if reads_any(k, &computed) || !k.is_reference_read() && !matches!(k.kind, SKind::Param(_)) {
+            if reads_any(k, &computed)
+                || !k.is_reference_read() && !matches!(k.kind, SKind::Param(_))
+            {
                 return Err(t70(
                     name,
-                    &format!("the computed column `{}` in its return without `min` or `max`; that is value invention with no fixpoint", &n[1..]),
+                    &format!(
+                        "the computed column `{}` in its return without `min` or `max`; that is value invention with no fixpoint",
+                        &n[1..]
+                    ),
                 ));
             }
         }
@@ -3429,7 +3887,9 @@ impl Walk<'_> {
                     if let Some(l) = cols.iter().find(|c| self.lattice.contains(c)) {
                         return Err(t70(
                             self.name,
-                            &format!("a filter reads the `min`/`max` column `{l}` inside the cycle"),
+                            &format!(
+                                "a filter reads the `min`/`max` column `{l}` inside the cycle"
+                            ),
                         ));
                     }
                     if let Some(b) = cols.iter().find(|c| self.blocks.contains(c)) {
@@ -3491,15 +3951,24 @@ impl Walk<'_> {
                     // over the enclosing filter decides (see `Correlate`).
                     // `distinct` (a Group with no aggregate) is a projection
                     // over sets and monotone.
-                    let block = keys.is_empty() && aggs.len() == 1 && aggs[0].1.func == AggFunc::Count && aggs[0].1.arg.is_none();
+                    let block = keys.is_empty()
+                        && aggs.len() == 1
+                        && aggs[0].1.func == AggFunc::Count
+                        && aggs[0].1.arg.is_none();
                     if !aggs.is_empty() && !block {
-                        return Err(t70(self.name, "an aggregate over the recursive rows below its own return"));
+                        return Err(t70(
+                            self.name,
+                            "an aggregate over the recursive rows below its own return",
+                        ));
                     }
                     for (_, k) in keys {
                         let mut cols = Vec::new();
                         k.columns(&mut cols);
                         if cols.iter().any(|x| self.lattice.contains(x)) {
-                            return Err(t70(self.name, "a group key reads a `min`/`max` column inside the cycle"));
+                            return Err(t70(
+                                self.name,
+                                "a group key reads a `min`/`max` column inside the cycle",
+                            ));
                         }
                     }
                 }
@@ -3574,7 +4043,8 @@ fn is_exists_of(pred: &SExpr, col: &str) -> bool {
     matches!(&left.kind, SKind::Col(c) if c == col)
         && matches!(
             (op, &right.kind),
-            (CompOp::Gt, SKind::Lit(Literal::Integer(0))) | (CompOp::Ge, SKind::Lit(Literal::Integer(1)))
+            (CompOp::Gt, SKind::Lit(Literal::Integer(0)))
+                | (CompOp::Ge, SKind::Lit(Literal::Integer(1)))
         )
 }
 
@@ -3640,7 +4110,10 @@ fn dup_assignments(a: &[Assignment3]) -> R<()> {
     let mut seen = HashSet::new();
     for x in a {
         if !seen.insert(&x.property) {
-            return Err(err(T13, format!("duplicate assignment for property `{}`", x.property)));
+            return Err(err(
+                T13,
+                format!("duplicate assignment for property `{}`", x.property),
+            ));
         }
     }
     Ok(())
@@ -3651,11 +4124,17 @@ fn is_catalogue(name: &str) -> bool {
 }
 
 fn is_integer(s: ScalarType) -> bool {
-    matches!(s, ScalarType::I32 | ScalarType::I64 | ScalarType::U32 | ScalarType::U64)
+    matches!(
+        s,
+        ScalarType::I32 | ScalarType::I64 | ScalarType::U32 | ScalarType::U64
+    )
 }
 
 fn int_lit(n: i128) -> SExpr {
-    SExpr::new(SKind::Lit(Literal::Integer(n)), Ty::scalar(ScalarType::I64, false))
+    SExpr::new(
+        SKind::Lit(Literal::Integer(n)),
+        Ty::scalar(ScalarType::I64, false),
+    )
 }
 
 fn count_rows() -> Agg {
@@ -3671,7 +4150,11 @@ fn exists_col(col: &str) -> SExpr {
     SExpr::new(
         SKind::Cmp {
             op: CompOp::Gt,
-            left: SExpr::new(SKind::Col(col.to_string()), Ty::scalar(ScalarType::I64, false)).boxed(),
+            left: SExpr::new(
+                SKind::Col(col.to_string()),
+                Ty::scalar(ScalarType::I64, false),
+            )
+            .boxed(),
             right: int_lit(0).boxed(),
         },
         Ty::scalar(ScalarType::Bool, false),
@@ -3679,7 +4162,10 @@ fn exists_col(col: &str) -> SExpr {
 }
 
 fn not_exists(col: &str) -> SExpr {
-    SExpr::new(SKind::Not(exists_col(col).boxed()), Ty::scalar(ScalarType::Bool, false))
+    SExpr::new(
+        SKind::Not(exists_col(col).boxed()),
+        Ty::scalar(ScalarType::Bool, false),
+    )
 }
 
 fn agg_func(name: &str) -> AggFunc {
@@ -3703,12 +4189,18 @@ fn agg_type(func: AggFunc, arg: &Ty) -> R<Ty> {
             format!("{func} cannot take a reference bare; access one of its properties"),
         )),
         (AggFunc::Sum | AggFunc::Avg, Ty::Value(t)) if t.list || !t.scalar.is_numeric() => {
-            Err(err(T8, format!("{func} requires numeric type, got {}", t.display_name())))
+            Err(err(
+                T8,
+                format!("{func} requires numeric type, got {}", t.display_name()),
+            ))
         }
         (AggFunc::Sum | AggFunc::Avg, Ty::Value(_)) => Ok(Ty::scalar(ScalarType::F64, true)),
         (_, Ty::Value(t)) if t.list || !t.scalar.is_orderable() => Err(err(
             T8,
-            format!("{func} requires an orderable scalar, got {}", t.display_name()),
+            format!(
+                "{func} requires an orderable scalar, got {}",
+                t.display_name()
+            ),
         )),
         (_, Ty::Value(t)) => Ok(Ty::scalar(t.scalar, true)),
     }
@@ -3717,7 +4209,10 @@ fn agg_type(func: AggFunc, arg: &Ty) -> R<Ty> {
 fn require_bool(e: &SExpr, what: &str) -> R<()> {
     match &e.ty {
         Ty::Value(t) if t.scalar == ScalarType::Bool && !t.list => Ok(()),
-        other => Err(err(T41, format!("{what} needs a Bool, got {}", other.display()))),
+        other => Err(err(
+            T41,
+            format!("{what} needs a Bool, got {}", other.display()),
+        )),
     }
 }
 
@@ -3726,18 +4221,27 @@ fn require_bool(e: &SExpr, what: &str) -> R<()> {
 /// is edition 2's contextual literal typing).
 fn adapt(e: SExpr, other: &Ty) -> SExpr {
     match (&e.kind, other) {
-        (SKind::Lit(Literal::Integer(n)), Ty::Value(t)) if !t.list && is_integer(t.scalar) && fits(*n, t.scalar) => {
+        (SKind::Lit(Literal::Integer(n)), Ty::Value(t))
+            if !t.list && is_integer(t.scalar) && fits(*n, t.scalar) =>
+        {
             SExpr::new(e.kind.clone(), Ty::scalar(t.scalar, false))
         }
-        (SKind::Lit(Literal::Integer(_)), Ty::Value(t)) if !t.list && matches!(t.scalar, ScalarType::F32 | ScalarType::F64) => {
+        (SKind::Lit(Literal::Integer(_)), Ty::Value(t))
+            if !t.list && matches!(t.scalar, ScalarType::F32 | ScalarType::F64) =>
+        {
             SExpr::new(e.kind.clone(), Ty::scalar(ScalarType::F64, false))
         }
         // A list literal meeting a list: an empty list takes its type, and
         // integer elements take an integer element type (contextual, as today).
         (SKind::Lit(Literal::List(items)), Ty::Value(t)) if t.list => {
-            let all_int = items.iter().all(|i| matches!(i, Literal::Integer(_) | Literal::Null));
+            let all_int = items
+                .iter()
+                .all(|i| matches!(i, Literal::Integer(_) | Literal::Null));
             if items.is_empty() || (all_int && t.scalar.is_numeric()) {
-                SExpr::new(e.kind.clone(), Ty::Value(PropType::list_of(t.scalar, false)))
+                SExpr::new(
+                    e.kind.clone(),
+                    Ty::Value(PropType::list_of(t.scalar, false)),
+                )
             } else {
                 e
             }
@@ -3781,7 +4285,10 @@ fn numeric_fits(from: ScalarType, to: ScalarType) -> bool {
 fn numeric(e: &SExpr, what: &str) -> R<Ty> {
     match &e.ty {
         Ty::Value(t) if t.scalar.is_numeric() && !t.list => Ok(e.ty.clone()),
-        other => Err(err(T72, format!("{what} needs a number, got {}", other.display()))),
+        other => Err(err(
+            T72,
+            format!("{what} needs a number, got {}", other.display()),
+        )),
     }
 }
 
@@ -3807,11 +4314,18 @@ fn arith(op: ArithOp, l: SExpr, r: SExpr) -> R<SExpr> {
             ScalarType::F64
         }
     } else if signed(a.scalar) == signed(b.scalar) {
-        if width(a.scalar) >= width(b.scalar) { a.scalar } else { b.scalar }
+        if width(a.scalar) >= width(b.scalar) {
+            a.scalar
+        } else {
+            b.scalar
+        }
     } else if matches!(a.scalar, ScalarType::U64) || matches!(b.scalar, ScalarType::U64) {
         return Err(err(
             T72,
-            format!("`{}` mixes U64 with a signed integer; the RFC states no common type", op.symbol()),
+            format!(
+                "`{}` mixes U64 with a signed integer; the RFC states no common type",
+                op.symbol()
+            ),
         ));
     } else {
         ScalarType::I64
@@ -3849,7 +4363,10 @@ fn compare(op: CompOp, l: SExpr, r: SExpr) -> R<SExpr> {
                 return Err(err(T7, "references compare with `=` and `!=` only"));
             }
             if a != b {
-                return Err(err(T7, format!("`{a}` and `{b}` references are never equal")));
+                return Err(err(
+                    T7,
+                    format!("`{a}` and `{b}` references are never equal"),
+                ));
             }
             (l, r)
         }
@@ -3860,17 +4377,30 @@ fn compare(op: CompOp, l: SExpr, r: SExpr) -> R<SExpr> {
             if !types_compatible(a, b) || a.list || b.list {
                 return Err(err(
                     T7,
-                    format!("cannot compare {} with {}", a.display_name(), b.display_name()),
+                    format!(
+                        "cannot compare {} with {}",
+                        a.display_name(),
+                        b.display_name()
+                    ),
                 ));
             }
             if matches!(a.scalar, ScalarType::Vector(_) | ScalarType::Blob) {
-                return Err(err(T7, format!("{} values do not compare", a.display_name())));
+                return Err(err(
+                    T7,
+                    format!("{} values do not compare", a.display_name()),
+                ));
             }
             if ordering && !a.scalar.is_orderable() {
-                return Err(err(T7, format!("{} values have no order", a.display_name())));
+                return Err(err(
+                    T7,
+                    format!("{} values have no order", a.display_name()),
+                ));
             }
             if a.scalar != b.scalar {
-                let wide = if width(a.scalar) >= width(b.scalar) && !(matches!(b.scalar, ScalarType::F32 | ScalarType::F64) && !matches!(a.scalar, ScalarType::F32 | ScalarType::F64)) {
+                let wide = if width(a.scalar) >= width(b.scalar)
+                    && !(matches!(b.scalar, ScalarType::F32 | ScalarType::F64)
+                        && !matches!(a.scalar, ScalarType::F32 | ScalarType::F64))
+                {
                     a.scalar
                 } else {
                     b.scalar
@@ -3889,7 +4419,10 @@ fn compare(op: CompOp, l: SExpr, r: SExpr) -> R<SExpr> {
             }
         }
         (a, b) => {
-            return Err(err(T7, format!("cannot compare {} with {}", a.display(), b.display())));
+            return Err(err(
+                T7,
+                format!("cannot compare {} with {}", a.display(), b.display()),
+            ));
         }
     };
     Ok(SExpr::new(
@@ -3911,7 +4444,9 @@ fn common(a: &SExpr, b: &SExpr, what: &str) -> R<Ty> {
         (Ty::Value(x), Ty::Value(y)) if x.scalar == y.scalar && x.list == y.list => {
             Ok(a2.ty.with_nullable(nullable))
         }
-        (Ty::Value(x), Ty::Value(y)) if x.scalar.is_numeric() && y.scalar.is_numeric() && !x.list && !y.list => {
+        (Ty::Value(x), Ty::Value(y))
+            if x.scalar.is_numeric() && y.scalar.is_numeric() && !x.list && !y.list =>
+        {
             let float = |s| matches!(s, ScalarType::F32 | ScalarType::F64);
             let s = if float(x.scalar) || float(y.scalar) {
                 ScalarType::F64
@@ -3923,17 +4458,32 @@ fn common(a: &SExpr, b: &SExpr, what: &str) -> R<Ty> {
             Ok(Ty::scalar(s, nullable))
         }
         (x, y) if x.same_base(y) => Ok(x.with_nullable(nullable)),
-        (x, y) => Err(err(T7, format!("`{what}`'s branches are {} and {}", x.display(), y.display()))),
+        (x, y) => Err(err(
+            T7,
+            format!(
+                "`{what}`'s branches are {} and {}",
+                x.display(),
+                y.display()
+            ),
+        )),
     }
 }
 
 fn lexical_text(text: &SExpr) -> R<()> {
     match (&text.kind, &text.ty) {
-        (SKind::Lit(Literal::String(s)), _) if s.split(|c: char| !c.is_alphanumeric()).all(str::is_empty) => {
+        (SKind::Lit(Literal::String(s)), _)
+            if s.split(|c: char| !c.is_alphanumeric()).all(str::is_empty) =>
+        {
             Err(err(T20, "the lexical query has no searchable terms"))
         }
         (_, Ty::Value(t)) if t.scalar == ScalarType::String && !t.list => Ok(()),
-        (_, other) => Err(err(T20, format!("a lexical query is a String or `terms(…)`, got {}", other.display()))),
+        (_, other) => Err(err(
+            T20,
+            format!(
+                "a lexical query is a String or `terms(…)`, got {}",
+                other.display()
+            ),
+        )),
     }
 }
 
@@ -4064,7 +4614,10 @@ fn pending_vars(p: &Pending, sc: &Scope) -> Vec<String> {
         }
         Pending::Not(clauses) => clauses_vars(clauses, &mut out),
     }
-    out.retain(|v| (sc.future.contains(v) || sc.is_bound(v)) && !(sc.params.contains_key(v) && !sc.is_bound(v) && !sc.future.contains(v)));
+    out.retain(|v| {
+        (sc.future.contains(v) || sc.is_bound(v))
+            && !(sc.params.contains_key(v) && !sc.is_bound(v) && !sc.future.contains(v))
+    });
     out.sort();
     out.dedup();
     out
