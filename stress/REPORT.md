@@ -328,9 +328,26 @@ needs a write.
 - **N7 Deleted graph.** After a deletion the record keeps the operation
   (`unsettled`), but the graph-scoped lookup route answers 404, so it can only
   be read from the file or after re-adding the graph id.
-- **N8 Stale position (code reading, not reproduced).** `settle(Committed)`
-  calls `keep_kind_state` (`operations.rs:685`), so an older run settled late
-  can overwrite a newer run's resume position. The position is a hint.
+- **N8 Late settlement and the resume position (S3, partly reproduced).**
+  `settle(Committed)` calls `keep_kind_state`
+  (`crates/omnigraph-cluster/src/operations.rs:691`, body at `:772`). The
+  record a late settlement completes is the `publishing` record, which keeps
+  the tables but no `resume_at` (only the live path's report sets it), so the
+  settlement does not restore an old position: it *clears* the graph's
+  position (`kind_state.optimize.remove`). Reproduced on RustFS
+  (`stress/c2_stale_resume_s3.py`, evidence
+  `stress/evidence/c2_stale_resume_s3.json`): run A optimized `edge:Authored`
+  and deferred the rest (`gate_hold_limit`), its manifest PUT landed after the
+  owner fenced; the successor settled it `succeeded` with `resume_at: null`,
+  so A's own position (the next table) was lost. When a newer run B has left a
+  position before A settles, the settlement erases B's position too
+  (follows from the code; the rerun that bounds B is in the evidence if it
+  completed, see below). Effect: the next full-catalog run starts from the
+  first table. The position is a hint, so nothing is lost but rotation;
+  repeated in-doubt runs on a large catalog would keep restarting the
+  rotation. Fix: store `resume_at` in the `publishing` record (it is known
+  when the run publishes) or skip `keep_kind_state` for a settlement whose
+  run is older than the one that set the current position.
 - **N9 Future-dated ids.** An id up to 60 s ahead is accepted; once evicted it
   moves the mark ahead of honest ids for up to that lead (documented).
 - **N10 Evidence gaps.** Most rows of the RFC's evidence table have no test on
