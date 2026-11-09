@@ -57,7 +57,7 @@ needs a write.
 | S4 | should-fix | verified, fixed on branch | engine #1275 | Adjacency-artifact refresh ignores cancellation: SIGTERM during its scan uses the full grace, exits 2, record left `publishing` |
 | S5 | should-fix | verified, fixed on branch | CLI #1282 | A 5xx refusal with `effects: none` (routes off, draining) exits 2 and says the run "may still run"; docs say exit 1 |
 | S6 | should-fix | verified, fixed on branch | server #1282 | The 409 for four unresolved publications names no operation, graph or walking state (RFC §2.4 says it reports each record's walk) |
-| N1–N13 | note | see below | | ordering, record content, status codes, evidence gaps, pre-existing issues |
+| N1–N14 | note | see below | | ordering, record content, status codes, evidence gaps, pre-existing issues |
 
 ### B1 (blocking): the table pipeline exits before planning the rest of the catalog
 
@@ -341,6 +341,12 @@ needs a write.
   the client that maintenance holds it or when to retry, and with a 60 s
   default gate hold the window is long. Also, on a server target
   `--operation` silently ignores `--tables`/`--max-gate-hold`.
+- **N14 Lookup cost with unresolved records.** Every lookup and admission
+  walks every unresolved record from a fresh read of its branch; with four
+  unresolved (head unchanged) a lookup on loopback RustFS took 201 ms median
+  versus 5 ms with none (`evidence/c2_unresolved_cap_s3_cost.json`). On real
+  S3 and with the CLI polling every 500 ms per waiting client, this is the
+  first place request cost will show.
 - **N12 Pre-existing writer conflicts.** Under concurrent writers, mutations
   and edge loads are refused "write authority 'graph_head:main' changed
   during preparation" at the same rate with or without optimize (control runs

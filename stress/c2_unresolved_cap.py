@@ -43,6 +43,10 @@ try:
             pass
     rec = og.read_record(root)
     res["unresolved"] = len(rec.get("unresolved", []))
+    lat = []
+    for _ in range(20):
+        t0 = time.time(); h.lookup("kg", ids[0]); lat.append(time.time() - t0)
+    res["lookup_ms_with_4_unresolved"] = sorted(round(x * 1000) for x in lat)[len(lat) // 2]
     s5, b5, _ = h.submit("kg", og.ulid())
     so, bo, _ = h.submit("other", og.ulid())
     res["fifth_kg"] = (s5, b5.get("error") if isinstance(b5, dict) else b5)
@@ -60,6 +64,10 @@ try:
     res["states_after_kg_write"] = states
     s7, b7, _ = h.submit("kg", og.ulid())
     res["admission_after_settlement"] = s7
+    lat = []
+    for _ in range(20):
+        t0 = time.time(); h.lookup("kg", ids[0]); lat.append(time.time() - t0)
+    res["lookup_ms_with_0_unresolved"] = sorted(round(x * 1000) for x in lat)[len(lat) // 2]
 finally:
     srv.kill(9)
 print(json.dumps(res, indent=1, default=str))
