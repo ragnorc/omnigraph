@@ -45,7 +45,7 @@ SIGTERM during the adjacency-artifact scan waits out the whole grace and
 exits 2; a deployment can miss cancelling a run admitted at its cancel
 instant; the CLI exits 2 instead of 1 on a refusal the server marks
 `effects: none`; the full-list 409 does not say which graph needs a write.
-The seventh is documented, not fixed: on object storage a client that loops
+The seventh has only a docs correction on the branch: on object storage a client that loops
 optimize makes one write wait through many runs (14 s across 9 runs on S3,
 each run within its own bound; 6x fewer writes), contrary to the docs'
 per-writer bound.
@@ -63,7 +63,7 @@ per-writer bound.
 | S4 | should-fix | verified, fixed on branch | engine #1275 | Adjacency-artifact refresh ignores cancellation: SIGTERM during its scan uses the full grace, exits 2, record left `publishing` |
 | S5 | should-fix | verified, fixed on branch | CLI #1282 | A 5xx refusal with `effects: none` (routes off, draining) exits 2 and says the run "may still run"; docs say exit 1 |
 | S6 | should-fix | verified, fixed on branch | server #1282 | The 409 for four unresolved publications names no operation, graph or walking state (RFC §2.4 says it reports each record's walk) |
-| S7 | should-fix | verified (S3), not fixed | server/engine #1282 | Back-to-back runs: one write waits through many runs' gate holds (14 s across 9 runs on S3, per-run bound ≤ 3.9 s); writes drop 6x; the docs' "a writer waits at most the bound plus one rewrite" fails |
+| S7 | should-fix | verified (S3), docs corrected on branch, behavior unchanged | server/engine #1282 | Back-to-back runs: one write waits through many runs' gate holds (14 s across 9 runs on S3, per-run bound ≤ 3.9 s); writes drop 6x; the docs' "a writer waits at most the bound plus one rewrite" fails |
 | N1–N15 | note | see below | | ordering, record content, status codes, evidence gaps, pre-existing issues |
 
 ### B1 (blocking): the table pipeline exits before planning the rest of the catalog
@@ -339,7 +339,9 @@ per-writer bound.
   control, pre-existing).
 - **Violates:** with two or more concurrent writers, the per-writer sentence in `maintenance.md:84`; the RFC's
   observable contract ("The request bounds that wait (§1.2)") holds only per
-  run. Nothing limits how soon the next run may take the gates.
+  run, and RFC §3.5 "Gate-hold time is its upper bound" (per-writer wait)
+  fails: 14 s of wait against a longest hold of 3.9 s. Nothing limits how
+  soon the next run may take the gates.
 - **Cause (measured with one writer, inferred for two):** a load prepares
   outside the gates, waits for the run, then finds main moved by the run's
   publication and re-prepares (`crates/omnigraph/src/loader/mod.rs:760`, up
@@ -365,6 +367,11 @@ per-writer bound.
   single-authority invariant and needs its own RFC.
 - **Pre-existing?** The gates and re-prepare loop are on main; a client
   could not loop optimize through the serving process before #1282.
+- **Docs correction (commit `e189d893`):** `maintenance.md` now states the
+  bound per run and that back-to-back runs add up on object storage. RFC
+  §3.5's "Per-writer wait is not measured in this slice. Gate-hold time is
+  its upper bound." needs the same correction. `scripts/check-docs.py` was
+  not run (its pinned Python packages are not installed on the box).
 
 ### Notes
 
@@ -656,6 +663,7 @@ Logs: `stress/baseline/`.
 | `5a1bbeec` | S6 full-list refusal names each record |
 | `24614965` | S4 regression test (new seam `optimize.artifact_scan`) |
 | `53107bc9` | N2 span fields and terminal nonce (+ assertion in `operation_routes`) |
+| `e189d893` | S7 docs: the writer bound is per run |
 | `3741a341`, `5d721853` | rustfmt and clippy over the fixes and harness |
 
 Validation of the fix commits together (`5d721853`): `cargo dev-nextest`
