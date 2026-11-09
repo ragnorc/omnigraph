@@ -1421,6 +1421,12 @@ async fn persist_graph_index_artifact(
     Ok(ArtifactRefresh::Refreshed)
 }
 
+decide_seam! {
+    /// The artifact refresh is about to read the edge tables, after the run
+    /// released its writer gates: a cancellation from here on abandons it.
+    pub static OPTIMIZE_ARTIFACT_SCAN = ("optimize.artifact_scan", Unreachable, [Fail]);
+}
+
 /// The artifact's object, or the outcome that ends the refresh without a
 /// write. Reads only.
 async fn prepare_graph_index_artifact(
@@ -1445,6 +1451,7 @@ async fn prepare_graph_index_artifact(
         .iter()
         .map(|(name, et)| (name.clone(), (et.from_type.clone(), et.to_type.clone())))
         .collect();
+    fail(&OPTIMIZE_ARTIFACT_SCAN)?;
     let snapshot = db.snapshot_for_branch(None).await?;
     // `save` refuses a partially-materialized store (no complete identity to
     // stamp); check that BEFORE paying the full-catalog edge scan.
