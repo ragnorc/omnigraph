@@ -1,0 +1,50 @@
+{
+ "depth": 300,
+ "limit": 16,
+ "record_after_owner": "publishing",
+ "writes_s": 42.8,
+ "late_commit_on_main": true,
+ "late_commit_depth": 300,
+ "lookups": 20,
+ "expected_lookups": 20,
+ "progress_head": [
+  [
+   "publishing",
+   null,
+   ""
+  ],
+  [
+   "publishing",
+   16,
+   "1YN18B83"
+  ],
+  [
+   "publishing",
+   32,
+   "2CQ3M28K"
+  ]
+ ],
+ "progress_tail": [
+  [
+   "publishing",
+   272,
+   "61SZ9CS3"
+  ],
+  [
+   "publishing",
+   288,
+   "VK4323F8"
+  ],
+  [
+   "succeeded",
+   null,
+   ""
+  ]
+ ],
+ "final": [
+  "succeeded",
+  null,
+  "hb1.01M6Z4NGCYJHMZATB3YMM74XGC.4.01M6Z4NGPV5K0TS544AKDH5XAM"
+ ],
+ "final_is_late_commit": true
+}

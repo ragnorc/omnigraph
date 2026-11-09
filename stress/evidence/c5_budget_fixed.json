@@ -1,0 +1,10 @@
+{
+ "runs": 4,
+ "compacted": [
+  "edge:Knows",
+  "edge:WorksAt",
+  "node:Company",
+  "node:Person"
+ ],
+ "violations": []
+}
