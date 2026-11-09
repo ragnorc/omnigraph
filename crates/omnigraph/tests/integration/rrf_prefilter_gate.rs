@@ -950,3 +950,90 @@ async fn natural_gate_falls_back_on_broad_fixture() {
         "8/20 eligible must fail the natural 10% ratio"
     );
 }
+
+/// Issue #758: every ranked entity has the first hop, and only the filter on
+/// the far binding is selective (`Passage -> SourceRevision { matter_number }`
+/// in the report). The scope reaches 3 of 20 chunks, so a ranking scoped by
+/// it should score those 3, not the whole type. Fails on main: a standalone
+/// `bm25` has no gate and scans every text match (20), and the rrf gate counts
+/// chunks that have any `ChunkOfArtifact` edge (20 of 20), not the ones the
+/// filtered artifact reaches, so it falls back on its threshold and each arm
+/// scans 20 as well.
+#[tokio::test]
+#[serial]
+async fn issue_758_scoped_bm25_scans_only_entities_the_filtered_traversal_reaches() {
+    const SCOPED: &str = r#"
+query scoped_bm25($q: String) {
+    match {
+        $c: Chunk
+        $c chunkOfArtifact $a
+        $a.slug = "art-0"
+    }
+    return { $c.slug }
+    order { bm25($c.text, $q) }
+    limit 5
+}
+
+query scoped_rrf($q1: String, $q2: String) {
+    match {
+        $c: Chunk
+        $c chunkOfArtifact $a
+        $a.slug = "art-0"
+    }
+    return { $c.slug }
+    order { rrf(bm25($c.text, $q1), bm25($c.text, $q2)) }
+    limit 5
+}
+"#;
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap();
+    let db = session(Omnigraph::init(uri, GATE_SCHEMA).await.unwrap());
+    let mut rows = vec![
+        r#"{"type":"Artifact","data":{"slug":"art-0"}}"#.to_string(),
+        r#"{"type":"Artifact","data":{"slug":"art-1"}}"#.to_string(),
+    ];
+    rows.extend(gate_chunk_rows());
+    for chunk in 0..GATE_CHUNKS {
+        let artifact = if chunk < 3 { "art-0" } else { "art-1" };
+        rows.push(format!(
+            r#"{{"edge":"ChunkOfArtifact","id":"eoa-{chunk:02}","from":"chunk-{chunk:02}","to":"{artifact}","data":{{"label":"of"}}}}"#
+        ));
+    }
+    db.load_jsonl(&rows.join("\n"), LoadMode::Overwrite)
+        .await
+        .unwrap();
+    db.ensure_indices().await.unwrap();
+
+    let run = |name: &'static str, params: ParamMap| {
+        let db = &db;
+        async move {
+            let probes = QueryIoProbes::default();
+            let result = with_query_io_probes(probes.clone(), async {
+                query_main(db, SCOPED, name, &params).await
+            })
+            .await
+            .unwrap();
+            let scanned = probes
+                .bm25_scan_rows
+                .load(std::sync::atomic::Ordering::Relaxed);
+            let verdicts = probes.rrf_gate_verdicts.lock().unwrap().clone();
+            (fused_slugs(&result), scanned, verdicts)
+        }
+    };
+
+    let (slugs, scanned, _) = run("scoped_bm25", params(&[("$q", "needle")])).await;
+    assert_eq!(slugs, ["chunk-00", "chunk-01", "chunk-02"]);
+    assert_eq!(
+        scanned, 3,
+        "a scoped bm25 should score only the 3 chunks art-0 reaches, not every text match"
+    );
+
+    let (slugs, scanned, verdicts) =
+        run("scoped_rrf", params(&[("$q1", "needle"), ("$q2", "sharp")])).await;
+    assert_eq!(slugs.len(), 3);
+    assert_eq!(
+        scanned,
+        2 * 3,
+        "each rrf full-text arm should score only the 3 chunks art-0 reaches; gate: {verdicts:?}"
+    );
+}
