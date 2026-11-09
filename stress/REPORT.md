@@ -3,7 +3,7 @@
 **Under test:** `feat/optimize-served` at `f6b2443c` (PR #1282), stacked on
 `feat/optimize-engine` at `5667fddb` (PR #1275).
 **Stress branch:** `stress/optimize-1282` on `https://github.com/ragnorc/omnigraph`
-(this report, the harnesses, the evidence, and eight fix commits, each
+(this report, the harnesses, the evidence, and nine fix commits, each
 separate and labeled).
 **Box:** `nproc` 2, 64 GiB, gVisor, local disk. S3 backend: RustFS
 1.0.0-beta.12 (the release CI pins; official binary, checksum matched the
@@ -428,7 +428,14 @@ per-writer bound.
   position before A settles, the settlement erases B's position too
   (reproduced: with B bounded, B left the position at `edge:Knows`; A's late
   settlement then removed it and the next full-catalog run started from the
-  first table, `evidence/c2_stale_resume_s3_bounded_b.json`). Effect: the next full-catalog run starts from the
+  first table, `evidence/c2_stale_resume_s3_bounded_b.json`).
+  **Fixed on the branch (`a6594475`):** a settlement moves the position only
+  when its record carries one and never clears it; unit test
+  `operations::tests::a_late_settlement_without_a_position_keeps_a_newer_runs_position`
+  (red before, green after); the same S3 scenario then keeps `edge:Knows`
+  and the next run starts there
+  (`evidence/c2_stale_resume_s3_after_n8_fix.json`); cluster and server
+  suites 753 passed, clippy and fmt clean. Effect: the next full-catalog run starts from the
   first table. The position is a hint, so nothing is lost but rotation;
   repeated in-doubt runs on a large catalog would keep restarting the
   rotation. Fix: store `resume_at` in the `publishing` record (it is known
@@ -681,6 +688,7 @@ Logs: `stress/baseline/`.
 | `24614965` | S4 regression test (new seam `optimize.artifact_scan`) |
 | `53107bc9` | N2 span fields and terminal nonce (+ assertion in `operation_routes`) |
 | `e189d893` | S7 docs: the writer bound is per run |
+| `a6594475` | N8 late settlement keeps the resume position (+ unit test) |
 | `3741a341`, `5d721853` | rustfmt and clippy over the fixes and harness |
 
 Validation of the fix commits together (`5d721853`): `cargo dev-nextest`
