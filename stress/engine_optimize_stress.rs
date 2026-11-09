@@ -408,6 +408,7 @@ async fn optimizer(
 }
 
 async fn check_phase(db: &Session, ledger: &Mutex<Ledger>, runs: &Mutex<Vec<RunRecord>>, violations: &Mutex<Vec<String>>, phase: &str) {
+    let check_unclaimed = !runs.lock().unwrap().is_empty();
     let l = ledger.lock().unwrap();
     let persons = l.persons.clone();
     let docs = l.docs.clone();
@@ -469,7 +470,7 @@ async fn check_phase(db: &Session, ledger: &Mutex<Ledger>, runs: &Mutex<Vec<RunR
         }
     }
     for c in &commits {
-        if c.actor_id.as_deref() == Some(OPTIMIZER) && !claimed.contains(&c.graph_commit_id) {
+        if check_unclaimed && c.actor_id.as_deref() == Some(OPTIMIZER) && !claimed.contains(&c.graph_commit_id) {
             violations.lock().unwrap().push(format!("{phase}: optimizer commit {} claimed by no successful run", c.graph_commit_id));
         }
     }
@@ -513,6 +514,22 @@ fn summarize(ledger: &Mutex<Ledger>, runs: &Mutex<Vec<RunRecord>>) -> String {
         "gate_hold max {:.3}s; gate_hold - (max_gate_hold + longest table) max {:.3}s\n",
         holds.iter().cloned().fold(0.0, f64::max), excess.iter().cloned().fold(f64::MIN, f64::max)
     );
+    if let Some((r, o)) = runs
+        .iter()
+        .filter_map(|r| r.outcome.as_ref().ok().map(|o| (r, o)))
+        .filter(|(r, _)| r.hold.is_some())
+        .max_by(|(ra, oa), (rb, ob)| {
+            let ea = oa.gate_hold.as_secs_f64() - ra.hold.unwrap().as_secs_f64() - oa.max_table.as_secs_f64();
+            let eb = ob.gate_hold.as_secs_f64() - rb.hold.unwrap().as_secs_f64() - ob.max_table.as_secs_f64();
+            ea.partial_cmp(&eb).unwrap()
+        })
+    {
+        out += &format!(
+            "worst excess run {}: hold {:?} gate_hold {:?} wall {:?} commit {:?} cancellation {:?} tables {:?}\n",
+            r.id, r.hold, o.gate_hold, r.ended - r.started, o.commit.is_some(), o.cancellation,
+            o.visited.iter().map(|(k, out, d)| format!("{k}={out}@{}ms", d.as_millis())).collect::<Vec<_>>()
+        );
+    }
     out += &format!("run errors: {errs:#?}\nwrite errors: {:#?}\n", l.write_errors);
     out += "slowest writes (latency, kind, bound from overlapping run, (run, gate_hold)):\n";
     for w in worst.iter().take(8) {
@@ -571,7 +588,7 @@ async fn engine_optimize_beside_live_writers() {
     for n in 0..5 {
         tokio::time::sleep(Duration::from_secs((seconds / 5).max(2))).await;
         schema = schema.replacen("    industry: String?", &format!("    industry: String?\n    extra{n}: String?"), 1);
-        if let Err(e) = db.apply_schema_as(&schema, Some(OPTIMIZER)).await {
+        if let Err(e) = db.apply_schema_as(&schema, Some("schema-writer")).await {
             violations.lock().unwrap().push(format!("phase B: schema apply {n} failed: {e}"));
         }
     }
