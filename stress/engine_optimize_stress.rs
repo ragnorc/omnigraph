@@ -678,3 +678,146 @@ async fn stress_repro_pipeline_exits_before_planning_the_tail() {
     }
     assert!(failures.is_empty(), "{failures:#?}");
 }
+
+/// RFC evidence row "logical data, row ids, schema, indexes, retained history,
+/// live branches and Blob values are unchanged": every row of every table
+/// (all non-Blob columns and `_rowid`) on main, on a branch and at five
+/// historical commits, and every Doc's Blob bytes, before and after a sequence
+/// of bounded optimizes over a history with updates, deletes and a branch.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "hunt: stress/ before/after equivalence of optimize"]
+async fn stress_optimize_preserves_logical_state() {
+    use arrow_cast::display::array_value_to_string;
+    use futures::TryStreamExt;
+    use omnigraph::db::ReadTarget;
+    use omnigraph::{BlobCell, BlobContent, EntityKind};
+
+    const TABLES: [&str; 6] = ["node:Person", "node:Company", "node:Doc", "edge:Knows", "edge:WorksAt", "edge:Authored"];
+    async fn capture(db: &Session, target: ReadTarget) -> BTreeMap<String, Vec<String>> {
+        let snap = db.snapshot_of(target).await.unwrap();
+        let mut out = BTreeMap::new();
+        for table in TABLES {
+            let ds = snap.open_dataset(table).await.unwrap();
+            let cols: Vec<String> = ds
+                .schema()
+                .fields
+                .iter()
+                .filter(|f| f.name != "content")
+                .map(|f| f.name.clone())
+                .collect();
+            let mut scan = ds.scan();
+            scan.project(&cols).unwrap();
+            scan.with_row_id();
+            let batches: Vec<arrow_array::RecordBatch> = scan.try_into_stream().await.unwrap().try_collect().await.unwrap();
+            let mut rows = Vec::new();
+            for b in &batches {
+                for i in 0..b.num_rows() {
+                    let mut row = Vec::new();
+                    for (c, field) in b.schema().fields().iter().enumerate() {
+                        row.push(format!("{}={}", field.name(), array_value_to_string(b.column(c), i).unwrap()));
+                    }
+                    rows.push(row.join("|"));
+                }
+            }
+            rows.sort();
+            out.insert(table.to_string(), rows);
+        }
+        out
+    }
+    async fn blobs(db: &Session, target: ReadTarget, slugs: &[String]) -> BTreeMap<String, Vec<u8>> {
+        let mut out = BTreeMap::new();
+        for slug in slugs {
+            let cell = BlobCell { entity: EntityKind::Node, type_name: "Doc".into(), id: slug.clone(), property: "content".into() };
+            let Ok(read) = db.read_blob_at(target.clone(), cell).await else {
+                out.insert(slug.clone(), b"<absent>".to_vec());
+                continue;
+            };
+            let bytes = match read.content {
+                BlobContent::Managed { reader, .. } => {
+                    let mut v = Vec::new();
+                    let mut start = 0;
+                    while start < reader.len() {
+                        let end = (start + omnigraph::BLOB_READ_RANGE_MAX_BYTES).min(reader.len());
+                        v.extend_from_slice(&reader.read_range(start..end).await.unwrap());
+                        start = end;
+                    }
+                    v
+                }
+                _ => b"<not managed>".to_vec(),
+            };
+            out.insert(slug.clone(), bytes);
+        }
+        out
+    }
+
+    let dir = tempfile::tempdir().unwrap();
+    let db = session(Omnigraph::init(dir.path().to_str().unwrap(), SCHEMA).await.unwrap());
+    let mut rng = Rng(42);
+    let mut slugs = Vec::new();
+    for b in 0..12 {
+        let rows: Vec<_> = (0..40).map(|k| person("eq", b * 100 + k)).collect();
+        db.load_as("main", None, &rows.iter().map(|(_, r)| r.as_str()).collect::<Vec<_>>().join("\n"), LoadMode::Merge, None).await.unwrap();
+        let docs: Vec<_> = (0..3).map(|k| doc("eq", b * 10 + k, &mut rng)).collect();
+        slugs.extend(docs.iter().map(|(s, _)| s.clone()));
+        db.load_as("main", None, &docs.iter().map(|(_, r)| r.as_str()).collect::<Vec<_>>().join("\n"), LoadMode::Merge, None).await.unwrap();
+        let company = serde_json::json!({"type": "Company", "data": {"name": format!("co{b}"), "industry": "x"}}).to_string();
+        db.load_as("main", None, &company, LoadMode::Merge, None).await.unwrap();
+        let mut edges = Vec::new();
+        for k in 0..20u64 {
+            edges.push(serde_json::json!({"edge": "Knows", "from": format!("eq-p{}", b * 100 + k), "to": format!("eq-p{}", b * 100 + k + 1), "data": {"since": 2000 + k as i32}}).to_string());
+            edges.push(serde_json::json!({"edge": "WorksAt", "from": format!("eq-p{}", b * 100 + k), "to": format!("co{b}")}).to_string());
+        }
+        edges.push(serde_json::json!({"edge": "Authored", "from": format!("eq-p{}", b * 100), "to": format!("eq-d{}", b * 10)}).to_string());
+        db.load_as("main", None, &edges.join("\n"), LoadMode::Merge, None).await.unwrap();
+        for k in 0..5 {
+            db.mutate_as("main", BUMP, "bump", &bump_params(&format!("eq-p{}", b * 100 + k), (b * 7 + k) as i64), None).await.unwrap();
+        }
+        let mut del = ParamMap::new();
+        del.insert("n".to_string(), Literal::String(format!("eq-p{}", b * 100 + 39)));
+        db.mutate_as("main", "query del($n: String) { delete Person where name = $n }", "del", &del, None).await.unwrap();
+        if b == 5 {
+            db.branch_create_as("side", None).await.unwrap();
+            let rows: Vec<_> = (0..10).map(|k| person("side", k)).collect();
+            db.load_as("side", None, &rows.iter().map(|(_, r)| r.as_str()).collect::<Vec<_>>().join("\n"), LoadMode::Merge, None).await.unwrap();
+        }
+    }
+    let commits = db.list_commits(Some("main")).await.unwrap();
+    let historical: Vec<String> = commits.iter().step_by((commits.len() / 5).max(1)).take(5).map(|c| c.graph_commit_id.clone()).collect();
+    let targets: Vec<(String, ReadTarget)> = std::iter::once(("main".to_string(), ReadTarget::branch("main")))
+        .chain(std::iter::once(("side".to_string(), ReadTarget::branch("side"))))
+        .chain(historical.iter().map(|id| (id.clone(), ReadTarget::snapshot(omnigraph::db::SnapshotId::new(id.clone())))))
+        .collect();
+    let mut before = BTreeMap::new();
+    for (name, target) in &targets {
+        before.insert(name.clone(), (capture(&db, target.clone()).await, blobs(&db, target.clone(), &slugs).await));
+    }
+    // bounded runs until nothing is left to do, then one unbounded run
+    let mut published = 0;
+    for hold in [0u64, 0, 5, 50, 0] {
+        let report = db
+            .optimize_as(None, OptimizeRequest::default().with_limits(OptimizeLimits::default().with_max_gate_hold(Duration::from_millis(hold))))
+            .await
+            .unwrap();
+        published += usize::from(report.graph_commit_id.is_some());
+    }
+    let report = db.optimize_as(None, OptimizeRequest::default()).await.unwrap();
+    published += usize::from(report.graph_commit_id.is_some());
+    let reopened = session(Omnigraph::open(dir.path().to_str().unwrap()).await.unwrap());
+    let mut failures = Vec::new();
+    for (name, target) in &targets {
+        let after = (capture(&reopened, target.clone()).await, blobs(&reopened, target.clone(), &slugs).await);
+        let (rows_before, blobs_before) = &before[name];
+        for table in TABLES {
+            if rows_before[table] != after.0[table] {
+                let missing = rows_before[table].iter().filter(|r| !after.0[table].contains(r)).count();
+                failures.push(format!("{name} {table}: {} rows before, {} after, {missing} differ", rows_before[table].len(), after.0[table].len()));
+            }
+        }
+        if blobs_before != &after.1 {
+            failures.push(format!("{name}: Blob bytes differ"));
+        }
+    }
+    eprintln!("optimize published {published} commits; compared {} targets", targets.len());
+    assert!(published > 0, "the fixture left optimize nothing to do");
+    assert!(failures.is_empty(), "{failures:#?}");
+}

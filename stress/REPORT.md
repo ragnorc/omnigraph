@@ -354,6 +354,12 @@ branch.
   resolved in exactly ⌈300/16⌉ + 1 = 20 lookups (the extra one is N3),
   `visited` advancing 16 per page, `succeeded` naming the late commit
   (`evidence/c3_deep_walk_s3.json`).
+- **Logical equivalence (embedded).** After three published optimizes over a
+  history with updates, deletes and a branch, every row of every table
+  (all non-Blob columns and `_rowid`) and every Doc's Blob bytes are equal on
+  main, the branch and five historical commits
+  (`engine_optimize_stress.rs::stress_optimize_preserves_logical_state`). The
+  RFC lists this as an `integration/maintenance.rs` test; none exists there.
 - **Budget, ceilings and resume (served, fixed build).** The first table with
   work always runs; a table past the remaining budget is
   `deferred(byte_budget)` with every later table and becomes `resume_at`; the
