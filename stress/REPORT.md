@@ -35,13 +35,14 @@ late manifest puts, deployments and deletions: no acknowledged write was lost,
 no run published twice, no failed/cancelled/interrupted run published
 anything, reads never blocked, and writer wait stayed within the documented
 bound on local storage. The remaining should-fix issues are liveness and
-contract gaps in failure paths: one lost-and-late record write on S3 (or one
+contract gaps in failure paths, and five of the six now have fixes on the
+stress branch: one lost-and-late record write on S3 (or one
 failed write on a local root) disables recorded operations until a restart
 that then waits out the lease; SIGTERM during the adjacency-artifact scan
 waits out the whole grace and exits 2; a deployment can miss cancelling a run
 admitted at its cancel instant; the CLI exits 2 instead of 1 on a refusal
-the server marks `effects: none`. Four of these also have fixes on the stress
-branch.
+the server marks `effects: none`; the full-list 409 does not say which graph
+needs a write.
 
 ---
 
@@ -55,7 +56,7 @@ branch.
 | S3 | should-fix | verified, fixed on branch | server #1282 | Deployment cancels live runs before closing admission; a run admitted in between runs uncancelled and the drain waits for all of it |
 | S4 | should-fix | verified, fixed on branch | engine #1275 | Adjacency-artifact refresh ignores cancellation: SIGTERM during its scan uses the full grace, exits 2, record left `publishing` |
 | S5 | should-fix | verified, fixed on branch | CLI #1282 | A 5xx refusal with `effects: none` (routes off, draining) exits 2 and says the run "may still run"; docs say exit 1 |
-| S6 | should-fix | verified | server #1282 | The 409 for four unresolved publications names no operation, graph or walking state (RFC §2.4 says it reports each record's walk) |
+| S6 | should-fix | verified, fixed on branch | server #1282 | The 409 for four unresolved publications names no operation, graph or walking state (RFC §2.4 says it reports each record's walk) |
 | N1–N12 | note | see below | | ordering, record content, status codes, evidence gaps, pre-existing issues |
 
 ### B1 (blocking): the table pipeline exits before planning the rest of the catalog
@@ -281,8 +282,8 @@ branch.
   answers, report `resolution: walking` for each such record with its cursor
   and how many commits its walk has covered". The operator cannot tell which
   graph needs the settling write without reading `operations.json`.
-- **Fix:** list each unresolved record (id, graph, settlement branch, cursor,
-  covered) in the refusal, or point at a lookup route. Not done here.
+- **Fix (commit `5a1bbeec`):** the refusal lists each unresolved record with
+  its graph, settlement branch and walk state; server suite 574 passed.
 
 ### Notes
 
@@ -460,6 +461,7 @@ Logs: `stress/baseline/`.
 | `08d2a0e7` | S2 (part) lookups answer what landed |
 | `fa5cd0ff` | S1 storage settle-on-read (+ unit test) |
 | `331d8485` | S4 artifact refresh honors cancellation |
+| `5a1bbeec` | S6 full-list refusal names each record |
 
 ## How to reproduce
 
