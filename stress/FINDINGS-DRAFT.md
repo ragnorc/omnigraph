@@ -74,3 +74,10 @@ for the process life; lookups needing a write 503 (acceptance/running/publishing
 SIGTERM exit 1, lock kept, restart only after 45 s (lease x1.5). RFC 2.3: "Admission
 refuses until a re-read settles it". Re-read happens (update_operations reads V') but
 ClusterStore never calls settle_failed_precondition. evidence/c5_s3_lost_answer.txt
+
+## F-artifact-scan-not-cancellable (VERIFIED, PR head) optimize.rs:1364 persist_graph_index_artifact
+takes no cancellation; GraphIndex::build_counted never checks one; the write is issued without
+checking for a pending shutdown. SIGTERM 1 s into a slow artifact scan: scan continued (5 more
+edge opens), full 25 s grace consumed, exit 2, record left `publishing`, lock kept.
+RFC 3.4/1.8: scan abandoned on shutdown/cancel/deployment drain; write skipped if shutdown pending.
+evidence/c3_sigterm_artifact_prhead.json (scan slowed with faultfs open delay 5 s/edge file)
