@@ -28,10 +28,14 @@ use omnigraph::seams::{Decide as DecideBehavior, DecideSeam as Decide, Global, H
 
 fn seam(name: &str) -> Option<&'static Decide> {
     Some(match name {
-        "optimize.post_authority_capture_pre_gates" => &seams::OPTIMIZE_POST_AUTHORITY_CAPTURE_PRE_GATES,
+        "optimize.post_authority_capture_pre_gates" => {
+            &seams::OPTIMIZE_POST_AUTHORITY_CAPTURE_PRE_GATES
+        }
         "optimize.before_compact" => &seams::OPTIMIZE_BEFORE_COMPACT,
         "optimize.post_table_effect" => &seams::OPTIMIZE_POST_TABLE_EFFECT,
-        "optimize.post_phase_b_pre_manifest_commit" => &seams::OPTIMIZE_POST_PHASE_B_PRE_MANIFEST_COMMIT,
+        "optimize.post_phase_b_pre_manifest_commit" => {
+            &seams::OPTIMIZE_POST_PHASE_B_PRE_MANIFEST_COMMIT
+        }
         "optimize.configuration_clear" => &seams::OPTIMIZE_CONFIGURATION_CLEAR,
         "graph_publish.after_manifest_commit" => &seams::GRAPH_PUBLISH_AFTER_MANIFEST_COMMIT,
         "graph_publish.before_commit_append" => &seams::GRAPH_PUBLISH_BEFORE_COMMIT_APPEND,
@@ -68,7 +72,8 @@ fn control_loop(ctl: PathBuf) {
                 };
                 let n: u64 = parts.next().and_then(|v| v.parse().ok()).unwrap_or(1);
                 let Some(s) = seam(name) else {
-                    let _ = std::fs::write(cmd.with_extension("bad"), format!("unknown seam {name}"));
+                    let _ =
+                        std::fs::write(cmd.with_extension("bad"), format!("unknown seam {name}"));
                     let _ = std::fs::remove_file(&cmd);
                     continue;
                 };

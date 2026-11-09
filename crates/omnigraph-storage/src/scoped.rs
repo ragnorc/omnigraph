@@ -1451,7 +1451,12 @@ mod tests {
         let path = Path::from("__cluster/operations.json");
         let scope = StorageIoScope::new();
         let unsettle = |precondition| {
-            scope.inner.state.lock().unwrap().unsettle(&path, precondition);
+            scope
+                .inner
+                .state
+                .lock()
+                .unwrap()
+                .unsettle(&path, precondition);
         };
 
         unsettle(Some(Precondition::Matches("\"e1\"/".into())));
@@ -1462,17 +1467,33 @@ mod tests {
 
         unsettle(Some(Precondition::Matches("\"e1\"/".into())));
         scope.settle_superseded(&path, None);
-        assert_eq!(scope.unsettled_keys(), 0, "an if-match cannot apply to a gone object");
+        assert_eq!(
+            scope.unsettled_keys(),
+            0,
+            "an if-match cannot apply to a gone object"
+        );
 
         unsettle(Some(Precondition::Absent));
         scope.settle_superseded(&path, None);
-        assert_eq!(scope.unsettled_keys(), 1, "a create can still land on an absent key");
+        assert_eq!(
+            scope.unsettled_keys(),
+            1,
+            "a create can still land on an absent key"
+        );
         scope.settle_superseded(&path, Some("\"e1\""));
-        assert_eq!(scope.unsettled_keys(), 0, "a create cannot apply over an object");
+        assert_eq!(
+            scope.unsettled_keys(),
+            0,
+            "a create cannot apply over an object"
+        );
 
         unsettle(None);
         scope.settle_superseded(&path, Some("\"e9\""));
-        assert_eq!(scope.unsettled_keys(), 1, "an unconditional request stays unsettled");
+        assert_eq!(
+            scope.unsettled_keys(),
+            1,
+            "an unconditional request stays unsettled"
+        );
     }
 
     #[tokio::test]

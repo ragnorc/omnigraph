@@ -67,9 +67,13 @@ fn classify(error: &color_eyre::Report) -> Refusal {
         // error leaves the submission in doubt.
         status
             if status >= 500
-                && !remote.output.disposition.as_ref().is_some_and(|disposition| {
-                    disposition.effects == omnigraph_api_types::DispositionEffects::None
-                }) =>
+                && !remote
+                    .output
+                    .disposition
+                    .as_ref()
+                    .is_some_and(|disposition| {
+                        disposition.effects == omnigraph_api_types::DispositionEffects::None
+                    }) =>
         {
             Refusal::Unanswered
         }
