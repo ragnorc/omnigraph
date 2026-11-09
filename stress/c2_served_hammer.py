@@ -443,6 +443,12 @@ def main():
     for _, kind, _, status, _ in st.events:
         k = f"{kind}:{status}"
         summary["event_counts"][k] = summary["event_counts"].get(k, 0) + 1
+    for kind in sorted({k for _, _, k, _ in st.write_lat}):
+        kl = sorted(t1 - t0 for t0, t1, k, s in st.write_lat if s == 200 and k == kind)
+        if kl:
+            summary.setdefault("write_by_kind", {})[kind] = {"n": len(kl), "p50": kl[len(kl) // 2],
+                                                             "p99": kl[int(len(kl) * 0.99)], "max": kl[-1]}
+    (out / "writes.json").write_text(json.dumps(st.write_lat))
     (out / "summary.json").write_text(json.dumps(summary, indent=1, default=str))
     (out / "ops.json").write_text(json.dumps(st.ops, indent=1))
     (out / "events.json").write_text(json.dumps(st.events, indent=0, default=str))

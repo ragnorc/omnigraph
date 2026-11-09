@@ -1,0 +1,13 @@
+{
+ "runs": 5,
+ "deletions": true,
+ "root": "/tmp/c5bud_local/root",
+ "compacted": [
+  "edge:Knows",
+  "edge:WorksAt",
+  "node:Company",
+  "node:Doc",
+  "node:Person"
+ ],
+ "violations": []
+}

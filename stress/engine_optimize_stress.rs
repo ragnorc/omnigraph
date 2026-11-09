@@ -863,9 +863,13 @@ async fn engine_optimize_beside_live_writers() {
         .and_then(|v| v.parse().ok())
         .unwrap_or(60);
     let dir = tempfile::tempdir().unwrap();
-    let root = dir.path().join("g.omni");
+    // STRESS_ROOT_URI (for example s3://bucket/prefix/g.omni, with the AWS_*
+    // environment) puts the graph on object storage instead.
+    let root = std::env::var("STRESS_ROOT_URI")
+        .unwrap_or_else(|_| dir.path().join("g.omni").to_str().unwrap().to_string());
+    eprintln!("campaign 1 root: {root}");
     let db = session(
-        Omnigraph::init(root.to_str().unwrap(), SCHEMA)
+        Omnigraph::init(&root, SCHEMA)
             .await
             .unwrap(),
     );
@@ -991,7 +995,7 @@ async fn engine_optimize_beside_live_writers() {
             .unwrap()
             .push(format!("cleanup failed: {e}")),
     }
-    let reopened = session(Omnigraph::open(root.to_str().unwrap()).await.unwrap());
+    let reopened = session(Omnigraph::open(&root).await.unwrap());
     check_phase(
         &reopened,
         &ledger,

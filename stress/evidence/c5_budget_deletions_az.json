@@ -1,0 +1,13 @@
+{
+ "runs": 5,
+ "deletions": true,
+ "root": "az://omnigraph-stress/budget/budget-1794199590127450472",
+ "compacted": [
+  "edge:Knows",
+  "edge:WorksAt",
+  "node:Company",
+  "node:Doc",
+  "node:Person"
+ ],
+ "violations": []
+}

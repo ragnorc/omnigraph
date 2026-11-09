@@ -27,9 +27,19 @@ for b in range(4):
     h.load("kg", "\n".join(json.dumps({"edge": "WorksAt", "from": f"b{b}p{i}", "to": f"b{b}c{i}"}) for i in range(150)))
 for i in range(6):  # many fragments on Doc: over the fragment ceiling
     h.load("kg", json.dumps({"type": "Doc", "data": {"slug": f"d{i}", "title": "t", "embedding": [0.1] * 8}}))
+deletions = os.environ.get("STRESS_DELETIONS") == "1"
+if deletions:  # merge updates leave deletion files on the old fragments
+    for b in range(4):
+        s_, b_, _ = h.load("kg", "\n".join(json.dumps({"type": "Person", "data": {"name": f"b{b}p{i}", "bio": "upd " * 50}})
+                                          for i in range(0, 200, 3)), mode="merge")
+        assert s_ == 200, (s_, b_)
+        s_, b_, _ = h.load("kg", "\n".join(json.dumps({"type": "Company", "data": {"name": f"b{b}c{i}", "industry": "y" * 200}})
+                                          for i in range(0, 200, 4)), mode="merge")
+        assert s_ == 200, (s_, b_)
 srv0.kill(15)
+og.prepare_restart(root)
 env = {"OMNIGRAPH_OPTIMIZE_RUN_SOURCE_BYTES": "60000", "OMNIGRAPH_OPTIMIZE_MAX_SOURCE_BYTES": "60000",
-       "OMNIGRAPH_OPTIMIZE_MAX_SOURCE_FRAGMENTS": "5"}
+       "OMNIGRAPH_OPTIMIZE_MAX_SOURCE_FRAGMENTS": os.environ.get("STRESS_MAX_FRAGMENTS", "5")}
 srv = og.Server(root, 13871, str(out / "server.log"), env, binary=str(bindir / "omnigraph-server")).start()
 h = srv.http
 runs, violations = [], []
@@ -37,6 +47,9 @@ for r in range(8):
     oid = og.ulid(); h.submit("kg", oid)
     op = h.wait_terminal("kg", oid)
     tables = [(t["type_key"], t["outcome"], t.get("reason"), t.get("source_bytes")) for t in op["outcome"].get("tables", [])]
+    for t in op["outcome"].get("tables", []):
+        if "could not be measured" in (t.get("detail") or ""):
+            violations.append(f"run {r}: {t['type_key']} {t['detail']}")
     rec = og.read_record(root)
     pos = (rec.get("kind_state") or {}).get("optimize", {}).get("kg", {}).get("resume_at")
     runs.append({"run": r, "start_at": op["outcome"].get("start_at"), "resume_at": op["outcome"].get("resume_at"),
@@ -59,7 +72,7 @@ for r in range(8):
     if not any(t[1] == "optimized" for t in tables) and first_bound is None:
         break
 compacted = {t[0] for r in runs for t in r["tables"] if t[1] == "optimized"}
-summary = {"runs": len(runs), "compacted": sorted(compacted), "violations": violations}
+summary = {"runs": len(runs), "deletions": deletions, "root": root, "compacted": sorted(compacted), "violations": violations}
 print(json.dumps(summary))
 (out / "result.json").write_text(json.dumps({"runs": runs, **summary}, indent=1))
 srv.kill(15)
