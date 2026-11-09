@@ -136,7 +136,7 @@ const BUMP: &str =
     "query bump($n: String, $a: I32) { update Person set { age: $a } where name = $n }";
 
 async fn writer(db: Session, ledger: Arc<Mutex<Ledger>>, stop: Arc<AtomicBool>, id: u64) {
-    let mut rng = Rng(0x9E37_79B9_7F4A_7C15 ^ (id + 1) * 7919);
+    let mut rng = Rng(0x9E37_79B9_7F4A_7C15 ^ ((id + 1) * 7919));
     let tag = format!("w{id}");
     let mut i = 0u64;
     while !stop.load(Ordering::SeqCst) {
@@ -575,11 +575,10 @@ async fn check_phase(
     phase: &str,
 ) {
     let check_unclaimed = !runs.lock().unwrap().is_empty();
-    let l = ledger.lock().unwrap();
-    let persons = l.persons.clone();
-    let docs = l.docs.clone();
-    let companies = l.companies.clone();
-    drop(l);
+    let (persons, docs, companies) = {
+        let l = ledger.lock().unwrap();
+        (l.persons.clone(), l.docs.clone(), l.companies.clone())
+    };
     // acknowledged rows present
     for (table, want, prop) in [
         ("node:Person", &persons, "name"),
@@ -777,7 +776,7 @@ fn summarize(ledger: &Mutex<Ledger>, runs: &Mutex<Vec<RunRecord>>) -> String {
             overlapping.map(|(r, o)| (r.id, o.gate_hold)),
         ));
     }
-    worst.sort_by(|a, b| b.0.cmp(&a.0));
+    worst.sort_by_key(|w| std::cmp::Reverse(w.0));
     let lats: Vec<f64> = {
         let mut v: Vec<f64> = l.writes.iter().map(|w| w.1.as_secs_f64()).collect();
         v.sort_by(|a, b| a.partial_cmp(b).unwrap());
