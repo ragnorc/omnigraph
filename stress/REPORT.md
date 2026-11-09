@@ -334,17 +334,25 @@ bound; that one is documented, not fixed.
   to 989; the 60-minute S3 soak had write p99 37.7 s, the 30-minute Azure
   soak 59 s (edge loads are slow without optimize too: p99 66 s in the
   control, pre-existing).
-- **Violates:** the per-writer sentence in `maintenance.md:84`; the RFC's
+- **Violates:** with two or more concurrent writers, the per-writer sentence in `maintenance.md:84`; the RFC's
   observable contract ("The request bounds that wait (§1.2)") holds only per
   run. Nothing limits how soon the next run may take the gates.
-- **Suspected cause (not traced per request):** a load prepares outside the
-  gates, waits for the run, then finds main moved by the run's publication
-  and re-prepares (`crates/omnigraph/src/loader/mod.rs:760`, up to 32
-  times); on S3 a preparation costs hundreds of ms, long enough for the next
-  back-to-back run to take the gates first. Debug logs show ~2.9 re-prepares
-  per write with optimize versus ~0.94 without
-  (`reprepares_s3b.txt`). An optimize publication changes no logical rows,
-  but it is a read-set change for every write in flight.
+- **Cause (measured with one writer, inferred for two):** a load prepares
+  outside the gates, waits for the run, then finds main moved by the run's
+  publication and re-prepares (`crates/omnigraph/src/loader/mod.rs:760`, up
+  to 32 times). With **one** writer (`c1_writer_wait.py OUT 90 1`,
+  `result_s3_one_writer.json`) every write in the optimize phase re-prepared
+  exactly once (84 re-prepares for 85 writes, none in the controls) and the
+  slowest write took 4.4 s, one run's hold plus a preparation: the
+  per-writer bound holds, but the writer moves in lock-step with the runs
+  (85 writes beside 84 runs in 90 s, against 535 writes in the control).
+  With **two** writers the second write's re-preparation is invalidated
+  again by the first write's commit (the pre-existing writer-writer
+  conflict, N12: ~0.94 re-prepares per write and some writes exhausting all
+  32 attempts with no optimize at all); by then the next back-to-back run
+  holds the gates, so the wait compounds (~2.9 re-prepares per write with
+  optimize, `reprepares_s3b.txt`). An optimize publication changes no
+  logical rows, but it is a read-set change for every write in flight.
 - **Proposed fix:** state the bound per run in the docs and RFC and say
   that successive runs add up; in the server, space recorded runs per graph
   (for example, admit the next optimize only after writers queued during the
