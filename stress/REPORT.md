@@ -57,7 +57,7 @@ needs a write.
 | S4 | should-fix | verified, fixed on branch | engine #1275 | Adjacency-artifact refresh ignores cancellation: SIGTERM during its scan uses the full grace, exits 2, record left `publishing` |
 | S5 | should-fix | verified, fixed on branch | CLI #1282 | A 5xx refusal with `effects: none` (routes off, draining) exits 2 and says the run "may still run"; docs say exit 1 |
 | S6 | should-fix | verified, fixed on branch | server #1282 | The 409 for four unresolved publications names no operation, graph or walking state (RFC §2.4 says it reports each record's walk) |
-| N1–N12 | note | see below | | ordering, record content, status codes, evidence gaps, pre-existing issues |
+| N1–N13 | note | see below | | ordering, record content, status codes, evidence gaps, pre-existing issues |
 
 ### B1 (blocking): the table pipeline exits before planning the rest of the catalog
 
@@ -334,6 +334,13 @@ needs a write.
   published dataset version … was reclaimed"); the typed error exists but the
   query route maps it to 500. Not in the PR diff (checked by `git diff`, not
   on a main build).
+- **N13 Exports during a served run.** While a recorded optimize holds its
+  export exclusion (entry to return, including the artifact scan), an export
+  is refused 413 "resource limit exceeded for stream_export_slots: actual 2,
+  limit 1". The exclusion is in the RFC; the 413 slot wording does not tell
+  the client that maintenance holds it or when to retry, and with a 60 s
+  default gate hold the window is long. Also, on a server target
+  `--operation` silently ignores `--tables`/`--max-gate-hold`.
 - **N12 Pre-existing writer conflicts.** Under concurrent writers, mutations
   and edge loads are refused "write authority 'graph_head:main' changed
   during preparation" at the same rate with or without optimize (control runs
