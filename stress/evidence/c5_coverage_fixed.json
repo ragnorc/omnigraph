@@ -1,0 +1,3 @@
+{"build": "fixed (23e1d66f)", "catalog_tables": 1030, "seeded": 20, "max_gate_hold_ms": 100,
+ "runs": 7, "compacted": 20,
+ "positions (start_at, resume_at, tables visited)": [[null, "node:T0145", 145], ["node:T0145", "node:T0284", 139], ["node:T0284", "node:T0417", 133], ["node:T0417", "node:T0573", 156], ["node:T0573", "node:T0729", 156], ["node:T0729", "node:T0885", 156], ["node:T0885", "node:T0073", 218]]}

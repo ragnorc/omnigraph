@@ -120,6 +120,10 @@ needs a write.
   (`maintenance::`, optimize failpoints, `detached_commit_matrix`): 108 passed.
   I would also make the `None` arm unreachable for unvisited tables (a
   `debug_assert!`), so a future regression cannot mislabel tables silently.
+  With the fix, the RFC's coverage promise holds on the same catalog: with a
+  100 ms gate hold each run plans 133–218 tables and stores the next
+  position, the position advances and wraps, and 7 runs compact all 20 seeded
+  tables (`evidence/c5_coverage_fixed.json`).
 - **Pre-existing?** No: the pipeline is new in #1275.
 
 ### S1 (should-fix): a late-landing record put wedges recorded operations on S3
