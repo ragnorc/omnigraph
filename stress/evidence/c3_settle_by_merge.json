@@ -1,0 +1,143 @@
+[
+ {
+  "case": "ff",
+  "before_merge": "publishing",
+  "merge_status": 200,
+  "merge_kind": "fast_forward",
+  "lookups": [
+   "failed"
+  ],
+  "final": "failed",
+  "reason": "not_committed",
+  "resolution": null,
+  "input_commit": "hb1.01M6YZNJQ5FF15EQQRPZHH997Y.3.01M6YZNJRZW93DQFM13SAEP26C",
+  "main_commits(newest first: id, version, parent, merged_parent)": [
+   [
+    "hb1.01M6YZNJQ5FF15EQQRPZHH997Y.4.01M6YZNNTW4VKEAHHE5K515BJR",
+    5,
+    "hb1.01M6YZNJQ5FF15EQQRPZHH997Y.3.01M6YZNJRZW93DQFM13SAEP26C",
+    "hb1.01M6YZNNSE4W9X7SRX3BNN1H2Z.5.01M6YZNNT8TKGAT3FBWC98ER8X"
+   ],
+   [
+    "hb1.01M6YZNJQ5FF15EQQRPZHH997Y.3.01M6YZNJRZW93DQFM13SAEP26C",
+    4,
+    "hb1.01M6YZNJQ5FF15EQQRPZHH997Y.2.01M6YZNJR8ZPVMCPAMCT2Q48WA",
+    null
+   ],
+   [
+    "hb1.01M6YZNJQ5FF15EQQRPZHH997Y.2.01M6YZNJR8ZPVMCPAMCT2Q48WA",
+    3,
+    "hb1.01M6YZNJQ5FF15EQQRPZHH997Y.1.01M6YZNJQ5FF15EQQRPZHH997Y",
+    null
+   ],
+   [
+    "hb1.01M6YZNJQ5FF15EQQRPZHH997Y.1.01M6YZNJQ5FF15EQQRPZHH997Y",
+    2,
+    "01M6YZNJ8Y84A2PVFSPJBJCA15",
+    null
+   ],
+   [
+    "01M6YZNJ8Y84A2PVFSPJBJCA15",
+    1,
+    null,
+    null
+   ]
+  ]
+ },
+ {
+  "case": "ff_deep",
+  "before_merge": "publishing",
+  "merge_status": 200,
+  "merge_kind": "fast_forward",
+  "lookups": [
+   "failed"
+  ],
+  "final": "failed",
+  "reason": "not_committed",
+  "resolution": null,
+  "input_commit": "hb1.01M6YZNP95SCEPJKPQVTTSK12Y.3.01M6YZNPANDQSQY08D7826E50F",
+  "main_commits(newest first: id, version, parent, merged_parent)": [
+   [
+    "hb1.01M6YZNP95SCEPJKPQVTTSK12Y.4.01M6YZNSFFFC8GN3XEMK5H76H9",
+    5,
+    "hb1.01M6YZNP95SCEPJKPQVTTSK12Y.3.01M6YZNPANDQSQY08D7826E50F",
+    "hb1.01M6YZNSAV6YRFCS25SC7PY0FW.9.01M6YZNSEK31Y5CVSNRG1Q76AC"
+   ],
+   [
+    "hb1.01M6YZNP95SCEPJKPQVTTSK12Y.3.01M6YZNPANDQSQY08D7826E50F",
+    4,
+    "hb1.01M6YZNP95SCEPJKPQVTTSK12Y.2.01M6YZNPA33HPSRHNB9X9F98B5",
+    null
+   ],
+   [
+    "hb1.01M6YZNP95SCEPJKPQVTTSK12Y.2.01M6YZNPA33HPSRHNB9X9F98B5",
+    3,
+    "hb1.01M6YZNP95SCEPJKPQVTTSK12Y.1.01M6YZNP95SCEPJKPQVTTSK12Y",
+    null
+   ],
+   [
+    "hb1.01M6YZNP95SCEPJKPQVTTSK12Y.1.01M6YZNP95SCEPJKPQVTTSK12Y",
+    2,
+    "01M6YZNNYSZNTV672YD7M6B6W2",
+    null
+   ],
+   [
+    "01M6YZNNYSZNTV672YD7M6B6W2",
+    1,
+    null,
+    null
+   ]
+  ]
+ },
+ {
+  "case": "three_way",
+  "before_merge": "publishing",
+  "merge_status": 200,
+  "merge_kind": "merged",
+  "lookups": [
+   "failed"
+  ],
+  "final": "failed",
+  "reason": "not_committed",
+  "resolution": null,
+  "input_commit": "hb1.01M6YZNSZ6CFH47QS0X4Y8C2RQ.3.01M6YZNT0V0XST2NM9ND8STZDE",
+  "main_commits(newest first: id, version, parent, merged_parent)": [
+   [
+    "hb1.01M6YZNSZ6CFH47QS0X4Y8C2RQ.5.01M6YZNX3PYKZ6QDEKN86JE8RD",
+    6,
+    "hb1.01M6YZNSZ6CFH47QS0X4Y8C2RQ.4.01M6YZNX2PMTG88SXJ3P2AF0BW",
+    "hb1.01M6YZNX17ANBA17DFDNHZE78M.5.01M6YZNX204E1MYE8BQFTFT48Z"
+   ],
+   [
+    "hb1.01M6YZNSZ6CFH47QS0X4Y8C2RQ.4.01M6YZNX2PMTG88SXJ3P2AF0BW",
+    5,
+    "hb1.01M6YZNSZ6CFH47QS0X4Y8C2RQ.3.01M6YZNT0V0XST2NM9ND8STZDE",
+    null
+   ],
+   [
+    "hb1.01M6YZNSZ6CFH47QS0X4Y8C2RQ.3.01M6YZNT0V0XST2NM9ND8STZDE",
+    4,
+    "hb1.01M6YZNSZ6CFH47QS0X4Y8C2RQ.2.01M6YZNT06CFHJ9RRMQTR6VPYT",
+    null
+   ],
+   [
+    "hb1.01M6YZNSZ6CFH47QS0X4Y8C2RQ.2.01M6YZNT06CFHJ9RRMQTR6VPYT",
+    3,
+    "hb1.01M6YZNSZ6CFH47QS0X4Y8C2RQ.1.01M6YZNSZ6CFH47QS0X4Y8C2RQ",
+    null
+   ],
+   [
+    "hb1.01M6YZNSZ6CFH47QS0X4Y8C2RQ.1.01M6YZNSZ6CFH47QS0X4Y8C2RQ",
+    2,
+    "01M6YZNSKECQDJP075EJK6QK5C",
+    null
+   ],
+   [
+    "01M6YZNSKECQDJP075EJK6QK5C",
+    1,
+    null,
+    null
+   ]
+  ]
+ }
+]

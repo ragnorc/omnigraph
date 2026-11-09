@@ -336,9 +336,11 @@ def main():
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     LOG = og.Log(str(out / "log.txt"))
-    root = a.root or str(out / "root")
-    shutil.rmtree(root, ignore_errors=True)
-    os.makedirs(root)
+    if a.root:
+        root = a.root
+    else:
+        shutil.rmtree(out / "root", ignore_errors=True)
+        root = og.make_root(out, "c2")
     og.apply_cluster(root)
     env = {
         "OMNIGRAPH_OPTIMIZE_GATE_HOLD_SECONDS": "1",

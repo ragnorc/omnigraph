@@ -254,7 +254,36 @@ class Server:
         return self.proc.returncode if self.proc else None
 
 
+S3_ENV = {
+    "AWS_ACCESS_KEY_ID": "omnigraphci", "AWS_SECRET_ACCESS_KEY": "omnigraphci-secret",
+    "AWS_REGION": "us-east-1", "AWS_ENDPOINT_URL": "http://127.0.0.1:9000",
+    "AWS_ENDPOINT_URL_S3": "http://127.0.0.1:9000", "AWS_ALLOW_HTTP": "true",
+    "AWS_S3_FORCE_PATH_STYLE": "true",
+}
+if os.environ.get("STRESS_S3_PREFIX"):
+    os.environ.update(S3_ENV)
+
+
+def make_root(local_dir, name: str) -> str:
+    """A fresh cluster root: under STRESS_S3_PREFIX when set, else a local directory."""
+    prefix = os.environ.get("STRESS_S3_PREFIX")
+    if prefix:
+        return f"{prefix.rstrip('/')}/{name}-{time.time_ns()}"
+    root = str(Path(local_dir) / "root")
+    os.makedirs(root, exist_ok=True)
+    return root
+
+
 def read_record(root: str):
+    if root.startswith("s3://"):
+        import s3util
+        bucket, _, key = root[5:].partition("/")
+        status, data = s3util.request("GET", f"/{bucket}/{key}/__cluster/operations.json")
+        if status == 404:
+            return None
+        if status != 200:
+            raise RuntimeError(f"s3 get record {status} {data[:200]}")
+        return json.loads(data)
     path = Path(root) / "__cluster" / "operations.json"
     if not path.exists():
         return None

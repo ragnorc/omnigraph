@@ -45,3 +45,13 @@ OMNIGRAPH_OPTIMIZE_PLANNING_CONCURRENCY=1 never gets past a leading no-op table:
 reports the rest deferred(gate_hold_limit) with gate_hold 2ms of 60s and stores no position.
 Fixed build resumes and compacts. Planning 8 (default) also loses the tail when a rewrite
 outlasts 8 no-op plans (engine repro).
+
+## Verified OK
+- settle by FF/3-way merge (evidence/c3_settle_by_merge.json): failed/not_committed.
+- reads never block during a real optimize, local + S3 (evidence/c1_reads_during_optimize_*.json).
+- 4-unresolved cap across graphs (evidence/c2_unresolved_cap.json) behaves; BUT 409 text lacks
+  ids/graphs/walking state (RFC 2.4 says the 409 reports resolution: walking per record).
+- S3 crash campaign (evidence/c3_crash_results_s3.json) resolves as local.
+## Harness artifact
+- seam Hold blocks a tokio worker; on S3 this stalls HTTP connections (and lease renewal ->
+  fence=Lapsed after 30s). Local unaffected. So S3 SIGTERM-under-hold exit 2 is an artifact.

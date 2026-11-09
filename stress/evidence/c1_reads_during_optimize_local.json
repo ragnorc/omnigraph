@@ -1,0 +1,57 @@
+{
+ "root": "/tmp/reads_local/root",
+ "rows": 80000,
+ "state": "succeeded",
+ "gate_hold_ms": 385,
+ "run_s": 0.51,
+ "tables": [
+  [
+   "edge:Authored",
+   "unchanged",
+   1
+  ],
+  [
+   "edge:Knows",
+   "unchanged",
+   1
+  ],
+  [
+   "edge:WorksAt",
+   "unchanged",
+   1
+  ],
+  [
+   "node:Company",
+   "optimized",
+   23
+  ],
+  [
+   "node:Doc",
+   "unchanged",
+   23
+  ],
+  [
+   "node:Person",
+   "optimized",
+   365
+  ]
+ ],
+ "reads_inside": [
+  137,
+  0.004,
+  0.007,
+  0.014
+ ],
+ "reads_outside": [
+  1678,
+  0.003,
+  0.012,
+  0.018
+ ],
+ "writes_inside": [
+  1,
+  0.029,
+  0.029
+ ],
+ "read_errors": 0
+}

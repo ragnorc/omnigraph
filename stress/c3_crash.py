@@ -52,7 +52,9 @@ class Child(og.Server):
 
 def arm(ctl: Path, seam: str, action: str, n: int = 1):
     name = f"{time.time_ns()}-{seam}.cmd"
-    (ctl / name).write_text(f"{seam} {action} {n}\n")
+    tmp = ctl / (name + ".tmp")
+    tmp.write_text(f"{seam} {action} {n}\n")
+    os.rename(tmp, ctl / name)
     end = time.time() + 10
     while time.time() < end:
         if (ctl / name.replace(".cmd", ".done")).exists():
@@ -135,8 +137,7 @@ def scenario(out: Path, name: str, seam: str, action: str, kill_sig, expect: set
     shutil.rmtree(d, ignore_errors=True)
     d.mkdir(parents=True)
     log = og.Log(str(d / "log.txt"))
-    root = str(d / "root")
-    os.makedirs(root)
+    root = og.make_root(d, name)
     og.apply_cluster(root)
     ctl = d / "ctl"
     ctl.mkdir()

@@ -116,6 +116,7 @@ async fn stress_served_child() {
     let Some(root) = std::env::var_os("STRESS_ROOT").map(PathBuf::from) else {
         return;
     };
+    omnigraph_server::init_tracing();
     let _scenario = omnigraph::seams::FailScenario::setup();
     if let Some(ctl) = std::env::var_os("STRESS_CTL").map(PathBuf::from) {
         std::fs::create_dir_all(&ctl).unwrap();
