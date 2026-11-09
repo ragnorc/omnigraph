@@ -868,11 +868,7 @@ async fn engine_optimize_beside_live_writers() {
     let root = std::env::var("STRESS_ROOT_URI")
         .unwrap_or_else(|_| dir.path().join("g.omni").to_str().unwrap().to_string());
     eprintln!("campaign 1 root: {root}");
-    let db = session(
-        Omnigraph::init(&root, SCHEMA)
-            .await
-            .unwrap(),
-    );
+    let db = session(Omnigraph::init(&root, SCHEMA).await.unwrap());
     let keys = {
         let mut k = vec![
             "edge:Authored".to_string(),
