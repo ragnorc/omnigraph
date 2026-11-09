@@ -55,3 +55,13 @@ outlasts 8 no-op plans (engine repro).
 ## Harness artifact
 - seam Hold blocks a tokio worker; on S3 this stalls HTTP connections (and lease renewal ->
   fence=Lapsed after 30s). Local unaffected. So S3 SIGTERM-under-hold exit 2 is an artifact.
+
+## F-cli-503-none (VERIFIED) CLI served.rs classify(): every >=500 -> Unanswered, ignoring
+disposition.effects=none. Routes disabled (503 effects none) -> CLI polls 5 lookups, exit 2,
+"the operation may still run". Docs: refused before acceptance -> exit 1. evidence/c6_cli_results.json
+## C6: 16/17 CLI cases match docs; never resubmitted (proxy logged <=1 POST in every case).
+Big catalog at DEFAULT served settings (1,030 tables, 20 seeded; evidence/c5_big_catalog_*.json):
+PR head: 1 table optimized per run, ~1,000 reported deferred(gate_hold_limit) with 98-375 ms of a
+60 s hold, resume_at None every run -> 8 runs compact 8/20. Fixed: 1 run compacts 20/20.
+## C5b bounds: body limit (413 above ~1 MiB) keeps requests inside the record bound; no wedge.
+Damaged/foreign records -> 409 [operation_record_invalid|foreign], file never overwritten.

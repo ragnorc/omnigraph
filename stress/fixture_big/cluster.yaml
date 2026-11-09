@@ -1,0 +1,8 @@
+version: 1
+graphs:
+  big:
+    schema: ./big.pg
+policies:
+  access:
+    file: ./policy.yaml
+    applies_to: [big]
