@@ -40,3 +40,8 @@ resume_at None. Repro: stress/engine_optimize_stress.rs::stress_repro_pipeline_e
 (12 tables, T00 rewrite held 500ms via OPTIMIZE_BEFORE_COMPACT, no gate hold):
 planning 1 -> 10 deferred; 2 -> 9; 4 -> 7; 8 -> 3 deferred; resume_at None in all.
 Served: keep_kind_state clears the resume position on succeeded+resume_at None.
+Served demo (evidence/c1_served_early_exit_{prhead,fixedbin}.txt): PR head with
+OMNIGRAPH_OPTIMIZE_PLANNING_CONCURRENCY=1 never gets past a leading no-op table: every run
+reports the rest deferred(gate_hold_limit) with gate_hold 2ms of 60s and stores no position.
+Fixed build resumes and compacts. Planning 8 (default) also loses the tail when a rewrite
+outlasts 8 no-op plans (engine repro).
