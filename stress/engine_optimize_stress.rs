@@ -67,6 +67,9 @@ impl Rng {
 #[derive(Default)]
 struct Ledger {
     persons: BTreeSet<String>,
+    /// The last acknowledged age of each person (its writer is the only one
+    /// that updates it), or None when an outcome was not definite.
+    ages: BTreeMap<String, Option<i64>>,
     docs: BTreeSet<String>,
     companies: BTreeSet<String>,
     /// (start, latency, kind) of every acknowledged write.
@@ -134,6 +137,7 @@ async fn writer(db: Session, ledger: Arc<Mutex<Ledger>>, stop: Arc<AtomicBool>, 
         i += 1;
         let t0 = Instant::now();
         let roll = rng.below(100);
+        let mut bumped: Option<(String, i64)> = None;
         let (kind, result, keys): (&'static str, omnigraph::error::Result<()>, Vec<(u8, String)>) = if roll < 45 {
             let rows: Vec<_> = (0..1 + rng.below(20)).map(|k| person(&tag, i * 100 + k)).collect();
             let data = rows.iter().map(|(_, r)| r.as_str()).collect::<Vec<_>>().join("\n");
@@ -160,15 +164,18 @@ async fn writer(db: Session, ledger: Arc<Mutex<Ledger>>, stop: Arc<AtomicBool>, 
             let r = db.load_as("main", None, &row, LoadMode::Merge, Some("writer")).await.map(|_| ());
             ("load_edge", r, vec![])
         } else {
-            let people: Vec<String> = ledger.lock().unwrap().persons.iter().cloned().collect();
+            let mine = format!("{tag}-p");
+            let people: Vec<String> = ledger.lock().unwrap().persons.iter().filter(|p| p.starts_with(&mine)).cloned().collect();
             if people.is_empty() {
                 continue;
             }
-            let name = &people[rng.below(people.len() as u64) as usize];
+            let name = people[rng.below(people.len() as u64) as usize].clone();
+            let age = rng.below(99) as i64;
             let r = db
-                .mutate_as("main", BUMP, "bump", &bump_params(name, rng.below(99) as i64), Some("writer"))
+                .mutate_as("main", BUMP, "bump", &bump_params(&name, age), Some("writer"))
                 .await
                 .map(|_| ());
+            bumped = Some((name, age));
             ("mutate", r, vec![])
         };
         let latency = t0.elapsed();
@@ -176,7 +183,14 @@ async fn writer(db: Session, ledger: Arc<Mutex<Ledger>>, stop: Arc<AtomicBool>, 
         match result {
             Ok(()) => {
                 l.writes.push((t0, latency, kind));
+                if let Some((name, age)) = &bumped {
+                    l.ages.insert(name.clone(), Some(*age));
+                }
                 for (set, key) in keys {
+                    if set == 0 {
+                        let i: u64 = key.rsplit("-p").next().and_then(|n| n.parse().ok()).unwrap_or(0);
+                        l.ages.insert(key.clone(), Some((i % 90) as i64));
+                    }
                     match set {
                         0 => l.persons.insert(key),
                         1 => l.docs.insert(key),
@@ -185,6 +199,11 @@ async fn writer(db: Session, ledger: Arc<Mutex<Ledger>>, stop: Arc<AtomicBool>, 
                 }
             }
             Err(error) => {
+                if let Some((name, _)) = &bumped
+                    && !evidence_ok(&error)
+                {
+                    l.ages.insert(name.clone(), None);
+                }
                 let code = format!("{kind}: {}", error.to_string().chars().take(90).collect::<String>());
                 *l.write_errors.entry(code).or_default() += 1;
             }
@@ -432,6 +451,32 @@ async fn check_phase(db: &Session, ledger: &Mutex<Ledger>, runs: &Mutex<Vec<RunR
         let missing: Vec<_> = want.difference(&have).take(5).collect();
         if !missing.is_empty() {
             violations.lock().unwrap().push(format!("{phase}: {} acknowledged {table} rows missing, e.g. {missing:?}", want.difference(&have).count()));
+        }
+    }
+    // the last acknowledged value of every person a writer updated
+    let ages = ledger.lock().unwrap().ages.clone();
+    {
+        let snapshot = db.snapshot_of(omnigraph::db::ReadTarget::branch("main")).await.unwrap();
+        let ds = snapshot.open_dataset("node:Person").await.unwrap();
+        use futures::TryStreamExt;
+        let mut scan = ds.scan();
+        scan.project(&["name", "age"]).unwrap();
+        let batches: Vec<arrow_array::RecordBatch> = scan.try_into_stream().await.unwrap().try_collect().await.unwrap();
+        let mut stale = Vec::new();
+        for b in &batches {
+            let names = b.column(0).as_any().downcast_ref::<arrow_array::StringArray>().unwrap();
+            let vals = b.column(1).as_any().downcast_ref::<arrow_array::Int32Array>().unwrap();
+            for i in 0..b.num_rows() {
+                if let Some(Some(want)) = ages.get(names.value(i)) {
+                    let got = (!vals.is_null(i)).then(|| i64::from(vals.value(i)));
+                    if got != Some(*want) {
+                        stale.push(format!("{}: {:?} != {}", names.value(i), got, want));
+                    }
+                }
+            }
+        }
+        if !stale.is_empty() {
+            violations.lock().unwrap().push(format!("{phase}: {} persons lost their last acknowledged age, e.g. {:?}", stale.len(), &stale[..stale.len().min(3)]));
         }
     }
     // publications against main's history

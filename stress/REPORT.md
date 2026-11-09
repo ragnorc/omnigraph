@@ -384,7 +384,10 @@ branch.
   visited each table once in order, `resume_at` consistent, cancelled runs
   never published, `UnderGates` never refused (only `BeforeGates` runs were,
   for a moved head, as the RFC expects), every error carried
-  `BeforeEffect`/`Unpublished`, acknowledged rows intact after `cleanup`.
+  `BeforeEffect`/`Unpublished`, acknowledged rows intact after `cleanup`. A
+  third run also checked values: each writer updates only its own rows, and
+  every row's last acknowledged age survived 609 published optimizes beside
+  1,729 writes (`evidence/c1_engine_values_fixed.txt`).
 - **Writer wait and reads.** Gate hold minus (`max_gate_hold` + longest table)
   ≤ 64–86 ms across thousands of runs (publication + clear); one unexplained
   1.8 s outlier under CPU contention did not recur. Writes with optimize had

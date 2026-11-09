@@ -1,0 +1,7 @@
+=== phase A
+runs 693 ok 397 published 299; writes 619 (p50 0.233s p99 3.067s max 5.078s); persons 3513 docs 151 companies 41
+gate_hold max 0.189s; gate_hold - (max_gate_hold + longest table) max 0.049s
+=== phase B
+runs 1204 ok 751 published 609; writes 1729 (p50 0.077s p99 2.246s max 5.078s); persons 9384 docs 522 companies 142
+gate_hold max 0.189s; gate_hold - (max_gate_hold + longest table) max 0.055s
+=== violations: 0
