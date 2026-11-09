@@ -73,12 +73,12 @@ def start_proxy(port: int, ctl: Path):
     return proc
 
 
-def deploy(cfg: Path, source: Path, log, timeout=600):
+def deploy(cfg: Path, source: Path, log, timeout=600, wait="900"):
     env = og.env_base("/tmp/oghome")
     env["OG_STRESS_TOKEN"] = "op-secret"
     t0 = time.time()
     out = subprocess.run([og.OMNIGRAPH, "cluster", "apply", "--operator-config", str(cfg), "--target", "srv",
-                          "--config", str(source), "--json", "--timeout", "900"],
+                          "--config", str(source), "--json", "--timeout", wait],
                          env=env, capture_output=True, text=True, timeout=timeout)
     took = time.time() - t0
     log("deploy rc", out.returncode, "took", round(took, 2), out.stdout[-600:].replace("\n", " "), out.stderr[-600:].replace("\n", " "))

@@ -40,7 +40,8 @@ fn seam(name: &str) -> Option<&'static Decide> {
         "publish.read_back" => &seams::PUBLISH_READ_BACK,
         "publish.load_state" => &seams::PUBLISH_LOAD_STATE,
         "mutation.post_finalize_pre_publisher" => &seams::MUTATION_POST_FINALIZE_PRE_PUBLISHER,
-        _ => return None,
+        // the cluster's deployment seams, by their catalog names
+        other => return omnigraph_cluster::seams::catalog::decide(other),
     })
 }
 
