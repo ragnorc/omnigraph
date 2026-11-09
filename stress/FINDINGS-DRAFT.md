@@ -65,3 +65,12 @@ PR head: 1 table optimized per run, ~1,000 reported deferred(gate_hold_limit) wi
 60 s hold, resume_at None every run -> 8 runs compact 8/20. Fixed: 1 run compacts 20/20.
 ## C5b bounds: body limit (413 above ~1 MiB) keeps requests inside the record bound; no wedge.
 Damaged/foreign records -> 409 [operation_record_invalid|foreign], file never overwritten.
+
+## F-s3-late-landing-wedge (VERIFIED, S3/RustFS + s3proxy late_forward)
+Any record PUT (acceptance/running/publishing/final) whose answer is lost and whose copy
+lands after the re-issues + read-back: process scope keeps the key unsettled with the old
+precondition; every later record write (new precondition) refused -> all submissions 503
+for the process life; lookups needing a write 503 (acceptance/running/publishing cases);
+SIGTERM exit 1, lock kept, restart only after 45 s (lease x1.5). RFC 2.3: "Admission
+refuses until a re-read settles it". Re-read happens (update_operations reads V') but
+ClusterStore never calls settle_failed_precondition. evidence/c5_s3_lost_answer.txt
