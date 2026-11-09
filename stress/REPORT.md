@@ -413,7 +413,7 @@ per-writer bound.
 - **N7 Deleted graph.** After a deletion the record keeps the operation
   (`unsettled`), but the graph-scoped lookup route answers 404, so it can only
   be read from the file or after re-adding the graph id.
-- **N8 Late settlement and the resume position (S3, partly reproduced).**
+- **N8 Late settlement and the resume position (S3, reproduced).**
   `settle(Committed)` calls `keep_kind_state`
   (`crates/omnigraph-cluster/src/operations.rs:691`, body at `:772`). The
   record a late settlement completes is the `publishing` record, which keeps
@@ -426,9 +426,9 @@ per-writer bound.
   owner fenced; the successor settled it `succeeded` with `resume_at: null`,
   so A's own position (the next table) was lost. When a newer run B has left a
   position before A settles, the settlement erases B's position too
-  (follows from the code: `keep_kind_state` removes the position whenever
-  the settled record has no `resume_at`; the S3 rerun with B bounded is
-  reported below if it completed). Effect: the next full-catalog run starts from the
+  (reproduced: with B bounded, B left the position at `edge:Knows`; A's late
+  settlement then removed it and the next full-catalog run started from the
+  first table, `evidence/c2_stale_resume_s3_bounded_b.json`). Effect: the next full-catalog run starts from the
   first table. The position is a hint, so nothing is lost but rotation;
   repeated in-doubt runs on a large catalog would keep restarting the
   rotation. Fix: store `resume_at` in the `publishing` record (it is known
@@ -517,6 +517,9 @@ per-writer bound.
   (`evidence/c5_az_lost_answer_*.jsonl`). The same four late-landing cases
   with `ARM_SECONDS=8` on the **PR head** also resolved (a late copy landed
   201 each time): S1 does not reproduce on Azurite (see S1).
+- **Embedded, 300-second phases (fixed build).** 3,232 runs (1,630
+  published) beside 4,776 writes in the last phase, zero violations
+  (`evidence/c1_engine_local_300s_fixed.txt`).
 - **Second wave (fixed build, after the N2 fix).** S3 chaos: 40 rounds, 15
   deployments, 260 operations, 3,281 acknowledged rows, zero violations
   (`evidence/c7_chaos_s3_fixed_40.log`). Local random kills with seams: 80
