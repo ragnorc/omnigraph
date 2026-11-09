@@ -42,7 +42,10 @@ that then waits out the lease; SIGTERM during the adjacency-artifact scan
 waits out the whole grace and exits 2; a deployment can miss cancelling a run
 admitted at its cancel instant; the CLI exits 2 instead of 1 on a refusal
 the server marks `effects: none`; the full-list 409 does not say which graph
-needs a write.
+needs a write. On object storage, a client that
+loops optimize makes one write wait through many runs (14 s across 9 runs
+on S3, each run within its own bound), contrary to the docs' per-writer
+bound; that one is documented, not fixed.
 
 ---
 
@@ -57,6 +60,7 @@ needs a write.
 | S4 | should-fix | verified, fixed on branch | engine #1275 | Adjacency-artifact refresh ignores cancellation: SIGTERM during its scan uses the full grace, exits 2, record left `publishing` |
 | S5 | should-fix | verified, fixed on branch | CLI #1282 | A 5xx refusal with `effects: none` (routes off, draining) exits 2 and says the run "may still run"; docs say exit 1 |
 | S6 | should-fix | verified, fixed on branch | server #1282 | The 409 for four unresolved publications names no operation, graph or walking state (RFC §2.4 says it reports each record's walk) |
+| S7 | should-fix | verified (S3), not fixed | server/engine #1282 | Back-to-back runs: one write waits through many runs' gate holds (14 s across 9 runs on S3, per-run bound ≤ 3.9 s); writes drop 6x; the docs' "a writer waits at most the bound plus one rewrite" fails |
 | N1–N15 | note | see below | | ordering, record content, status codes, evidence gaps, pre-existing issues |
 
 ### B1 (blocking): the table pipeline exits before planning the rest of the catalog
@@ -303,6 +307,54 @@ needs a write.
 - **Fix (commit `5a1bbeec`):** the refusal lists each unresolved record with
   its graph, settlement branch and walk state; server suite 574 passed.
 
+### S7 (should-fix): back-to-back runs compound the writer wait on object storage
+
+- **What:** each run keeps its own gate hold within the RFC §1.2 bound, but a
+  client that submits the next optimize as soon as the previous one ends
+  (what a loop over `omnigraph optimize` does) makes a single write on main
+  wait through many runs. The user docs promise per writer:
+  "a writer waits at most the bound plus one rewrite"
+  (`docs/user/operations/maintenance.md:84`).
+- **Reproduction:** `stress/c1_writer_wait.py OUT 180 2` with
+  `STRESS_S3_PREFIX=s3://…` (fixed build, RustFS): phases control /
+  back-to-back optimize (`max_gate_hold_ms` 1000) / control, two writers of
+  five-row Person/Company loads. Each run's gate-hold interval is placed at
+  `accepted_at + queued_ms` for `gate_hold_ms`; for every write it counts the
+  runs whose holds overlap it.
+- **Evidence (`evidence/c1_writer_wait/`):** S3, 180 s phases: control 775
+  writes, p99 0.58 s; optimize 121 writes (120 runs, gates held 50% of the
+  time, longest hold 3.9 s), p50 1.65 s, p99 12.8 s, max 14.0 s; control 377
+  writes, p99 0.77 s. The slowest write overlapped 9 runs' holds with 6.8 s
+  of held time inside its 14 s; 100 of 121 writes overlapped two or more
+  runs. A 90 s repeat: p99 0.34 / 10.2 / 2.3 s, slowest write 10.2 s across
+  11 runs. Local root, same harness: no effect (p99 0.70 s with optimize
+  versus 0.77 / 0.82 s; 1,293 runs, gates held 51%). Under the campaign 2
+  mix on S3 (20 min each, `evidence/c2_s3_20min_{opt,ctl}.json`), node-load
+  p99 rose from 3.6–6.1 s to 13.7–24.8 s and total writes fell from 1,665
+  to 989; the 60-minute S3 soak had write p99 37.7 s, the 30-minute Azure
+  soak 59 s (edge loads are slow without optimize too: p99 66 s in the
+  control, pre-existing).
+- **Violates:** the per-writer sentence in `maintenance.md:84`; the RFC's
+  observable contract ("The request bounds that wait (§1.2)") holds only per
+  run. Nothing limits how soon the next run may take the gates.
+- **Suspected cause (not traced per request):** a load prepares outside the
+  gates, waits for the run, then finds main moved by the run's publication
+  and re-prepares (`crates/omnigraph/src/loader/mod.rs:760`, up to 32
+  times); on S3 a preparation costs hundreds of ms, long enough for the next
+  back-to-back run to take the gates first. Debug logs show ~2.9 re-prepares
+  per write with optimize versus ~0.94 without
+  (`reprepares_s3b.txt`). An optimize publication changes no logical rows,
+  but it is a read-set change for every write in flight.
+- **Proposed fix:** state the bound per run in the docs and RFC and say
+  that successive runs add up; in the server, space recorded runs per graph
+  (for example, admit the next optimize only after writers queued during the
+  previous run have taken the gates, or after a pause no shorter than the
+  last gate hold). Letting a write accept a head moved only by a
+  compaction commit would remove the re-prepare, but it touches the
+  single-authority invariant and needs its own RFC.
+- **Pre-existing?** The gates and re-prepare loop are on main; a client
+  could not loop optimize through the serving process before #1282.
+
 ### Notes
 
 - **N1 Admission order.** The ceiling check (`validate_new`,
@@ -501,6 +553,9 @@ needs a write.
   lower p99 than without (3.3 s vs 8.1 s locally: compaction helps writers).
   On S3, writer p99 is 12.2 s without optimize and 18.4 s with back-to-back
   optimizes (273 runs in 3 min); the max moved ~2 s, inside one gate hold.
+  Per run the bound holds on S3 and Azure too: gate hold minus (bound +
+  longest table) ≤ 0.9 s on S3 and 1.3 s on Azure over the soaks' last 32
+  runs. Per write it does not under back-to-back runs (S7).
   Reads never blocked during a real optimize: p99 7 ms local / 79 ms S3 inside
   a run versus 12 / 82 ms outside (`evidence/c1_reads_during_optimize_*.json`,
   `c2_s3_control_*.json`).
