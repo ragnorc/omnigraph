@@ -366,7 +366,8 @@ needs a write.
   cancels, 18 schema-changing deployments through the server during load, and
   42 random SIGKILL/SIGTERM restarts: zero violations over 1,211 operations
   and 19,147 acknowledged rows; runs cancelled by a deployment name it
-  (`evidence/c7_chaos_60_prhead.json`).
+  (`evidence/c7_chaos_60_prhead.json`). On S3: 25 rounds, 8 deployments, 17
+  kills, zero violations (`evidence/c7_chaos_s3_prhead.json`).
 - **Lease loss and the previous owner's late manifest put (S3).** Freezing
   RustFS with a 4 s lease: the owner fenced and exited 2 within ~5.5 s, the
   successor started after ~6.5 s and resolved the record. With beats dropped
