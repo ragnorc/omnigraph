@@ -104,6 +104,14 @@ branch.
     98–375 ms of gate hold; `resume_at` empty each time; 8 of 20 tables
     compacted after 8 runs. Fixed build: one run, 20 of 20, 656 ms
     (`evidence/c5_big_catalog_prhead.json`, `…_fixed.json`).
+  - Direct `omnigraph optimize` (PR-head CLI, no `--max-gate-hold`), same
+    catalog: with `OMNIGRAPH_MAINTENANCE_CONCURRENCY=1` it optimized 1 table
+    and reported 1,028 `deferred(gate_hold_limit)`; at the default 8 (8
+    rewrites at once) it optimized all 20, as did the fixed build at both
+    settings (`evidence/c1_direct_cli_concurrency.txt`). The maintenance guide
+    suggests lowering that variable to bound Blob memory, which is exactly the
+    setting that triggers it on the direct path. The served path rewrites one
+    table at a time, so it is exposed at every planning concurrency.
 - **Fix (commit `23e1d66f`):** keep `unplanned` peekable and `continue` the
   loop when it is empty but `stop` is `None` and tables remain. Regression
   test in its owner, `failpoints.rs::optimize_plans_the_whole_catalog_when_no_op_turns_drain_beside_a_rewrite`,

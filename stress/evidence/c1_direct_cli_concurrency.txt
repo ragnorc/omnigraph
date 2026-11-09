@@ -1,0 +1,7 @@
+Direct `omnigraph optimize --target <root> --graph big --json` on the 1,030-table catalog,
+20 tables seeded with 3 fragments each, no --max-gate-hold (stress/ ad hoc script, see REPORT B1):
+concurrency 1 prhead   {'optimized': 1, 'unchanged': 1, 'deferred:gate_hold_limit': 1028} resume_at None gate_hold_ms 1081
+concurrency 1 fixedbin {'optimized': 20, 'unchanged': 1010} resume_at None gate_hold_ms 1942
+concurrency 8 prhead   {'optimized': 20, 'unchanged': 1010} resume_at None gate_hold_ms 1959
+concurrency 8 fixedbin {'optimized': 20, 'unchanged': 1010} resume_at None gate_hold_ms 1900
+(concurrency = OMNIGRAPH_MAINTENANCE_CONCURRENCY)
