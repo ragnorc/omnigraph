@@ -1,0 +1,26 @@
+{
+ "rounds": 60,
+ "deployments": 18,
+ "ops_seen": 1211,
+ "acked_rows": 19147,
+ "final_states": {
+  "unknown": 1179,
+  "succeeded": 30,
+  "cancelled": 2
+ },
+ "terminal_reasons": {
+  "succeeded:": 1077,
+  "cancelled:cancelled by operator": 98,
+  "succeeded:a cancellation arrived after the publica": 5,
+  "cancelled:the server is shutting down": 3,
+  "interrupted:no live run held it at 2026-11-09T03:26:": 3,
+  "interrupted:no live run held it at 2026-11-09T03:27:": 3,
+  "failed:not_committed": 2,
+  "interrupted:no live run held it at 2026-11-09T03:30:": 2,
+  "interrupted:no live run held it at 2026-11-09T03:34:": 2,
+  "interrupted:no live run held it at 2026-11-09T03:36:": 2,
+  "cancelled:deployment 01M6Z5FGNTPFMRC0KDZANP0G6Y:2:": 1,
+  "cancelled:deployment 01M6Z5FGNTPFMRC0KDZANP0G6Y:3:": 1
+ },
+ "violations": []
+}

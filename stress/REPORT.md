@@ -355,6 +355,11 @@ needs a write.
 - **Random kills.** 30 rounds local (11,347 acknowledged rows) and 20 rounds on
   S3 of random SIGKILL/SIGTERM under writers and submitters: no violation
   (`evidence/c3_random_kills_*.json`).
+- **Chaos (campaign 7, PR head).** 60 rounds mixing writers, submitters,
+  cancels, 18 schema-changing deployments through the server during load, and
+  42 random SIGKILL/SIGTERM restarts: zero violations over 1,211 operations
+  and 19,147 acknowledged rows; runs cancelled by a deployment name it
+  (`evidence/c7_chaos_60_prhead.json`).
 - **Lease loss and the previous owner's late manifest put (S3).** Freezing
   RustFS with a 4 s lease: the owner fenced and exited 2 within ~5.5 s, the
   successor started after ~6.5 s and resolved the record. With beats dropped
@@ -495,6 +500,7 @@ demonstrations; pass a binary directory where scripts take one, or set
 | `c4_deploy.py`, `c4_delete_orphan.py` | Campaign 4 |
 | `c5_record_write_faults.py`, `c5_record_bounds.py`, `c5_big_catalog.py`, `c5_s3_lost_answer.py`, `c5_budget.py` | Campaign 5 |
 | `c6_cli.py` | Campaign 6 |
+| `c7_chaos.py`, `c8_cleanup_retained.py` | Mixed chaos rounds; cleanup retention check |
 | `c1_served_early_exit.py`, `c1_reads_during_optimize.py` | Targeted scenarios |
 
 This box's ephemeral port range is 16000–65535, so every server binds below
