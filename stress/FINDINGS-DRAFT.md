@@ -30,3 +30,13 @@ drain waits for the full run (DRAIN_TIMEOUT 300s, gate hold ceiling 300s).
 ## C2 10-min hammer: 0 real violations; 1379 accepted, ~1336 evicted; all acked rows present.
 ## Pre-existing: historical read of a reclaimed commit -> 500 internal (query route), not in PR diff.
 ## Harness: ephemeral port range 16000-65535 on this box; servers bind < 16000.
+
+## F-pipeline-early-exit (VERIFIED, deterministic) -- engine #1275
+optimize.rs run_table_pipeline: loop top fills `planning` before the stage loop drains
+`ready`; if the drained items are all Stat (no-op/unchanged/resource deferral/plan failure)
+while unplanned tables remain, planning/ready/staging are all empty -> `break`.
+Unvisited tables get DatasetOptimizeStats::deferred(key, GateHoldLimit) (line ~1314 `None =>`),
+resume_at None. Repro: stress/engine_optimize_stress.rs::stress_repro_pipeline_exits_before_planning_the_tail
+(12 tables, T00 rewrite held 500ms via OPTIMIZE_BEFORE_COMPACT, no gate hold):
+planning 1 -> 10 deferred; 2 -> 9; 4 -> 7; 8 -> 3 deferred; resume_at None in all.
+Served: keep_kind_state clears the resume position on succeeded+resume_at None.
