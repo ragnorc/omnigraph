@@ -192,6 +192,13 @@ def env_base(home: str) -> dict:
 def apply_cluster(root: str, config: Path = FIXTURE, home: str = "/tmp/oghome"):
     """Direct apply, then release the lock it keeps (as test support does)."""
     os.makedirs(home, exist_ok=True)
+    if root.startswith("az://"):
+        import shutil, tempfile
+        tmp = tempfile.mkdtemp(prefix="azcfg-")
+        shutil.copytree(config, tmp, dirs_exist_ok=True)
+        text = (Path(tmp) / "cluster.yaml").read_text()
+        (Path(tmp) / "cluster.yaml").write_text(f"storage: {root}\n" + text)
+        return az_admin(root, "bootstrap", tmp, home)
     env = env_base(home)
     out = subprocess.run([OMNIGRAPH, "cluster", "apply", "--config", str(config), "--target", root, "--json"],
                          env=env, capture_output=True, text=True)
@@ -202,6 +209,8 @@ def apply_cluster(root: str, config: Path = FIXTURE, home: str = "/tmp/oghome"):
 
 
 def unlock(root: str, home: str = "/tmp/oghome"):
+    if root.startswith("az://"):
+        return (prepare_restart(root) or {}).get("unlocked")
     env = env_base(home)
     st = subprocess.run([OMNIGRAPH, "cluster", "status", "--target", root, "--json"], env=env,
                         capture_output=True, text=True)
@@ -231,7 +240,12 @@ class Server:
     def start(self, wait=True, timeout=60):
         logf = open(self.log, "ab")
         args = self.args if self.args is not None else ["--cluster", self.root, "--bind", f"127.0.0.1:{self.port}"]
-        self.proc = subprocess.Popen([self.binary, *args], env=self.env, stdout=logf, stderr=subprocess.STDOUT)
+        cmd = [self.binary, *args]
+        if self.root.startswith("az://"):
+            self.env.update(AZ_ENV)
+            cmd = [WRAPPER, "run", "--root", self.root, "--mode", "server", "--retry-seconds", "1",
+                   "--grace-seconds", os.environ.get("STRESS_AZ_GRACE", "30"), "--", *cmd]
+        self.proc = subprocess.Popen(cmd, env=self.env, stdout=logf, stderr=subprocess.STDOUT)
         if wait:
             end = time.time() + timeout
             while time.time() < end:
@@ -243,7 +257,33 @@ class Server:
             raise TimeoutError("server not ready")
         return self
 
+    def child_pids(self):
+        out = []
+        for d in Path("/proc").iterdir():
+            if not d.name.isdigit():
+                continue
+            try:
+                stat = (d / "stat").read_text()
+            except OSError:
+                continue
+            if int(stat.rsplit(")", 1)[1].split()[1]) == self.proc.pid:
+                out.append(int(d.name))
+        return out
+
     def kill(self, sig=signal.SIGKILL, wait=60):
+        if self.root.startswith("az://") and sig == signal.SIGKILL and self.proc and self.proc.poll() is None:
+            # SIGKILL of the wrapper would orphan the server: kill the server
+            # first (a crash), then the wrapper, which strands the lease.
+            for pid in self.child_pids():
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                except OSError:
+                    pass
+            for pid in self.child_pids():
+                try:
+                    os.kill(pid, signal.SIGKILL)
+                except OSError:
+                    pass
         if self.proc and self.proc.poll() is None:
             self.proc.send_signal(sig)
             try:
@@ -263,9 +303,69 @@ S3_ENV = {
 if os.environ.get("STRESS_S3_PREFIX"):
     os.environ.update(S3_ENV)
 
+# Azure (Azurite): every writer runs under the admission wrapper; the CLI
+# reaches az:// only through a registered target, so cluster administration
+# uses the served child's `stress_cluster_admin` mode.
+AZ_ENV = {"AZURE_STORAGE_USE_EMULATOR": "true", "AZURE_STORAGE_ACCOUNT_NAME": "devstoreaccount1"}
+if os.environ.get("STRESS_AZ_PREFIX"):
+    os.environ.update(AZ_ENV)
+WRAPPER = str(BIN / "omnigraph-azure-admission")
+
+
+def _child_binary():
+    deps = REPO / "target" / "debug" / "deps"
+    cands = [p for p in deps.glob("stress_served_child-*") if p.is_file() and os.access(p, os.X_OK) and p.suffix == ""]
+    return str(max(cands, key=lambda p: p.stat().st_mtime))
+
+
+def az_admin(root: str, mode: str, config: str | None = None, home: str = "/tmp/oghome"):
+    env = env_base(home)
+    env.update(AZ_ENV)
+    env["STRESS_ADMIN"] = mode
+    env["STRESS_ADMIN_ROOT"] = root
+    if config:
+        env["STRESS_CONFIG"] = config
+    out = subprocess.run([WRAPPER, "run", "--root", root, "--mode", "job", "--retry-seconds", "1", "--",
+                          _child_binary(), "--ignored", "--exact", "stress_cluster_admin", "--nocapture"],
+                         env=env, capture_output=True, text=True, timeout=600)
+    if out.returncode != 0:
+        raise RuntimeError(f"az admin {mode} failed: {out.stdout[-2000:]} {out.stderr[-2000:]}")
+    line = next((l for l in out.stdout.splitlines() if l.startswith("STRESS_UNLOCKED")), "STRESS_UNLOCKED none")
+    lock = line.split()[1]
+    return None if lock == "none" else lock
+
+
+def az_inspect(root: str) -> dict:
+    env = dict(os.environ); env.update(AZ_ENV)
+    out = subprocess.run([WRAPPER, "inspect", "--root", root], env=env, capture_output=True, text=True, timeout=60)
+    return dict(l.split("=", 1) for l in out.stdout.splitlines() if "=" in l)
+
+
+def az_break(root: str) -> bool:
+    """Break a stranded lease. Only after the harness has seen the old process exit."""
+    info = az_inspect(root)
+    if info.get("lease_status") != "locked":
+        return False
+    env = dict(os.environ); env.update(AZ_ENV)
+    subprocess.run([WRAPPER, "break", "--root", root, "--confirm-root-sha256", info["root_sha256"],
+                    "--confirm-no-old-processes"], env=env, capture_output=True, text=True, timeout=60, check=True)
+    return True
+
+
+def prepare_restart(root: str):
+    """Azure: a stopped server retains its lease and cluster lock; recover both."""
+    if not root.startswith("az://"):
+        return None
+    broke = az_break(root)
+    lock = az_admin(root, "unlock")
+    return {"lease_broken": broke, "unlocked": lock}
+
 
 def make_root(local_dir, name: str) -> str:
     """A fresh cluster root: under STRESS_S3_PREFIX when set, else a local directory."""
+    az = os.environ.get("STRESS_AZ_PREFIX")
+    if az:
+        return f"{az.rstrip('/')}/{name}-{time.time_ns()}"
     prefix = os.environ.get("STRESS_S3_PREFIX")
     if prefix:
         return f"{prefix.rstrip('/')}/{name}-{time.time_ns()}"
@@ -275,6 +375,15 @@ def make_root(local_dir, name: str) -> str:
 
 
 def read_record(root: str):
+    if root.startswith("az://"):
+        import azutil
+        container, _, key = root[5:].partition("/")
+        status, data = azutil.get_blob(container, f"{key}/__cluster/operations.json")
+        if status == 404:
+            return None
+        if status != 200:
+            raise RuntimeError(f"az get record {status} {data[:200]}")
+        return json.loads(data)
     if root.startswith("s3://"):
         import s3util
         bucket, _, key = root[5:].partition("/")

@@ -66,6 +66,8 @@ def fixture_with(n):
 def start(rnd):
     global port
     port += 1
+    if root.startswith("az://"):  # Azure keeps admission after every stop
+        log("round", rnd, "az recovery", og.prepare_restart(root))
     srv = og.Server(root, port, str(out / f"server-{rnd}.log"), env)
     try:
         srv.start(timeout=60)

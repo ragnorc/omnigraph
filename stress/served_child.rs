@@ -134,3 +134,44 @@ async fn stress_served_child() {
     config.bind = std::env::var("STRESS_BIND").unwrap_or_else(|_| "127.0.0.1:0".into());
     omnigraph_server::serve(config).await.unwrap();
 }
+
+/// Cluster administration for roots the CLI reaches only through a registered
+/// target (`az://`): `STRESS_ADMIN=bootstrap STRESS_CONFIG=<dir>` applies the
+/// bundle (its `storage:` names the root) and releases the lock the direct
+/// owner keeps; `STRESS_ADMIN=unlock STRESS_ADMIN_ROOT=<root>` force-unlocks
+/// the retained lock. Run under the Azure admission wrapper (`--mode job`).
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "hunt: stress/ cluster administration for az:// roots, launched by the stress harnesses"]
+async fn stress_cluster_admin() {
+    let Ok(mode) = std::env::var("STRESS_ADMIN") else {
+        return;
+    };
+    let caller = omnigraph_cluster::DeploymentCaller::storage_owner(None);
+    let root = match mode.as_str() {
+        "bootstrap" => {
+            let config = std::env::var("STRESS_CONFIG").unwrap();
+            let applied = omnigraph_cluster::apply_deployment(&config, None, &caller, |_, _, _| {})
+                .await
+                .unwrap();
+            let omnigraph_cluster::DeploymentLookup::Complete { result } = applied else {
+                panic!("bootstrap did not complete: {applied:?}")
+            };
+            assert!(result.converged, "{result:?}");
+            std::env::var("STRESS_ADMIN_ROOT").unwrap()
+        }
+        "unlock" => std::env::var("STRESS_ADMIN_ROOT").unwrap(),
+        other => panic!("unknown STRESS_ADMIN {other}"),
+    };
+    let status = omnigraph_cluster::deployment_status(&root, None, &caller)
+        .await
+        .unwrap();
+    match status.lock_id {
+        Some(lock) => {
+            omnigraph_cluster::force_unlock_storage_root(&root, &lock)
+                .await
+                .unwrap();
+            println!("STRESS_UNLOCKED {lock}");
+        }
+        None => println!("STRESS_UNLOCKED none"),
+    }
+}

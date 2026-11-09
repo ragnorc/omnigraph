@@ -65,8 +65,11 @@ def make_server(rnd, suffix=""):
     return og.Server(root, port, str(out / f"server-{rnd}{suffix}.log"), env)
 
 
+recoveries = []
 for rnd in range(rounds):
     port += 1
+    if root.startswith("az://"):
+        recoveries.append(og.prepare_restart(root))
     srv = make_server(rnd)
     try:
         srv.start(timeout=60)
@@ -154,6 +157,8 @@ for rnd in range(rounds):
 
 # final settle: one more server, a write on main, and every seen op resolved
 port += 1
+if root.startswith("az://"):
+    recoveries.append(og.prepare_restart(root))
 srv = og.Server(root, port, str(out / "server-final.log"), env)
 try:
     srv.start(timeout=60)
@@ -186,6 +191,7 @@ if missing:
     violate(f"final: {len(missing)} acknowledged rows missing")
 srv.kill(signal.SIGTERM)
 summary = {"rounds": rounds, "ops_seen": len(seen), "acked_rows": len(acked), "final_states": states,
-           "seams_armed": len(armed_log), "violations": violations}
+           "seams_armed": len(armed_log), "violations": violations,
+           "az_recoveries": len(recoveries), "az_leases_broken": sum(1 for r in recoveries if r and r["lease_broken"])}
 log("SUMMARY", json.dumps(summary))
 (out / "summary.json").write_text(json.dumps(summary, indent=1))

@@ -16,7 +16,9 @@ Usage: c5_s3_lost_answer.py OUTDIR [late|never ...]
 import json, os, shutil, signal, subprocess, sys, threading, time
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-os.environ.setdefault("STRESS_S3_PREFIX", "s3://omnigraph-stress/lost")
+AZ = bool(os.environ.get("STRESS_AZ_PREFIX"))
+if not AZ:
+    os.environ.setdefault("STRESS_S3_PREFIX", "s3://omnigraph-stress/lost")
 import og
 
 PROXY = 14990
@@ -26,12 +28,13 @@ def run(out, mode, after=3):
     d = out / f"{mode}-{after}"; shutil.rmtree(d, ignore_errors=True); d.mkdir(parents=True)
     log = og.Log(str(d / "log.txt"))
     root = og.make_root(d, mode); og.apply_cluster(root)
-    key = root[len("s3://"):]
+    key = f"devstoreaccount1/{root[len('az://'):]}" if AZ else root[len("s3://"):]
     ctl = d / "proxy"; ctl.mkdir()
-    proxy = subprocess.Popen([sys.executable, str(Path(__file__).parent / "s3proxy.py"), str(PROXY), "9000", str(ctl)],
-                             stdout=subprocess.PIPE, text=True)
+    proxy = subprocess.Popen([sys.executable, str(Path(__file__).parent / "s3proxy.py"), str(PROXY),
+                              "10000" if AZ else "9000", str(ctl)], stdout=subprocess.PIPE, text=True)
     proxy.stdout.readline()
-    env = {"AWS_ENDPOINT_URL": f"http://127.0.0.1:{PROXY}", "AWS_ENDPOINT_URL_S3": f"http://127.0.0.1:{PROXY}"}
+    env = ({"AZURITE_BLOB_STORAGE_URL": f"http://127.0.0.1:{PROXY}"} if AZ else
+           {"AWS_ENDPOINT_URL": f"http://127.0.0.1:{PROXY}", "AWS_ENDPOINT_URL_S3": f"http://127.0.0.1:{PROXY}"})
     srv = og.Server(root, 14991, str(d / "server.log"), env).start()
     h = srv.http
     res = {"mode": mode, "write": ["acceptance", "running", "publishing", "final"][after]}
@@ -83,6 +86,8 @@ def run(out, mode, after=3):
         res["graph_write_after"] = s
         res["sigterm_exit"] = srv.kill(signal.SIGTERM)
         t0 = time.time()
+        if AZ:  # Azure keeps admission after a clean exit by design
+            res["az_recovery"] = og.prepare_restart(root)
         srv2 = og.Server(root, 14991, str(d / "server2.log"), env)
         try:
             srv2.start(timeout=120)

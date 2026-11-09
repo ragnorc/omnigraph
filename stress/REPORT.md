@@ -170,6 +170,11 @@ needs a write.
   With the fix, `docs/user/operations/recorded-operations.md`'s "a refusal
   that names an earlier request with an unknown outcome holds until the
   server restarts" holds only for local roots (S2) and should say so.
+- **Backends:** S3 only. The same four cases on Azurite with the PR-head
+  binaries resolved without a wedge although a late copy landed (201) each
+  time (`evidence/c5_az_lost_answer_prhead.jsonl`); S3's 409 for a
+  conditional put racing an in-flight copy, which the storage layer records
+  as unresolved, is the likely difference (not traced).
 - **Pre-existing?** The scope rule is from #1176 (on main); its effect on the
   operation record is new. The same rule likely affects `state.json` writes of
   served deployments on main (not tested).
@@ -413,6 +418,24 @@ needs a write.
 - **Random kills.** 30 rounds local (11,347 acknowledged rows) and 20 rounds on
   S3 of random SIGKILL/SIGTERM under writers and submitters: no violation
   (`evidence/c3_random_kills_*.json`).
+- **Azure Blob (Azurite 3.35.0, fixed build).** Every writer under
+  `omnigraph-azure-admission` (`--mode job` for bootstrap and unlock through
+  the served child's `stress_cluster_admin`, since the CLI reaches `az://`
+  only through a registered target; `--mode server` for every server). A
+  clean SIGTERM releases the Blob lease and keeps the cluster lock (as
+  documented); SIGKILL strands both; every restart broke the lease (only
+  after the harness saw the old process exit) and force-unlocked. Random
+  kills: 40 rounds, 41 recoveries, 29 broken leases, 2,486 acknowledged
+  rows, zero violations (`evidence/c3_random_kills_azure.json`). Chaos: 30
+  rounds, 10 deployments through the server, 142 operations, 1,743
+  acknowledged rows, zero violations; deployment-cancelled runs name the
+  deployment (`evidence/c7_chaos_azure.log`). Lost and late record writes
+  through the fault proxy (`c5_s3_lost_answer.py` with `STRESS_AZ_PREFIX`):
+  acceptance, `running`, `publishing` and final writes all resolved, fresh
+  submissions were accepted at once, SIGTERM exited 0
+  (`evidence/c5_az_lost_answer_*.jsonl`). The same four late-landing cases
+  with `ARM_SECONDS=8` on the **PR head** also resolved (a late copy landed
+  201 each time): S1 does not reproduce on Azurite (see S1).
 - **Chaos (campaign 7, PR head).** 60 rounds mixing writers, submitters,
   cancels, 18 schema-changing deployments through the server during load, and
   42 random SIGKILL/SIGTERM restarts: zero violations over 1,211 operations
@@ -516,7 +539,10 @@ Logs: `stress/baseline/`.
 
 ## Could not test
 
-- **Azure**: no emulator on the box.
+- **Live Azure**: Azurite (npm, 3.35.0) on loopback only; Azure lease loss,
+  RBAC fencing and delayed accepted writes are outside what an emulator
+  shows. No seam-armed or slow-proxy timing scenarios were run on Azure
+  beyond the lost-answer cases.
 - **Real S3 latency and in-region qualification**: RustFS on loopback only;
   the RFC's `max_gate_hold` default, ceilings, `artifact_write_limit` against
   the 25 s grace, and per-writer latency on a serving host remain unqualified.
@@ -575,13 +601,14 @@ demonstrations; pass a binary directory where scripts take one, or set
 | `faultfs.c` | `LD_PRELOAD` shim: fail, delay or lose the answer of renames onto a path; delay opens of a path |
 | `tlsproxy.py` | TLS fault proxy for the CLI's server target (drop/truncate/504/delay) |
 | `s3proxy.py`, `s3util.py` | HTTP fault proxy between the server and RustFS (`drop_response`, `late_forward`, `drop_request`, `slow`, rule file); stdlib SigV4 client |
-| `c2_served_hammer.py`, `c2_unresolved_cap.py`, `c2_stale_resume.py` | Campaign 2 |
+| `c2_served_hammer.py`, `c2_unresolved_cap.py`, `c2_stale_resume.py`, `c2_stale_resume_s3.py` | Campaign 2 |
 | `c3_crash.py`, `c3_random_kills.py`, `c3_settle_by_merge.py`, `c3_sigterm_artifact.py`, `c3_lease_loss.py`, `c3_late_manifest.py`, `c3_late_record.py`, `c3_deep_walk.py`, `c3_sigterm_artifact_write.py` | Campaign 3 |
 | `c4_deploy.py`, `c4_delete_orphan.py` | Campaign 4 |
 | `c5_record_write_faults.py`, `c5_record_bounds.py`, `c5_big_catalog.py`, `c5_s3_lost_answer.py`, `c5_budget.py` | Campaign 5 |
 | `c6_cli.py` | Campaign 6 |
 | `c7_chaos.py`, `c8_cleanup_retained.py` | Mixed chaos rounds; cleanup retention check |
 | `c1_served_early_exit.py`, `c1_reads_during_optimize.py` | Targeted scenarios |
+| `azutil.py` | Stdlib SharedKey client for Azurite (public emulator key); with `STRESS_AZ_PREFIX=az://container/prefix`, `og.py` wraps every server and admin job in `omnigraph-azure-admission` and recovers the lease and lock between restarts (`og.prepare_restart`) |
 
 This box's ephemeral port range is 16000–65535, so every server binds below
 16000. For S3, run RustFS on 127.0.0.1:9000 with keys
