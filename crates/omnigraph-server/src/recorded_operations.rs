@@ -1204,11 +1204,40 @@ async fn find_authorized(
     let graph = handle.key.graph_id.to_string();
     let walks = walk_unresolved(state, &owner).await;
     let lock = owner.lock_operations().await;
-    let updated = update(state, &owner, &lock, &walks, |record| {
+    let operation = match update(state, &owner, &lock, &walks, |record| {
         (false, record.find(&graph, operation_id).cloned())
     })
-    .await?;
-    let operation = updated.value;
+    .await
+    {
+        Ok(updated) => updated.value,
+        // The record could not take this access's changes (a refused or
+        // unsettled write): a lookup still answers what landed, with the
+        // ending this process knows and has not written yet (RFC 2.3).
+        Err(error)
+            if matches!(
+                error.code,
+                ErrorCode::ServiceUnavailable | ErrorCode::OutcomeUnknown
+            ) =>
+        {
+            let Ok(Some((record, _))) = owner.read_operations(&lock).await else {
+                return Err(error);
+            };
+            let known = match state
+                .recorded
+                .pending
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .get(operation_id)
+            {
+                Some(PendingEnding::Finish(ended)) if ended.graph == graph => {
+                    Some((**ended).clone())
+                }
+                _ => None,
+            };
+            known.or_else(|| record.find(&graph, operation_id).cloned())
+        }
+        Err(error) => return Err(error),
+    };
     let kind = operation
         .as_ref()
         .map_or(OperationKind::Optimize, Operation::kind);
