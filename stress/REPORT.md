@@ -518,6 +518,7 @@ Logs: `stress/baseline/`.
 | `fa5cd0ff` | S1 storage settle-on-read (+ unit test) |
 | `331d8485` | S4 artifact refresh honors cancellation |
 | `5a1bbeec` | S6 full-list refusal names each record |
+| `3741a341`, `5d721853` | rustfmt and clippy over the fixes and harness |
 
 Validation of the fix commits together (`5d721853`): `cargo dev-nextest`
 (the canonical workspace graph) ran 5,200 tests: 5,185 passed. Of the 15
