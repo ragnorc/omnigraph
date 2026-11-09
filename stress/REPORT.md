@@ -456,7 +456,11 @@ per-writer bound.
 - **N12 Pre-existing writer conflicts.** Under concurrent writers, mutations
   and edge loads are refused "write authority 'graph_head:main' changed
   during preparation" at the same rate with or without optimize (control runs
-  in campaign 1).
+  in campaign 1). On S3 two writers of five-row loads, with no optimize,
+  re-prepare about once per write and some exhaust all 32 attempts and
+  answer 409 (`evidence/c1_writer_wait/reprepares_s3b.txt`). `loader/` and
+  `exec/` are unchanged between the merge base with main (`ea4a16d5`) and
+  `f6b2443c`. This conflict is what makes S7 compound.
 - **N13 Exports during a served run.** While a recorded optimize holds its
   export exclusion (entry to return, including the artifact scan), an export
   is refused 413 "resource limit exceeded for stream_export_slots: actual 2,
