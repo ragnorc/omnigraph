@@ -1,0 +1,24 @@
+{
+ "ops": 0,
+ "states": {
+  "cancelled": 0,
+  "running": 0,
+  "publishing": 0,
+  "interrupted": 0,
+  "succeeded": 0,
+  "failed": 0,
+  "unsettled": 0,
+  "accepted": 0
+ },
+ "writes": 572,
+ "write_p50": 0.2845451831817627,
+ "write_p99": 12.239548683166504,
+ "write_max": 21.549278497695923,
+ "max_gate_hold_ms_seen": null,
+ "marks": [],
+ "evicted_seen": 0,
+ "violations": [],
+ "event_counts": {
+  "write:409": 35
+ }
+}

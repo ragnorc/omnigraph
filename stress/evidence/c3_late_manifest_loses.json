@@ -1,0 +1,32 @@
+{
+ "slow_ms": 15000,
+ "write_before_lookup": true,
+ "owner_exit": 2,
+ "owner_stopped_after_s": 5.2,
+ "manifest_puts": [
+  "1794191656.317 None",
+  "1794191656.374 None",
+  "1794191656.427 None"
+ ],
+ "record_after_owner": [
+  "publishing",
+  "01M6Z2G1K9BB0Q0TD073TAP84A"
+ ],
+ "successor_after_s": 6.5,
+ "successor_states": [
+  "publishing",
+  "failed"
+ ],
+ "final": [
+  "failed",
+  "not_committed",
+  null
+ ],
+ "late_put_answers": [
+  "1794191668.287 PUT /omnigraph-stress/latemanifest/lm-1794191654932410540/graphs/kg.omni/__manifest/_versions/18446744073709551609.manifest HTTP/1.1 fault=None",
+  "1794191671.580 PUT /omnigraph-stress/latemanifest/lm-1794191654932410540/graphs/kg.omni/__manifest/_versions/18446744073709551609.manifest HTTP/1.1 fault=None"
+ ],
+ "commits_answering_nonce": [],
+ "violations": [],
+ "next_run": "succeeded"
+}

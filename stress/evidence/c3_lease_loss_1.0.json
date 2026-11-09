@@ -1,0 +1,16 @@
+{
+ "state_before_freeze": "running",
+ "server_exit_during_freeze": 2,
+ "server_exit": 2,
+ "server_stopped_after_s": 6.9,
+ "record_after_owner": "running",
+ "successor_started_after_s": 6.5,
+ "after_successor": "interrupted",
+ "final": [
+  "interrupted",
+  "no live run held it at 2026-11-09T02:32:10.339901588Z",
+  null
+ ],
+ "violations": [],
+ "next_run": "succeeded"
+}

@@ -1,0 +1,55 @@
+{
+ "ops": 547,
+ "states": {
+  "cancelled": 10,
+  "running": 1,
+  "publishing": 1,
+  "interrupted": 0,
+  "succeeded": 505,
+  "failed": 0,
+  "unsettled": 0,
+  "accepted": 30
+ },
+ "writes": 644,
+ "write_p50": 1.1014552116394043,
+ "write_p99": 31.621586799621582,
+ "write_max": 37.83633589744568,
+ "max_gate_hold_ms_seen": 3017,
+ "marks": [
+  [
+   1794190653.62132,
+   1794190581586
+  ],
+  [
+   1794190654.7893999,
+   1794190582975
+  ],
+  [
+   1794190656.4011548,
+   1794190586873
+  ]
+ ],
+ "evicted_seen": 515,
+ "violations": [
+  "01M6Z0ZBHH5PFYGH9QJ8EM41RJ: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M6Z0ZBHH5PFYGH9QJ8EM41RJ: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M6Z0ZHR28CHJY6DJZEHGE71P: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M6Z11VE8ZM8SQT5EV9MC9KFV: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M6Z166V26ZCJY20HX0WCVJKQ: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M6Z1BEASG87ZH1SA8XH83CHT: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M6Z1CRMYFYS2NBEQWZFW66FX: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M6Z1BH9SBMV05VEMRQ0B67VD: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M6Z1EAM9KYN7CWWZ8Z0K6E5B: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}"
+ ],
+ "event_counts": {
+  "submit:202": 567,
+  "submit:429": 12702,
+  "lookup:200": 4641,
+  "submit:409": 6858,
+  "submit:400": 2245,
+  "cancel:202": 14,
+  "submit:200": 639,
+  "write:409": 78,
+  "cancel:200": 3059
+ }
+}

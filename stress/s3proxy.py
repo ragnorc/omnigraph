@@ -24,6 +24,24 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from tlsproxy import read_http_message, force_close  # noqa: E402
 
 
+def choose_rule(ctl: Path, request_line: str):
+    """Rules in CTL/rules.json: [{"match", "mode", "delay_ms", "count"}]; the
+    first matching rule with count left applies (modes as below, plus `slow`:
+    wait delay_ms, then forward and answer normally)."""
+    p = ctl / "rules.json"
+    if not p.exists():
+        return None, 0
+    import json
+    rules = json.loads(p.read_text())
+    for rule in rules:
+        if rule["match"] in request_line and rule.get("count", 1) != 0:
+            if rule.get("count", -1) > 0:
+                rule["count"] -= 1
+                p.write_text(json.dumps(rules))
+            return rule["mode"], int(rule.get("delay_ms", 0))
+    return None, 0
+
+
 def choose(ctl: Path, request_line: str):
     match = (ctl / "match").read_text().strip() if (ctl / "match").exists() else None
     if not match or match not in request_line:
@@ -56,8 +74,13 @@ async def handle(cr, cw, upstream: int, ctl: Path):
         cw.close()
         return
     line = head.split(b"\r\n", 1)[0].decode(errors="replace")
-    fault = choose(ctl, line)
-    delay = int((ctl / "delay_ms").read_text().strip()) if (ctl / "delay_ms").exists() else 0
+    fault, delay = choose_rule(ctl, line)
+    if fault is None:
+        fault = choose(ctl, line)
+        delay = int((ctl / "delay_ms").read_text().strip()) if (ctl / "delay_ms").exists() else 0
+    if fault == "slow":
+        await asyncio.sleep(delay / 1000)
+        fault = None
     with open(ctl / "log", "a") as f:
         f.write(f"{time.time():.3f} {line} fault={fault}\n")
     no_body = line.startswith("HEAD ")
