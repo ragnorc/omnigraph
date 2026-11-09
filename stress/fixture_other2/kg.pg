@@ -1,0 +1,25 @@
+node Person {
+    name: String @key
+    age: I32?
+    bio: String @index
+}
+
+node Company {
+    name: String @key
+    industry: String?
+}
+
+node Doc {
+    slug: String @key
+    title: String @index
+    content: Blob?
+    embedding: Vector(8)
+}
+
+edge Knows: Person -> Person {
+    since: I32?
+}
+
+edge WorksAt: Person -> Company
+
+edge Authored: Person -> Doc

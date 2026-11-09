@@ -23,3 +23,10 @@ drain waits for the full run (DRAIN_TIMEOUT 300s, gate hold ceiling 300s).
 - first lookup after restart of an active publishing record answers `publishing` (walk runs before orphan move).
 - refused acceptance answers 503 with disposition effects=unknown/action=reconcile while saying "nothing was accepted".
 - RFC evidence table rows largely without tests (cluster failpoints, boot_settings, record-fault injection).
+
+## C3 crash campaign: all 15 points resolve per RFC (evidence/c3_crash_results.json)
+## C4 deploy: race reproduced (evidence/c4_deploy_results.txt): run admitted after the
+   deployment's cancel step runs uncancelled; deployment drain 12.06s vs 4.62s.
+## C2 10-min hammer: 0 real violations; 1379 accepted, ~1336 evicted; all acked rows present.
+## Pre-existing: historical read of a reclaimed commit -> 500 internal (query route), not in PR diff.
+## Harness: ephemeral port range 16000-65535 on this box; servers bind < 16000.

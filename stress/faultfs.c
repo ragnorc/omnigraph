@@ -121,3 +121,56 @@ int renameat2(int olddirfd, const char *oldpath, int newdirfd, const char *newpa
     if (mode == 2 && r == 0) { errno = EIO; return -1; }
     return r;
 }
+
+// ---- read delays: $FAULTFS_DIR/open_delay_ms (N) delays opens whose path
+// contains $FAULTFS_DIR/open_pattern (default "__cluster/operations.json").
+#include <stdarg.h>
+static void open_delay(const char *path) {
+    if (!dir() || !path) return;
+    long delay = ctl_long("open_delay_ms", 0);
+    if (delay <= 0) return;
+    char pat[1024] = "__cluster/operations.json";
+    char p[4096];
+    snprintf(p, sizeof p, "%s/open_pattern", dir());
+    FILE *f = fopen(p, "r");
+    if (f) {
+        if (fgets(pat, sizeof pat, f)) pat[strcspn(pat, "\r\n")] = 0;
+        fclose(f);
+    }
+    if (!strstr(path, pat)) return;
+    snprintf(p, sizeof p, "%s/open_hits", dir());
+    FILE *h = fopen(p, "a");
+    if (h) { fprintf(h, "%ld %s\n", (long)time(NULL), path); fclose(h); }
+    struct timespec ts = { delay / 1000, (delay % 1000) * 1000000L };
+    nanosleep(&ts, NULL);
+}
+
+#define OPEN_WRAP(NAME)                                                   \
+int NAME(const char *path, int flags, ...) {                              \
+    static int (*real)(const char *, int, ...) = NULL;                    \
+    if (!real) real = dlsym(RTLD_NEXT, #NAME);                            \
+    mode_t mode = 0;                                                      \
+    if (flags & (O_CREAT | O_TMPFILE)) {                                  \
+        va_list ap; va_start(ap, flags); mode = va_arg(ap, mode_t); va_end(ap); \
+    } else {                                                              \
+        open_delay(path);                                                 \
+    }                                                                     \
+    return real(path, flags, mode);                                       \
+}
+OPEN_WRAP(open)
+OPEN_WRAP(open64)
+
+#define OPENAT_WRAP(NAME)                                                 \
+int NAME(int dirfd, const char *path, int flags, ...) {                   \
+    static int (*real)(int, const char *, int, ...) = NULL;               \
+    if (!real) real = dlsym(RTLD_NEXT, #NAME);                            \
+    mode_t mode = 0;                                                      \
+    if (flags & (O_CREAT | O_TMPFILE)) {                                  \
+        va_list ap; va_start(ap, flags); mode = va_arg(ap, mode_t); va_end(ap); \
+    } else {                                                              \
+        open_delay(path);                                                 \
+    }                                                                     \
+    return real(dirfd, path, flags, mode);                                \
+}
+OPENAT_WRAP(openat)
+OPENAT_WRAP(openat64)

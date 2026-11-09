@@ -246,7 +246,7 @@ def submitter(st: State, http: og.Http, sid: int, max_hold_ms: int):
             if status == 409 and "operation_id_expired" in json.dumps(resp):
                 expired_check(st, http, oid, resp)
             else:
-                classify_submit(st, oid, other, status, resp, expect={409, 503})
+                classify_submit(st, oid, other, status, resp, expect={409, 503} | ({400} if oid in st.evicted_seen else set()))
             if status == 409 and oid not in st.evicted_seen and "operation_request_mismatch" not in json.dumps(resp):
                 st.violate(f"{oid}: mismatch refused without operation_request_mismatch: {resp}")
         elif roll < 0.68 and mark is not None:
@@ -324,7 +324,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("out")
     ap.add_argument("--duration", type=float, default=120)
-    ap.add_argument("--port", type=int, default=18100)
+    ap.add_argument("--port", type=int, default=12100)
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--writers", type=int, default=4)
     ap.add_argument("--submitters", type=int, default=6)

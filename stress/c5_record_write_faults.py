@@ -67,7 +67,7 @@ def arm_at(ctl: Path, nth: int, mode: str, out: dict):
     return t
 
 
-PORT = [18210]
+PORT = [12210]
 
 
 def run(out: Path, name: str, nth: int, mode: str = "fail", sticky_s: float = 0.0, noop: bool = False):
