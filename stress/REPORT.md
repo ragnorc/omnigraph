@@ -3,8 +3,8 @@
 **Under test:** `feat/optimize-served` at `f6b2443c` (PR #1282), stacked on
 `feat/optimize-engine` at `5667fddb` (PR #1275).
 **Stress branch:** `stress/optimize-1282` on `https://github.com/ragnorc/omnigraph`
-(this report, the harnesses, the evidence, and five fixes as separate,
-labeled commits).
+(this report, the harnesses, the evidence, and seven fix commits, each
+separate and labeled).
 **Box:** `nproc` 2, 64 GiB, gVisor, local disk. S3 backend: RustFS
 1.0.0-beta.12 (the release CI pins; official binary, checksum matched the
 release `SHA256SUMS`) on 127.0.0.1:9000. No Azure.
@@ -334,6 +334,10 @@ needs a write.
   published dataset version … was reclaimed"); the typed error exists but the
   query route maps it to 500. Not in the PR diff (checked by `git diff`, not
   on a main build).
+- **N12 Pre-existing writer conflicts.** Under concurrent writers, mutations
+  and edge loads are refused "write authority 'graph_head:main' changed
+  during preparation" at the same rate with or without optimize (control runs
+  in campaign 1).
 - **N13 Exports during a served run.** While a recorded optimize holds its
   export exclusion (entry to return, including the artifact scan), an export
   is refused 413 "resource limit exceeded for stream_export_slots: actual 2,
@@ -359,10 +363,6 @@ needs a write.
   out of the retained terminal list (or in their own object), and compute
   sizes once per write (`push_terminal` and `validate` re-serialize the
   terminal list repeatedly, `operations.rs:796`, `:809`, `:814`).
-- **N12 Pre-existing writer conflicts.** Under concurrent writers, mutations
-  and edge loads are refused "write authority 'graph_head:main' changed
-  during preparation" at the same rate with or without optimize (control runs
-  in campaign 1).
 
 ---
 
@@ -495,10 +495,12 @@ Logs: `stress/baseline/`.
   the RFC's `max_gate_hold` default, ceilings, `artifact_write_limit` against
   the 25 s grace, and per-writer latency on a serving host remain unqualified.
 - **S3 runs parked at a seam**: the seam `Hold` blocks a tokio worker; on S3
-  that stalls the parked worker's HTTP connections and lease beats (the lease
-  then lapses after 30 s). Crash points on S3 were taken with SIGKILL right
-  after the seam was reached, and the S3 timing scenarios (lease loss, late
-  manifest put, lost answers) used the S3 proxy instead of seams.
+  that stalls the parked worker's HTTP connections and lease beats, so a
+  server parked longer than the lease fences itself (exit 2) before the
+  harness kills it. The S3 crash points therefore measure resolution after a
+  fenced owner, which they did correctly; the S3 timing scenarios (lease
+  loss, late manifest and record puts, lost answers) used the S3 proxy
+  instead of seams.
 - **CLI exit 4** (same id, different request): the CLI mints its own ids; the
   mapping is unit-tested only.
 - **A second recorded kind or admission scope**: only `optimize` exists.
