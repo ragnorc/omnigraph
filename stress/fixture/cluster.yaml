@@ -1,0 +1,10 @@
+version: 1
+graphs:
+  kg:
+    schema: ./kg.pg
+  other:
+    schema: ./other.pg
+policies:
+  access:
+    file: ./policy.yaml
+    applies_to: [kg, other]

@@ -1,0 +1,26 @@
+    Finished `test` profile [unoptimized] target(s) in 2.00s
+────────────
+ Nextest run ID 32ff0e54-eb51-4cbd-b405-3e23eeefc6aa with nextest profile: default
+    Starting 20 tests across 8 binaries (935 tests and 44 binaries skipped)
+        PASS [   0.061s] ( 1/20) omnigraph-cluster operations::tests::ids_used_by_these_tests_are_canonical
+        PASS [   0.064s] ( 2/20) omnigraph-cluster operations::tests::a_table_list_run_never_moves_the_resume_position
+        PASS [   0.064s] ( 3/20) omnigraph-cluster operations::tests::a_fifth_unresolved_publication_refuses_admission
+        PASS [   0.064s] ( 4/20) omnigraph-cluster operations::tests::an_id_dated_ahead_of_the_server_clock_is_refused_and_never_sets_the_mark
+        PASS [   0.065s] ( 5/20) omnigraph-cluster operations::tests::admission_holds_one_active_operation_per_scope_and_answers_a_repeat
+        PASS [   0.065s] ( 6/20) omnigraph-cluster operations::tests::an_orphan_is_interrupted_unless_it_was_publishing
+        PASS [   0.064s] ( 7/20) omnigraph-cluster operations::tests::history_settles_an_unresolved_publication_once_and_a_walk_keeps_its_cursor
+        PASS [   0.065s] ( 8/20) omnigraph-cluster operations::tests::orphaning_one_lifetime_leaves_another_graphs_run_in_its_slot
+        PASS [   0.064s] ( 9/20) omnigraph-cluster operations::tests::decoding_refuses_an_operation_in_the_wrong_section
+        PASS [   0.064s] (10/20) omnigraph-cluster operations::tests::graph_deletion_settles_the_lifetimes_non_terminal_records
+        PASS [   0.066s] (11/20) omnigraph-cluster operations::tests::table_outcomes_are_listed_up_to_the_cap_and_details_are_cut
+        PASS [   0.067s] (12/20) omnigraph-cli commands::maintenance::served::tests::refusals_map_to_their_exits
+        PASS [   0.067s] (13/20) omnigraph-cli commands::maintenance::served::tests::the_request_carries_only_what_was_asked
+        PASS [   0.074s] (14/20) omnigraph-cluster operations::tests::a_conditional_write_lands_once_and_refuses_a_stale_version
+        PASS [   0.074s] (15/20) omnigraph-cli commands::maintenance::served::tests::a_refused_lookup_is_doubt_not_a_refusal_before_acceptance
+        PASS [   0.064s] (16/20) omnigraph-cluster operations::tests::terminal_records_are_bounded_newest_first_and_eviction_marks_the_time
+        PASS [   0.236s] (17/20) omnigraph-server::operation_routes routes_refuse_without_a_grant_an_operator_switch_or_a_cluster
+        PASS [   0.338s] (18/20) omnigraph-server::operation_routes recorded_optimize_keeps_a_record_a_caller_reads_by_id
+        PASS [   1.360s] (19/20) omnigraph-cli::integration system_local::local_cli_optimize_runs_a_recorded_operation
+        PASS [   3.251s] (20/20) omnigraph-server::operation_routes a_known_ending_survives_a_failed_final_write_and_a_repeat_answers_the_running_record
+────────────
+     Summary [   3.317s] 20 tests run: 20 passed, 935 skipped

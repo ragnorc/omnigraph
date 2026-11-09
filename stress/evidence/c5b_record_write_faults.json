@@ -1,0 +1,191 @@
+[
+ {
+  "scenario": "accept_refused",
+  "nth_write": 1,
+  "mode": "fail",
+  "submit": 503,
+  "lookups_during_fault": [
+   [
+    200,
+    null,
+    null
+   ],
+   [
+    200,
+    null,
+    null
+   ]
+  ],
+  "lookup_statuses_during_fault": [
+   200
+  ],
+  "lookup_after": [
+   200,
+   {
+    "lookup": "unknown",
+    "operation": null,
+    "in_progress": false
+   }
+  ],
+  "fresh_submit_after": [
+   503,
+   "the operation record write was refused and nothing was accepted: storage write_if_match failed for 'file:///tmp/c5b/accept_refused/root/__cluster/operations.json': Generic owned storage error: a prior request to 'tmp/c5b/accept_refused/root/__cluster/operations.json' has an unknown outcome and could still land; this key stays refused until a replacement scope"
+  ],
+  "record_state": null,
+  "record_reason": null,
+  "record_published": null,
+  "operator_commits_on_main": 1,
+  "sigterm_exit": 1,
+  "restart_needed_unlock": "01M6YWF85T7BMJXF92MBAMNE3Q",
+  "lookup_after_restart": [
+   200,
+   {
+    "lookup": "unknown",
+    "operation": null,
+    "in_progress": false
+   }
+  ],
+  "submit_after_restart": 202
+ },
+ {
+  "scenario": "running_refused",
+  "nth_write": 2,
+  "mode": "fail",
+  "submit": 202,
+  "lookups_during_fault": [
+   [
+    503,
+    null,
+    "the operation record write was refused and applied nothing: storage write_if_match failed for 'file:///tmp/c5b/running_refused/root/__cluster/operations.json': Generic owned storage error: a prior request to 'tmp/c5b/running_refused/root/__cluster/operations.json' has an unknown outcome and could still land; this key stays refused until a replacement scope; nothing was accepted, and a refusal that names an unsettled earlier request holds until the server restarts"
+   ],
+   [
+    503,
+    null,
+    "the operation record write was refused and applied nothing: storage write_if_match failed for 'file:///tmp/c5b/running_refused/root/__cluster/operations.json': Generic owned storage error: a prior request to 'tmp/c5b/running_refused/root/__cluster/operations.json' has an unknown outcome and could still land; this key stays refused until a replacement scope; nothing was accepted, and a refusal that names an unsettled earlier request holds until the server restarts"
+   ]
+  ],
+  "lookup_statuses_during_fault": [
+   503
+  ],
+  "lookup_after": [
+   503,
+   {
+    "error": "the operation record write was refused and applied nothing: storage write_if_match failed for 'file:///tmp/c5b/running_refused/root/__cluster/operations.json': Generic owned storage error: a prior request to 'tmp/c5b/running_refused/root/__cluster/operations.json' has an unknown outcome and could still land; this key stays refused until a replacement scope; nothing was accepted, and a refusal that names an unsettled earlier request holds until the server restarts",
+    "code": "service_unavailable",
+    "disposition": {
+     "effects": "none",
+     "action": "retry"
+    }
+   }
+  ],
+  "fresh_submit_after": [
+   503,
+   "the operation record write was refused and applied nothing: storage write_if_match failed for 'file:///tmp/c5b/running_refused/root/__cluster/operations.json': Generic owned storage error: a prior request to 'tmp/c5b/running_refused/root/__cluster/operations.json' has an unknown outcome and could still land; this key stays refused until a replacement scope; nothing was accepted, and a refusal that names an unsettled earlier request holds until the server restarts"
+  ],
+  "record_state": "accepted",
+  "record_reason": null,
+  "record_published": null,
+  "operator_commits_on_main": 1,
+  "sigterm_exit": 1,
+  "restart_needed_unlock": "01M6YWFDSDNMQ2E1Q7SA4JGMHY",
+  "lookup_after_restart": [
+   200,
+   "interrupted"
+  ],
+  "submit_after_restart": 202
+ },
+ {
+  "scenario": "publishing_refused",
+  "nth_write": 3,
+  "mode": "fail",
+  "submit": 202,
+  "lookups_during_fault": [
+   [
+    503,
+    null,
+    "the operation record write was refused and applied nothing: storage write_if_match failed for 'file:///tmp/c5b/publishing_refused/root/__cluster/operations.json': Generic owned storage error: a prior request to 'tmp/c5b/publishing_refused/root/__cluster/operations.json' has an unknown outcome and could still land; this key stays refused until a replacement scope; nothing was accepted, and a refusal that names an unsettled earlier request holds until the server restarts"
+   ],
+   [
+    503,
+    null,
+    "the operation record write was refused and applied nothing: storage write_if_match failed for 'file:///tmp/c5b/publishing_refused/root/__cluster/operations.json': Generic owned storage error: a prior request to 'tmp/c5b/publishing_refused/root/__cluster/operations.json' has an unknown outcome and could still land; this key stays refused until a replacement scope; nothing was accepted, and a refusal that names an unsettled earlier request holds until the server restarts"
+   ]
+  ],
+  "lookup_statuses_during_fault": [
+   503
+  ],
+  "lookup_after": [
+   503,
+   {
+    "error": "the operation record write was refused and applied nothing: storage write_if_match failed for 'file:///tmp/c5b/publishing_refused/root/__cluster/operations.json': Generic owned storage error: a prior request to 'tmp/c5b/publishing_refused/root/__cluster/operations.json' has an unknown outcome and could still land; this key stays refused until a replacement scope; nothing was accepted, and a refusal that names an unsettled earlier request holds until the server restarts",
+    "code": "service_unavailable",
+    "disposition": {
+     "effects": "none",
+     "action": "retry"
+    }
+   }
+  ],
+  "fresh_submit_after": [
+   503,
+   "the operation record write was refused and applied nothing: storage write_if_match failed for 'file:///tmp/c5b/publishing_refused/root/__cluster/operations.json': Generic owned storage error: a prior request to 'tmp/c5b/publishing_refused/root/__cluster/operations.json' has an unknown outcome and could still land; this key stays refused until a replacement scope; nothing was accepted, and a refusal that names an unsettled earlier request holds until the server restarts"
+  ],
+  "record_state": "running",
+  "record_reason": null,
+  "record_published": null,
+  "operator_commits_on_main": 1,
+  "sigterm_exit": 1,
+  "restart_needed_unlock": "01M6YWFKX3MQ9GR104838TE267",
+  "lookup_after_restart": [
+   200,
+   "interrupted"
+  ],
+  "submit_after_restart": 202
+ },
+ {
+  "scenario": "noop_final_refused",
+  "nth_write": 3,
+  "mode": "fail",
+  "submit": 202,
+  "lookups_during_fault": [
+   [
+    503,
+    null,
+    "the operation record write was refused and applied nothing: storage write_if_match failed for 'file:///tmp/c5b/noop_final_refused/root/__cluster/operations.json': Generic owned storage error: a prior request to 'tmp/c5b/noop_final_refused/root/__cluster/operations.json' has an unknown outcome and could still land; this key stays refused until a replacement scope; nothing was accepted, and a refusal that names an unsettled earlier request holds until the server restarts"
+   ],
+   [
+    503,
+    null,
+    "the operation record write was refused and applied nothing: storage write_if_match failed for 'file:///tmp/c5b/noop_final_refused/root/__cluster/operations.json': Generic owned storage error: a prior request to 'tmp/c5b/noop_final_refused/root/__cluster/operations.json' has an unknown outcome and could still land; this key stays refused until a replacement scope; nothing was accepted, and a refusal that names an unsettled earlier request holds until the server restarts"
+   ]
+  ],
+  "lookup_statuses_during_fault": [
+   503
+  ],
+  "lookup_after": [
+   503,
+   {
+    "error": "the operation record write was refused and applied nothing: storage write_if_match failed for 'file:///tmp/c5b/noop_final_refused/root/__cluster/operations.json': Generic owned storage error: a prior request to 'tmp/c5b/noop_final_refused/root/__cluster/operations.json' has an unknown outcome and could still land; this key stays refused until a replacement scope; nothing was accepted, and a refusal that names an unsettled earlier request holds until the server restarts",
+    "code": "service_unavailable",
+    "disposition": {
+     "effects": "none",
+     "action": "retry"
+    }
+   }
+  ],
+  "fresh_submit_after": [
+   503,
+   "the operation record write was refused and applied nothing: storage write_if_match failed for 'file:///tmp/c5b/noop_final_refused/root/__cluster/operations.json': Generic owned storage error: a prior request to 'tmp/c5b/noop_final_refused/root/__cluster/operations.json' has an unknown outcome and could still land; this key stays refused until a replacement scope; nothing was accepted, and a refusal that names an unsettled earlier request holds until the server restarts"
+  ],
+  "record_state": "running",
+  "record_reason": null,
+  "record_published": null,
+  "operator_commits_on_main": 1,
+  "sigterm_exit": 1,
+  "restart_needed_unlock": "01M6YWFTDSNR7F4X93QKJ5FVZ1",
+  "lookup_after_restart": [
+   200,
+   "interrupted"
+  ],
+  "submit_after_restart": 202
+ }
+]
