@@ -184,9 +184,13 @@ needs a write.
   submission 503 until restart; SIGTERM exits 1 and keeps the lock, so the
   restart needs `cluster force-unlock`; a **no-op run that finished
   `succeeded` and whose final write failed is stored `interrupted`** after
-  the restart. The graph itself is unaffected and nothing published wrongly.
-- **Violates:** RFC §2.3 (as S1); the user's invariant "no finished run is
-  stored interrupted". (The RFC's own text allows `interrupted` for a record
+  the restart; when the failed write was `running`, the record stays
+  `accepted` with no live run until the restart (lookups say
+  `in_progress: false`). The graph itself is unaffected and nothing published
+  wrongly.
+- **Violates:** RFC §2.3 (as S1); the invariants "no record stays `accepted`
+  or `running` with no live run" and "no finished run is stored
+  interrupted". (The RFC's own text allows `interrupted` for a record
   left `running` with no live run, so that part is a contract gap more than a
   code bug.)
 - **Fix (partial, commit `08d2a0e7`):** a lookup whose record write is
