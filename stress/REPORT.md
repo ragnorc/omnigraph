@@ -358,7 +358,7 @@ needs a write.
   and sits inside the writer-wait bound. Options: keep per-table outcomes
   out of the retained terminal list (or in their own object), and compute
   sizes once per write (`push_terminal` and `validate` re-serialize the
-  terminal list repeatedly, `operations.rs:796`, `:807`).
+  terminal list repeatedly, `operations.rs:796`, `:809`, `:814`).
 - **N12 Pre-existing writer conflicts.** Under concurrent writers, mutations
   and edge loads are refused "write authority 'graph_head:main' changed
   during preparation" at the same rate with or without optimize (control runs
