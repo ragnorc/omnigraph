@@ -705,7 +705,9 @@ fail identically on the PR-head sources on this box (gVisor, root) and are
 environmental. `cargo dev-clippy` and `cargo fmt --all --check` are clean; the
 DST cost golden and `forbidden_apis`/seam guards pass.
 
-Again after `53107bc9` and `e189d893`: `cargo dev-nextest --no-fail-fast`
+Final, at the branch head with every fix (after `a6594475`): 5,202 tests,
+5,192 passed, the same 10 environmental failures
+(`evidence/nextest_final_summary.txt`). Earlier, after `53107bc9` and `e189d893`: `cargo dev-nextest --no-fail-fast`
 ran 5,201 tests, 5,191 passed, and the 10 failures are exactly the
 environmental ones above; `cargo dev-clippy` and `cargo fmt --all --check`
 are clean.
