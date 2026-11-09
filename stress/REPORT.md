@@ -388,6 +388,11 @@ needs a write.
   the record, mismatches 409, all acknowledged rows present. S3, 10 min: 547
   operations, 515 evictions, same result
   (`evidence/c2_run1_summary.json`, `c2_s3_run_summary.json`).
+- **Soak and cleanup (fixed build).** 30 minutes of campaign 2 on a local
+  root: 4,183 operations, 7,209 writes, 4,151 evictions, zero violations,
+  26,142 acknowledged Person rows all present. Then `cleanup --keep 5` on that
+  root: main, the live branches and every retained commit read
+  (`evidence/c2_soak_30min_fixed.json`, `c8_cleanup_retained.json`).
 - **Engine beside writers (campaign 1, fixed build).** Two runs: 2,683 runs
   (1,340 published) beside 3,905 writes with 4-minute phases (its only
   violations were harness artifacts, since fixed), and 1,205 runs (610
