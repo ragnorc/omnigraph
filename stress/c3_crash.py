@@ -272,6 +272,12 @@ SCENARIOS = {
     "panic_after_manifest_commit": ("graph_publish.after_manifest_commit", "panic", None, {"succeeded"}, False),
     "fail_before_compact": ("optimize.before_compact", "fail_once", None, {"succeeded"}, False),
     "fail_pre_manifest_commit": ("optimize.post_phase_b_pre_manifest_commit", "fail_once", None, {"failed"}, False),
+    "fail_after_manifest_commit": ("graph_publish.after_manifest_commit", "fail_once", None, {"succeeded"}, False),
+    "fail_before_commit_append": ("graph_publish.before_commit_append", "fail_once", None, {"failed", "succeeded"}, False),
+    "fail_post_merge_ack": ("publish.post_merge_pre_ack", "fail_once", None, {"succeeded"}, False),
+    "fail_pre_merge": ("publish.pre_merge", "fail_once", None, {"failed", "succeeded"}, False),
+    "fail_configuration_clear": ("optimize.configuration_clear", "fail_once", None, {"succeeded"}, False),
+    "fail_post_table_effect": ("optimize.post_table_effect", "fail_once", None, {"succeeded"}, False),
     "unknown_post_merge": ("publish.post_merge_pre_ack", "fail_once", None, {"succeeded"}, True),
     "unknown_pre_merge": ("publish.pre_merge", "fail_once", None, {"failed"}, True),
 }

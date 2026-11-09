@@ -1,0 +1,12 @@
+{
+ "rounds": 30,
+ "ops_seen": 555,
+ "acked_rows": 8486,
+ "final_states": {
+  "unknown": 523,
+  "succeeded": 30,
+  "failed": 2
+ },
+ "seams_armed": 58,
+ "violations": []
+}

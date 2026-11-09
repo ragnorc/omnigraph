@@ -46,16 +46,48 @@ def see(op):
         nonces[oid] = op["nonce"]
 
 
+SEAMS = os.environ.get("CHAOS_SEAMS") == "1"
+SEAM_NAMES = ["optimize.before_compact", "optimize.post_table_effect", "optimize.post_phase_b_pre_manifest_commit",
+              "optimize.configuration_clear", "graph_publish.after_manifest_commit", "graph_publish.before_commit_append",
+              "publish.pre_merge", "publish.post_merge_pre_ack", "publish.read_back",
+              "mutation.post_finalize_pre_publisher"]
+armed_log = []
+
+
+def make_server(rnd, suffix=""):
+    if SEAMS:
+        from c3_crash import Child
+        ctl = out / f"ctl-{rnd}{suffix}"
+        ctl.mkdir(exist_ok=True)
+        srv = Child(root, port, str(out / f"server-{rnd}{suffix}.log"), ctl, env)
+        srv.ctl = ctl
+        return srv
+    return og.Server(root, port, str(out / f"server-{rnd}{suffix}.log"), env)
+
+
 for rnd in range(rounds):
     port += 1
-    srv = og.Server(root, port, str(out / f"server-{rnd}.log"), env)
+    srv = make_server(rnd)
     try:
         srv.start(timeout=60)
     except (RuntimeError, TimeoutError):
         unlocked = og.unlock(root)
         log("round", rnd, "restart needed force-unlock", unlocked)
-        srv = og.Server(root, port, str(out / f"server-{rnd}b.log"), env).start(timeout=60)
+        srv = make_server(rnd, "b").start(timeout=60)
     h = srv.http
+    if SEAMS:
+        from c3_crash import arm
+        def arm_random():
+            time.sleep(random.uniform(0, 2))
+            for _ in range(random.randint(1, 3)):
+                seam = random.choice(SEAM_NAMES)
+                n = random.randint(1, 4)
+                try:
+                    arm(srv.ctl, seam, "fail_always" if seam == "publish.read_back" else "fail_once", n)
+                    armed_log.append((rnd, seam, n))
+                except Exception:  # noqa: BLE001
+                    return
+        threading.Thread(target=arm_random, daemon=True).start()
     # resolve what earlier rounds left
     for oid in list(seen):
         s, b, _ = h.lookup("kg", oid)
@@ -154,6 +186,6 @@ if missing:
     violate(f"final: {len(missing)} acknowledged rows missing")
 srv.kill(signal.SIGTERM)
 summary = {"rounds": rounds, "ops_seen": len(seen), "acked_rows": len(acked), "final_states": states,
-           "violations": violations}
+           "seams_armed": len(armed_log), "violations": violations}
 log("SUMMARY", json.dumps(summary))
 (out / "summary.json").write_text(json.dumps(summary, indent=1))

@@ -352,6 +352,13 @@ needs a write.
   `publishing`; `succeeded` or `failed / not_committed` from history after
   it); no lost rows; the next run succeeded
   (`evidence/c3_crash_results.json`, `c3_crash_results_s3.json`).
+- **Random seam faults and publish-path failures.** 30 rounds with 58
+  random fail-once seams (optimize, publication, publisher, mutation) armed
+  under load, plus kills: zero violations. Failing each publish step once:
+  after the manifest commit the run ends `succeeded` naming its commit; before
+  it the record stays `publishing` until main moves, then `failed /
+  not_committed` (`evidence/c3_random_seam_faults.json`,
+  `c3_publish_path_failures.txt`).
 - **Random kills.** 30 rounds local (11,347 acknowledged rows) and 20 rounds on
   S3 of random SIGKILL/SIGTERM under writers and submitters: no violation
   (`evidence/c3_random_kills_*.json`).
@@ -476,6 +483,16 @@ Logs: `stress/baseline/`.
 | `fa5cd0ff` | S1 storage settle-on-read (+ unit test) |
 | `331d8485` | S4 artifact refresh honors cancellation |
 | `5a1bbeec` | S6 full-list refusal names each record |
+
+Validation of the fix commits together (`5d721853`): `cargo dev-nextest`
+(the canonical workspace graph) ran 5,200 tests: 5,185 passed. Of the 15
+failures, 5 (`parity_matrix`) were killed by a concurrent stress harness and
+pass in isolation; the other 10 (8 `omnigraph-bench` symlink and
+machine-identity probes, `cli_cluster::managed_lifecycle_capture_and_retry_records_refuse_symlinks_without_reading_targets`,
+`db::upgrade::tests::interrupted::unreadable_legacy_object_asks_for_a_rerun`)
+fail identically on the PR-head sources on this box (gVisor, root) and are
+environmental. `cargo dev-clippy` and `cargo fmt --all --check` are clean; the
+DST cost golden and `forbidden_apis`/seam guards pass.
 
 ## How to reproduce
 
