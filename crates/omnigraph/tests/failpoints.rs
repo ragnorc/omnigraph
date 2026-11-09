@@ -1507,6 +1507,145 @@ async fn mutation_revalidates_unique_after_pre_effect_authority_change() {
     assert_eq!(collect_column_strings(&users, "name"), vec!["winner"]);
 }
 
+const ISSUE_1331_COMPANY_INSERT: &str = r#"
+query insert_company($name: String) {
+    insert Company { name: $name }
+}
+"#;
+
+/// Give `node:Company` three fragments, so the next `optimize` compacts it and
+/// no other graph table (each holds the one fragment its load wrote).
+async fn issue_1331_fragment_company(db: &Session, prefix: &str) {
+    for n in 0..2 {
+        mutate_main(
+            db,
+            ISSUE_1331_COMPANY_INSERT,
+            "insert_company",
+            &params(&[("$name", &format!("{prefix}-{n}"))]),
+        )
+        .await
+        .unwrap();
+    }
+}
+
+/// Run `optimize` while a write is parked after staging, and prove it
+/// published a compaction of `node:Company` only.
+async fn issue_1331_optimize_company_only(db: &Session) {
+    let before = helpers::snapshot_main(db).await.unwrap();
+    let stats = db.optimize().await.unwrap();
+    let after = helpers::snapshot_main(db).await.unwrap();
+    let company = stats
+        .iter()
+        .find(|s| s.type_key == "node:Company")
+        .expect("optimize reports node:Company");
+    assert!(
+        company.committed && company.fragments_removed > 1,
+        "optimize must compact node:Company: {company:?}"
+    );
+    for key in ["node:Person", "edge:Knows", "edge:WorksAt"] {
+        assert_eq!(
+            before.dataset(key).map(|e| e.published_dataset_version),
+            after.dataset(key).map(|e| e.published_dataset_version),
+            "optimize must leave {key} untouched, so the parked write overlaps no compaction"
+        );
+    }
+}
+
+/// Issue #1331: an insert prepared before an `optimize` publication must not
+/// prepare again. Optimize compacts only `node:Company`, a table the insert
+/// neither stages nor validates against, and compaction changes no row; yet
+/// the whole-branch authority token (`revalidate_write_txn`) sees a new graph
+/// head and table pin and throws the staged attempt away.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[serial]
+async fn insert_overlapping_an_optimize_publication_does_not_reprepare_issue_1331() {
+    let _scenario = FailScenario::setup();
+    let dir = tempfile::tempdir().unwrap();
+    let db = Arc::new(init_and_load(&dir).await);
+    issue_1331_fragment_company(&db, "acme").await;
+
+    let probes = QueryIoProbes::default();
+    let rendezvous =
+        helpers::failpoint::Rendezvous::park_first(&catalog::MUTATION_POST_STAGE_PRE_EFFECT_GATE);
+    let writer = {
+        let db = Arc::clone(&db);
+        let probes = probes.clone();
+        tokio::spawn(async move {
+            with_query_io_probes(
+                probes,
+                mutate_main(
+                    &db,
+                    MUTATION_QUERIES,
+                    "insert_person",
+                    &mixed_params(&[("$name", "Eve")], &[("$age", 22)]),
+                ),
+            )
+            .await
+        })
+    };
+    rendezvous.wait_until_reached().await;
+    issue_1331_optimize_company_only(&db).await;
+    rendezvous.release();
+
+    writer
+        .await
+        .unwrap()
+        .expect("the insert commits after the optimize publication");
+    assert!(
+        !rendezvous.timed_out(),
+        "the insert stayed parked through optimize"
+    );
+    assert_eq!(count_rows(&db, "node:Person").await, 5);
+    assert_eq!(
+        probes.mutation_reprepares.load(Ordering::Relaxed),
+        0,
+        "an optimize publication that compacted only another table made the insert prepare again"
+    );
+}
+
+/// Issue #1331: an update prepared before an `optimize` publication that
+/// compacted only another table must commit, not return `ReadSetChanged`
+/// (HTTP 409) to the caller.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[serial]
+async fn update_overlapping_an_optimize_publication_on_another_table_succeeds_issue_1331() {
+    let _scenario = FailScenario::setup();
+    let dir = tempfile::tempdir().unwrap();
+    let db = Arc::new(init_and_load(&dir).await);
+    issue_1331_fragment_company(&db, "acme").await;
+
+    let rendezvous =
+        helpers::failpoint::Rendezvous::park_first(&catalog::MUTATION_POST_STAGE_PRE_EFFECT_GATE);
+    let writer = {
+        let db = Arc::clone(&db);
+        tokio::spawn(async move {
+            mutate_main(
+                &db,
+                MUTATION_QUERIES,
+                "set_age",
+                &mixed_params(&[("$name", "Alice")], &[("$age", 31)]),
+            )
+            .await
+        })
+    };
+    rendezvous.wait_until_reached().await;
+    issue_1331_optimize_company_only(&db).await;
+    rendezvous.release();
+
+    let outcome = writer.await.unwrap();
+    assert!(
+        !rendezvous.timed_out(),
+        "the update stayed parked through optimize"
+    );
+    if let Err(error) = &outcome {
+        panic!(
+            "an optimize publication that compacted only node:Company refused the update \
+             (read_set_changed = {}): {error}",
+            error.is_read_set_changed()
+        );
+    }
+}
+
 /// A Blob write re-prepared after a competing write evaluates its
 /// precondition against the fresh base, and an unconditional write carries
 /// the row's other cells from that fresh base, never from the stale one.
