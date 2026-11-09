@@ -516,6 +516,13 @@ per-writer bound.
   (`evidence/c5_az_lost_answer_*.jsonl`). The same four late-landing cases
   with `ARM_SECONDS=8` on the **PR head** also resolved (a late copy landed
   201 each time): S1 does not reproduce on Azurite (see S1).
+- **Second wave (fixed build, after the N2 fix).** S3 chaos: 40 rounds, 15
+  deployments, 260 operations, 3,281 acknowledged rows, zero violations
+  (`evidence/c7_chaos_s3_fixed_40.log`). Local random kills with seams: 80
+  rounds, 166 random seam faults, 1,625 operations, 27,525 acknowledged
+  rows, zero violations (`evidence/c3_random_seam_kills_local_fixed_80.json`).
+  Azure chaos: 60 rounds, 23 deployments, 132 operations, 2,245 acknowledged
+  rows, zero violations (`evidence/c7_chaos_azure_60.log`).
 - **Chaos (campaign 7, PR head).** 60 rounds mixing writers, submitters,
   cancels, 18 schema-changing deployments through the server during load, and
   42 random SIGKILL/SIGTERM restarts: zero violations over 1,211 operations
