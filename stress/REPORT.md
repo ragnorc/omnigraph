@@ -426,8 +426,9 @@ per-writer bound.
   owner fenced; the successor settled it `succeeded` with `resume_at: null`,
   so A's own position (the next table) was lost. When a newer run B has left a
   position before A settles, the settlement erases B's position too
-  (follows from the code; the rerun that bounds B is in the evidence if it
-  completed, see below). Effect: the next full-catalog run starts from the
+  (follows from the code: `keep_kind_state` removes the position whenever
+  the settled record has no `resume_at`; the S3 rerun with B bounded is
+  reported below if it completed). Effect: the next full-catalog run starts from the
   first table. The position is a hint, so nothing is lost but rotation;
   repeated in-doubt runs on a large catalog would keep restarting the
   rotation. Fix: store `resume_at` in the `publishing` record (it is known
@@ -572,7 +573,10 @@ per-writer bound.
   On S3: 60 minutes, 1,880 operations, 2,078 writes, 1,848 evictions seen,
   zero violations (`evidence/c2_soak_60min_s3_fixed.json`). On Azure: 30
   minutes, 394 operations, 671 writes, zero violations
-  (`evidence/c2_soak_30min_azure_fixed.json`). The only flagged lines in both
+  (`evidence/c2_soak_30min_azure_fixed.json`). On S3 again, 2 hours after
+  the N2 fix, 3 submitters: 3,245 operations, 3,632 writes, 3,213 evictions
+  seen, zero violations; write p99 51 s, max gate hold 5.6 s (S7)
+  (`evidence/c2_soak_2h_s3_fixed.json`). The only flagged lines in all
   are the hammer's deliberate over-ceiling probe (400, as specified).
 - **Engine beside writers (campaign 1, fixed build).** Two runs: 2,683 runs
   (1,340 published) beside 3,905 writes with 4-minute phases (its only
