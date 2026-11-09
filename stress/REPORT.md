@@ -64,7 +64,7 @@ per-writer bound.
 | S5 | should-fix | verified, fixed on branch | CLI #1282 | A 5xx refusal with `effects: none` (routes off, draining) exits 2 and says the run "may still run"; docs say exit 1 |
 | S6 | should-fix | verified, fixed on branch | server #1282 | The 409 for four unresolved publications names no operation, graph or walking state (RFC §2.4 says it reports each record's walk) |
 | S7 | should-fix | verified (S3, Azure), docs corrected on branch, behavior unchanged | server/engine #1282 | Back-to-back runs: one write waits through many runs' gate holds (14 s across 9 runs on S3, per-run bound ≤ 3.9 s); writes drop 6x; the docs' "a writer waits at most the bound plus one rewrite" fails |
-| N1–N15 | note | see below | | ordering, record content, status codes, evidence gaps, pre-existing issues |
+| N1–N15 | note | see below; N2 and N8 fixed on branch | | ordering, record content (N2), late settlement clearing the resume position (N8), status codes, evidence gaps, pre-existing issues |
 
 ### B1 (blocking): the table pipeline exits before planning the rest of the catalog
 
@@ -677,6 +677,12 @@ Logs: `stress/baseline/`.
 - **A second recorded kind or admission scope**: only `optimize` exists.
 - **Origin/main comparison builds**: building main cold on 2 cores was not
   affordable; "pre-existing" judgements are by `git diff`.
+- **A complete S2 fix**: it needs a decision in the storage scope (whether a
+  failed local write the caller saw return can be settled by a later read,
+  given that a dropped local write can still land from its blocking task);
+  not attempted.
+- **`scripts/check-docs.py`** for the docs commit: its pinned Python
+  packages are not installed on the box.
 
 ## Fix commits on the stress branch (not part of the PRs)
 
