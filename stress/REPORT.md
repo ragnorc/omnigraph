@@ -163,6 +163,9 @@ needs a write.
   against RustFS 16 passed. After the fix the same four scenarios resolve as
   the RFC says, submissions are accepted at once, SIGTERM exits 0 and restart
   is immediate.
+  With the fix, `docs/user/operations/recorded-operations.md`'s "a refusal
+  that names an earlier request with an unknown outcome holds until the
+  server restarts" holds only for local roots (S2) and should say so.
 - **Pre-existing?** The scope rule is from #1176 (on main); its effect on the
   operation record is new. The same rule likely affects `state.json` writes of
   served deployments on main (not tested).
