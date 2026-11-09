@@ -1,0 +1,15 @@
+{
+ "delay_ms": 8000,
+ "write_started": true,
+ "stop_s": 7.5,
+ "exit": 0,
+ "artifact_exists": true,
+ "record": [
+  "succeeded",
+  null,
+  {
+   "outcome": "refreshed"
+  }
+ ],
+ "lock_kept": false
+}

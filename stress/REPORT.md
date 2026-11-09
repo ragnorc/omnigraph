@@ -441,6 +441,11 @@ needs a write.
   Reads never blocked during a real optimize: p99 7 ms local / 79 ms S3 inside
   a run versus 12 / 82 ms outside (`evidence/c1_reads_during_optimize_*.json`,
   `c2_s3_control_*.json`).
+- **SIGTERM during an issued artifact write.** A write already in flight at
+  SIGTERM is awaited within the grace (8 s delay: exit 0, `refreshed`); one
+  that outlasts the 25 s grace ends with exit 2, the lock kept and the record
+  `publishing` for the next owner to settle, as RFC §3.4 says
+  (`evidence/c3_sigterm_artifact_write_*.json`).
 - **Deployments and deletion (campaign 4).** An affecting deployment cancels a
   running run (reason names it); an unaffected one does not; deleting a graph
   with an unresolved record, a running run, an active `publishing` orphan,

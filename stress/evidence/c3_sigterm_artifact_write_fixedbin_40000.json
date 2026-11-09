@@ -1,0 +1,13 @@
+{
+ "delay_ms": 40000,
+ "write_started": true,
+ "stop_s": 25.0,
+ "exit": 2,
+ "artifact_exists": false,
+ "record": [
+  "publishing",
+  null,
+  {}
+ ],
+ "lock_kept": true
+}
