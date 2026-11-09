@@ -1,0 +1,164 @@
+{
+ "control": {
+  "writes_ok": 1912,
+  "writes_other": 0,
+  "p50": 0.13810372352600098,
+  "p99": 0.8171420097351074,
+  "max": 1.2781906127929688,
+  "runs": 0,
+  "gate_hold_ms_max": null,
+  "gate_hold_fraction": 0.0,
+  "writes_spanning_2plus_holds": 0,
+  "writes_spanning_3plus_holds": 0,
+  "slowest_writes (latency, holds overlapped, held seconds inside)": [
+   [
+    1.28,
+    0,
+    0
+   ],
+   [
+    1.28,
+    0,
+    0
+   ],
+   [
+    1.22,
+    0,
+    0
+   ],
+   [
+    1.16,
+    0,
+    0
+   ],
+   [
+    1.09,
+    0,
+    0
+   ],
+   [
+    1.03,
+    0,
+    0
+   ],
+   [
+    0.98,
+    0,
+    0
+   ],
+   [
+    0.98,
+    0,
+    0
+   ]
+  ]
+ },
+ "optimize": {
+  "writes_ok": 1661,
+  "writes_other": 0,
+  "p50": 0.1682584285736084,
+  "p99": 0.7205572128295898,
+  "max": 1.7352349758148193,
+  "runs": 1254,
+  "gate_hold_ms_max": 1322,
+  "gate_hold_fraction": 0.518,
+  "writes_spanning_2plus_holds": 1254,
+  "writes_spanning_3plus_holds": 647,
+  "slowest_writes (latency, holds overlapped, held seconds inside)": [
+   [
+    1.74,
+    4,
+    1.48
+   ],
+   [
+    1.59,
+    3,
+    1.42
+   ],
+   [
+    1.14,
+    7,
+    0.6
+   ],
+   [
+    1.12,
+    6,
+    0.52
+   ],
+   [
+    0.97,
+    7,
+    0.54
+   ],
+   [
+    0.89,
+    6,
+    0.48
+   ],
+   [
+    0.88,
+    6,
+    0.48
+   ],
+   [
+    0.87,
+    3,
+    0.77
+   ]
+  ]
+ },
+ "control2": {
+  "writes_ok": 1940,
+  "writes_other": 0,
+  "p50": 0.13413643836975098,
+  "p99": 0.8254292011260986,
+  "max": 1.5156567096710205,
+  "runs": 0,
+  "gate_hold_ms_max": null,
+  "gate_hold_fraction": 0.0,
+  "writes_spanning_2plus_holds": 0,
+  "writes_spanning_3plus_holds": 0,
+  "slowest_writes (latency, holds overlapped, held seconds inside)": [
+   [
+    1.52,
+    0,
+    0
+   ],
+   [
+    1.5,
+    0,
+    0
+   ],
+   [
+    1.38,
+    0,
+    0
+   ],
+   [
+    1.23,
+    0,
+    0
+   ],
+   [
+    1.19,
+    0,
+    0
+   ],
+   [
+    1.17,
+    0,
+    0
+   ],
+   [
+    1.12,
+    0,
+    0
+   ],
+   [
+    1.04,
+    0,
+    0
+   ]
+  ]
+ }
+}

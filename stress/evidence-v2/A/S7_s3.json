@@ -1,0 +1,164 @@
+{
+ "control": {
+  "writes_ok": 941,
+  "writes_other": 27,
+  "p50": 0.18668055534362793,
+  "p99": 0.35934972763061523,
+  "max": 10.482056379318237,
+  "runs": 0,
+  "gate_hold_ms_max": null,
+  "gate_hold_fraction": 0.0,
+  "writes_spanning_2plus_holds": 0,
+  "writes_spanning_3plus_holds": 0,
+  "slowest_writes (latency, holds overlapped, held seconds inside)": [
+   [
+    10.48,
+    0,
+    0
+   ],
+   [
+    0.65,
+    0,
+    0
+   ],
+   [
+    0.4,
+    0,
+    0
+   ],
+   [
+    0.39,
+    0,
+    0
+   ],
+   [
+    0.38,
+    0,
+    0
+   ],
+   [
+    0.37,
+    0,
+    0
+   ],
+   [
+    0.37,
+    0,
+    0
+   ],
+   [
+    0.36,
+    0,
+    0
+   ]
+  ]
+ },
+ "optimize": {
+  "writes_ok": 186,
+  "writes_other": 0,
+  "p50": 1.0389652252197266,
+  "p99": 9.000468730926514,
+  "max": 11.761524677276611,
+  "runs": 184,
+  "gate_hold_ms_max": 840,
+  "gate_hold_fraction": 0.493,
+  "writes_spanning_2plus_holds": 178,
+  "writes_spanning_3plus_holds": 73,
+  "slowest_writes (latency, holds overlapped, held seconds inside)": [
+   [
+    11.76,
+    13,
+    5.67
+   ],
+   [
+    9.0,
+    10,
+    4.51
+   ],
+   [
+    7.73,
+    8,
+    3.25
+   ],
+   [
+    6.3,
+    6,
+    3.08
+   ],
+   [
+    6.18,
+    7,
+    3.07
+   ],
+   [
+    6.01,
+    8,
+    3.0
+   ],
+   [
+    5.76,
+    7,
+    2.92
+   ],
+   [
+    5.66,
+    7,
+    2.82
+   ]
+  ]
+ },
+ "control2": {
+  "writes_ok": 614,
+  "writes_other": 18,
+  "p50": 0.29293012619018555,
+  "p99": 0.3907053470611572,
+  "max": 6.95055079460144,
+  "runs": 0,
+  "gate_hold_ms_max": null,
+  "gate_hold_fraction": 0.0,
+  "writes_spanning_2plus_holds": 0,
+  "writes_spanning_3plus_holds": 0,
+  "slowest_writes (latency, holds overlapped, held seconds inside)": [
+   [
+    6.95,
+    0,
+    0
+   ],
+   [
+    0.45,
+    0,
+    0
+   ],
+   [
+    0.44,
+    0,
+    0
+   ],
+   [
+    0.42,
+    0,
+    0
+   ],
+   [
+    0.41,
+    0,
+    0
+   ],
+   [
+    0.4,
+    0,
+    0
+   ],
+   [
+    0.39,
+    0,
+    0
+   ],
+   [
+    0.39,
+    0,
+    0
+   ]
+  ]
+ }
+}

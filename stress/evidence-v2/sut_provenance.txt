@@ -1,0 +1,16 @@
+SUT: /src/sut at 1c67541c5048e1d70d1029b8f0499021990002ab (feat/optimize-served 1c67541c; contains feat/optimize-engine 761a4e66)
+Local changes in the SUT worktree (test-only harness targets, no production code):
+ M crates/omnigraph-server/Cargo.toml
+ M crates/omnigraph/Cargo.toml
+?? stress/
+ crates/omnigraph-server/Cargo.toml | 5 +++++
+ crates/omnigraph/Cargo.toml        | 5 +++++
+ 2 files changed, 10 insertions(+)
+
+Build: CARGO_TARGET_DIR=/src/omnigraph/target cargo dev-build-tests (rc 0) 2026-11-09T21:09:32Z
+Frozen binaries (sha256 prefix):
+engine_optimize_stress	df43c3aa88a44d73
+omnigraph	e527a9cb3ca9aacb
+omnigraph-azure-admission	612b797bfe5c1942
+omnigraph-server	cfe9a800cce19213
+stress_served_child	7f1388bb793c6a2d

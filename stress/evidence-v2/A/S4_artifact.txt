@@ -1,0 +1,1 @@
+{"artifact_before": false, "scan_started": true, "stop_s": 25.05, "exit": 2, "edge_opens_after_term": 5, "artifact_renames_after_term": 0, "artifact_after": false, "record": ["publishing", null, {}]}

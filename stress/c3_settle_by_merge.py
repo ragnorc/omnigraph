@@ -34,7 +34,7 @@ for case in ["ff", "ff_deep", "three_way"]:
     child = bindir / "stress_served_child"
     if not child.exists():
         import glob
-        child = Path(sorted(glob.glob(str(og.REPO / "target/debug/deps/stress_served_child-*")), key=os.path.getmtime)[-1])
+        child = Path(os.environ.get("OG_CHILD_BIN") or sorted(glob.glob(str(og.REPO / "target/debug/deps/stress_served_child-*")), key=os.path.getmtime)[-1])
     srv = og.Server(root, port, str(d / "child.log"), env, binary=str(child),
                     args=["--exact", "stress_served_child", "--ignored", "--nocapture"]).start()
     h = srv.http

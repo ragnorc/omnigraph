@@ -1,0 +1,48 @@
+version: 1
+groups:
+  operators: [operator]
+  writers: [writer]
+  readers: [reader]
+  maintainers: [maintainer]
+  branch-maintainers: [branchmaint]
+  reclaimers: [reclaimer]
+protected_branches: [main]
+rules:
+  - id: operators
+    allow:
+      actors: { group: operators }
+      actions: [maintain, read, change]
+      branch_scope: any
+  - id: operators-graph
+    allow:
+      actors: { group: operators }
+      actions: [reclaim, schema_apply, export, branch_create, branch_delete, branch_merge]
+  - id: writers
+    allow:
+      actors: { group: writers }
+      actions: [read, change]
+      branch_scope: any
+  - id: readers
+    allow:
+      actors: { group: readers }
+      actions: [read]
+      branch_scope: any
+  - id: maintainers
+    allow:
+      actors: { group: maintainers }
+      actions: [maintain, read]
+      branch_scope: any
+  - id: branch-maintainers
+    allow:
+      actors: { group: branch-maintainers }
+      actions: [maintain, read]
+      branch_scope: unprotected
+  - id: reclaimers-read
+    allow:
+      actors: { group: reclaimers }
+      actions: [read]
+      branch_scope: any
+  - id: reclaimers
+    allow:
+      actors: { group: reclaimers }
+      actions: [reclaim]

@@ -1,0 +1,37 @@
+{
+ "A_after_owner": [
+  "publishing",
+  [
+   [
+    "edge:Authored",
+    "optimized",
+    null
+   ],
+   [
+    "edge:Knows",
+    "deferred",
+    "gate_hold_limit"
+   ],
+   [
+    "edge:WorksAt",
+    "deferred",
+    "gate_hold_limit"
+   ]
+  ]
+ ],
+ "B": [
+  "succeeded",
+  null,
+  "edge:Knows"
+ ],
+ "position_after_B": {
+  "resume_at": "edge:Knows"
+ },
+ "A_state_after_B": "publishing",
+ "A_final": [
+  "succeeded",
+  null
+ ],
+ "position_after_A_settles": null,
+ "next_run_start_at": null
+}

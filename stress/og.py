@@ -313,6 +313,8 @@ WRAPPER = str(BIN / "omnigraph-azure-admission")
 
 
 def _child_binary():
+    if os.environ.get("OG_CHILD_BIN"):
+        return os.environ["OG_CHILD_BIN"]
     deps = REPO / "target" / "debug" / "deps"
     cands = [p for p in deps.glob("stress_served_child-*") if p.is_file() and os.access(p, os.X_OK) and p.suffix == ""]
     return str(max(cands, key=lambda p: p.stat().st_mtime))

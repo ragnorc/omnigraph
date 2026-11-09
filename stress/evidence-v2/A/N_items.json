@@ -1,0 +1,51 @@
+{
+ "N2": {
+  "state": "succeeded",
+  "published_commit": "hb1.01M716T74D1K2MSM5GZ7MF9TAT.4.01M716T76SCKB8XYY9QG3GSQSD",
+  "nonce": null,
+  "log_names_nonce": false,
+  "log_names_commit": false
+ },
+ "N6_empty": {
+  "status": 202,
+  "final": "failed"
+ },
+ "N6_duplicate": {
+  "status": 202,
+  "final": "failed"
+ },
+ "N9": {
+  "plus_50s": 202,
+  "plus_120s": [
+   400,
+   "bad_request"
+  ],
+  "honest_ids_refused_after_future_eviction": {
+   "(409, 'conflict')": 204
+  },
+  "refusal_window_s": 42.5
+ },
+ "N1": {
+  "mark": 1794263343754,
+  "expired_over_ceiling": [
+   400,
+   "bad_request"
+  ],
+  "expired_plain": [
+   409,
+   "conflict"
+  ]
+ },
+ "N11": {
+  "cleanup_rc": 0,
+  "historical_status": 200,
+  "code": null,
+  "error": ""
+ },
+ "N13": {
+  "seam_reached": true,
+  "export_status": 413,
+  "body": "{'error': 'resource limit exceeded for stream_export_slots: actual 2, limit 1', 'code': 'payload_too_large', 'disposition': {'effects': 'none', 'action': 'fix'}, 'resource_limit': {'resource': 'stream",
+  "export_after": 200
+ }
+}

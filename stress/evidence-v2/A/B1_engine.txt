@@ -1,0 +1,28 @@
+
+running 1 test
+planning 1: resume_at None gate_hold 522.149404ms
+  node:T00=optimized node:T01=unchanged node:T02=deferred node:T03=deferred node:T04=deferred node:T05=deferred node:T06=deferred node:T07=deferred node:T08=deferred node:T09=deferred node:T10=deferred node:T11=deferred
+planning 2: resume_at None gate_hold 516.465083ms
+  node:T00=optimized node:T01=unchanged node:T02=unchanged node:T03=deferred node:T04=deferred node:T05=deferred node:T06=deferred node:T07=deferred node:T08=deferred node:T09=deferred node:T10=deferred node:T11=deferred
+planning 4: resume_at None gate_hold 518.634548ms
+  node:T00=optimized node:T01=unchanged node:T02=unchanged node:T03=unchanged node:T04=unchanged node:T05=deferred node:T06=deferred node:T07=deferred node:T08=deferred node:T09=deferred node:T10=deferred node:T11=deferred
+planning 8: resume_at None gate_hold 524.94755ms
+  node:T00=optimized node:T01=unchanged node:T02=unchanged node:T03=unchanged node:T04=unchanged node:T05=unchanged node:T06=unchanged node:T07=unchanged node:T08=unchanged node:T09=deferred node:T10=deferred node:T11=deferred
+
+thread 'stress_repro_pipeline_exits_before_planning_the_tail' (42937) panicked at crates/omnigraph/../../stress/engine_optimize_stress.rs:1103:5:
+[
+    "planning 1: no bound was set, yet 10 tables were deferred (resume_at None): [\"node:T00=optimized\", \"node:T01=unchanged\", \"node:T02=deferred\", \"node:T03=deferred\", \"node:T04=deferred\", \"node:T05=deferred\", \"node:T06=deferred\", \"node:T07=deferred\", \"node:T08=deferred\", \"node:T09=deferred\", \"node:T10=deferred\", \"node:T11=deferred\"]",
+    "planning 2: no bound was set, yet 9 tables were deferred (resume_at None): [\"node:T00=optimized\", \"node:T01=unchanged\", \"node:T02=unchanged\", \"node:T03=deferred\", \"node:T04=deferred\", \"node:T05=deferred\", \"node:T06=deferred\", \"node:T07=deferred\", \"node:T08=deferred\", \"node:T09=deferred\", \"node:T10=deferred\", \"node:T11=deferred\"]",
+    "planning 4: no bound was set, yet 7 tables were deferred (resume_at None): [\"node:T00=optimized\", \"node:T01=unchanged\", \"node:T02=unchanged\", \"node:T03=unchanged\", \"node:T04=unchanged\", \"node:T05=deferred\", \"node:T06=deferred\", \"node:T07=deferred\", \"node:T08=deferred\", \"node:T09=deferred\", \"node:T10=deferred\", \"node:T11=deferred\"]",
+    "planning 8: no bound was set, yet 3 tables were deferred (resume_at None): [\"node:T00=optimized\", \"node:T01=unchanged\", \"node:T02=unchanged\", \"node:T03=unchanged\", \"node:T04=unchanged\", \"node:T05=unchanged\", \"node:T06=unchanged\", \"node:T07=unchanged\", \"node:T08=unchanged\", \"node:T09=deferred\", \"node:T10=deferred\", \"node:T11=deferred\"]",
+]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test stress_repro_pipeline_exits_before_planning_the_tail ... FAILED
+
+failures:
+
+failures:
+    stress_repro_pipeline_exits_before_planning_the_tail
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 2.83s
+

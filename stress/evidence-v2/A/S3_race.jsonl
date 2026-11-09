@@ -1,0 +1,1 @@
+{"scenario": "race", "reached_seam": true, "submit": 202, "deploy_rc": 0, "deploy_s": 11.89, "final": "succeeded", "reason": null, "tables": [["edge:Authored", "unchanged", null], ["edge:Knows", "optimized", null], ["edge:WorksAt", "optimized", null], ["node:Company", "optimized", null], ["node:Doc", "optimized", null], ["node:Person", "optimized", null]], "ok": false}
