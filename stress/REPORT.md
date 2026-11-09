@@ -57,7 +57,7 @@ needs a write.
 | S4 | should-fix | verified, fixed on branch | engine #1275 | Adjacency-artifact refresh ignores cancellation: SIGTERM during its scan uses the full grace, exits 2, record left `publishing` |
 | S5 | should-fix | verified, fixed on branch | CLI #1282 | A 5xx refusal with `effects: none` (routes off, draining) exits 2 and says the run "may still run"; docs say exit 1 |
 | S6 | should-fix | verified, fixed on branch | server #1282 | The 409 for four unresolved publications names no operation, graph or walking state (RFC §2.4 says it reports each record's walk) |
-| N1–N14 | note | see below | | ordering, record content, status codes, evidence gaps, pre-existing issues |
+| N1–N15 | note | see below | | ordering, record content, status codes, evidence gaps, pre-existing issues |
 
 ### B1 (blocking): the table pipeline exits before planning the rest of the catalog
 
@@ -347,6 +347,18 @@ needs a write.
   versus 5 ms with none (`evidence/c2_unresolved_cap_s3_cost.json`). On real
   S3 and with the CLI polling every 500 ms per waiting client, this is the
   first place request cost will show.
+- **N15 Record size costs under the gates.** With a 1,030-table catalog each
+  terminal record is 100–200 KB, so the record fills to ~3.5 MB. Every access
+  decodes, validates (serializing each operation and the terminal list),
+  changes and re-encodes it: on this box (debug builds) a lookup took 602 ms
+  versus 27 ms with one operation, an acceptance 922 ms, and a publishing
+  run's gate hold grew from 390 ms to 1,089 ms because the before-publish
+  write happens under the writer gates (`evidence/c5_record_size_cost.txt`).
+  Release builds will be faster, but the cost scales with catalog size × 32
+  and sits inside the writer-wait bound. Options: keep per-table outcomes
+  out of the retained terminal list (or in their own object), and compute
+  sizes once per write (`push_terminal` and `validate` re-serialize the
+  terminal list repeatedly, `operations.rs:796`, `:807`).
 - **N12 Pre-existing writer conflicts.** Under concurrent writers, mutations
   and edge loads are refused "write authority 'graph_head:main' changed
   during preparation" at the same rate with or without optimize (control runs
