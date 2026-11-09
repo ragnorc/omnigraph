@@ -3,11 +3,12 @@
 **Under test:** `feat/optimize-served` at `f6b2443c` (PR #1282), stacked on
 `feat/optimize-engine` at `5667fddb` (PR #1275).
 **Stress branch:** `stress/optimize-1282` on `https://github.com/ragnorc/omnigraph`
-(this report, the harnesses, the evidence, and seven fix commits, each
+(this report, the harnesses, the evidence, and eight fix commits, each
 separate and labeled).
 **Box:** `nproc` 2, 64 GiB, gVisor, local disk. S3 backend: RustFS
 1.0.0-beta.12 (the release CI pins; official binary, checksum matched the
-release `SHA256SUMS`) on 127.0.0.1:9000. No Azure.
+release `SHA256SUMS`) on 127.0.0.1:9000. Azure backend: Azurite 3.35.0
+(npm, the version CI pins as a container) on 127.0.0.1:10000.
 **Started** 2026-11-09 00:32 UTC.
 
 Every number below comes from a file under `stress/evidence/`, produced by a
@@ -28,24 +29,26 @@ table and falsely deferred ~1,000. With planning concurrency 1 a served graph
 never gets past a leading no-op table. This defeats the RFC's central promise
 (bounded runs that cover a large catalog over successive runs) and
 misreports every affected table. The fix is three lines and is on the stress
-branch with a regression test (red before, green after). Everything else held
-up well under ~3,000 recorded operations, ~4,000 embedded runs, 80 crash and
-kill points, lease loss,
-late manifest puts, deployments and deletions: no acknowledged write was lost,
-no run published twice, no failed/cancelled/interrupted run published
-anything, reads never blocked, and writer wait stayed within the documented
-bound on local storage. The remaining should-fix issues are liveness and
-contract gaps in failure paths, and five of the six now have fixes on the
-stress branch: one lost-and-late record write on S3 (or one
-failed write on a local root) disables recorded operations until a restart
-that then waits out the lease; SIGTERM during the adjacency-artifact scan
-waits out the whole grace and exits 2; a deployment can miss cancelling a run
-admitted at its cancel instant; the CLI exits 2 instead of 1 on a refusal
-the server marks `effects: none`; the full-list 409 does not say which graph
-needs a write. On object storage, a client that
-loops optimize makes one write wait through many runs (14 s across 9 runs
-on S3, each run within its own bound), contrary to the docs' per-writer
-bound; that one is documented, not fixed.
+branch with a regression test (red before, green after).
+
+Everything else held up well on local, S3 (RustFS) and Azure (Azurite)
+roots under ~8,000 recorded operations, ~4,700 embedded runs, 80 crash and
+kill points, 120 random kill rounds and 115 chaos rounds, lease loss, late manifest and record
+puts, deployments and deletions, and one-hour soaks: no acknowledged write
+was lost, no run published twice, no failed/cancelled/interrupted run
+published anything, reads never blocked, and each run's gate hold stayed
+within the RFC's bound on every backend. The should-fix issues are liveness
+and contract gaps, and six of the seven have fixes on the stress branch:
+one lost-and-late record write on S3 (or one failed write on a local root)
+disables recorded operations until a restart that then waits out the lease;
+SIGTERM during the adjacency-artifact scan waits out the whole grace and
+exits 2; a deployment can miss cancelling a run admitted at its cancel
+instant; the CLI exits 2 instead of 1 on a refusal the server marks
+`effects: none`; the full-list 409 does not say which graph needs a write.
+The seventh is documented, not fixed: on object storage a client that loops
+optimize makes one write wait through many runs (14 s across 9 runs on S3,
+each run within its own bound; 6x fewer writes), contrary to the docs'
+per-writer bound.
 
 ---
 
@@ -374,7 +377,14 @@ bound; that one is documented, not fixed.
   (`terminal_from_report`, `:1125`) omits the `nonce` the `publishing` write
   stored (only records settled by the walk keep it), and the run's span
   (`:792`) carries the operation id, kind and graph but not the nonce or the
-  commit (RFC §2.2 per-operation fields, §3.5 span).
+  commit (RFC §2.2 per-operation fields, §3.5 span). No server log line names
+  a run's nonce or published commit, so logs cannot be joined to the record
+  by commit. **Fixed on the branch (`53107bc9`):** the span records `nonce`
+  and `commit` when known, one `recorded operation ended` event carries the
+  state and timings, and the terminal record keeps the nonce;
+  `operation_routes::recorded_optimize_keeps_a_record_a_caller_reads_by_id`
+  now asserts the nonce and that the published commit ends with it (red
+  before).
 - **N3 First lookup after restart.** An active `publishing` record left by a
   killed process is moved to the unresolved list by the first access but
   walked only on the next one (walks are computed before the orphan move), so
@@ -542,6 +552,11 @@ bound; that one is documented, not fixed.
   26,142 acknowledged Person rows all present. Then `cleanup --keep 5` on that
   root: main, the live branches and every retained commit read
   (`evidence/c2_soak_30min_fixed.json`, `c8_cleanup_retained.json`).
+  On S3: 60 minutes, 1,880 operations, 2,078 writes, 1,848 evictions seen,
+  zero violations (`evidence/c2_soak_60min_s3_fixed.json`). On Azure: 30
+  minutes, 394 operations, 671 writes, zero violations
+  (`evidence/c2_soak_30min_azure_fixed.json`). The only flagged lines in both
+  are the hammer's deliberate over-ceiling probe (400, as specified).
 - **Engine beside writers (campaign 1, fixed build).** Two runs: 2,683 runs
   (1,340 published) beside 3,905 writes with 4-minute phases (its only
   violations were harness artifacts, since fixed), and 1,205 runs (610
@@ -555,6 +570,12 @@ bound; that one is documented, not fixed.
   third run also checked values: each writer updates only its own rows, and
   every row's last acknowledged age survived 609 published optimizes beside
   1,729 writes (`evidence/c1_engine_values_fixed.txt`).
+- **Campaign 1 on S3 (fixed build).** The embedded campaign on a RustFS
+  root (`STRESS_ROOT_URI`), 60-second phases: 690 runs (255 published)
+  beside 468 writes, gate hold ≤ 0.52 s and at most 0.28 s over
+  (`max_gate_hold` + longest table), zero violations, acknowledged rows
+  intact after `cleanup` (`evidence/c1_engine_s3_fixed.txt`). Write p99
+  there was 13–14 s against sub-second holds (S7).
 - **Writer wait and reads.** Gate hold minus (`max_gate_hold` + longest table)
   ≤ 64–86 ms across thousands of runs (publication + clear); one unexplained
   1.8 s outlier under CPU contention did not recur. Writes with optimize had
@@ -634,6 +655,7 @@ Logs: `stress/baseline/`.
 | `331d8485` | S4 artifact refresh honors cancellation |
 | `5a1bbeec` | S6 full-list refusal names each record |
 | `24614965` | S4 regression test (new seam `optimize.artifact_scan`) |
+| `53107bc9` | N2 span fields and terminal nonce (+ assertion in `operation_routes`) |
 | `3741a341`, `5d721853` | rustfmt and clippy over the fixes and harness |
 
 Validation of the fix commits together (`5d721853`): `cargo dev-nextest`
