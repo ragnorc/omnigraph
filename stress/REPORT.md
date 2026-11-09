@@ -255,8 +255,10 @@ needs a write.
   pending (still awaited once issued); a cancellation arriving in the tail is
   reported as arriving late. After: stop in 4 s, exit 0, record `succeeded`,
   artifact `skipped(cancelled)` (`evidence/c3_sigterm_artifact_fixed.json`);
-  optimize owners + `operation_routes` 111 passed. No in-tree regression test
-  (no seam inside the scan; the reproduction uses the shim).
+  optimize owners + `operation_routes` 111 passed. Regression test (commit
+  `24614965`): a new seam `optimize.artifact_scan` and
+  `failpoints.rs::optimize_cancelled_during_the_artifact_scan_writes_no_artifact`,
+  red on the pre-fix refresh (`Refreshed`), green after.
 - **Pre-existing?** The artifact write is old; the cancellation contract is
   new in #1275.
 
@@ -518,6 +520,7 @@ Logs: `stress/baseline/`.
 | `fa5cd0ff` | S1 storage settle-on-read (+ unit test) |
 | `331d8485` | S4 artifact refresh honors cancellation |
 | `5a1bbeec` | S6 full-list refusal names each record |
+| `24614965` | S4 regression test (new seam `optimize.artifact_scan`) |
 | `3741a341`, `5d721853` | rustfmt and clippy over the fixes and harness |
 
 Validation of the fix commits together (`5d721853`): `cargo dev-nextest`
