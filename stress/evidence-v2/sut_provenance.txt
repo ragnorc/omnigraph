@@ -14,3 +14,6 @@ omnigraph	e527a9cb3ca9aacb
 omnigraph-azure-admission	612b797bfe5c1942
 omnigraph-server	cfe9a800cce19213
 stress_served_child	7f1388bb793c6a2d
+Instrumented variant (NOT the SUT): /src/sut at 1c67541c with crates/omnigraph-core/src/handle_cache.rs
+  TABLE_HANDLE_CACHE_CAP 64 -> 2, TABLE_HANDLE_CACHE_BYTES 64 MiB -> 64 KiB; reverted after the build.
+  binaries: /tmp/sut-smallcache (omnigraph-server sha256 f745a7462e137b7f)

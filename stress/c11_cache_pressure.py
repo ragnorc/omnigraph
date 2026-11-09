@@ -24,13 +24,14 @@ log = og.Log(str(out / "log.txt"))
 root = og.make_root(out, "cache"); og.apply_cluster(root, config=og.REPO / "stress" / "fixture_big")
 HOLD = int(os.environ.get("STRESS_HOLD_MS", "2000"))
 srv = og.Server(root, int(os.environ.get("STRESS_PORT", "13996")), str(out / "server.log"),
-                {"OMNIGRAPH_OPTIMIZE_MAX_GATE_HOLD_SECONDS": "30"}).start(timeout=120)
+                {"OMNIGRAPH_OPTIMIZE_GATE_HOLD_SECONDS": "2", "OMNIGRAPH_OPTIMIZE_MAX_GATE_HOLD_SECONDS": "30"}).start(timeout=120)
 h = srv.http
 random.seed(int(os.environ.get("STRESS_SEED", "17")))
 tables = sorted(random.sample([f"T{n:04d}" for n in range(1030)], ntables))
 lock = threading.Lock()
 acked = {}        # (table, key) -> (v, ack_time)
 violations, read_lat, runs, wstats = [], [], [], {}
+slow_reads = []   # (start, seconds, table) for reads over 0.5 s
 stop = threading.Event()
 
 
@@ -85,6 +86,8 @@ def reader():
         dt = time.time() - t0
         with lock:
             read_lat.append(dt)
+            if dt > 0.5:
+                slow_reads.append((t0, dt, t))
         if s != 200:
             violate(f"read {t} {s} {str(b)[:200]}")
             continue
@@ -107,7 +110,11 @@ def submitter():
         tl = op["outcome"].get("tables", [])
         longest = max([x.get("duration_ms", 0) for x in tl] or [0])
         hold = (op.get("timings") or {}).get("gate_hold_ms")
+        import datetime as _dt
+        acc = _dt.datetime.fromisoformat(op["accepted_at"].replace("Z", "+00:00")[:26] + "+00:00").timestamp()
+        start = acc + ((op.get("timings") or {}).get("queued_ms") or 0) / 1000
         runs.append({"state": op["state"], "hold": hold, "longest": longest,
+                     "hold_interval": (start, start + (hold or 0) / 1000),
                      "optimized": sum(1 for x in tl if x["outcome"] == "optimized"),
                      "failed": [(x["type_key"], str(x.get("error"))[:120]) for x in tl if x["outcome"] == "failed"]})
         if op["state"] not in ("succeeded", "cancelled"):
@@ -145,6 +152,7 @@ def final_check(where):
     return bad
 bad1 = final_check("final")
 srv.kill(signal.SIGTERM)
+og.prepare_restart(root)
 srv = og.Server(root, srv.port + 1, str(out / "server2.log")).start(timeout=120)
 h = srv.http
 bad2 = final_check("after restart")
@@ -158,6 +166,10 @@ summary = {"tables": ntables, "acked_rows": len(acked), "writes": wstats, "runs"
            "read_max": lat[-1] if lat else None, "reads": len(lat),
            "gate_hold_max": max((r["hold"] for r in runs if r["hold"] is not None), default=None),
            "gate_hold_excess_max_ms": max(excess) if excess else None,
+           "slow_reads": len(slow_reads),
+           "slow_reads_inside_a_gate_hold": sum(1 for (a, d, t) in slow_reads
+                                                if any(r["hold_interval"][0] < a + d and r["hold_interval"][1] > a for r in runs)),
+           "slowest_reads": sorted(slow_reads, key=lambda x: -x[1])[:5],
            "final_bad": bad1, "restart_bad": bad2, "violations": violations[:50], "violation_count": len(violations)}
 log("SUMMARY", json.dumps(summary)[:3000])
 (out / "summary.json").write_text(json.dumps(summary, indent=1))

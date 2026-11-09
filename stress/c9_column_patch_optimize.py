@@ -118,11 +118,33 @@ def optimize(tag):
             violate(f"optimize {tag}: {k} failed: {v[1]}")
 
 
+import threading
+conc_stop = threading.Event()
+conc_runs = []
+
+
+def conc_optimizer():
+    while not conc_stop.is_set():
+        oid = og.ulid()
+        s, b, _ = h.submit("kg", oid, hold_ms=random.choice([0, 200, 2000]))
+        if s not in (200, 202):
+            time.sleep(0.05)
+            continue
+        op = h.wait_terminal("kg", oid)
+        doc = next((t for t in op["outcome"].get("tables", []) if t["type_key"] == "node:Doc"), {})
+        conc_runs.append((op["state"], doc.get("outcome"), str(doc.get("error"))[:160] if doc.get("error") else None))
+        if op["state"] != "succeeded" or doc.get("outcome") == "failed":
+            violate(f"concurrent optimize {oid}: {op['state']} Doc={doc.get('outcome')} {doc.get('error')}")
+
+
+CONC = os.environ.get("STRESS_CONCURRENT_OPT") == "1"
 try:
     for _ in range(4):
         load_docs(12)       # several fragments
     optimize("initial")     # compacts and builds the title index over everything
     check("after initial optimize")
+    if CONC:
+        threading.Thread(target=conc_optimizer, daemon=True).start()
     for rnd in range(rounds):
         r = random.random()
         if r < 0.55:
@@ -146,9 +168,12 @@ try:
         else:
             optimize(f"round {rnd}")
             check(f"round {rnd} after optimize")
+    conc_stop.set()
+    time.sleep(3)
     optimize("final")
     check("after final optimize")
     srv.kill(signal.SIGTERM)
+    og.prepare_restart(root)
     srv = og.Server(root, srv.port + 1, str(out / "server2.log")).start(timeout=90)
     h = srv.http
     check("after restart")
@@ -159,6 +184,8 @@ summary = {"rounds": rounds, "docs": len(model), "updates": len(updates),
            "patch_updates": sum(1 for u in updates if u["mode"] == "patch"),
            "rewrite_updates": sum(1 for u in updates if u["mode"] == "rewrite"),
            "optimizes": [(o["tag"], o["state"], o["doc"]) for o in optimizes],
+           "concurrent_runs": len(conc_runs),
+           "concurrent_doc_outcomes": {k: sum(1 for r in conc_runs if r[1] == k) for k in {r[1] for r in conc_runs}},
            "violations": violations}
 log("SUMMARY", json.dumps(summary)[:3000])
 (out / "summary.json").write_text(json.dumps(summary, indent=1))
