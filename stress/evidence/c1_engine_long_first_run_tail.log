@@ -1,0 +1,37 @@
+20P5M887W.122.01M6Z38THZBZJSTK3JFCAK28RM claimed by no successful run
+  after cleanup: optimizer commit hb1.01M6Z38JVQ830TFGF20P5M887W.119.01M6Z38TBRJMH6GG65VN41QXHA claimed by no successful run
+  after cleanup: optimizer commit hb1.01M6Z38JVQ830TFGF20P5M887W.118.01M6Z38T5NBGWNY7W6Z09935T4 claimed by no successful run
+  after cleanup: optimizer commit hb1.01M6Z38JVQ830TFGF20P5M887W.115.01M6Z38T0A6HKAS7XJRKEGRKEJ claimed by no successful run
+  after cleanup: optimizer commit hb1.01M6Z38JVQ830TFGF20P5M887W.113.01M6Z38SVJ83ZRRM8AXES5Y9M2 claimed by no successful run
+  after cleanup: optimizer commit hb1.01M6Z38JVQ830TFGF20P5M887W.109.01M6Z38SG6S4VCX12AYR3BJCSW claimed by no successful run
+  after cleanup: optimizer commit hb1.01M6Z38JVQ830TFGF20P5M887W.104.01M6Z38S7Q8WZ4WMEY3SVRQ44F claimed by no successful run
+  after cleanup: optimizer commit hb1.01M6Z38JVQ830TFGF20P5M887W.100.01M6Z38RVGXJGEHRFJSY6JKW1F claimed by no successful run
+  after cleanup: optimizer commit hb1.01M6Z38JVQ830TFGF20P5M887W.97.01M6Z38RPHMEAMZ8DFPYXFX795 claimed by no successful run
+  after cleanup: optimizer commit hb1.01M6Z38JVQ830TFGF20P5M887W.92.01M6Z38RDCC7KN0P6Q9SE0V4Z4 claimed by no successful run
+  after cleanup: optimizer commit hb1.01M6Z38JVQ830TFGF20P5M887W.89.01M6Z38R3KA776KTB3R45TCQNP claimed by no successful run
+  after cleanup: optimizer commit hb1.01M6Z38JVQ830TFGF20P5M887W.82.01M6Z38QRCRG9H8B08RV53506R claimed by no successful run
+  after cleanup: optimizer commit hb1.01M6Z38JVQ830TFGF20P5M887W.78.01M6Z38QH8ZFQV4D29D9XPNPHZ claimed by no successful run
+  after cleanup: optimizer commit hb1.01M6Z38JVQ830TFGF20P5M887W.75.01M6Z38QAC6KAPWHJ8DXXKVYPF claimed by no successful run
+  after cleanup: optimizer commit hb1.01M6Z38JVQ830TFGF20P5M887W.69.01M6Z38PRP6HDXCWBP23KRCXCY claimed by no successful run
+  after cleanup: optimizer commit hb1.01M6Z38JVQ830TFGF20P5M887W.65.01M6Z38PHBAH38EMG7HR931KQK claimed by no successful run
+  after cleanup: optimizer commit hb1.01M6Z38JVQ830TFGF20P5M887W.61.01M6Z38PB5E479A6GYQ5A1PQQD claimed by no successful run
+  after cleanup: optimizer commit hb1.01M6Z38JVQ830TFGF20P5M887W.59.01M6Z38P5ZRP0JESDB5S6EEVHX claimed by no successful run
+
+thread 'engine_optimize_beside_live_writers' (61530) panicked at crates/omnigraph/../../stress/engine_optimize_stress.rs:607:5:
+1350 violations
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test engine_optimize_beside_live_writers ... FAILED
+
+failures:
+
+failures:
+    engine_optimize_beside_live_writers
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 501.77s
+
+        FAIL [ 501.817s] (1/1) omnigraph-engine::engine_optimize_stress engine_optimize_beside_live_writers
+  Cancelling due to test failure
+────────────
+     Summary [ 501.817s] 1 test run: 0 passed, 1 failed, 1 skipped
+        FAIL [ 501.817s] (1/1) omnigraph-engine::engine_optimize_stress engine_optimize_beside_live_writers
+error: test run failed
