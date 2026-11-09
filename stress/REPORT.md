@@ -63,7 +63,7 @@ per-writer bound.
 | S4 | should-fix | verified, fixed on branch | engine #1275 | Adjacency-artifact refresh ignores cancellation: SIGTERM during its scan uses the full grace, exits 2, record left `publishing` |
 | S5 | should-fix | verified, fixed on branch | CLI #1282 | A 5xx refusal with `effects: none` (routes off, draining) exits 2 and says the run "may still run"; docs say exit 1 |
 | S6 | should-fix | verified, fixed on branch | server #1282 | The 409 for four unresolved publications names no operation, graph or walking state (RFC §2.4 says it reports each record's walk) |
-| S7 | should-fix | verified (S3), docs corrected on branch, behavior unchanged | server/engine #1282 | Back-to-back runs: one write waits through many runs' gate holds (14 s across 9 runs on S3, per-run bound ≤ 3.9 s); writes drop 6x; the docs' "a writer waits at most the bound plus one rewrite" fails |
+| S7 | should-fix | verified (S3, Azure), docs corrected on branch, behavior unchanged | server/engine #1282 | Back-to-back runs: one write waits through many runs' gate holds (14 s across 9 runs on S3, per-run bound ≤ 3.9 s); writes drop 6x; the docs' "a writer waits at most the bound plus one rewrite" fails |
 | N1–N15 | note | see below | | ordering, record content, status codes, evidence gaps, pre-existing issues |
 
 ### B1 (blocking): the table pipeline exits before planning the rest of the catalog
@@ -330,7 +330,10 @@ per-writer bound.
   writes, p99 0.77 s. The slowest write overlapped 9 runs' holds with 6.8 s
   of held time inside its 14 s; 100 of 121 writes overlapped two or more
   runs. A 90 s repeat: p99 0.34 / 10.2 / 2.3 s, slowest write 10.2 s across
-  11 runs. Local root, same harness: no effect (p99 0.70 s with optimize
+  11 runs. Azure (Azurite, 120 s phases, `result_azure.json`): control 157
+  writes, p99 1.9 s; optimize 77 writes (74 runs, longest hold 1.5 s), p99
+  26.0 s, the slowest write 26 s across 14 runs with 13.7 s held inside it;
+  control 121 writes, p99 4.2 s. Local root, same harness: no effect (p99 0.70 s with optimize
   versus 0.77 / 0.82 s; 1,293 runs, gates held 51%). Under the campaign 2
   mix on S3 (20 min each, `evidence/c2_s3_20min_{opt,ctl}.json`), node-load
   p99 rose from 3.6–6.1 s to 13.7–24.8 s and total writes fell from 1,665
