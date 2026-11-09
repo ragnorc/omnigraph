@@ -387,7 +387,9 @@ needs a write.
   and the manifest PUT delayed: the late put landed → `succeeded` naming
   exactly that commit; the successor wrote first → the late put conflicted →
   `failed / not_committed`, no commit answers the nonce
-  (`evidence/c3_lease_loss_*.json`, `c3_late_manifest_*.json`).
+  (`evidence/c3_lease_loss_*.json`, `c3_late_manifest_*.json`). The old
+  owner's final record put delayed past the takeover did not overwrite the
+  successor's settled record (`evidence/c3_late_record_s3.json`).
 - **Deep resolution walk (S3).** The late commit 300 commits deep (released
   from main's buffer), walk limit 16, the branch growing by 10 mid-walk:
   resolved in exactly ⌈300/16⌉ + 1 = 20 lookups (the extra one is N3),
@@ -532,7 +534,7 @@ demonstrations; pass a binary directory where scripts take one, or set
 | `tlsproxy.py` | TLS fault proxy for the CLI's server target (drop/truncate/504/delay) |
 | `s3proxy.py`, `s3util.py` | HTTP fault proxy between the server and RustFS (`drop_response`, `late_forward`, `drop_request`, `slow`, rule file); stdlib SigV4 client |
 | `c2_served_hammer.py`, `c2_unresolved_cap.py`, `c2_stale_resume.py` | Campaign 2 |
-| `c3_crash.py`, `c3_random_kills.py`, `c3_settle_by_merge.py`, `c3_sigterm_artifact.py`, `c3_lease_loss.py`, `c3_late_manifest.py`, `c3_deep_walk.py` | Campaign 3 |
+| `c3_crash.py`, `c3_random_kills.py`, `c3_settle_by_merge.py`, `c3_sigterm_artifact.py`, `c3_lease_loss.py`, `c3_late_manifest.py`, `c3_late_record.py`, `c3_deep_walk.py`, `c3_sigterm_artifact_write.py` | Campaign 3 |
 | `c4_deploy.py`, `c4_delete_orphan.py` | Campaign 4 |
 | `c5_record_write_faults.py`, `c5_record_bounds.py`, `c5_big_catalog.py`, `c5_s3_lost_answer.py`, `c5_budget.py` | Campaign 5 |
 | `c6_cli.py` | Campaign 6 |
