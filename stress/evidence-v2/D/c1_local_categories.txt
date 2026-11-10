@@ -1,0 +1,9 @@
+=== phase A
+runs 873 ok 489 published 353; writes 895 (p50 0.228s p99 3.325s max 5.373s); persons 5036 docs 249 companies 62
+gate_hold max 0.102s; gate_hold - (max_gate_hold + longest table) max 0.058s
+=== phase B
+runs 1606 ok 987 published 747; writes 2650 (p50 0.068s p99 2.321s max 5.373s); persons 14131 docs 841 companies 210
+gate_hold max 0.233s; gate_hold - (max_gate_hold + longest table) max 0.058s
+=== violations: 152
+=== category   152 resume_at None but first gate/budget def
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 249.69s

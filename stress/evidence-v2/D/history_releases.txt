@@ -1,0 +1,13 @@
+Local quiet run (cache_local_quiet): __history block groups (one release each) vs runs whose gate hold overlaps
+release 01M71HMNSNX34GXXVJVTZX0BFN: 8 blocks over 8.96 s; overlapping runs (index, gate_hold_ms, longest_table_ms): []
+release 01M71HP7F1RBEZSW06MT8V1BTB: 8 blocks over 8.61 s; overlapping runs (index, gate_hold_ms, longest_table_ms): []
+release 01M71HRJ5NTVEYGE22QSHKYW8K: 8 blocks over 8.25 s; overlapping runs (index, gate_hold_ms, longest_table_ms): []
+release 01M71HTV2W4T0QA5ZYW3EPK5PJ: 8 blocks over 8.54 s; overlapping runs (index, gate_hold_ms, longest_table_ms): []
+release 01M71HX5439P36E3VBPYGVR8C3: 8 blocks over 8.48 s; overlapping runs (index, gate_hold_ms, longest_table_ms): [(63, 16425, 21)]
+release 01M71HZFJQJ7KMZJ3GBPC6ZB7K: 8 blocks over 8.07 s; overlapping runs (index, gate_hold_ms, longest_table_ms): []
+release 01M71J1RJ3QMQWGFGTH3JEHVTG: 8 blocks over 8.11 s; overlapping runs (index, gate_hold_ms, longest_table_ms): []
+release 01M71J3ZQ6DR5Y6T7AJNC6F08Z: 8 blocks over 8.50 s; overlapping runs (index, gate_hold_ms, longest_table_ms): []
+runs whose hold exceeds hold+longest by >0.5 s: [(63, 16425, 21)]
+
+S3 run (cache_s3_sut), from the bucket listing: release 01M71GBVBEYQEASEFYG0YG176H wrote 8 blocks 01:16:48.84-01:16:58.10 (+singleton 01:16:58.17),
+inside run 19's gate hold (17,606 ms, longest table 13 ms; its gates were taken at 01:16:40.7). Later releases: 01:19:51.95-01:20:01.20, 01:24:02.47-01:24:11.64.
