@@ -1,0 +1,15 @@
+wy_az_2w runs 16 yields>=2s 15 held by a write in flight across the last publication 15 held only by writes that started after it 0
+wy_az_2w_poll runs 12 yields>=2s 11 held by a write in flight across the last publication 11 held only by writes that started after it 0
+wy_local_2w runs 627 yields>=2s 0 held by a write in flight across the last publication 0 held only by writes that started after it 0
+wy_local_2w_poll runs 643 yields>=2s 0 held by a write in flight across the last publication 0 held only by writes that started after it 0
+wy_s3_1w runs 88 yields>=2s 0 held by a write in flight across the last publication 0 held only by writes that started after it 0
+wy_s3_2w runs 14 yields>=2s 12 held by a write in flight across the last publication 12 held only by writes that started after it 0
+wy_s3_2w_poll runs 14 yields>=2s 12 held by a write in flight across the last publication 12 held only by writes that started after it 0
+fix_az_2w runs 14 yields>=2s 12 held by a write in flight across the last publication 12 held only by writes that started after it 0
+fix_local_2w runs 558 yields>=2s 0 held by a write in flight across the last publication 0 held only by writes that started after it 0
+fix_local_mix runs 158 yields>=2s 0 held by a write in flight across the last publication 0 held only by writes that started after it 0
+fix_s3_2w runs 15 yields>=2s 11 held by a write in flight across the last publication 11 held only by writes that started after it 0
+fix_s3_2w_poll runs 14 yields>=2s 11 held by a write in flight across the last publication 11 held only by writes that started after it 0
+fix_s3_mix runs 9 yields>=2s 8 held by a write in flight across the last publication 8 held only by writes that started after it 0
+pr_local_mix runs 10 yields>=2s 9 held by a write in flight across the last publication 0 held only by writes that started after it 9
+pr_s3_mix runs 9 yields>=2s 8 held by a write in flight across the last publication 8 held only by writes that started after it 0

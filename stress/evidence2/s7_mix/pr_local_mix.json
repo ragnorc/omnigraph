@@ -1,0 +1,218 @@
+{
+ "config": {
+  "seconds": 90.0,
+  "writers": 3,
+  "pollers": 2,
+  "poll_ms": 100,
+  "branch_writers": 1,
+  "mutators": 1,
+  "hold_ms": 1000,
+  "root": "/tmp/q3/pr_local_mix/root"
+ },
+ "control": {
+  "writes_ok_main": 968,
+  "writes_ok_side": 924,
+  "writes_other": {
+   "409:write authority 'graph_head:main' changed during preparation (expected hb1.01M73": 5
+  },
+  "throughput_main_per_s": 10.76,
+  "p50": 0.126,
+  "p90": 0.951,
+  "p99": 2.194,
+  "max": 4.205711841583252,
+  "side_p99": 0.163,
+  "side_max": 0.23360776901245117,
+  "runs": 0,
+  "run_states": {},
+  "publications": 0,
+  "writer_yield_ms": {
+   "p50": null,
+   "p90": null,
+   "max": null,
+   "at_limit(>=9900)": 0,
+   "zero": 0
+  },
+  "gate_hold_ms": {
+   "p50": null,
+   "max": null
+  },
+  "gate_hold_fraction": 0.0,
+  "writes_by_publications_inside": {
+   "0": 968
+  },
+  "writes_with_2plus_publications": 0,
+  "writes_with_3plus_publications": 0,
+  "writes_spanning_2plus_holds": 0,
+  "writes_spanning_3plus_holds": 0,
+  "slowest (latency, pubs inside, holds overlapped, held s inside, kind)": [
+   [
+    4.21,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    3.09,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    2.99,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    2.91,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    2.58,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    2.39,
+    0,
+    0,
+    0,
+    "mutate"
+   ],
+   [
+    2.36,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    2.29,
+    0,
+    0,
+    0,
+    "Person"
+   ]
+  ],
+  "reprepares_load": 2133,
+  "reprepares_other": 762,
+  "polls": 0,
+  "poll_p99": null,
+  "poll_statuses": []
+ },
+ "optimize": {
+  "writes_ok_main": 1338,
+  "writes_ok_side": 597,
+  "writes_other": {
+   "409:write authority 'graph_head:main' changed during preparation (expected hb1.01M73": 3
+  },
+  "throughput_main_per_s": 14.87,
+  "p50": 0.14,
+  "p90": 0.627,
+  "p99": 1.75,
+  "max": 4.121687650680542,
+  "side_p99": 0.207,
+  "side_max": 3.1984341144561768,
+  "runs": 10,
+  "run_states": {
+   "succeeded": 10
+  },
+  "publications": 10,
+  "writer_yield_ms": {
+   "p50": 10000,
+   "p90": 10001,
+   "max": 10001,
+   "at_limit(>=9900)": 8,
+   "zero": 1
+  },
+  "gate_hold_ms": {
+   "p50": 136,
+   "max": 364
+  },
+  "gate_hold_fraction": 0.017,
+  "writes_by_publications_inside": {
+   "0": 1302,
+   "1": 36
+  },
+  "writes_with_2plus_publications": 0,
+  "writes_with_3plus_publications": 0,
+  "writes_spanning_2plus_holds": 0,
+  "writes_spanning_3plus_holds": 0,
+  "slowest (latency, pubs inside, holds overlapped, held s inside, kind)": [
+   [
+    4.12,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    3.65,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    3.32,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    3.32,
+    0,
+    0,
+    0,
+    "mutate"
+   ],
+   [
+    3.2,
+    0,
+    0,
+    0,
+    "Person@side"
+   ],
+   [
+    2.44,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    2.21,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    2.01,
+    0,
+    0,
+    0,
+    "Person"
+   ]
+  ],
+  "reprepares_load": 3067,
+  "reprepares_other": 973,
+  "polls": 1640,
+  "poll_p99": 0.007,
+  "poll_statuses": [
+   200
+  ]
+ },
+ "acked_rows_missing": {},
+ "record_violations": [],
+ "sigterm_exit": 0
+}

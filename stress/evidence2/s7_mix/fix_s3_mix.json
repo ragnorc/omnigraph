@@ -1,0 +1,221 @@
+{
+ "config": {
+  "seconds": 90.0,
+  "writers": 6,
+  "pollers": 2,
+  "poll_ms": 100,
+  "branch_writers": 2,
+  "mutators": 1,
+  "hold_ms": 1000,
+  "root": "s3://omnigraph-stress/mx2/wy-1794346826752868886"
+ },
+ "control": {
+  "writes_ok_main": 336,
+  "writes_ok_side": 190,
+  "writes_other": {
+   "409:write authority 'graph_head:main' changed during preparation (expected hb1.01M73": 57,
+   "409:write authority 'graph_head:side' changed during preparation (expected hb1.01M73": 3
+  },
+  "throughput_main_per_s": 3.73,
+  "p50": 0.273,
+  "p90": 0.459,
+  "p99": 2.875,
+  "max": 14.508420467376709,
+  "side_p99": 2.992,
+  "side_max": 17.192676305770874,
+  "runs": 0,
+  "run_states": {},
+  "publications": 0,
+  "writer_yield_ms": {
+   "p50": null,
+   "p90": null,
+   "max": null,
+   "at_limit(>=9900)": 0,
+   "zero": 0
+  },
+  "gate_hold_ms": {
+   "p50": null,
+   "max": null
+  },
+  "gate_hold_fraction": 0.0,
+  "writes_by_publications_inside": {
+   "0": 336
+  },
+  "writes_with_2plus_publications": 0,
+  "writes_with_3plus_publications": 0,
+  "writes_spanning_2plus_holds": 0,
+  "writes_spanning_3plus_holds": 0,
+  "slowest (latency, pubs inside, holds overlapped, held s inside, kind)": [
+   [
+    17.19,
+    0,
+    0,
+    0,
+    "Person@side"
+   ],
+   [
+    14.51,
+    0,
+    0,
+    0,
+    "Company"
+   ],
+   [
+    13.86,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    6.47,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    2.99,
+    0,
+    0,
+    0,
+    "Person@side"
+   ],
+   [
+    2.87,
+    0,
+    0,
+    0,
+    "Company"
+   ],
+   [
+    2.86,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    1.94,
+    0,
+    0,
+    0,
+    "Person@side"
+   ]
+  ],
+  "reprepares_load": 1792,
+  "reprepares_other": 256,
+  "polls": 0,
+  "poll_p99": null,
+  "poll_statuses": []
+ },
+ "optimize": {
+  "writes_ok_main": 175,
+  "writes_ok_side": 108,
+  "writes_other": {
+   "409:write authority 'graph_head:main' changed during preparation (expected hb1.01M73": 27,
+   "409:write authority 'graph_head:side' changed during preparation (expected hb1.01M73": 1
+  },
+  "throughput_main_per_s": 1.94,
+  "p50": 0.492,
+  "p90": 0.642,
+  "p99": 15.379,
+  "max": 15.412254095077515,
+  "side_p99": 1.373,
+  "side_max": 41.91997289657593,
+  "runs": 9,
+  "run_states": {
+   "succeeded": 9
+  },
+  "publications": 9,
+  "writer_yield_ms": {
+   "p50": 10000,
+   "p90": 10008,
+   "max": 10008,
+   "at_limit(>=9900)": 8,
+   "zero": 1
+  },
+  "gate_hold_ms": {
+   "p50": 610,
+   "max": 1143
+  },
+  "gate_hold_fraction": 0.069,
+  "writes_by_publications_inside": {
+   "0": 162,
+   "1": 10,
+   "2": 3
+  },
+  "writes_with_2plus_publications": 3,
+  "writes_with_3plus_publications": 0,
+  "writes_spanning_2plus_holds": 4,
+  "writes_spanning_3plus_holds": 0,
+  "slowest (latency, pubs inside, holds overlapped, held s inside, kind)": [
+   [
+    41.92,
+    4,
+    4,
+    2.67,
+    "Company@side"
+   ],
+   [
+    15.41,
+    1,
+    2,
+    1.01,
+    "Company"
+   ],
+   [
+    15.38,
+    2,
+    2,
+    1.54,
+    "Person"
+   ],
+   [
+    13.58,
+    2,
+    2,
+    1.57,
+    "Person"
+   ],
+   [
+    12.84,
+    2,
+    2,
+    0.68,
+    "Company"
+   ],
+   [
+    9.72,
+    1,
+    1,
+    0.57,
+    "mutate"
+   ],
+   [
+    9.04,
+    1,
+    1,
+    0.56,
+    "Company"
+   ],
+   [
+    7.18,
+    1,
+    1,
+    0.57,
+    "Company"
+   ]
+  ],
+  "reprepares_load": 939,
+  "reprepares_other": 146,
+  "polls": 1709,
+  "poll_p99": 0.02,
+  "poll_statuses": [
+   200
+  ]
+ },
+ "acked_rows_missing": {},
+ "record_violations": [],
+ "sigterm_exit": 0
+}

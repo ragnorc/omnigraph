@@ -7,7 +7,6 @@
 //! Run: `engine_writer_yield_stress --ignored --test-threads 1 --nocapture`.
 
 #[path = "../crates/omnigraph/tests/helpers/mod.rs"]
-#[allow(dead_code)]
 mod helpers;
 
 use std::sync::Arc;
