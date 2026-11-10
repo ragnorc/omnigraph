@@ -103,3 +103,8 @@ workspace = true
 [[test]]
 name = "engine_optimize_stress"
 path = "../../stress/engine_optimize_stress.rs"
+
+# Stress harness (stress/): round-2 writer-yield probes.
+[[test]]
+name = "engine_writer_yield_stress"
+path = "../../stress/engine_writer_yield_stress.rs"

@@ -15,9 +15,13 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 use helpers::{MUTATION_QUERIES, mixed_params, mutate_branch, mutate_main};
-use omnigraph::db::{AuthorityCapture, Omnigraph, OptimizeCancellation, OptimizeLimits, OptimizeRequest};
+use omnigraph::db::{
+    AuthorityCapture, Omnigraph, OptimizeCancellation, OptimizeLimits, OptimizeRequest,
+};
 use omnigraph::seams::catalog;
-use omnigraph::seams::{Behavior, Decide, DecideSeam, Decision, FailScenario, Global, Hold, Installed};
+use omnigraph::seams::{
+    Behavior, Decide, DecideSeam, Decision, FailScenario, Global, Hold, Installed,
+};
 
 /// Counts every crossing of a seam, parks the listed crossings, and panics
 /// at `panic_at` (after its park, if it is also parked).
@@ -54,16 +58,28 @@ struct Parked {
 impl Parked {
     fn new(seam: &'static DecideSeam, at: &[u64], panic_at: Option<u64>) -> Self {
         let count = Arc::new(AtomicU64::new(0));
-        let holds = Arc::new(at.iter().map(|n| (*n, Arc::new(Hold::default()))).collect::<Vec<_>>());
+        let holds = Arc::new(
+            at.iter()
+                .map(|n| (*n, Arc::new(Hold::default())))
+                .collect::<Vec<_>>(),
+        );
         let installed = seam.install(Arc::new(Script {
             crossings: Arc::clone(&count),
             holds: Arc::clone(&holds),
             panic_at,
         }));
-        Self { count, holds, _installed: installed }
+        Self {
+            count,
+            holds,
+            _installed: installed,
+        }
     }
     fn hold(&self, n: u64) -> &Hold {
-        self.holds.iter().find(|(at, _)| *at == n).map(|(_, h)| h.as_ref()).expect("parked crossing")
+        self.holds
+            .iter()
+            .find(|(at, _)| *at == n)
+            .map(|(_, h)| h.as_ref())
+            .expect("parked crossing")
     }
     async fn wait_until_reached(&self, n: u64) {
         for _ in 0..4000 {
@@ -100,7 +116,10 @@ async fn add_fragments(db: &helpers::Session, tag: &str) {
     }
 }
 
-fn insert(db: Arc<helpers::Session>, name: &'static str) -> tokio::task::JoinHandle<omnigraph::error::Result<omnigraph_compiler::result::MutationResult>> {
+fn insert(
+    db: Arc<helpers::Session>,
+    name: &'static str,
+) -> tokio::task::JoinHandle<omnigraph::error::Result<omnigraph_compiler::result::MutationResult>> {
     tokio::spawn(async move {
         mutate_main(
             &db,
@@ -136,7 +155,9 @@ async fn wait_for(count: &AtomicU64, at_least: u64) {
     panic!("never reached {at_least}");
 }
 
-fn counter(seam: &'static DecideSeam) -> (Arc<AtomicU64>, Installed<dyn Decide, Global<dyn Decide>>) {
+fn counter(
+    seam: &'static DecideSeam,
+) -> (Arc<AtomicU64>, Installed<dyn Decide, Global<dyn Decide>>) {
     let count = Arc::new(AtomicU64::new(0));
     let observer = {
         let count = Arc::clone(&count);
@@ -173,8 +194,14 @@ async fn wy_writer_queued_behind_a_writer_is_overtaken_by_the_next_run() {
 
     let w = insert(Arc::clone(&wdb), "w-overtaken");
     pre_gate.wait_until_reached(1).await;
-    let a = opt.optimize_as(None, OptimizeRequest::default()).await.unwrap();
-    assert!(a.graph_commit_id.is_some(), "A publishes over W's first attempt");
+    let a = opt
+        .optimize_as(None, OptimizeRequest::default())
+        .await
+        .unwrap();
+    assert!(
+        a.graph_commit_id.is_some(),
+        "A publishes over W's first attempt"
+    );
 
     let x = insert(Arc::clone(&xdb), "x-holds-the-gates");
     under_gate.wait_until_reached(1).await;
@@ -223,7 +250,9 @@ async fn wy_dropped_marked_writer_ends_the_wait() {
     let parks = Parked::new(&catalog::MUTATION_POST_STAGE_PRE_EFFECT_GATE, &[1, 2], None);
     let w = insert(Arc::clone(&wdb), "w-dropped");
     parks.wait_until_reached(1).await;
-    opt.optimize_as(None, OptimizeRequest::default()).await.unwrap();
+    opt.optimize_as(None, OptimizeRequest::default())
+        .await
+        .unwrap();
     parks.release(1);
     parks.wait_until_reached(2).await; // marked, preparing again
     add_fragments(&opt, "more").await;
@@ -260,10 +289,16 @@ async fn wy_panicking_marked_writer_ends_the_wait() {
     let (yields, _o1) = counter(&catalog::GATE_WRITER_YIELD_ACQUIRE);
     // W parks at its first attempt; A publishes over it; W marks and parks
     // at its second; B starts waiting; W is released and panics there.
-    let parks = Parked::new(&catalog::MUTATION_POST_STAGE_PRE_EFFECT_GATE, &[1, 2], Some(2));
+    let parks = Parked::new(
+        &catalog::MUTATION_POST_STAGE_PRE_EFFECT_GATE,
+        &[1, 2],
+        Some(2),
+    );
     let w = insert(Arc::clone(&wdb), "w-panics");
     parks.wait_until_reached(1).await;
-    opt.optimize_as(None, OptimizeRequest::default()).await.unwrap();
+    opt.optimize_as(None, OptimizeRequest::default())
+        .await
+        .unwrap();
     parks.release(1);
     parks.wait_until_reached(2).await;
     let started = Instant::now();
@@ -272,7 +307,10 @@ async fn wy_panicking_marked_writer_ends_the_wait() {
     tokio::time::sleep(Duration::from_millis(300)).await;
     parks.release(2);
     let w = w.await;
-    println!("RESULT panic: W joined: panicked={}", w.as_ref().err().is_some_and(|e| e.is_panic()));
+    println!(
+        "RESULT panic: W joined: panicked={}",
+        w.as_ref().err().is_some_and(|e| e.is_panic())
+    );
     let b = tokio::time::timeout(Duration::from_secs(20), b)
         .await
         .expect("the run stops waiting once the panicked writer's mark drops")
@@ -284,7 +322,10 @@ async fn wy_panicking_marked_writer_ends_the_wait() {
         started.elapsed(),
         yields.load(Ordering::SeqCst)
     );
-    assert!(b.writer_yield < Duration::from_secs(5), "a panicked writer leaked its mark");
+    assert!(
+        b.writer_yield < Duration::from_secs(5),
+        "a panicked writer leaked its mark"
+    );
 }
 
 /// A run cancelled while it waits for a writer. The RFC: the wait "ends on
@@ -309,7 +350,10 @@ async fn wy_cancelled_during_the_yield() {
 
     let w = insert(Arc::clone(&wdb), "w-marked");
     pre_gate.wait_until_reached(1).await;
-    let a = opt.optimize_as(None, OptimizeRequest::default()).await.unwrap();
+    let a = opt
+        .optimize_as(None, OptimizeRequest::default())
+        .await
+        .unwrap();
     println!("cancel: A published {:?}", a.graph_commit_id);
     assert!(a.graph_commit_id.is_some());
     pre_gate.release(1);
@@ -356,12 +400,24 @@ async fn wy_cancelled_during_the_yield() {
     let commits_after = opt.list_commits(Some("main")).await.unwrap().len();
     println!(
         "RESULT cancel: read during yield {read_during_yield:?} ({rows} rows); yield ended {yield_ended_after:?} after cancel; returned while X held the gates: {returned_while_x_held_gates}; returned {returned_after:?} after cancel; outcome {:?}; commits {} -> {} (X's write is one)",
-        b.as_ref().map(|r| (r.writer_yield, r.graph_commit_id.clone(), format!("{:?}", r.cancellation), r.tables.iter().map(|t| format!("{}={:?}", t.type_key, t.outcome)).collect::<Vec<_>>())),
+        b.as_ref().map(|r| (
+            r.writer_yield,
+            r.graph_commit_id.clone(),
+            format!("{:?}", r.cancellation),
+            r.tables
+                .iter()
+                .map(|t| format!("{}={:?}", t.type_key, t.outcome))
+                .collect::<Vec<_>>()
+        )),
         commits_before,
         commits_after
     );
     assert!(read_during_yield < Duration::from_secs(2));
-    assert_eq!(commits_after, commits_before + 2, "X's and W's writes, and no optimize publication");
+    assert_eq!(
+        commits_after,
+        commits_before + 2,
+        "X's and W's writes, and no optimize publication"
+    );
     assert!(
         returned_while_x_held_gates,
         "a run cancelled during its yield waited for a writer's gates before returning"
@@ -384,7 +440,9 @@ async fn wy_small_limits() {
         let parks = Parked::new(&catalog::MUTATION_POST_STAGE_PRE_EFFECT_GATE, &[1, 2], None);
         let w = insert(Arc::clone(&wdb), "w-small");
         parks.wait_until_reached(1).await;
-        opt.optimize_as(None, OptimizeRequest::default()).await.unwrap();
+        opt.optimize_as(None, OptimizeRequest::default())
+            .await
+            .unwrap();
         parks.release(1);
         parks.wait_until_reached(2).await;
         add_fragments(&opt, &format!("small{limit_ms}")).await;
@@ -422,16 +480,32 @@ async fn wy_branch_writer_does_not_hold_main() {
     let t1 = {
         let w1 = Arc::clone(&w1);
         tokio::spawn(async move {
-            mutate_branch(&w1, "feature", MUTATION_QUERIES, "insert_person",
-                &mixed_params(&[("$name", "b1")], &[("$age", 1)])).await
+            mutate_branch(
+                &w1,
+                "feature",
+                MUTATION_QUERIES,
+                "insert_person",
+                &mixed_params(&[("$name", "b1")], &[("$age", 1)]),
+            )
+            .await
         })
     };
     parks.wait_until_reached(1).await;
-    mutate_branch(&w2, "feature", MUTATION_QUERIES, "insert_person",
-        &mixed_params(&[("$name", "b2")], &[("$age", 2)])).await.unwrap(); // crossing 2
+    mutate_branch(
+        &w2,
+        "feature",
+        MUTATION_QUERIES,
+        "insert_person",
+        &mixed_params(&[("$name", "b2")], &[("$age", 2)]),
+    )
+    .await
+    .unwrap(); // crossing 2
     parks.release(1);
     parks.wait_until_reached(3).await; // w1 marked on `feature`
-    let b = opt.optimize_as(None, yield_limit(Duration::from_secs(30))).await.unwrap();
+    let b = opt
+        .optimize_as(None, yield_limit(Duration::from_secs(30)))
+        .await
+        .unwrap();
     parks.release(3);
     t1.await.unwrap().unwrap();
     println!("RESULT branch: main run writer_yield {:?}", b.writer_yield);
