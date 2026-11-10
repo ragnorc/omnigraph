@@ -384,7 +384,10 @@ fn every_query_text_checks_alike_in_the_one_checker() {
                     .map_err(|d| (d.code.as_str().to_string(), d.message.clone())),
             );
             if old != new {
-                differ.push(format!("{} `{name}`\n  edition 2: {old}\n  one:       {new}", text.origin));
+                differ.push(format!(
+                    "{} `{name}`\n  edition 2: {old}\n  one:       {new}",
+                    text.origin
+                ));
             }
         }
     }

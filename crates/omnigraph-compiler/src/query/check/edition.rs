@@ -271,6 +271,11 @@ fn replace(e: &Expr, rank: &Expr, out: &str) -> Expr {
             expr: r(expr),
             negated: *negated,
         },
+        Expr::In { needle, list, at } => Expr::In {
+            needle: r(needle),
+            list: r(list),
+            at: at.clone(),
+        },
         other => other.clone(),
     }
 }
@@ -487,7 +492,12 @@ fn ranking(catalog: &Catalog, body: &ReadBody) -> Result<Option<ReadBody>, Query
         order: Vec::new(),
         limit: None,
     };
-    let k = |n: Option<u64>| ("k".to_string(), Expr::Literal(Literal::Integer(n.unwrap_or(100) as i128)));
+    let k = |n: Option<u64>| {
+        (
+            "k".to_string(),
+            Expr::Literal(Literal::Integer(n.unwrap_or(100) as i128)),
+        )
+    };
     let (clauses, out) = match rank.name.as_str() {
         "nearest" | "bm25" => {
             let mut args = vec![Arg::Inline(Box::new(population(body.clauses.clone())))];
@@ -497,7 +507,11 @@ fn ranking(catalog: &Catalog, body: &ReadBody) -> Result<Option<ReadBody>, Query
             } else {
                 Vec::new()
             };
-            let out = if rank.name == "nearest" { "distance" } else { "score" };
+            let out = if rank.name == "nearest" {
+                "distance"
+            } else {
+                "score"
+            };
             (
                 vec![Clause::From(RelExpr::Call(Call {
                     name: rank.name.clone(),
@@ -584,7 +598,9 @@ fn ranking(catalog: &Catalog, body: &ReadBody) -> Result<Option<ReadBody>, Query
             descending: o.descending,
         })
         .collect();
-    if !aggregate {
+    // Under an aggregate or `distinct` the rank key leaves `order`; the
+    // window still takes `limit`'s value.
+    if !aggregate && !body.distinct {
         order.insert(
             0,
             Ordering {

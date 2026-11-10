@@ -186,9 +186,7 @@ fn expr(e: &ast::Expr) -> Expr {
             ],
         ),
         ast::Expr::Search { field, query } => call("search", vec![expr(field), expr(query)]),
-        ast::Expr::MatchText { field, query } => {
-            call("match_text", vec![expr(field), expr(query)])
-        }
+        ast::Expr::MatchText { field, query } => call("match_text", vec![expr(field), expr(query)]),
         ast::Expr::Bm25 { field, query } => call("bm25", vec![expr(field), expr(query)]),
         ast::Expr::Fuzzy {
             field,
@@ -238,18 +236,16 @@ fn expr(e: &ast::Expr) -> Expr {
             expr(left)
         }
         ast::Expr::Binary { left, op, right } => match op {
-            BinaryOp::Compare(op @ (CompOp::Contains | CompOp::StartsWith)) => {
-                Expr::InfixString {
-                    op: if *op == CompOp::Contains {
-                        InfixStringOp::Contains
-                    } else {
-                        InfixStringOp::StartsWith
-                    },
-                    left: boxed(left),
-                    right: boxed(right),
-                    at: SourceSpan::default(),
-                }
-            }
+            BinaryOp::Compare(op @ (CompOp::Contains | CompOp::StartsWith)) => Expr::InfixString {
+                op: if *op == CompOp::Contains {
+                    InfixStringOp::Contains
+                } else {
+                    InfixStringOp::StartsWith
+                },
+                left: boxed(left),
+                right: boxed(right),
+                at: SourceSpan::default(),
+            },
             BinaryOp::Compare(op) => Expr::Compare {
                 op: *op,
                 left: boxed(left),
@@ -264,7 +260,10 @@ fn expr(e: &ast::Expr) -> Expr {
             },
         },
         ast::Expr::Not(inner) => Expr::Not(boxed(inner)),
-        ast::Expr::IsNull { expr: inner, negated } => Expr::IsNull {
+        ast::Expr::IsNull {
+            expr: inner,
+            negated,
+        } => Expr::IsNull {
             expr: boxed(inner),
             negated: *negated,
         },

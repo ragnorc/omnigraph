@@ -888,6 +888,40 @@ impl Ctx<'_> {
                             }
                         }
                     }
+                    // Edition 2 orders groups by a meta field an unaliased
+                    // aggregate item is named after, and by a single-type
+                    // edge's `@type`, a constant.
+                    Expr::Prop { variable, property }
+                        if self.edition == Edition::Two
+                            && property.starts_with('@')
+                            && body.projections.iter().zip(&names).any(|(p, n)| {
+                                p.alias.is_none()
+                                    && contains_agg(&p.expr)
+                                    && *n == format!("{variable}.{property}")
+                            }) =>
+                    {
+                        let i = names
+                            .iter()
+                            .position(|n| *n == format!("{variable}.{property}"))
+                            .unwrap();
+                        SExpr::new(SKind::Col(format!("^{}", names[i])), out_cols[i].ty.clone())
+                    }
+                    Expr::Prop { variable, property }
+                        if self.edition == Edition::Two
+                            && property == "@type"
+                            && matches!(sc.local(variable).map(|c| &c.ty),
+                                Some(Ty::Edge { type_name, .. }) if !type_name.contains('|')) =>
+                    {
+                        let Some(Ty::Edge { type_name, .. }) =
+                            sc.local(variable).map(|c| c.ty.clone())
+                        else {
+                            unreachable!()
+                        };
+                        SExpr::new(
+                            SKind::Lit(Literal::String(type_name)),
+                            Ty::scalar(ScalarType::String, false),
+                        )
+                    }
                     e => {
                         let typed = self.order_key(&mut sc, e)?;
                         match keys.iter().find(|(_, k)| *k == typed) {
@@ -2409,7 +2443,10 @@ impl Ctx<'_> {
                 // the engine refuses a value out of range, as today.
                 ("k", Expr::Variable(p))
                     if self.edition == Edition::Two
-                        && sc.params.get(p).is_some_and(|t| !t.list && is_integer(t.scalar)) =>
+                        && sc
+                            .params
+                            .get(p)
+                            .is_some_and(|t| !t.list && is_integer(t.scalar)) =>
                 {
                     k = Some(Count::Param(p.clone()))
                 }
@@ -2938,6 +2975,21 @@ impl Ctx<'_> {
             ));
         }
         let v = adapt(v, &Ty::Value(pt.clone()));
+        if self.edition == Edition::Two {
+            // Edition 2 checks a computed constant by compatibility alone; the
+            // engine refuses a null or an out-of-range value as it writes.
+            return match &v.ty {
+                Ty::Value(t) if assignment_compatible(t, pt) => Ok(AssignValue::Expr(v.to_ir())),
+                other => Err(err(
+                    T7,
+                    format!(
+                        "cannot assign/compare {} with {} for property `{prop}`",
+                        other.display(),
+                        pt.display_name()
+                    ),
+                )),
+            };
+        }
         let ok = match &v.ty {
             Ty::Value(t) => {
                 assignment_compatible(t, pt)
@@ -3507,7 +3559,8 @@ impl Ctx<'_> {
                     ));
                 }
                 // Edition 2 writes `fuzzy`'s edit budget as a third argument.
-                let window_budget = self.edition == Edition::Two && name == "fuzzy" && args.len() == 3;
+                let window_budget =
+                    self.edition == Edition::Two && name == "fuzzy" && args.len() == 3;
                 if args.len() != 2 && !window_budget {
                     return Err(err(
                         T71,
