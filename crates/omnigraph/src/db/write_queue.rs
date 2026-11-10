@@ -188,61 +188,98 @@ decide_seam! {
     pub static GATE_WRITER_YIELD_RELEASE = ("gate.writer_yield.release", Unreachable, [Fail]);
 }
 
-/// The writers on each branch that are preparing again because a publication
-/// moved the branch under an attempt they had prepared (`ReadSetChanged`).
+/// The writers in flight on each branch, by how many optimize publications
+/// the branch had seen when each writer started, so an optimize run can wait
+/// for the writers an earlier run published over.
 ///
-/// Such a writer has left the gate queue: it prepares outside the gates and
-/// queues again. An optimize run that queued meanwhile would take the gates
-/// first, publish, and send the writer back once more; on a store where
-/// preparing takes longer than the gap between two runs, a client that runs
-/// optimize back to back would keep one write waiting through many runs. So
-/// a run waits for these writers before it takes the branch's gates
-/// ([`WriteQueueManager::yield_to_repreparing_writers`]), and each writer's
-/// wait stays within one run's hold, one table, the publication and its own
-/// second preparation.
+/// A writer prepares outside the gates. A publication that moves the branch
+/// under its prepared attempt sends it back to prepare again
+/// (`ReadSetChanged`), and while it does it holds no place in the gate
+/// queue. An optimize run that queued meanwhile would take the gates first,
+/// publish, and send the writer back once more; on a store where preparing
+/// takes longer than the gap between two runs, a client that runs optimize
+/// back to back would keep one write waiting through many runs. So a run,
+/// before it takes the branch's gates, waits for every writer that started
+/// before the branch's last optimize publication
+/// ([`WriteQueueManager::yield_to_repreparing_writers`]): the writers that
+/// publication sent back, whether they are preparing again or still queued
+/// at the gates behind another writer, and none that started after it.
+/// Writers sending each other back do not hold a run.
 #[derive(Default)]
 struct RepreparingWriters {
-    counts: Mutex<HashMap<Option<String>, usize>>,
+    branches: Mutex<HashMap<Option<String>, BranchWriters>>,
     changed: Notify,
 }
 
+#[derive(Default)]
+struct BranchWriters {
+    /// Optimize publications on the branch so far, in this process.
+    epoch: u64,
+    /// Writers in flight, counted by the epoch at which each started.
+    in_flight: std::collections::BTreeMap<u64, usize>,
+}
+
 impl RepreparingWriters {
-    fn count(&self, branch: &Option<String>) -> usize {
-        self.counts
+    /// Whether a writer that started before the branch's last optimize
+    /// publication is still in flight.
+    fn waiting(&self, branch: &Option<String>) -> bool {
+        self.branches
             .lock()
-            .expect("repreparing writer counts poisoned")
+            .expect("in-flight writers poisoned")
             .get(branch)
-            .copied()
-            .unwrap_or(0)
+            .is_some_and(|writers| writers.in_flight.range(..writers.epoch).next().is_some())
     }
 }
 
-/// One writer preparing again on a branch. The writer holds it until its
-/// write returns, whether it committed, failed or gave up.
-#[must_use = "dropping the mark ends the writer's claim on optimize's wait"]
+/// One write in flight on a branch, from its first preparation until it
+/// returns, whether it committed, failed or gave up.
+#[must_use = "dropping the ticket ends the writer's claim on optimize's wait"]
 pub(crate) struct RepreparingWriter {
     writers: Arc<RepreparingWriters>,
     branch: Option<String>,
+    epoch: u64,
+}
+
+impl RepreparingWriter {
+    fn remove(&self) {
+        let mut branches = self
+            .writers
+            .branches
+            .lock()
+            .expect("in-flight writers poisoned");
+        if let Some(writers) = branches.get_mut(&self.branch) {
+            if let Some(count) = writers.in_flight.get_mut(&self.epoch) {
+                *count -= 1;
+                if *count == 0 {
+                    writers.in_flight.remove(&self.epoch);
+                }
+            }
+        }
+    }
 }
 
 impl Drop for RepreparingWriter {
     fn drop(&mut self) {
+        // Only a writer a run may be waiting for (one that started before
+        // the branch's last optimize publication; the epoch only grows)
+        // crosses the release seam and wakes the waiters, as a marked
+        // writer did; every other write leaves without a turn.
+        let awaited = self
+            .writers
+            .branches
+            .lock()
+            .expect("in-flight writers poisoned")
+            .get(&self.branch)
+            .is_some_and(|writers| self.epoch < writers.epoch);
+        if !awaited {
+            self.remove();
+            return;
+        }
         observed(&GATE_WRITER_YIELD_RELEASE);
         // The same release protocol as `QueueGuard`: under a turn, so a
         // waiting run reads the count in a deterministic order.
         let _turn = crate::dst_gate::turn();
-        let mut counts = self
-            .writers
-            .counts
-            .lock()
-            .expect("repreparing writer counts poisoned");
-        if let Some(count) = counts.get_mut(&self.branch) {
-            *count -= 1;
-            if *count == 0 {
-                counts.remove(&self.branch);
-            }
-        }
-        drop(counts);
+        self.remove();
         self.writers.changed.notify_waiters();
     }
 }
@@ -702,26 +739,43 @@ impl WriteQueueManager {
         scheduled_schema_exclusive(Arc::clone(&self.schema_gate)).await
     }
 
-    /// Mark a writer on `branch` as preparing again after `ReadSetChanged`.
-    /// The writer holds the mark until its write returns.
-    pub(crate) fn mark_repreparing(&self, branch: Option<&str>) -> RepreparingWriter {
+    /// A write on `branch` starts: the writer holds the ticket until its
+    /// write returns.
+    pub(crate) fn writer_in_flight(&self, branch: Option<&str>) -> RepreparingWriter {
         let branch = repreparing_key(branch);
-        *self
+        let mut branches = self
             .repreparing
-            .counts
+            .branches
             .lock()
-            .expect("repreparing writer counts poisoned")
-            .entry(branch.clone())
-            .or_insert(0) += 1;
+            .expect("in-flight writers poisoned");
+        let writers = branches.entry(branch.clone()).or_default();
+        let epoch = writers.epoch;
+        *writers.in_flight.entry(epoch).or_insert(0) += 1;
+        drop(branches);
         RepreparingWriter {
             writers: Arc::clone(&self.repreparing),
             branch,
+            epoch,
         }
     }
 
-    /// Before an optimize run takes `branch`'s gates, wait until no writer on
-    /// it is preparing again ([`RepreparingWriters`]), for at most `limit` or
-    /// until `cancelled` completes. Returns how long the run waited.
+    /// An optimize run published on `branch`. Every write in flight now
+    /// started before it, so the next run waits for them.
+    pub(crate) fn optimize_published(&self, branch: Option<&str>) {
+        let branch = repreparing_key(branch);
+        self.repreparing
+            .branches
+            .lock()
+            .expect("in-flight writers poisoned")
+            .entry(branch)
+            .or_default()
+            .epoch += 1;
+    }
+
+    /// Before an optimize run takes `branch`'s gates, wait until no writer
+    /// that started before the branch's last optimize publication is in
+    /// flight ([`RepreparingWriters`]), for at most `limit` or until
+    /// `cancelled` completes. Returns how long the run waited.
     ///
     /// The limit keeps a steady stream of conflicting writers from holding
     /// maintenance off for good. The caller holds no gate while it waits, so
@@ -747,7 +801,7 @@ impl WriteQueueManager {
             let installed = {
                 // Read under a turn, as the marks end under one.
                 let turn = crate::dst_gate::turn();
-                if writers.count(&branch) == 0 {
+                if !writers.waiting(&branch) {
                     break;
                 }
                 turn.is_some()
@@ -1302,9 +1356,10 @@ mod tests {
         assert!(Arc::ptr_eq(&first, &second));
     }
 
-    /// Optimize's wait for writers preparing again ends when the last mark on
-    /// its branch ends. A mark on another branch does not hold it, and main
-    /// is one key whether a writer names it or not.
+    /// Optimize's wait ends when the last writer that started before its
+    /// branch's last optimize publication returns. A writer on another
+    /// branch, or one that started after that publication, does not hold
+    /// it, and main is one key whether a writer names it or not.
     #[tokio::test]
     async fn writer_yield_waits_for_the_writers_preparing_again_on_its_branch() {
         let qm = Arc::new(WriteQueueManager::new());
@@ -1317,18 +1372,22 @@ mod tests {
             "no writer, no wait: {waited:?}"
         );
 
-        let feature = qm.mark_repreparing(Some("feature"));
+        let feature = qm.writer_in_flight(Some("feature"));
+        qm.optimize_published(None);
+        let after = qm.writer_in_flight(None);
         let waited = qm
             .yield_to_repreparing_writers(None, unbounded, std::future::pending())
             .await;
         assert!(
             waited < Duration::from_secs(1),
-            "a writer on another branch does not hold main's run: {waited:?}"
+            "a writer on another branch, or one that started after the last publication, does not hold main's run: {waited:?}"
         );
         drop(feature);
+        drop(after);
 
-        let named = qm.mark_repreparing(Some("main"));
-        let unnamed = qm.mark_repreparing(None);
+        let named = qm.writer_in_flight(Some("main"));
+        let unnamed = qm.writer_in_flight(None);
+        qm.optimize_published(Some("main"));
         let waiter = {
             let qm = Arc::clone(&qm);
             tokio::spawn(async move {
@@ -1356,7 +1415,8 @@ mod tests {
     #[tokio::test]
     async fn writer_yield_ends_at_its_limit_and_on_cancellation() {
         let qm = Arc::new(WriteQueueManager::new());
-        let _mark = qm.mark_repreparing(None);
+        let _mark = qm.writer_in_flight(None);
+        qm.optimize_published(None);
         let started = Instant::now();
         let waited = qm
             .yield_to_repreparing_writers(None, Duration::from_millis(100), std::future::pending())
@@ -1407,7 +1467,8 @@ mod tests {
             GATE_WRITER_YIELD_RELEASE.observe(note("release")),
         ];
         let qm = Arc::new(WriteQueueManager::new());
-        let mark = qm.mark_repreparing(None);
+        let mark = qm.writer_in_flight(None);
+        qm.optimize_published(None);
         let waiter = {
             let qm = Arc::clone(&qm);
             tokio::spawn(async move {

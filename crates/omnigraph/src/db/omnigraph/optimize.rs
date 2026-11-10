@@ -1097,6 +1097,9 @@ pub async fn optimize_all_datasets(
         )
         .await?;
         graph_commit_id = Some(commit.graph_commit_id);
+        // Every write in flight on main now started before this publication,
+        // so the next run waits for them (`yield_to_repreparing_writers`).
+        db.write_queue().optimize_published(None);
         db.runtime_cache.invalidate_all().await;
         if edge_tables_committed {
             db.invalidate_graph_index().await;
