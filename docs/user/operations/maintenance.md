@@ -87,9 +87,8 @@ first deferred one, and `--tables` runs only the listed tables, in order. Each
 table's `outcome` is `optimized`, `unchanged`, `deferred`, `skipped` or
 `failed` (with its `error`; the other tables still publish). The report adds
 `input_commit`, `graph_commit_id`, `gate_hold_ms` and the `configuration_clear`
-and `artifact` outcomes, which never fail a published run. The next run waits
-up to 10 s for writes that were in flight when the last run published, which
-it sent back to prepare again (`writer_yield_ms`).
+and `artifact` outcomes, which never fail a published run. A run first waits up
+to 10 s for writes the last run sent back (`writer_yield_ms`), often all 10 s.
 
 Optimize also persists the traversal-adjacency artifact
 (`__graph_index/csr-current.bin`), which cold traversal builds load instead of
