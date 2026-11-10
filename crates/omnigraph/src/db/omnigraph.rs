@@ -271,6 +271,15 @@ impl SchemaContractIdentity {
     }
 }
 
+/// A write's freshness probe of the bound branch's `__manifest`, taken beside
+/// its staging puts instead of under its gates: the incarnation the handle
+/// held when the probe left and the one the store answered.
+#[derive(Debug, Clone)]
+pub(crate) struct EarlyRevalidation {
+    held: crate::db::manifest::ManifestIncarnation,
+    latest: crate::db::manifest::ManifestIncarnation,
+}
+
 #[derive(Debug, Clone)]
 pub(crate) struct WriteTxn {
     /// The resolved branch (`None` = main).
@@ -1152,19 +1161,6 @@ impl Omnigraph {
         scope: &omnigraph_policy::ResourceScope,
         actor: Option<&str>,
     ) -> Result<()> {
-        self.enforce_any(&[action], scope, actor)
-    }
-
-    /// [`Self::enforce`] for an operation that any one of `actions` admits on
-    /// `scope`, decided by [`omnigraph_policy::PolicyChecker::check_any`]: the
-    /// first allowed action admits it, an evaluation failure refuses it, and a
-    /// refusal names every denied action.
-    pub(crate) fn enforce_any(
-        &self,
-        actions: &[omnigraph_policy::PolicyAction],
-        scope: &omnigraph_policy::ResourceScope,
-        actor: Option<&str>,
-    ) -> Result<()> {
         let (branch, target_branch) = scope.to_branch_pair();
         for name in [branch, target_branch].into_iter().flatten() {
             ensure_canonical_branch_name(name)?;
@@ -1181,7 +1177,7 @@ impl Omnigraph {
             ));
         };
         checker
-            .check_any(actions, scope, actor)
+            .check(action, scope, actor)
             .map_err(|err| OmniError::Policy(err.to_string()))
     }
 
@@ -2112,29 +2108,74 @@ impl Omnigraph {
         }))
     }
 
+    /// Probe the bound branch's `__manifest` head for a write before its
+    /// gates are held, beside the staging puts: the answer serves
+    /// [`Self::revalidate_write_txn_with`] under the gates when no publish
+    /// installed on this handle in between. `None` when the write is not on
+    /// the bound branch, or when the probe failed, so the revalidation
+    /// probes itself.
+    pub(crate) async fn early_revalidation(&self, txn: &WriteTxn) -> Option<EarlyRevalidation> {
+        let coord = self.coordinator.load_full();
+        if txn.branch.as_deref() != coord.current_branch() {
+            return None;
+        }
+        let held = coord.manifest_incarnation();
+        let latest = coord.probe_latest_incarnation().await.ok()?;
+        Some(EarlyRevalidation { held, latest })
+    }
+
     /// Revalidate a prepared mutation/load attempt after its branch/table
     /// gates are held and before any table effect.
     pub(crate) async fn revalidate_write_txn(&self, txn: &WriteTxn) -> Result<Snapshot> {
-        let bound = txn.branch.as_deref() == self.coordinator.load_full().current_branch();
-        let (branch_identifier, graph_head, effective_graph_head, snapshot) =
-            if !bound && txn.manifest_probe.is_current().await? {
-                (
-                    txn.authority.branch_identifier.clone(),
-                    txn.authority.graph_head.clone(),
-                    txn.effective_graph_head.clone(),
-                    txn.base.clone(),
-                )
-            } else {
-                let (branch_identifier, graph_head, effective_graph_head, snapshot, _) = self
-                    .write_authority_for_known_branch(txn.branch.as_deref(), true)
-                    .await?;
-                (
-                    branch_identifier,
-                    graph_head,
-                    effective_graph_head,
-                    snapshot,
-                )
-            };
+        self.revalidate_write_txn_with(txn, None).await
+    }
+
+    /// [`Self::revalidate_write_txn`] with the probe taken beside staging:
+    /// on the bound branch, a head still at the incarnation the probe saw,
+    /// with the handle's installed coordinator unchanged since (a same-process
+    /// publish installs a new incarnation), is current without a second
+    /// probe; a foreign publish after the probe is the manifest CAS's to
+    /// refuse, as one after an under-gate probe always was.
+    pub(crate) async fn revalidate_write_txn_with(
+        &self,
+        txn: &WriteTxn,
+        early: Option<EarlyRevalidation>,
+    ) -> Result<Snapshot> {
+        let installed = self.coordinator.load_full();
+        let bound = txn.branch.as_deref() == installed.current_branch();
+        let probed_current = bound
+            && early.is_some_and(|early| {
+                early.latest.matches(&early.held)
+                    && installed.manifest_incarnation().matches(&early.held)
+            });
+        let (branch_identifier, graph_head, effective_graph_head, snapshot) = if probed_current {
+            let (branch_identifier, graph_head, effective_graph_head, snapshot, _) = self
+                .write_authority_for_known_branch(txn.branch.as_deref(), false)
+                .await?;
+            (
+                branch_identifier,
+                graph_head,
+                effective_graph_head,
+                snapshot,
+            )
+        } else if !bound && txn.manifest_probe.is_current().await? {
+            (
+                txn.authority.branch_identifier.clone(),
+                txn.authority.graph_head.clone(),
+                txn.effective_graph_head.clone(),
+                txn.base.clone(),
+            )
+        } else {
+            let (branch_identifier, graph_head, effective_graph_head, snapshot, _) = self
+                .write_authority_for_known_branch(txn.branch.as_deref(), true)
+                .await?;
+            (
+                branch_identifier,
+                graph_head,
+                effective_graph_head,
+                snapshot,
+            )
+        };
         let (_, live) = self.accepted_catalog_for_snapshot(&snapshot).await?;
         if let Some(expected) = txn.caller_expected_graph_head.as_deref()
             && effective_graph_head.as_deref() != Some(expected)
