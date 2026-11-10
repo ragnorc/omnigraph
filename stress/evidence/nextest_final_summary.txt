@@ -1,0 +1,21 @@
+        FAIL [   0.055s] (  29/5202) omnigraph-bench archive::tests::archive_loader_rejects_symlinked_shards
+        FAIL [   0.079s] (  30/5202) omnigraph-bench archive::tests::archive_loader_rejects_symlinked_object_ancestors
+        FAIL [   0.076s] (  33/5202) omnigraph-bench archive::tests::archive_publisher_rejects_symlinked_internal_ancestors
+        FAIL [   0.051s] ( 257/5202) omnigraph-bench machine::tests::captures_a_complete_identity_on_supported_hosts
+        FAIL [   0.050s] ( 281/5202) omnigraph-bench projection::tests::bounded_reads_reject_special_files_and_symlinked_ancestors_without_blocking
+        FAIL [   0.040s] ( 306/5202) omnigraph-bench real_graph_run::tests::worker_machine_identity_is_established_once_and_drift_is_refused
+        FAIL [   0.407s] ( 373/5202) omnigraph-bench real_graph_run::tests::native_finbench_delta_merges_and_verifies_exactly
+        FAIL [   0.556s] ( 437/5202) omnigraph-bench runner::tests::warm_and_post_reopen_start_from_identical_frozen_bytes_and_verify_exact_content
+        FAIL [   0.081s] (1120/5202) omnigraph-cli::integration cli_cluster::managed_lifecycle_capture_and_retry_records_refuse_symlinks_without_reading_targets
+        FAIL [   0.965s] (2401/5202) omnigraph-engine db::upgrade::tests::interrupted::unreadable_legacy_object_asks_for_a_rerun
+     Summary [ 113.207s] 5202 tests run: 5192 passed, 10 failed, 46 skipped
+        FAIL [   0.055s] (  29/5202) omnigraph-bench archive::tests::archive_loader_rejects_symlinked_shards
+        FAIL [   0.079s] (  30/5202) omnigraph-bench archive::tests::archive_loader_rejects_symlinked_object_ancestors
+        FAIL [   0.076s] (  33/5202) omnigraph-bench archive::tests::archive_publisher_rejects_symlinked_internal_ancestors
+        FAIL [   0.051s] ( 257/5202) omnigraph-bench machine::tests::captures_a_complete_identity_on_supported_hosts
+        FAIL [   0.050s] ( 281/5202) omnigraph-bench projection::tests::bounded_reads_reject_special_files_and_symlinked_ancestors_without_blocking
+        FAIL [   0.040s] ( 306/5202) omnigraph-bench real_graph_run::tests::worker_machine_identity_is_established_once_and_drift_is_refused
+        FAIL [   0.407s] ( 373/5202) omnigraph-bench real_graph_run::tests::native_finbench_delta_merges_and_verifies_exactly
+        FAIL [   0.556s] ( 437/5202) omnigraph-bench runner::tests::warm_and_post_reopen_start_from_identical_frozen_bytes_and_verify_exact_content
+        FAIL [   0.081s] (1120/5202) omnigraph-cli::integration cli_cluster::managed_lifecycle_capture_and_retry_records_refuse_symlinks_without_reading_targets
+        FAIL [   0.965s] (2401/5202) omnigraph-engine db::upgrade::tests::interrupted::unreadable_legacy_object_asks_for_a_rerun

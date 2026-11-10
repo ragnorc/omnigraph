@@ -1,0 +1,9 @@
+=== phase A
+runs 702 ok 406 published 314; writes 642 (p50 0.254s p99 2.752s max 4.620s); persons 3628 docs 154 companies 45
+gate_hold max 0.278s; gate_hold - (max_gate_hold + longest table) max 0.086s
+worst excess run 250: hold Some(65ms) gate_hold 163.811827ms wall 294.420717ms commit true cancellation NotRequested tables ["node:Doc=Optimized@12ms", "node:Person=Deferred(ResourceLimit(ResourceExceeded { measure: SourceRows, measured: Some(1164), ceiling: 429 }))@12ms", "edge:Authored=Unchanged@10ms", "edge:Knows=Unchanged@0ms", "edge:WorksAt=Unchanged@0ms", "node:Company=Optimized@3ms"]
+=== phase B
+runs 1225 ok 758 published 628; writes 1879 (p50 0.070s p99 2.094s max 4.620s); persons 10301 docs 564 companies 158
+gate_hold max 0.278s; gate_hold - (max_gate_hold + longest table) max 0.086s
+worst excess run 250: hold Some(65ms) gate_hold 163.811827ms wall 294.420717ms commit true cancellation NotRequested tables ["node:Doc=Optimized@12ms", "node:Person=Deferred(ResourceLimit(ResourceExceeded { measure: SourceRows, measured: Some(1164), ceiling: 429 }))@12ms", "edge:Authored=Unchanged@10ms", "edge:Knows=Unchanged@0ms", "edge:WorksAt=Unchanged@0ms", "node:Company=Optimized@3ms"]
+=== violations: 0

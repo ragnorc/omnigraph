@@ -1,0 +1,72 @@
+04:30:01 round 0 az recovery {'lease_broken': False, 'unlocked': None}
+04:30:02 round 0 killed SIGKILL exit -9 ops 2 acked 19
+04:30:03 round 1 az recovery {'lease_broken': True, 'unlocked': '01M6Z9406PQ0VZY9TY15M336BM'}
+04:30:06 round 1 killed SIGKILL exit -9 ops 7 acked 90
+04:30:06 round 2 az recovery {'lease_broken': True, 'unlocked': '01M6Z941M804GKT38GC0EEF777'}
+04:30:09 round 2 killed SIGTERM exit 0 ops 12 acked 146
+04:30:09 round 3 az recovery {'lease_broken': False, 'unlocked': '01M6Z944W6GN0394PF14STVR0T'}
+04:30:12 deploy rc 0 took 1.83 d_at": 1794198612242158,                 "published": true               },               "contract": {                 "source_hash": "dbdbed9d2b8b1b594a0c84aaf810aca061852f3ecb9141b2ca1199ca7290a656",                 "schema_ir_hash": "sha256:29522618d3ee9bf9f04215e0dd8a78e4150235be13b2a79726da7e62e1cba3ff",                 "schema_identity_domain": "01M6Z93YH9Q70CJCV0GBSMEZF5",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14704/; config=/tmp/c7az/operator-3.yaml Deployment-ID: 01M6Z93Y8RRV9VCWMYYGGH33MH:2:01M6Z9499SRJCEXZHP2ZTV5D69 
+04:30:15 round 3 deployment 01M6Z93Y8RRV9VCWMYYGGH33MH:2:01M6Z9499SRJCEXZHP2ZTV5D69 rc 0 1.8s then SIGTERM exit 0
+04:30:15 round 4 az recovery {'lease_broken': False, 'unlocked': '01M6Z94812SJ6VSPQ3QBHF4Y4F'}
+04:30:18 deploy rc 0 took 1.68 d_at": 1794198618126228,                 "published": true               },               "contract": {                 "source_hash": "c60a6681aece5411d88ba38ef87111683a84edf200283947bce077a20f589b9d",                 "schema_ir_hash": "sha256:2d7087166db02a0e65771ba8606468dae91d14e0d9dc7756fe272dde5b0a3166",                 "schema_identity_domain": "01M6Z93YH9Q70CJCV0GBSMEZF5",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14705/; config=/tmp/c7az/operator-4.yaml Deployment-ID: 01M6Z93Y8RRV9VCWMYYGGH33MH:3:01M6Z94F53T8HB62QKES22DP9H 
+04:30:20 round 4 deployment 01M6Z93Y8RRV9VCWMYYGGH33MH:3:01M6Z94F53T8HB62QKES22DP9H rc 0 1.7s then SIGTERM exit 0
+04:30:21 round 5 az recovery {'lease_broken': False, 'unlocked': '01M6Z94DYHX0XPMX2P44AV8158'}
+04:30:25 round 5 killed SIGTERM exit 0 ops 29 acked 389
+04:30:26 round 6 az recovery {'lease_broken': False, 'unlocked': '01M6Z94K7XSAKXP9QSKXXHV0VG'}
+04:30:30 deploy rc 0 took 1.66 d_at": 1794198629456470,                 "published": true               },               "contract": {                 "source_hash": "39d6be7620be35cef8b4b4ad09ba064a284a8ba9b04c23600f61a9cec07ebe5c",                 "schema_ir_hash": "sha256:09eac9dcfd22b9c0cd152a8be46d08c412c3387b60258c2f75875934ec21d561",                 "schema_identity_domain": "01M6Z93YH9Q70CJCV0GBSMEZF5",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14707/; config=/tmp/c7az/operator-6.yaml Deployment-ID: 01M6Z93Y8RRV9VCWMYYGGH33MH:4:01M6Z94T8M9SXANTPXF6KZRTAG 
+04:30:31 round 6 deployment 01M6Z93Y8RRV9VCWMYYGGH33MH:4:01M6Z94T8M9SXANTPXF6KZRTAG rc 0 1.7s then SIGTERM exit 0
+04:30:32 round 7 az recovery {'lease_broken': False, 'unlocked': '01M6Z94R8HHC04DBJ3VDDB46A1'}
+04:30:36 round 7 killed SIGTERM exit 0 ops 37 acked 513
+04:30:36 round 8 az recovery {'lease_broken': False, 'unlocked': '01M6Z94Y3P54TZ329SQRG8YT89'}
+04:30:43 round 8 killed SIGKILL exit -9 ops 48 acked 610
+04:30:44 round 9 az recovery {'lease_broken': True, 'unlocked': '01M6Z952DY4YB84PY8GVD022Y7'}
+04:30:49 deploy rc 0 took 1.74 d_at": 1794198648791350,                 "published": true               },               "contract": {                 "source_hash": "cfd554e5dd5c1f31c74879c74360284445e1492e8d26f2e393af32ebe426b3fc",                 "schema_ir_hash": "sha256:33ddb24ef92969f8575fb051d050d08bb4f8ec9933024c86170fca8f3169fa6d",                 "schema_identity_domain": "01M6Z93YH9Q70CJCV0GBSMEZF5",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14710/; config=/tmp/c7az/operator-9.yaml Deployment-ID: 01M6Z93Y8RRV9VCWMYYGGH33MH:5:01M6Z95D0WD1H0R41CHXMHHRNW 
+04:30:51 round 9 deployment 01M6Z93Y8RRV9VCWMYYGGH33MH:5:01M6Z95D0WD1H0R41CHXMHHRNW rc 0 1.7s then SIGTERM exit 0
+04:30:51 round 10 az recovery {'lease_broken': False, 'unlocked': '01M6Z959CQ63CPR8HHZEFS93HC'}
+04:30:54 round 10 killed SIGKILL exit -9 ops 56 acked 719
+04:30:55 round 11 az recovery {'lease_broken': True, 'unlocked': '01M6Z95GSFCQZYX00XSQKV2ZMQ'}
+04:31:11 round 11 killed SIGKILL exit -9 ops 64 acked 797
+04:31:12 round 12 az recovery {'lease_broken': True, 'unlocked': '01M6Z95MB93TZCZY1P0PPFTAQA'}
+04:31:19 round 12 killed SIGTERM exit 0 ops 73 acked 889
+04:31:19 round 13 az recovery {'lease_broken': False, 'unlocked': '01M6Z964SEW9VEHJXB707ESXG3'}
+04:31:25 deploy rc 0 took 1.76 d_at": 1794198684867365,                 "published": true               },               "contract": {                 "source_hash": "23a48015a216662b4b7df2bac754d4355fa4b1ade9a8b38a24ee823d5abf9729",                 "schema_ir_hash": "sha256:ed5c60798702a9c2bfaa714f56828c6d18c741fe37b5b90d21efacb5a5bc59ea",                 "schema_identity_domain": "01M6Z93YH9Q70CJCV0GBSMEZF5",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14714/; config=/tmp/c7az/operator-13.yaml Deployment-ID: 01M6Z93Y8RRV9VCWMYYGGH33MH:6:01M6Z96G8F9KREM4VGV4GBF7W5 
+04:31:27 round 13 deployment 01M6Z93Y8RRV9VCWMYYGGH33MH:6:01M6Z96G8F9KREM4VGV4GBF7W5 rc 0 1.8s then SIGTERM exit 0
+04:31:27 round 14 az recovery {'lease_broken': False, 'unlocked': '01M6Z96CFHKB5R35FWRW8W96J0'}
+04:31:31 round 14 killed SIGKILL exit -9 ops 80 acked 965
+04:31:32 round 15 az recovery {'lease_broken': True, 'unlocked': '01M6Z96M6NX3FJQ43EKQXJWYF9'}
+04:31:37 round 15 killed SIGTERM exit 0 ops 83 acked 1013
+04:31:38 round 16 az recovery {'lease_broken': False, 'unlocked': '01M6Z96RD9JW5E1ABDRNTB0V0J'}
+04:31:42 deploy rc 0 took 2.08 d_at": 1794198702392575,                 "published": true               },               "contract": {                 "source_hash": "9c328ee067a57702fdf8c05d21069713d41d1c148559f230fbd5c399b82d2b87",                 "schema_ir_hash": "sha256:1acfc527077e4afba2f6fe3b000d33b47373cc246f5e86a5ff1fb92d030267c1",                 "schema_identity_domain": "01M6Z93YH9Q70CJCV0GBSMEZF5",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14717/; config=/tmp/c7az/operator-16.yaml Deployment-ID: 01M6Z93Y8RRV9VCWMYYGGH33MH:7:01M6Z9710HNADSMV9G8TWTZ6M4 
+04:31:46 round 16 deployment 01M6Z93Y8RRV9VCWMYYGGH33MH:7:01M6Z9710HNADSMV9G8TWTZ6M4 rc 0 2.1s then SIGTERM exit 0
+04:31:46 round 17 az recovery {'lease_broken': False, 'unlocked': '01M6Z96Y5BS3BFQKMH0E42H13T'}
+04:31:52 round 17 killed SIGKILL exit -9 ops 93 acked 1148
+04:31:52 round 18 az recovery {'lease_broken': True, 'unlocked': '01M6Z976MS6S2ZF87S3VJJYGC5'}
+04:31:59 round 18 killed SIGTERM exit 0 ops 98 acked 1186
+04:32:00 round 19 az recovery {'lease_broken': False, 'unlocked': '01M6Z97CGQBTJ0R1VWCS301NHK'}
+04:32:05 round 19 killed SIGTERM exit 0 ops 100 acked 1218
+04:32:05 round 20 az recovery {'lease_broken': False, 'unlocked': '01M6Z97KT515W0CRD4ZZH3Y537'}
+04:32:13 round 20 killed SIGKILL exit -9 ops 109 acked 1278
+04:32:14 round 21 az recovery {'lease_broken': True, 'unlocked': '01M6Z97S5573225BR781371HW5'}
+04:32:19 deploy rc 0 took 2.12 d_at": 1794198739205869,                 "published": true               },               "contract": {                 "source_hash": "14d99f61cb1b5b4ac90362197f4bcf05d738fede5f7973b695d95b521abbacd2",                 "schema_ir_hash": "sha256:2f79893bfc407243af7f0abbd45ebe4a863035a63c7ed17029e6d67b67ed3058",                 "schema_identity_domain": "01M6Z93YH9Q70CJCV0GBSMEZF5",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14722/; config=/tmp/c7az/operator-21.yaml Deployment-ID: 01M6Z93Y8RRV9VCWMYYGGH33MH:8:01M6Z984YSG7HCSR36ZCFNSN2G 
+04:32:21 round 21 deployment 01M6Z93Y8RRV9VCWMYYGGH33MH:8:01M6Z984YSG7HCSR36ZCFNSN2G rc 0 2.1s then SIGTERM exit 0
+04:32:22 round 22 az recovery {'lease_broken': False, 'unlocked': '01M6Z981CVFJ3BBMZDP65TKC3Z'}
+04:32:29 deploy rc 0 took 1.98 d_at": 1794198748755709,                 "published": true               },               "contract": {                 "source_hash": "5690a646e2e1f3933643e18b13c407e0462a8757885278dda9bf2c9b02456e78",                 "schema_ir_hash": "sha256:ecec343dbd7f2b225bba62b408d28bdef53c644c77f3963dab54970c9cc39a9a",                 "schema_identity_domain": "01M6Z93YH9Q70CJCV0GBSMEZF5",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14723/; config=/tmp/c7az/operator-22.yaml Deployment-ID: 01M6Z93Y8RRV9VCWMYYGGH33MH:9:01M6Z98ED6XGF53ABY4FZ4YYJD 
+04:32:31 round 22 deployment 01M6Z93Y8RRV9VCWMYYGGH33MH:9:01M6Z98ED6XGF53ABY4FZ4YYJD rc 0 2.0s then SIGTERM exit 0
+04:32:32 round 23 az recovery {'lease_broken': False, 'unlocked': '01M6Z989BHRARE2NMWVM27PZD3'}
+04:32:42 round 23 killed SIGTERM exit 0 ops 123 acked 1514
+04:32:42 round 24 az recovery {'lease_broken': False, 'unlocked': '01M6Z98KA96XDFJ95NAT17FM10'}
+04:32:48 deploy rc 0 took 1.94 d_at": 1794198768285481,                 "published": true               },               "contract": {                 "source_hash": "d832fb04635ab176d7de8edebeeb6893b4e75a7820d0d8524ef006d54c9aac8c",                 "schema_ir_hash": "sha256:208d130b49db53a98c546e41a0c7afba4d03f8acfdbb671df4a71d4854b8170c",                 "schema_identity_domain": "01M6Z93YH9Q70CJCV0GBSMEZF5",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14725/; config=/tmp/c7az/operator-24.yaml Deployment-ID: 01M6Z93Y8RRV9VCWMYYGGH33MH:10:01M6Z991K0WGXJCVFJWT9K0JNW 
+04:32:50 round 24 deployment 01M6Z93Y8RRV9VCWMYYGGH33MH:10:01M6Z991K0WGXJCVFJWT9K0JNW rc 0 1.9s then SIGTERM exit 0
+04:32:51 round 25 az recovery {'lease_broken': False, 'unlocked': '01M6Z98XHRXH7M9J5DHTNGPNKB'}
+04:32:59 deploy rc 0 took 2.42 d_at": 1794198778450486,                 "published": true               },               "contract": {                 "source_hash": "d908a73d36c00b606d1aaad712b4577aad8357770ce98d5074e6b25ff4d3d0f0",                 "schema_ir_hash": "sha256:dc135735b5f8979320a8b4b76a35f63a2fa47952a4b6a7c8e9861ebdb29620a2",                 "schema_identity_domain": "01M6Z93YH9Q70CJCV0GBSMEZF5",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14726/; config=/tmp/c7az/operator-25.yaml Deployment-ID: 01M6Z93Y8RRV9VCWMYYGGH33MH:11:01M6Z99B2RH5SWS8G0V2CQ06Z7 
+04:33:01 round 25 deployment 01M6Z93Y8RRV9VCWMYYGGH33MH:11:01M6Z99B2RH5SWS8G0V2CQ06Z7 rc 0 2.4s then SIGTERM exit 0
+04:33:01 round 26 az recovery {'lease_broken': False, 'unlocked': '01M6Z995Q5FZ04JEE9T2Y02806'}
+04:33:08 round 26 killed SIGKILL exit -9 ops 133 acked 1669
+04:33:08 round 27 az recovery {'lease_broken': True, 'unlocked': '01M6Z99G25BXNZ8748YABEG5XA'}
+04:33:15 round 27 killed SIGKILL exit -9 ops 137 acked 1690
+04:33:15 round 28 az recovery {'lease_broken': True, 'unlocked': '01M6Z99Q2V7F4GA0JVDA6E9ZR5'}
+04:33:22 round 28 killed SIGKILL exit -9 ops 139 acked 1708
+04:33:22 round 29 az recovery {'lease_broken': True, 'unlocked': '01M6Z99XGWNR19FJHMHD0G0V4C'}
+04:33:29 round 29 killed SIGKILL exit -9 ops 142 acked 1743
+04:33:30 round final az recovery {'lease_broken': True, 'unlocked': '01M6Z9A4K04BK5TD740DVJ0TYQ'}
+04:33:35 SUMMARY {"rounds": 30, "deployments": 10, "ops_seen": 142, "acked_rows": 1743, "final_states": {"unknown": 110, "succeeded": 23, "cancelled": 6, "interrupted": 3}, "terminal_reasons": {"succeeded:": 95, "cancelled:cancelled by operator": 25, "cancelled:the server is shutting down": 5, "succeeded:a cancellation arrived after the publica": 4, "interrupted:no live run held it at 2026-11-09T04:33:": 3, "cancelled:deployment 01M6Z93Y8RRV9VCWMYYGGH33MH:3:": 1, "cancelled:deployment 01M6Z93Y8RRV9VCWMYYGGH33MH:4:": 1, "interrupted:no live run held it at 2026-11-09T04:30:": 1, "failed:not_committed": 1, "cancelled:deployment 01M6Z93Y8RRV9VCWMYYGGH33MH:6:": 1, "interrupted:no live run held it at 2026-11-09T04:31:": 1, "interrupted:no live run held it at 2026-11-09T04:32:": 1}, "violations": []}

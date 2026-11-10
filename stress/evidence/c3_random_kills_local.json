@@ -1,0 +1,11 @@
+{
+ "rounds": 30,
+ "ops_seen": 655,
+ "acked_rows": 11347,
+ "final_states": {
+  "unknown": 623,
+  "succeeded": 31,
+  "failed": 1
+ },
+ "violations": []
+}

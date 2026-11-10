@@ -1,0 +1,169 @@
+{
+ "near_bound": {
+  "probes": [
+   [
+    550500,
+    202
+   ],
+   [
+    825250,
+    202
+   ],
+   [
+    962625,
+    202
+   ],
+   [
+    1031313,
+    202
+   ],
+   [
+    1065657,
+    413
+   ],
+   [
+    1048485,
+    202
+   ],
+   [
+    1057071,
+    413
+   ],
+   [
+    1052778,
+    413
+   ],
+   [
+    1050631,
+    413
+   ],
+   [
+    1049558,
+    413
+   ],
+   [
+    1049021,
+    413
+   ],
+   [
+    1048753,
+    413
+   ],
+   [
+    1048619,
+    413
+   ],
+   [
+    1048552,
+    413
+   ],
+   [
+    1048518,
+    413
+   ],
+   [
+    1048501,
+    202
+   ],
+   [
+    1048509,
+    202
+   ],
+   [
+    1048513,
+    202
+   ],
+   [
+    1048515,
+    413
+   ],
+   [
+    1048514,
+    202
+   ]
+  ],
+  "refusals": {
+   "413": "request body refused: length limit exceeded"
+  },
+  "largest_accepted_bytes": 1048514,
+  "lookup_of_largest": [
+   200,
+   "failed"
+  ],
+  "lookup_other": [
+   200,
+   "unknown"
+  ],
+  "fresh_submit": [
+   202,
+   "accepted"
+  ],
+  "record_state_of_largest": "failed",
+  "record_bytes": 4198555,
+  "after_restart_lookup": [
+   200,
+   "failed"
+  ]
+ },
+ "corrupt": {
+  "not_json": {
+   "lookup": [
+    409,
+    "[operation_record_invalid] could not parse the operation record: expected ident at line 1 column 2"
+   ],
+   "submit": [
+    409,
+    "[operation_record_invalid] could not parse the operation record: expected ident at line 1 column 2"
+   ],
+   "file_unchanged": true
+  },
+  "truncated": {
+   "lookup": [
+    409,
+    "[operation_record_invalid] could not parse the operation record: EOF while parsing an object at line 1 column 659"
+   ],
+   "submit": [
+    409,
+    "[operation_record_invalid] could not parse the operation record: EOF while parsing an object at line 1 column 659"
+   ],
+   "file_unchanged": true
+  },
+  "empty": {
+   "lookup": [
+    409,
+    "[operation_record_invalid] could not parse the operation record: EOF while parsing a value at line 1 column 0"
+   ],
+   "submit": [
+    409,
+    "[operation_record_invalid] could not parse the operation record: EOF while parsing a value at line 1 column 0"
+   ],
+   "file_unchanged": true
+  },
+  "wrong_version": {
+   "lookup": [
+    409,
+    "[operation_record_invalid] unsupported operation record version 2"
+   ],
+   "submit": [
+    409,
+    "[operation_record_invalid] unsupported operation record version 2"
+   ],
+   "file_unchanged": true
+  },
+  "restored_lookup": [
+   200,
+   "succeeded"
+  ]
+ },
+ "foreign": {
+  "lookup": [
+   409,
+   "[operation_record_foreign] the operation record names ledger 01M6Z0BSD7X4303N377RF2GZQT but this cluster's ledger is 01M6Z0BRW964JYXPM2T4VSZCKN; move the record aside"
+  ],
+  "submit": [
+   409,
+   "[operation_record_foreign] the operation record names ledger 01M6Z0BSD7X4303N377RF2GZQT but this cluster's ledger is 01M6Z0BRW964JYXPM2T4VSZCKN; move the record aside"
+  ],
+  "file_unchanged": true
+ }
+}

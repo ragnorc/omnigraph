@@ -1,0 +1,30 @@
+{
+ "slow_ms": 6000,
+ "write_before_lookup": false,
+ "owner_exit": 2,
+ "owner_stopped_after_s": 5.3,
+ "manifest_puts": [
+  "1794191631.767 None",
+  "1794191631.825 None",
+  "1794191631.884 None"
+ ],
+ "record_after_owner": [
+  "publishing",
+  "01M6Z2F9MR7ZMB065WWHPGEG9R"
+ ],
+ "successor_after_s": 6.5,
+ "successor_states": [
+  "publishing",
+  "succeeded"
+ ],
+ "final": [
+  "succeeded",
+  null,
+  "hb1.01M6Z2F99AJCZT8DKEMRFE9VKK.5.01M6Z2F9MR7ZMB065WWHPGEG9R"
+ ],
+ "commits_answering_nonce": [
+  "hb1.01M6Z2F99AJCZT8DKEMRFE9VKK.5.01M6Z2F9MR7ZMB065WWHPGEG9R"
+ ],
+ "violations": [],
+ "next_run": "succeeded"
+}

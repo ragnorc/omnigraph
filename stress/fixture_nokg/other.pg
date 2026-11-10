@@ -1,0 +1,4 @@
+node Item {
+    sku: String @key
+    note: String?
+}

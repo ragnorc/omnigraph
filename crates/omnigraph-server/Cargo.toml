@@ -75,3 +75,8 @@ reqwest = { workspace = true }
 
 [lints]
 workspace = true
+
+# Stress harness (stress/): a seam-armed served child for crash campaigns.
+[[test]]
+name = "stress_served_child"
+path = "../../stress/served_child.rs"

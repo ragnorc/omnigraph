@@ -1,0 +1,178 @@
+[
+ {
+  "run": 0,
+  "state": "succeeded",
+  "start_at": null,
+  "resume_at": null,
+  "listed": 1024,
+  "more_tables": {
+   "deferred": 6
+  },
+  "by_outcome": {
+   "optimized": 1,
+   "unchanged": 8,
+   "deferred:gate_hold_limit": 1015
+  },
+  "optimized": [
+   "node:T0000"
+  ],
+  "gate_hold_ms": 98,
+  "took_s": 1.1,
+  "op_bytes": 204880,
+  "kind_state": null
+ },
+ {
+  "run": 1,
+  "state": "succeeded",
+  "start_at": null,
+  "resume_at": null,
+  "listed": 1024,
+  "more_tables": {
+   "deferred": 6
+  },
+  "by_outcome": {
+   "unchanged": 60,
+   "optimized": 1,
+   "deferred:gate_hold_limit": 963
+  },
+  "optimized": [
+   "node:T0052"
+  ],
+  "gate_hold_ms": 145,
+  "took_s": 1.2,
+  "op_bytes": 200513,
+  "kind_state": null
+ },
+ {
+  "run": 2,
+  "state": "succeeded",
+  "start_at": null,
+  "resume_at": null,
+  "listed": 1024,
+  "more_tables": {
+   "deferred": 6
+  },
+  "by_outcome": {
+   "unchanged": 112,
+   "optimized": 1,
+   "deferred:gate_hold_limit": 911
+  },
+  "optimized": [
+   "node:T0104"
+  ],
+  "gate_hold_ms": 189,
+  "took_s": 1.3,
+  "op_bytes": 196146,
+  "kind_state": null
+ },
+ {
+  "run": 3,
+  "state": "succeeded",
+  "start_at": null,
+  "resume_at": null,
+  "listed": 1024,
+  "more_tables": {
+   "deferred": 6
+  },
+  "by_outcome": {
+   "unchanged": 164,
+   "optimized": 1,
+   "deferred:gate_hold_limit": 859
+  },
+  "optimized": [
+   "node:T0156"
+  ],
+  "gate_hold_ms": 223,
+  "took_s": 1.4,
+  "op_bytes": 191778,
+  "kind_state": null
+ },
+ {
+  "run": 4,
+  "state": "succeeded",
+  "start_at": null,
+  "resume_at": null,
+  "listed": 1024,
+  "more_tables": {
+   "deferred": 6
+  },
+  "by_outcome": {
+   "unchanged": 216,
+   "optimized": 1,
+   "deferred:gate_hold_limit": 807
+  },
+  "optimized": [
+   "node:T0208"
+  ],
+  "gate_hold_ms": 256,
+  "took_s": 1.5,
+  "op_bytes": 187410,
+  "kind_state": null
+ },
+ {
+  "run": 5,
+  "state": "succeeded",
+  "start_at": null,
+  "resume_at": null,
+  "listed": 1024,
+  "more_tables": {
+   "deferred": 6
+  },
+  "by_outcome": {
+   "unchanged": 268,
+   "optimized": 1,
+   "deferred:gate_hold_limit": 755
+  },
+  "optimized": [
+   "node:T0260"
+  ],
+  "gate_hold_ms": 301,
+  "took_s": 1.7,
+  "op_bytes": 183042,
+  "kind_state": null
+ },
+ {
+  "run": 6,
+  "state": "succeeded",
+  "start_at": null,
+  "resume_at": null,
+  "listed": 1024,
+  "more_tables": {
+   "deferred": 6
+  },
+  "by_outcome": {
+   "unchanged": 320,
+   "optimized": 1,
+   "deferred:gate_hold_limit": 703
+  },
+  "optimized": [
+   "node:T0312"
+  ],
+  "gate_hold_ms": 329,
+  "took_s": 1.8,
+  "op_bytes": 178673,
+  "kind_state": null
+ },
+ {
+  "run": 7,
+  "state": "succeeded",
+  "start_at": null,
+  "resume_at": null,
+  "listed": 1024,
+  "more_tables": {
+   "deferred": 6
+  },
+  "by_outcome": {
+   "unchanged": 372,
+   "optimized": 1,
+   "deferred:gate_hold_limit": 651
+  },
+  "optimized": [
+   "node:T0364"
+  ],
+  "gate_hold_ms": 375,
+  "took_s": 1.9,
+  "op_bytes": 174307,
+  "kind_state": null
+ }
+]

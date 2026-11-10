@@ -1,0 +1,5 @@
+run1 [('edge:Authored', 'unchanged', None), ('edge:Knows', 'deferred', 'gate_hold_limit'), ('edge:WorksAt', 'deferred', 'gate_hold_limit'), ('node:Company', 'deferred', 'gate_hold_limit'), ('node:Doc', 'deferred', 'gate_hold_limit'), ('node:Person', 'deferred', 'gate_hold_limit')] resume_at edge:Knows kind_state {'optimize': {'kg': {'resume_at': 'edge:Knows'}}}
+run2 reached the parked rewrite: True
+run2 start_at edge:Knows gate_hold_ms 1048
+run2 [('edge:Knows', 'unchanged', None), ('edge:WorksAt', 'unchanged', None), ('node:Company', 'optimized', None), ('node:Doc', 'unchanged', None), ('node:Person', 'optimized', None), ('edge:Authored', 'unchanged', None)] resume_at None kind_state None
+run3 start_at None

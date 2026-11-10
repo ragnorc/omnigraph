@@ -1,0 +1,84 @@
+    Finished `test` profile [unoptimized] target(s) in 2.44s
+────────────
+ Nextest run ID 5ee270bb-c01e-42d7-bbf1-d803b6bbc797 with nextest profile: default
+    Starting 78 tests across 2 binaries (749 tests and 50 binaries skipped)
+        PASS [   0.062s] ( 1/78) omnigraph-engine::failpoints s3_optimize_detached_pin_survives_next_write
+        PASS [   0.062s] ( 2/78) omnigraph-engine::failpoints azure_optimize_detached_pin_survives_next_write
+        PASS [   0.629s] ( 3/78) omnigraph-engine::failpoints optimize_reports_a_failed_configuration_clear_after_its_publication
+        PASS [   0.636s] ( 4/78) omnigraph-engine::failpoints optimize_cancelled_mid_run_publishes_nothing_and_the_next_run_does
+        PASS [   0.647s] ( 5/78) omnigraph-engine::failpoints optimize_serializes_concurrent_delete_across_handles
+        PASS [   0.656s] ( 6/78) omnigraph-engine::failpoints optimize_lost_publish_acknowledgement_leaves_published_detached_pins
+        PASS [   0.672s] ( 7/78) omnigraph-engine::failpoints optimize_refuses_when_graph_authority_moves_before_its_gates
+        PASS [   0.674s] ( 8/78) omnigraph-engine::failpoints optimize_holds_main_gate_through_disjoint_table_effects
+        PASS [   0.677s] ( 9/78) omnigraph-engine::failpoints optimize_publishes_no_pin_for_a_table_with_only_pending_index_work
+        PASS [   0.636s] (10/78) omnigraph-engine::integration maintenance::cleanup_keep_one_preserves_head_and_table_remains_readable
+        PASS [   0.706s] (11/78) omnigraph-engine::failpoints optimize_table_failure_fails_only_that_table_and_publishes_the_rest
+        PASS [   0.722s] (12/78) omnigraph-engine::failpoints optimize_captures_its_authority_under_the_gates_when_asked
+        PASS [   0.771s] (13/78) omnigraph-engine::failpoints optimize_pre_publish_failure_leaves_no_residue
+        PASS [   0.794s] (14/78) omnigraph-engine::integration maintenance::cleanup_fails_closed_when_live_lazy_branch_pin_is_unopenable
+        PASS [   0.810s] (15/78) omnigraph-engine::integration maintenance::cleanup_age_window_preserves_recent_ref_absent_descendant
+        PASS [   0.827s] (16/78) omnigraph-engine::integration maintenance::cleanup_keep_exceeding_history_preserves_every_available_version
+        PASS [   0.896s] (17/78) omnigraph-engine::integration maintenance::cleanup_age_window_preserves_recent_native_mutation_and_aged_parent
+        PASS [   0.964s] (18/78) omnigraph-engine::integration maintenance::cleanup_age_window_preserves_a_recent_snapshot_across_a_pointer_switch
+        PASS [   1.224s] (19/78) omnigraph-engine::integration maintenance::cleanup_without_any_policy_option_errors
+        PASS [   1.576s] (20/78) omnigraph-engine::integration maintenance::cleanup_older_than_zero_preserves_head
+        PASS [   1.534s] (21/78) omnigraph-engine::integration maintenance::cleanup_then_optimize_preserves_rows_and_table_remains_writable
+        PASS [   1.816s] (22/78) omnigraph-engine::integration maintenance::cleanup_reclaims_retirement_archive_after_the_age_window
+        PASS [   1.803s] (23/78) omnigraph-engine::integration maintenance::cleanup_reconciles_live_branch_orphan_fork_and_keeps_the_branch_write
+        PASS [   1.612s] (24/78) omnigraph-engine::integration maintenance::collector_cost_is_bounded_by_retained_versions_and_garbage_examined
+        PASS [   1.874s] (25/78) omnigraph-engine::integration maintenance::cleanup_preserves_main_version_pinned_by_live_lazy_branch
+        PASS [   1.837s] (26/78) omnigraph-engine::integration maintenance::cleanup_retains_the_commit_a_branch_starts_at
+        PASS [   1.814s] (27/78) omnigraph-engine::integration maintenance::cleanup_uses_oldest_pin_across_multiple_live_lazy_branches
+        PASS [   2.038s] (28/78) omnigraph-engine::integration maintenance::cleanup_reclaims_dead_incarnation_fork_of_live_branch
+        PASS [   2.088s] (29/78) omnigraph-engine::integration maintenance::cleanup_on_a_detached_only_graph_counts_manifest_versions_for_keep
+        PASS [   2.033s] (30/78) omnigraph-engine::integration maintenance::cleanup_reports_foreign_head_drift_and_keeps_it
+        PASS [   1.828s] (31/78) omnigraph-engine::integration maintenance::collector_finds_nothing_to_sweep_after_todays_cleanup
+        PASS [   0.509s] (32/78) omnigraph-engine::integration maintenance::collector_reclaims_blob_sidecars_after_the_last_retained_pin
+        PASS [   0.774s] (33/78) omnigraph-engine::integration maintenance::collector_keeps_a_pin_pruned_on_main_while_a_branch_retains_it
+        PASS [   0.731s] (34/78) omnigraph-engine::integration maintenance::collector_reclaims_aged_orphans_without_deleting_recent_blob_sidecars
+        PASS [   2.233s] (35/78) omnigraph-engine::integration maintenance::cleanup_reconciles_orphaned_branch_forks
+        PASS [   0.248s] (36/78) omnigraph-engine::integration maintenance::full_text_rebuild_reports_empty_builds_but_not_no_work
+        PASS [   0.214s] (37/78) omnigraph-engine::integration maintenance::index_build_tolerates_null_vector_rows
+        PASS [   0.349s] (38/78) omnigraph-engine::integration maintenance::optimize_after_load_then_again_is_idempotent
+        PASS [   0.625s] (39/78) omnigraph-engine::integration maintenance::full_text_rebuild_on_a_branch_stages_on_the_inherited_location_without_changing_main
+        PASS [   0.540s] (40/78) omnigraph-engine::integration maintenance::index_build_on_a_branch_builds_missing_and_lagging_indexes_issue_840
+        PASS [   0.801s] (41/78) omnigraph-engine::integration maintenance::collector_sweeps_the_unpinned_links_behind_a_merge_chain_tip
+        PASS [   0.326s] (42/78) omnigraph-engine::integration maintenance::optimize_compacts_blob_fragments_with_deleted_rows
+        PASS [   0.854s] (43/78) omnigraph-engine::integration maintenance::collector_retains_malformed_witnesses_after_retirement_history_is_gone
+        PASS [   0.852s] (44/78) omnigraph-engine::integration maintenance::collector_sweeps_the_pin_that_only_a_pruned_manifest_version_names
+        PASS [   0.758s] (45/78) omnigraph-engine::integration maintenance::full_text_rebuild_refuses_unsupported_physical_inventory_before_effects
+        PASS [   0.464s] (46/78) omnigraph-engine::integration maintenance::optimize_cancelled_before_it_starts_publishes_nothing
+        PASS [   0.531s] (47/78) omnigraph-engine::integration maintenance::optimize_calls_before_publish_once_with_the_nonce_its_commit_answers
+        PASS [   0.985s] (48/78) omnigraph-engine::integration maintenance::collector_repeat_run_discovers_what_an_earlier_pass_left
+        PASS [   0.810s] (49/78) omnigraph-engine::integration maintenance::full_text_rebuild_replaces_all_columns_and_segments_in_one_publication
+        PASS [   0.147s] (50/78) omnigraph-engine::integration maintenance::optimize_on_empty_graph_returns_stats_per_table_with_no_changes
+        PASS [   0.242s] (51/78) omnigraph-engine::integration maintenance::optimize_does_not_size_a_blob_batch_by_external_references
+        PASS [   0.419s] (52/78) omnigraph-engine::integration maintenance::optimize_compacts_blob_table_alongside_plain_table
+        PASS [   0.247s] (53/78) omnigraph-engine::integration maintenance::optimize_materializes_index_after_type_rename
+        PASS [   0.245s] (54/78) omnigraph-engine::integration maintenance::optimize_materializes_index_declared_but_unbuilt
+        PASS [   0.743s] (55/78) omnigraph-engine::integration maintenance::optimize_byte_budget_defers_the_tables_after_it_and_resumes_there
+        PASS [   0.667s] (56/78) omnigraph-engine::integration maintenance::optimize_clears_stale_auto_cleanup_and_preserves_versions
+        PASS [   0.511s] (57/78) omnigraph-engine::integration maintenance::optimize_compacts_large_blob_rows_in_bounded_batches
+        PASS [   3.078s] (58/78) omnigraph-engine::integration maintenance::cleanup_preserves_the_pin_a_lazy_child_reads_after_its_parent_retires
+        PASS [   0.514s] (59/78) omnigraph-engine::integration maintenance::optimize_finishes_a_cancellation_that_arrives_after_its_last_check
+        PASS [   0.583s] (60/78) omnigraph-engine::integration maintenance::optimize_compacts_the_pin_under_foreign_head_drift
+        PASS [   0.294s] (61/78) omnigraph-engine::integration maintenance::optimize_rewrite_keeps_index_coverage_so_index_rows_count_only_a_lagging_rebuild
+        PASS [   0.334s] (62/78) omnigraph-engine::integration maintenance::optimize_reindexes_fragments_appended_after_index_build
+        PASS [   0.587s] (63/78) omnigraph-engine::integration maintenance::optimize_defers_a_table_over_a_ceiling_and_writes_nothing_for_it
+        PASS [   0.327s] (64/78) omnigraph-engine::integration maintenance::optimize_stops_at_the_gate_hold_and_resumes_at_the_first_deferred_table
+        PASS [   0.373s] (65/78) omnigraph-engine::integration maintenance::optimize_sizes_a_blob_batch_by_the_sum_of_a_rows_blob_columns
+        PASS [   0.362s] (66/78) omnigraph-engine::integration maintenance::optimize_skips_an_artifact_over_its_size_limit
+        PASS [   4.178s] (67/78) omnigraph-engine::integration maintenance::optimize_sizes_each_compaction_task_from_its_own_fragments
+        PASS [   4.338s] (68/78) omnigraph-engine::integration maintenance::optimize_preserves_versions_under_stale_auto_cleanup_config_on_data_tables
+        PASS [   4.287s] (69/78) omnigraph-engine::integration maintenance::optimize_publishes_nothing_when_before_publish_fails
+        PASS [   4.099s] (70/78) omnigraph-engine::integration maintenance::optimize_table_list_runs_only_those_tables_and_refuses_bad_requests
+        PASS [   7.240s] (71/78) omnigraph-engine::integration maintenance::cleanup_plans_from_the_manifest_listing_issue_644
+        PASS [   4.014s] (72/78) omnigraph-engine::integration maintenance::repair_report_never_adopts_a_foreign_delete
+        PASS [   4.093s] (73/78) omnigraph-engine::integration maintenance::resolve_publication_judges_the_input_heads_child
+        PASS [   4.551s] (74/78) omnigraph-engine::integration maintenance::optimize_publishes_compaction_to_manifest_so_schema_apply_succeeds
+        PASS [   4.202s] (75/78) omnigraph-engine::integration maintenance::write_on_a_never_written_table_succeeds_over_foreign_drift_and_repair_reports_it
+        PASS [   4.243s] (76/78) omnigraph-engine::integration maintenance::repair_report_names_foreign_drift_without_adopting_it
+        PASS [   5.636s] (77/78) omnigraph-engine::integration maintenance::optimize_then_cleanup_erases_dropped_property_values
+        PASS [  19.412s] (78/78) omnigraph-engine::integration maintenance::optimize_preserves_manifest_registry_fragments
+────────────
+     Summary [  22.882s] 78 tests run: 78 passed, 749 skipped

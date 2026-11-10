@@ -1,0 +1,17 @@
+{
+ "artifact_before": false,
+ "scan_started": true,
+ "stop_s": 4.06,
+ "exit": 0,
+ "edge_opens_after_term": 0,
+ "artifact_renames_after_term": 0,
+ "artifact_after": false,
+ "record": [
+  "succeeded",
+  "a cancellation arrived after the publication started: the server is shutting down",
+  {
+   "outcome": "skipped",
+   "detail": "cancelled"
+  }
+ ]
+}

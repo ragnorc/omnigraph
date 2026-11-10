@@ -1,0 +1,83 @@
+warning: ignoring --test-threads because --no-capture is specified
+   Compiling omnigraph-engine v0.15.0 (/src/omnigraph/crates/omnigraph)
+    Finished `test` profile [unoptimized] target(s) in 5.91s
+────────────
+ Nextest run ID 52754a78-81bd-4c4f-9622-251de14f804a with nextest profile: default
+    Starting 1 test across 1 binary (1 test and 53 binaries skipped)
+       START [         ] (1/1) omnigraph-engine::engine_optimize_stress engine_optimize_beside_live_writers
+
+running 1 test
+        SLOW [> 60.000s] (───) omnigraph-engine::engine_optimize_stress engine_optimize_beside_live_writers
+test engine_optimize_beside_live_writers has been running for over 60 seconds
+=== phase A
+runs 702 ok 406 published 314; writes 642 (p50 0.254s p99 2.752s max 4.620s); persons 3628 docs 154 companies 45
+gate_hold max 0.278s; gate_hold - (max_gate_hold + longest table) max 0.086s
+worst excess run 250: hold Some(65ms) gate_hold 163.811827ms wall 294.420717ms commit true cancellation NotRequested tables ["node:Doc=Optimized@12ms", "node:Person=Deferred(ResourceLimit(ResourceExceeded { measure: SourceRows, measured: Some(1164), ceiling: 429 }))@12ms", "edge:Authored=Unchanged@10ms", "edge:Knows=Unchanged@0ms", "edge:WorksAt=Unchanged@0ms", "node:Company=Optimized@3ms"]
+run errors: {
+    "BeforeGates: write authority 'graph_head:main' changed during preparation (expected 01M6Z3H0N": 1,
+    "BeforeGates: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z": 295,
+}
+write errors: {
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3H0R7W603H": 9,
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3HTJKPCAP8": 15,
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3JTF3SHXMA": 15,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3H0R7W603H": 30,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3HTJKPCAP8": 27,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3JTF3SHXMA": 20,
+}
+slowest writes (latency, kind, bound from overlapping run, (run, gate_hold)):
+  (4.619879021s, "load_edge", Some(141.914559ms), Some((432, 92.394144ms)))
+  (4.485190492s, "load_edge", Some(133.627279ms), Some((492, 97.90792ms)))
+  (4.203730914s, "load_edge", Some(255.952224ms), Some((683, 104.078351ms)))
+  (3.39789016s, "load_edge", Some(107.085509ms), Some((336, 87.908809ms)))
+  (2.868735752s, "load_edge", Some(133.549308ms), Some((211, 108.005799ms)))
+  (2.831653504s, "load_edge", Some(308.042841ms), Some((373, 81.043183ms)))
+  (2.765566361s, "load_person", Some(62.941416ms), Some((625, 84.668744ms)))
+  (2.751895315s, "load_doc", Some(166.038913ms), Some((168, 90.387243ms)))
+
+        SLOW [>120.000s] (───) omnigraph-engine::engine_optimize_stress engine_optimize_beside_live_writers
+        SLOW [>180.000s] (───) omnigraph-engine::engine_optimize_stress engine_optimize_beside_live_writers
+=== phase B
+runs 1225 ok 758 published 628; writes 1879 (p50 0.070s p99 2.094s max 4.620s); persons 10301 docs 564 companies 158
+gate_hold max 0.278s; gate_hold - (max_gate_hold + longest table) max 0.086s
+worst excess run 250: hold Some(65ms) gate_hold 163.811827ms wall 294.420717ms commit true cancellation NotRequested tables ["node:Doc=Optimized@12ms", "node:Person=Deferred(ResourceLimit(ResourceExceeded { measure: SourceRows, measured: Some(1164), ceiling: 429 }))@12ms", "edge:Authored=Unchanged@10ms", "edge:Knows=Unchanged@0ms", "edge:WorksAt=Unchanged@0ms", "node:Company=Optimized@3ms"]
+run errors: {
+    "BeforeGates: write authority 'graph_head:main' changed during preparation (expected 01M6Z3H0N": 1,
+    "BeforeGates: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z": 466,
+}
+write errors: {
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3H0R7W603H": 9,
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3HTJKPCAP8": 15,
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3JTF3SHXMA": 16,
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3KW4P0ZC54": 16,
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3MECPBZWZ7": 12,
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3N12FHGZ64": 15,
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3NM5FR6H04": 15,
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3P7G9RXB4R": 9,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3H0R7W603H": 30,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3HTJKPCAP8": 27,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3JTF3SHXMA": 25,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3KW4P0ZC54": 15,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3MECPBZWZ7": 16,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3N12FHGZ64": 16,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3NM5FR6H04": 21,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M6Z3P7G9RXB4R": 14,
+}
+slowest writes (latency, kind, bound from overlapping run, (run, gate_hold)):
+  (4.619879021s, "load_edge", Some(141.914559ms), Some((432, 92.394144ms)))
+  (4.485190492s, "load_edge", Some(133.627279ms), Some((492, 97.90792ms)))
+  (4.203730914s, "load_edge", Some(255.952224ms), Some((683, 104.078351ms)))
+  (3.39789016s, "load_edge", Some(107.085509ms), Some((336, 87.908809ms)))
+  (2.868735752s, "load_edge", Some(133.549308ms), Some((211, 108.005799ms)))
+  (2.831653504s, "load_edge", Some(308.042841ms), Some((373, 81.043183ms)))
+  (2.765566361s, "load_person", Some(62.941416ms), Some((625, 84.668744ms)))
+  (2.751895315s, "load_doc", Some(166.038913ms), Some((168, 90.387243ms)))
+
+=== violations: 0
+test engine_optimize_beside_live_writers ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 190.01s
+
+        PASS [ 190.064s] (1/1) omnigraph-engine::engine_optimize_stress engine_optimize_beside_live_writers
+────────────
+     Summary [ 190.065s] 1 test run: 1 passed (1 slow), 1 skipped

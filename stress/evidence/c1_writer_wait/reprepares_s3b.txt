@@ -1,0 +1,5 @@
+S3 (RustFS), 90 s phases, 2 writers, RUST_LOG=omnigraph::loader=debug
+("prepared load authority changed before effects; repreparing")
+control:  529 writes, 498 re-prepares, max attempt 32, 347 at attempt>=10, 15 x 409
+optimize:  85 writes, 250 re-prepares, max attempt 19,  33 at attempt>=10, no 409
+control2: 230 writes, 217 re-prepares, max attempt 32, 154 at attempt>=10,  6 x 409

@@ -1,0 +1,60 @@
+[
+ {
+  "run": 0,
+  "state": "succeeded",
+  "start_at": null,
+  "resume_at": null,
+  "listed": 1024,
+  "more_tables": {
+   "unchanged": 6
+  },
+  "by_outcome": {
+   "optimized": 20,
+   "unchanged": 1004
+  },
+  "optimized": [
+   "node:T0000",
+   "node:T0052",
+   "node:T0104",
+   "node:T0156",
+   "node:T0208",
+   "node:T0260",
+   "node:T0312",
+   "node:T0364",
+   "node:T0416",
+   "node:T0468",
+   "node:T0520",
+   "node:T0572",
+   "node:T0624",
+   "node:T0676",
+   "node:T0728",
+   "node:T0780",
+   "node:T0832",
+   "node:T0884",
+   "node:T0936",
+   "node:T0988"
+  ],
+  "gate_hold_ms": 537,
+  "took_s": 1.0,
+  "op_bytes": 119843,
+  "kind_state": null
+ },
+ {
+  "run": 1,
+  "state": "succeeded",
+  "start_at": null,
+  "resume_at": null,
+  "listed": 1024,
+  "more_tables": {
+   "unchanged": 6
+  },
+  "by_outcome": {
+   "unchanged": 1024
+  },
+  "optimized": [],
+  "gate_hold_ms": 134,
+  "took_s": 1.1,
+  "op_bytes": 119551,
+  "kind_state": null
+ }
+]

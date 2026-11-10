@@ -1,0 +1,35 @@
+    Finished `test` profile [unoptimized] target(s) in 2.03s
+────────────
+ Nextest run ID f46d86ec-1476-42e9-b5f7-349acf9c0abe with nextest profile: default
+    Starting 29 tests across 1 binary (1 test and 51 binaries skipped)
+        PASS [   0.059s] ( 1/29) omnigraph-engine::detached_commit_matrix every_writer_window_is_a_matrix_point
+        PASS [   0.693s] ( 2/29) omnigraph-engine::detached_commit_matrix cleanup_retains_live_branch_staging_until_owner_recreation
+        PASS [   6.676s] ( 3/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_load_post_detached_1
+        PASS [   6.696s] ( 4/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_load_pre_publish
+        PASS [   6.735s] ( 5/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_multi_table_post_detached_1
+        PASS [   6.737s] ( 6/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_insert_pre_publish
+        PASS [   6.767s] ( 7/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_insert_post_detached_1
+        PASS [   6.887s] ( 8/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_multi_table_post_detached_2
+        PASS [   7.085s] ( 9/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_blob_put_post_detached_1
+        PASS [   7.107s] (10/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_blob_put_pre_publish
+        PASS [   7.376s] (11/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_ensure_indices_post_detached_1
+        PASS [   6.836s] (12/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_multi_table_pre_publish
+        PASS [   7.545s] (13/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_ensure_indices_pre_publish
+        PASS [   7.785s] (14/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_blob_clear_post_detached_1
+        PASS [   7.787s] (15/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_merge_pre_publish
+        PASS [   7.844s] (16/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_blob_clear_pre_publish
+        PASS [  10.458s] (17/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_fts_rebuild_pre_publish
+        PASS [  10.502s] (18/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_fts_rebuild_post_detached_1
+        PASS [   4.233s] (19/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_system_column_upgrade_post_detached_1
+        PASS [   4.287s] (20/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_system_column_upgrade_post_detached_2
+        PASS [   4.298s] (21/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_system_column_upgrade_pre_publish
+        PASS [   5.250s] (22/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_prepared_schema_apply_post_detached_1
+        PASS [   5.281s] (23/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_prepared_schema_apply_post_detached_2
+        PASS [   5.104s] (24/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_schema_apply_post_detached_1
+        PASS [   5.285s] (25/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_prepared_schema_apply_pre_publish
+        PASS [   4.982s] (26/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_schema_apply_post_detached_2
+        PASS [   5.006s] (27/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_schema_apply_pre_publish
+        PASS [   6.313s] (28/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_optimize_post_detached_1
+        PASS [   6.383s] (29/29) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_optimize_pre_publish
+────────────
+     Summary [  13.080s] 29 tests run: 29 passed, 1 skipped

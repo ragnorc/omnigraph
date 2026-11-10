@@ -1,0 +1,11 @@
+version: 1
+graphs:
+  other:
+    schema: ./other.pg
+policies:
+  access:
+    file: ./policy.yaml
+    applies_to: [other]
+  server-access:
+    file: ./server.policy.yaml
+    applies_to: [cluster]

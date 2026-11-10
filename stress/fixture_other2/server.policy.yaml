@@ -1,0 +1,12 @@
+version: 1
+groups:
+  operators: [operator]
+rules:
+  - id: manage
+    allow:
+      actors: { group: operators }
+      actions: [config_manage]
+  - id: list
+    allow:
+      actors: { group: operators }
+      actions: [graph_list]

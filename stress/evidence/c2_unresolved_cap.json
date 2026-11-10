@@ -1,0 +1,40 @@
+{
+ "unresolved": 4,
+ "fifth_kg": [
+  409,
+  "four publications are unresolved; a write on their settlement branches settles them"
+ ],
+ "fifth_other": [
+  409,
+  "four publications are unresolved; a write on their settlement branches settles them"
+ ],
+ "after_other_write": [
+  409,
+  "four publications are unresolved; a write on their settlement branches settles them"
+ ],
+ "states_after_other_write": [
+  "publishing",
+  "publishing",
+  "publishing",
+  "publishing"
+ ],
+ "states_after_kg_write": [
+  [
+   "failed",
+   "not_committed"
+  ],
+  [
+   "failed",
+   "not_committed"
+  ],
+  [
+   "failed",
+   "not_committed"
+  ],
+  [
+   "failed",
+   "not_committed"
+  ]
+ ],
+ "admission_after_settlement": 202
+}

@@ -1,0 +1,24 @@
+{
+ "slow_ms": 15000,
+ "owner_exit": 2,
+ "record_after_owner": "publishing",
+ "successor_states": [
+  "publishing",
+  "succeeded"
+ ],
+ "successor_view": [
+  "succeeded",
+  "hb1.01M6Z7JCEYS5K2ZW1AYATZC305.4.01M6Z7JCVSAEDJBNXAFFYSSVPQ"
+ ],
+ "record_puts_tail": [
+  "1794196988.250 None",
+  "1794196988.350 None",
+  "1794196991.590 None"
+ ],
+ "record_after_late_put": [
+  "succeeded",
+  "hb1.01M6Z7JCEYS5K2ZW1AYATZC305.4.01M6Z7JCVSAEDJBNXAFFYSSVPQ"
+ ],
+ "record_unchanged_by_late_put": true,
+ "commits_answering_nonce": 1
+}

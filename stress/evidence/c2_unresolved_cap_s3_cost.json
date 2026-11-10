@@ -1,0 +1,42 @@
+{
+ "unresolved": 4,
+ "lookup_ms_with_4_unresolved": 201,
+ "fifth_kg": [
+  409,
+  "four publications are unresolved; a write on their settlement branches settles them: 01M6Z7DASNAXWKCFJVDT20QBWF (graph kg, branch main; the graph head of main is still the input head); 01M6Z7DDB0YZZB5HEEFW99J9E4 (graph kg, branch main; the graph head of main is still the input head); 01M6Z7DFZ3RAN5NJ55PMMP7R93 (graph kg, branch main; the graph head of main is still the input head); 01M6Z7DJPFBMFA889DKM2JGEDB (graph kg, branch main; the graph head of main is still the input head)"
+ ],
+ "fifth_other": [
+  409,
+  "four publications are unresolved; a write on their settlement branches settles them: 01M6Z7DASNAXWKCFJVDT20QBWF (graph kg, branch main; the graph head of main is still the input head); 01M6Z7DDB0YZZB5HEEFW99J9E4 (graph kg, branch main; the graph head of main is still the input head); 01M6Z7DFZ3RAN5NJ55PMMP7R93 (graph kg, branch main; the graph head of main is still the input head); 01M6Z7DJPFBMFA889DKM2JGEDB (graph kg, branch main; the graph head of main is still the input head)"
+ ],
+ "after_other_write": [
+  409,
+  "four publications are unresolved; a write on their settlement branches settles them: 01M6Z7DASNAXWKCFJVDT20QBWF (graph kg, branch main; the graph head of main is still the input head); 01M6Z7DDB0YZZB5HEEFW99J9E4 (graph kg, branch main; the graph head of main is still the input head); 01M6Z7DFZ3RAN5NJ55PMMP7R93 (graph kg, branch main; the graph head of main is still the input head); 01M6Z7DJPFBMFA889DKM2JGEDB (graph kg, branch main; the graph head of main is still the input head)"
+ ],
+ "states_after_other_write": [
+  "publishing",
+  "publishing",
+  "publishing",
+  "publishing"
+ ],
+ "states_after_kg_write": [
+  [
+   "failed",
+   "not_committed"
+  ],
+  [
+   "failed",
+   "not_committed"
+  ],
+  [
+   "failed",
+   "not_committed"
+  ],
+  [
+   "failed",
+   "not_committed"
+  ]
+ ],
+ "admission_after_settlement": 202,
+ "lookup_ms_with_0_unresolved": 5
+}

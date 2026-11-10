@@ -1,0 +1,15 @@
+{
+ "delay_ms": 8000,
+ "write_started": true,
+ "stop_s": 7.5,
+ "exit": 0,
+ "artifact_exists": true,
+ "record": [
+  "succeeded",
+  "a cancellation arrived after the publication started: the server is shutting down",
+  {
+   "outcome": "refreshed"
+  }
+ ],
+ "lock_kept": false
+}

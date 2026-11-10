@@ -1,0 +1,198 @@
+   Compiling omnigraph-storage v0.15.0 (/src/omnigraph/crates/omnigraph-storage)
+   Compiling omnigraph-planner v0.15.0 (/src/omnigraph/crates/omnigraph-planner)
+   Compiling omnigraph-policy v0.15.0 (/src/omnigraph/crates/omnigraph-policy)
+   Compiling omnigraph-core v0.15.0 (/src/omnigraph/crates/omnigraph-core)
+   Compiling omnigraph-catalog v0.15.0 (/src/omnigraph/crates/omnigraph-catalog)
+   Compiling omnigraph-engine v0.15.0 (/src/omnigraph/crates/omnigraph)
+   Compiling omnigraph-dst v0.15.0 (/src/omnigraph/crates/omnigraph-dst)
+   Compiling omnigraph-cluster v0.15.0 (/src/omnigraph/crates/omnigraph-cluster)
+    Finished `test` profile [unoptimized] target(s) in 1m 59s
+     Running unittests src/lib.rs (/src/omnigraph/target/debug/deps/omnigraph_dst-2ab55d10ee729d31)
+
+running 55 tests
+test catalog::tests::catalog_names_are_engine_seams ... ok
+test catalog::tests::expected_dark_windows_are_catalog_windows ... ok
+test concurrent::tests::dropped_claim_reds_as_visible_but_unclaimed ... ok
+test concurrent::tests::dropped_commit_reds_as_lost_update ... ok
+test concurrent::tests::duplicated_commit_reds_as_double_apply ... ok
+test concurrent::tests::indeterminate_claim_may_be_present ... ok
+test concurrent::tests::indeterminate_claim_may_be_absent ... ok
+test concurrent::tests::healthy_reconstruction_is_green ... ok
+test concurrent::tests::prefix_healthy_is_green ... ok
+test concurrent::tests::prefix_indeterminate_only_key_may_be_absent ... ok
+test concurrent::tests::prefix_intermediate_survivor_is_red ... ok
+test concurrent::tests::prefix_lost_key_is_red ... ok
+test concurrent::tests::prefix_lost_update_is_red ... ok
+test concurrent::tests::prefix_phantom_value_is_red ... ok
+test concurrent::tests::reordered_writer_ops_red_as_program_order ... ok
+test concurrent::tests::seam_scheduler_draw_sequence_is_seed_deterministic ... ok
+test concurrent::tests::seam_scheduler_is_a_no_op_until_armed ... ok
+test concurrent::tests::wrong_final_state_reds_as_final_state ... ok
+test detectors::tests::census_counts_hold ... ok
+test detectors::tests::violation_renders_detector_field ... ok
+test detectors::tests::census_golden_matches_code ... ok
+test harness::corruption_verb_tests::bit_rot_always_changes_and_respects_char_boundaries ... ok
+test harness::corruption_verb_tests::mutations_are_deterministic ... ok
+test environment::tests::non_send_resources_survive_until_async_teardown ... ok
+test harness::corruption_verb_tests::misdirect_keeps_directory_and_extension ... ok
+test harness::corruption_verb_tests::put_row_admits_only_hook_actions ... ok
+test harness::corruption_verb_tests::truncate_is_a_strict_prefix ... ok
+test environment::tests::partial_setup_failure_drops_resources_without_running_scenario ... ok
+test harness::corruption_verb_tests::every_admitted_action_lands_through_its_hooks ... ok
+test harness::retry_tests::retry_effect_distinguishes_pending_original_from_new_attempt ... ok
+test harness::retry_tests::refused_retry_preserves_the_original_visible_insertion ... ok
+test harness::retry_tests::retry_reconciliation_preserves_visible_insertions ... ok
+test environment::tests::pending_local_tasks_drop_before_universe_returns ... ok
+test harness::retry_tests::retry_row_oracle_rejects_lost_success_and_excess_or_foreign_rows ... ok
+test environment::tests::scenario_and_teardown_failures_are_both_retained ... ok
+test memory::tests::cleanup_preserves_sibling_prefix ... ok
+test memory::tests::refuses_overlapping_authority_until_resources_drop ... ok
+test memory::tests::refuses_preexisting_namespace_without_deleting_it ... ok
+test environment::tests::setup_and_scenario_share_virtual_time_and_preserve_seed_derivation ... ok
+test memory::tests::repeated_descriptor_preserves_both_realms_until_teardown ... ok
+test store_places::tests::every_admitted_action_is_honored ... ok
+test store_places::tests::one_shot_is_consumed_by_the_next_put_only ... ok
+test store_places::tests::every_put_method_is_a_method_of_the_put_row ... ok
+test environment::tests::scenario_panic_preserves_payload_and_still_tears_down ... ok
+test store_places::tests::store_place_names_are_not_engine_seams ... ok
+test store_places::tests::one_shot_with_a_subject_passes_a_put_of_another_object ... ok
+test store_places::tests::rule_counts_only_matching_calls_of_its_place ... ok
+test store_places::tests::subject_escapes_the_same_on_every_host ... ok
+test store_places::tests::subject_star_stays_within_one_segment ... ok
+test memory::tests::mounted_root_reads_through_both_realms_and_stays_unwritten ... ok
+test store_places::tests::nested_braces_are_refused_without_a_panic ... ok
+test detectors::tests::banned_words_lint ... ok
+test harness::collector_oracle_tests::collector_oracle_rejects_dead_staging_leak_and_saved_base_loss ... ok
+test concurrent::tests::seam_scheduler_escape_is_counted_when_the_drawn_actor_never_arrives ... ok
+test harness::history_schema_tests::history_accepts_only_proven_schema_boundaries ... ok
+
+test result: ok. 55 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.41s
+
+     Running unittests src/bin/dst_child.rs (/src/omnigraph/target/debug/deps/dst_child-2526d3763c29050b)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/integration/main.rs (/src/omnigraph/target/debug/deps/integration-875177b83a414753)
+
+running 5 tests
+test lane_b::dst_lane_b_kill_during_recovery ... ignored, instrument: lane B real kill-during-recovery (spawns child processes)
+test lane_b::dst_lane_b_real_kill_smoke ... ignored, instrument: lane B blackbox real-kill smoke (spawns child processes)
+test lane_b::dst_lane_b_whitebox_kill ... ignored, instrument: lane B whitebox completion cuts (spawns child processes)
+test lane_b::dst_lane_b_judge_goes_red_under_seeded_blindness ... ok
+test torn_init::crash_after_manifest_create_leaves_openable_store ... ok
+
+test result: ok. 2 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 1.10s
+
+     Running tests/scenarios.rs (/src/omnigraph/target/debug/deps/scenarios-7a849a70c8a835de)
+
+running 86 tests
+test dst_bench_same_ruler_floor_probe ... ignored, 0044 analysis instrument — run by hand with --ignored
+test dst_branch_actor_first_contact ... ignored, instrument: arm-3 first contact — run explicitly
+test dst_classa_ablation_matrix ... ignored, triage instrument: read-corruption ingredient matrix — run explicitly
+test dst_concurrent_contention_hunt ... ignored, instrument: run explicitly for a concurrent hunt pass
+test dst_concurrent_fleet ... ignored, instrument: concurrent fleet arm — run explicitly (OMNIGRAPH_DST_SEEDS to scale)
+test dst_concurrent_same_seed_same_universe ... ignored, KNOWN NONDETERMINISM, root-caused: lance-core backoff.rs:65 draws unseeded rand::rng() jitter inside commit-retry and sleeps real tokio timers; global lance-cpu runtime (utils/tokio.rs:52) runs off the seeded thread. Diverges ~half of runs under cross-handle contention. Un-ignore after the Lance jitter seam (upstream PR) or a libc entropy shim.
+test dst_crash_one_writer_first_contact ... ignored, instrument: arm-2 first contact — run explicitly
+test dst_crash_state_enumeration_full ... ignored, instrument: full ALICE-style crash-state enumeration (W universes, minutes)
+test dst_entropy_shim_diagnostic ... ignored, entropy-shim diagnostic; run explicitly in fresh processes
+test dst_fleet ... ignored, instrument: fleet (N seeds x 7 universes, minutes to hours)
+test dst_hunt_crash_window_sweep ... ignored, hunt: targeted-scheduling catalog run; run explicitly with -- --ignored
+test dst_lance_bytes_canary ... ignored, instrument: violation-tier bytes canary — run explicitly
+test dst_availability_panel_survives_harsh_faults_issue_554 ... ok
+test dst_ack_loss_bite_and_replay ... ok
+test dst_lever1_crash_during_recovery ... ok
+test dst_bench_cost_count_golden ... ok
+test dst_birth_contract_sweep ... ok
+test dst_fault_storm_on_one_live_handle_keeps_writing ... ok
+test dst_maintenance_actor_first_contact ... ignored, instrument: arm-1 first contact — run explicitly
+test dst_lever4_hostile_inputs ... ok
+test dst_liveness_oracle_survives_cross_thread_work ... ok
+test dst_liveness_zero_op_universe_control ... ok
+test dst_concurrent_two_writers_first_contact ... ok
+test dst_maintenance_obligations_bite_and_replay ... ok
+test dst_crash_state_enumeration_sampled ... ok
+test dst_memory_graph_end_to_end ... ok
+test dst_optimize_races_branch_delete ... ignored, instrument: optimize-race repro — run explicitly, STANDALONE
+test dst_optimize_races_branch_delete_directed_hold ... ignored, instrument: optimize-race directed-hold repro — run explicitly
+test dst_optimize_races_branch_delete_minimal_two_thread_negative ... ignored, instrument: optimize-race minimal-load negative — run explicitly
+test dst_optimize_races_branch_delete_seed_search ... ignored, instrument: optimize-race scheduled seed search — run explicitly
+test dst_predict_born_on_both_person_probe ... ignored, instrument: law-8 deciding probe — run explicitly
+test dst_predict_triage ... ignored, instrument: law-8 predict_merge disagreement triage — run explicitly
+test dst_probe_print_report ... ignored, cross-process probe; driven by the external pair-runner
+test dst_merge_duplicates_born_on_both_edge ... ok
+test dst_reborn_branch_cache_poison_minimal_shape_probe ... ignored, instrument: reborn-branch cache-poison minimal-shape probe — run explicitly
+test dst_reborn_branch_cache_poison_reader_ablation ... ignored, instrument: reborn-branch cache-poison reader ablation — run explicitly
+test dst_milestone_never_remerges_merged_branch ... ok
+test dst_open_crash_is_effect_free ... ok
+test dst_publication_requests_get_a_definite_outcome_issue_1067 ... ok
+test dst_reborn_branch_cache_poison_standalone_repro ... ok
+test dst_branch_creation_reads_ignore_unrelated_retired_history ... ok
+test dst_branch_recreation_reads_ignore_same_name_retired_history ... ok
+test dst_schema_add_property_after_mutation_preserves_traversal ... ok
+test dst_schema_apply_racing_writers_hunt ... ignored, hunt: schema-apply-vs-writers interleaving search — run explicitly
+test dst_dead_staging_sweep_window_is_reached_and_retried has been running for over 60 seconds
+test dst_harness_crash_recovery_deterministic has been running for over 60 seconds
+test dst_harness_same_seed_identical_universes_including_ids has been running for over 60 seconds
+test dst_harness_swarm_five_seeds has been running for over 60 seconds
+test dst_keyed_born_on_both_edge_converges has been running for over 60 seconds
+test dst_lance_realm_ack_loss_bites_and_oracles_hold has been running for over 60 seconds
+test dst_lance_realm_faults_bite_and_oracles_hold has been running for over 60 seconds
+test dst_schema_apply_crash_windows_bite_and_replay ... ok
+test dst_lever2_branch_lifecycle ... ok
+test dst_merge_version_collision_diverged_edge_table ... ok
+test dst_reborn_branch_cache_poison_wide_face_regression ... ok
+test dst_dead_staging_sweep_window_is_reached_and_retried ... ok
+test dst_lance_realm_faults_bite_and_oracles_hold ... ok
+test dst_session_classifier_honesty ... ok
+test dst_lance_realm_ack_loss_bites_and_oracles_hold ... ok
+test dst_maintenance_commit_uses_execution_branch has been running for over 60 seconds
+test dst_maintenance_commit_uses_execution_branch ... ok
+test dst_seam_scheduler_bite_and_replay ... ok
+test dst_source_guard_no_runtime_env_mutation ... ok
+test dst_staleness_seed_search ... ignored, instrument: bounded-staleness seed search — run explicitly
+test dst_schema_apply_racing_writers_first_contact ... ok
+test dst_trace_diff_hunt ... ignored, trace-diff hunt for the residual concurrent leak; run explicitly
+test dst_unbounded_staleness_probe ... ignored, instrument: unbounded-staleness first contact — run explicitly
+test dst_successor_takes_over_a_dead_owners_lease_issue_1067 ... ok
+test dst_schema_ops_randomized_oracles_hold_and_replay ... ok
+test dst_setup_crash_needs_its_aftermath ... ok
+test dst_sensitivity_maintenance_rerun_failure_is_red ... ok
+test dst_seeded_violation_is_auto_bundled ... ok
+test dst_residue_channel_sees_planted_file has been running for over 60 seconds
+test dst_v14_wide_workload_replays ... ok
+test dst_warm_read_cost_paths ... ignored, instrument: warm-read call attribution by realm — run explicitly
+test dst_window_reach_probe ... ignored, instrument: one-universe-each milestone reach census over the crash-window catalog
+test dst_v11_conservation_transfers ... ok
+test dst_same_seed_same_end_state has been running for over 60 seconds
+test dst_same_seed_same_end_state ... ok
+test dst_write_census_report ... ignored, instrument: write census report (per-universe classification)
+test instrument_filtered_update_cost_over_per_commit_fragments ... ignored, instrument: prints a one-row update's storage calls over per-commit fragments, before and after optimize
+test dst_keyed_born_on_both_edge_converges ... ok
+test dst_v11_parallel_seed_fleet ... ok
+test dst_v17_time_travel_history_replays ... ok
+test dst_residue_channel_sees_planted_file ... ok
+test dst_write_census_gate ... ok
+test dst_schema_weather_persisted_lies_detected_or_harmless has been running for over 60 seconds
+test dst_seeded_runtime_reproducible_select has been running for over 60 seconds
+test dst_harness_crash_recovery_deterministic ... ok
+test dst_harness_same_seed_identical_universes_including_ids ... ok
+test dst_harness_swarm_five_seeds ... ok
+test dst_sessions_agree_and_replay ... ok
+test dst_schema_weather_persisted_lies_detected_or_harmless ... ok
+test dst_setup_crash_waits_for_a_crossed_window ... ok
+test dst_seeded_runtime_reproducible_select ... ok
+test dst_write_census_bottom_listing_sees_bypass_write ... ok
+test dst_v11_fault_injection_atomicity_and_replay ... ok
+test dst_v16_physical_oracle_pins_ghost_delta ... ok
+
+test result: ok. 56 passed; 0 failed; 30 ignored; 0 measured; 0 filtered out; finished in 154.36s
+
+   Doc-tests omnigraph_dst
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+cargo test --locked  296.61s user 234.95s system 192% cpu 4:35.53 total

@@ -1,0 +1,46 @@
+run 0 200 publishing
+run 1 200 publishing
+run 2 200 publishing
+run 3 200 publishing
+{
+ "unresolved": 4,
+ "lookup_ms_with_4_unresolved": 20,
+ "fifth_kg": [
+  409,
+  "four publications are unresolved; a write on their settlement branches settles them: 01M73J4KEEG90K0AM8V23Q888Y (graph kg, branch main; the graph head of main is still the input head); 01M73J4NY4AZ1WD9912CBG5RT7 (graph kg, branch main; the graph head of main is still the input head); 01M73J4RE15ARZ4P8R1Y20CFB4 (graph kg, branch main; the graph head of main is still the input head); 01M73J4TYF64YF56CXZENQ73HQ (graph kg, branch main; the graph head of main is still the input head)"
+ ],
+ "fifth_other": [
+  409,
+  "four publications are unresolved; a write on their settlement branches settles them: 01M73J4KEEG90K0AM8V23Q888Y (graph kg, branch main; the graph head of main is still the input head); 01M73J4NY4AZ1WD9912CBG5RT7 (graph kg, branch main; the graph head of main is still the input head); 01M73J4RE15ARZ4P8R1Y20CFB4 (graph kg, branch main; the graph head of main is still the input head); 01M73J4TYF64YF56CXZENQ73HQ (graph kg, branch main; the graph head of main is still the input head)"
+ ],
+ "after_other_write": [
+  409,
+  "four publications are unresolved; a write on their settlement branches settles them: 01M73J4KEEG90K0AM8V23Q888Y (graph kg, branch main; the graph head of main is still the input head); 01M73J4NY4AZ1WD9912CBG5RT7 (graph kg, branch main; the graph head of main is still the input head); 01M73J4RE15ARZ4P8R1Y20CFB4 (graph kg, branch main; the graph head of main is still the input head); 01M73J4TYF64YF56CXZENQ73HQ (graph kg, branch main; the graph head of main is still the input head)"
+ ],
+ "states_after_other_write": [
+  "publishing",
+  "publishing",
+  "publishing",
+  "publishing"
+ ],
+ "states_after_kg_write": [
+  [
+   "failed",
+   "not_committed"
+  ],
+  [
+   "failed",
+   "not_committed"
+  ],
+  [
+   "failed",
+   "not_committed"
+  ],
+  [
+   "failed",
+   "not_committed"
+  ]
+ ],
+ "admission_after_settlement": 202,
+ "lookup_ms_with_0_unresolved": 2
+}

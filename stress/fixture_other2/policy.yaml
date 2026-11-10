@@ -1,0 +1,29 @@
+version: 1
+groups:
+  operators: [operator]
+  writers: [writer]
+  readers: [reader]
+rules:
+  - id: operators
+    allow:
+      actors: { group: operators }
+      actions: [maintain, read, change]
+      branch_scope: any
+  - id: operators-graph
+    allow:
+      actors: { group: operators }
+      actions: [reclaim, schema_apply, export, branch_create, branch_delete, branch_merge]
+  - id: writers
+    allow:
+      actors: { group: writers }
+      actions: [read, change]
+      branch_scope: any
+  - id: writers-graph
+    allow:
+      actors: { group: writers }
+      actions: [branch_create, branch_delete, branch_merge]
+  - id: readers
+    allow:
+      actors: { group: readers }
+      actions: [read]
+      branch_scope: any

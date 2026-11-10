@@ -1,0 +1,7 @@
+test result: ok. 52 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.87s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 467 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 23.55s
+test result_evidence::regression_gate_skeleton_executes_with_the_current_parser ... ok
+test result_evidence::unexpected_branch_list_success_retains_actual_rows_and_schema ... ok
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.17s
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.80s

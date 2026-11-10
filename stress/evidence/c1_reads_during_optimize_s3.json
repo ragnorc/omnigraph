@@ -1,0 +1,57 @@
+{
+ "root": "s3",
+ "rows": 80000,
+ "state": "succeeded",
+ "gate_hold_ms": 635,
+ "run_s": 1.02,
+ "tables": [
+  [
+   "edge:Authored",
+   "unchanged",
+   2
+  ],
+  [
+   "edge:Knows",
+   "unchanged",
+   3
+  ],
+  [
+   "edge:WorksAt",
+   "unchanged",
+   3
+  ],
+  [
+   "node:Company",
+   "optimized",
+   79
+  ],
+  [
+   "node:Doc",
+   "unchanged",
+   79
+  ],
+  [
+   "node:Person",
+   "optimized",
+   563
+  ]
+ ],
+ "reads_inside": [
+  195,
+  0.004,
+  0.079,
+  0.083
+ ],
+ "reads_outside": [
+  991,
+  0.004,
+  0.082,
+  0.121
+ ],
+ "writes_inside": [
+  3,
+  0.074,
+  0.693
+ ],
+ "read_errors": 0
+}

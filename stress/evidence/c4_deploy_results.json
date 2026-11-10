@@ -1,0 +1,24 @@
+[
+ {
+  "scenario": "delete_publishing",
+  "state_before_delete": "publishing",
+  "in_progress": false,
+  "unresolved_before": [
+   "01M6YX33N96A9RK8ZN3FNJV2JE"
+  ],
+  "deploy_rc": 0,
+  "deploy_s": 0.7,
+  "record_after_delete": [
+   "unsettled",
+   "graph_deleted",
+   null
+  ],
+  "kind_state": null,
+  "unresolved_after": 0,
+  "ok": true,
+  "lookup_after_delete": [
+   404,
+   "not_found"
+  ]
+ }
+]

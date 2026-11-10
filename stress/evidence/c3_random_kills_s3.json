@@ -1,0 +1,13 @@
+{
+ "rounds": 20,
+ "ops_seen": 145,
+ "acked_rows": 1992,
+ "final_states": {
+  "unknown": 113,
+  "succeeded": 29,
+  "cancelled": 1,
+  "failed": 1,
+  "interrupted": 1
+ },
+ "violations": []
+}

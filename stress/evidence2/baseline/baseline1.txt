@@ -1,0 +1,149 @@
+        PASS [   0.061s] (  1/148) omnigraph-cli commands::maintenance::served::tests::a_server_error_that_took_no_effect_is_a_refusal_before_acceptance
+        PASS [   0.068s] (  2/148) omnigraph-cluster operations::tests::ids_used_by_these_tests_are_canonical
+        PASS [   0.068s] (  3/148) omnigraph-cluster operations::tests::a_table_list_run_never_moves_the_resume_position
+        PASS [   0.068s] (  4/148) omnigraph-cluster operations::tests::an_id_dated_ahead_of_the_server_clock_is_refused_and_never_sets_the_mark
+        PASS [   0.068s] (  5/148) omnigraph-cluster operations::tests::decoding_refuses_an_operation_in_the_wrong_section
+        PASS [   0.068s] (  6/148) omnigraph-cluster operations::tests::graph_deletion_settles_the_lifetimes_non_terminal_records
+        PASS [   0.070s] (  7/148) omnigraph-cli commands::maintenance::served::tests::the_request_carries_only_what_was_asked
+        PASS [   0.071s] (  8/148) omnigraph-cluster operations::tests::a_late_settlement_without_a_position_keeps_a_newer_runs_position
+        PASS [   0.072s] (  9/148) omnigraph-cluster operations::tests::a_fifth_unresolved_publication_refuses_admission
+        PASS [   0.072s] ( 10/148) omnigraph-cluster operations::tests::a_conditional_write_lands_once_and_refuses_a_stale_version
+        PASS [   0.077s] ( 11/148) omnigraph-cluster operations::tests::an_orphan_is_interrupted_unless_it_was_publishing
+        PASS [   0.080s] ( 12/148) omnigraph-cluster operations::tests::history_settles_an_unresolved_publication_once_and_a_walk_keeps_its_cursor
+        PASS [   0.081s] ( 13/148) omnigraph-cluster operations::tests::admission_holds_one_active_operation_per_scope_and_answers_a_repeat
+        PASS [   0.082s] ( 14/148) omnigraph-cli commands::maintenance::served::tests::a_refused_lookup_is_doubt_not_a_refusal_before_acceptance
+        PASS [   0.085s] ( 15/148) omnigraph-cli commands::maintenance::served::tests::refusals_map_to_their_exits
+        PASS [   0.040s] ( 16/148) omnigraph-cluster operations::tests::orphaning_one_lifetime_leaves_another_graphs_run_in_its_slot
+        PASS [   0.046s] ( 17/148) omnigraph-cluster operations::tests::terminal_records_are_bounded_newest_first_and_eviction_marks_the_time
+        PASS [   0.052s] ( 18/148) omnigraph-engine db::write_queue::tests::export_cut_and_destructive_controls_share_one_root_gate
+        PASS [   0.062s] ( 19/148) omnigraph-engine db::write_queue::tests::acquire_branches_dedupes_main_and_named_keys
+        PASS [   0.064s] ( 20/148) omnigraph-engine db::write_queue::tests::acquire_many_empty_returns_empty
+        PASS [   0.066s] ( 21/148) omnigraph-engine db::write_queue::tests::acquire_many_dedupes_repeated_keys
+        PASS [   0.067s] ( 22/148) omnigraph-cluster operations::tests::table_outcomes_are_listed_up_to_the_cap_and_details_are_cut
+        PASS [   0.055s] ( 23/148) omnigraph-engine db::write_queue::tests::opaque_root_registry_shares_manager_across_handles
+        PASS [   0.068s] ( 24/148) omnigraph-engine db::write_queue::tests::a_table_gate_crosses_acquire_hold_release_in_order
+        PASS [   0.053s] ( 25/148) omnigraph-engine db::write_queue::tests::real_and_symlinked_local_roots_share_manager_before_init
+        PASS [   0.073s] ( 26/148) omnigraph-engine db::write_queue::tests::disjoint_branches_on_same_table_do_not_serialize
+        PASS [   0.068s] ( 27/148) omnigraph-engine db::write_queue::tests::disjoint_keys_acquire_concurrently
+        PASS [   0.075s] ( 28/148) omnigraph-engine db::write_queue::tests::branch_schema_and_export_gates_cross_their_seams
+        PASS [   0.047s] ( 29/148) omnigraph-engine db::write_queue::tests::relative_and_absolute_local_roots_share_manager
+        PASS [   0.057s] ( 30/148) omnigraph-engine::detached_commit_matrix every_writer_window_is_a_matrix_point
+        PASS [   0.096s] ( 31/148) omnigraph-engine db::write_queue::tests::writer_yield_crosses_acquire_release_hold
+        PASS [   0.142s] ( 32/148) omnigraph-engine db::write_queue::tests::writer_yield_waits_for_the_writers_preparing_again_on_its_branch
+        PASS [   0.192s] ( 33/148) omnigraph-engine db::write_queue::tests::writer_yield_ends_at_its_limit_and_on_cancellation
+        PASS [   0.253s] ( 34/148) omnigraph-engine db::write_queue::tests::queued_schema_exclusive_blocks_later_shared
+        PASS [   0.270s] ( 35/148) omnigraph-engine db::write_queue::tests::acquire_many_sorts_keys_deterministically
+        PASS [   0.253s] ( 36/148) omnigraph-engine db::write_queue::tests::same_key_acquire_serializes
+        PASS [   0.244s] ( 37/148) omnigraph-engine db::write_queue::tests::schema_gate_shared_across_for_root_handles
+        PASS [   0.453s] ( 38/148) omnigraph-engine db::write_queue::tests::schema_exclusive_excludes_shared_both_directions
+        PASS [   0.700s] ( 39/148) omnigraph-engine::detached_commit_matrix cleanup_retains_live_branch_staging_until_owner_recreation
+        PASS [   1.833s] ( 40/148) omnigraph-cli::integration system_local::local_cli_optimize_runs_a_recorded_operation
+        PASS [   3.886s] ( 41/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_blob_put_post_detached_1
+        PASS [   3.797s] ( 42/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_insert_pre_publish
+        PASS [   3.797s] ( 43/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_load_post_detached_1
+        PASS [   3.994s] ( 44/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_blob_put_pre_publish
+        PASS [   3.852s] ( 45/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_insert_post_detached_1
+        PASS [   4.033s] ( 46/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_ensure_indices_post_detached_1
+        PASS [   3.821s] ( 47/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_load_pre_publish
+        PASS [   4.074s] ( 48/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_ensure_indices_pre_publish
+        PASS [   3.873s] ( 49/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_multi_table_post_detached_1
+        PASS [   4.376s] ( 50/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_blob_clear_pre_publish
+        PASS [   4.417s] ( 51/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_blob_clear_post_detached_1
+        PASS [   4.397s] ( 52/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_merge_pre_publish
+        PASS [   0.049s] ( 53/148) omnigraph-engine::failpoints azure_optimize_detached_pin_survives_next_write
+        PASS [   4.165s] ( 54/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_multi_table_post_detached_2
+        PASS [   0.581s] ( 55/148) omnigraph-engine::failpoints optimize_cancelled_during_the_artifact_scan_writes_no_artifact
+        PASS [   0.716s] ( 56/148) omnigraph-engine::failpoints optimize_cancelled_mid_run_publishes_nothing_and_the_next_run_does
+        PASS [   3.960s] ( 57/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_multi_table_pre_publish
+        PASS [   0.779s] ( 58/148) omnigraph-engine::failpoints optimize_captures_its_authority_under_the_gates_when_asked
+        PASS [   6.120s] ( 59/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_fts_rebuild_post_detached_1
+        PASS [   0.666s] ( 60/148) omnigraph-engine::failpoints optimize_holds_main_gate_through_disjoint_table_effects
+        PASS [   6.117s] ( 61/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_fts_rebuild_pre_publish
+        PASS [   0.618s] ( 62/148) omnigraph-engine::failpoints optimize_lost_publish_acknowledgement_leaves_published_detached_pins
+        PASS [   0.534s] ( 63/148) omnigraph-engine::failpoints optimize_publishes_no_pin_for_a_table_with_only_pending_index_work
+        PASS [   0.559s] ( 64/148) omnigraph-engine::failpoints optimize_refuses_when_graph_authority_moves_before_its_gates
+        PASS [   0.585s] ( 65/148) omnigraph-engine::failpoints optimize_reports_a_failed_configuration_clear_after_its_publication
+        PASS [   0.653s] ( 66/148) omnigraph-engine::failpoints optimize_pre_publish_failure_leaves_no_residue
+        PASS [   0.043s] ( 67/148) omnigraph-engine::failpoints s3_optimize_detached_pin_survives_next_write
+        PASS [   2.605s] ( 68/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_system_column_upgrade_post_detached_1
+        PASS [   2.724s] ( 69/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_system_column_upgrade_post_detached_2
+        PASS [   2.735s] ( 70/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_system_column_upgrade_pre_publish
+        PASS [   0.560s] ( 71/148) omnigraph-engine::failpoints optimize_serializes_concurrent_delete_across_handles
+        PASS [   3.364s] ( 72/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_schema_apply_post_detached_1
+        PASS [   0.657s] ( 73/148) omnigraph-engine::failpoints optimize_table_failure_fails_only_that_table_and_publishes_the_rest
+        PASS [   3.475s] ( 74/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_prepared_schema_apply_post_detached_1
+        PASS [   3.428s] ( 75/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_schema_apply_post_detached_2
+        PASS [   3.519s] ( 76/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_prepared_schema_apply_post_detached_2
+        PASS [   3.411s] ( 77/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_schema_apply_pre_publish
+        PASS [   3.535s] ( 78/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_prepared_schema_apply_pre_publish
+        PASS [   0.945s] ( 79/148) omnigraph-engine::failpoints optimize_waits_for_a_writer_preparing_again_after_a_publication
+        PASS [   0.700s] ( 80/148) omnigraph-engine::integration maintenance::cleanup_age_window_preserves_recent_ref_absent_descendant
+        PASS [   0.890s] ( 81/148) omnigraph-engine::integration maintenance::cleanup_age_window_preserves_recent_native_mutation_and_aged_parent
+        PASS [   0.747s] ( 82/148) omnigraph-engine::integration maintenance::cleanup_fails_closed_when_live_lazy_branch_pin_is_unopenable
+        PASS [   1.105s] ( 83/148) omnigraph-engine::integration maintenance::cleanup_age_window_preserves_a_recent_snapshot_across_a_pointer_switch
+        PASS [   0.580s] ( 84/148) omnigraph-engine::integration maintenance::cleanup_older_than_zero_preserves_head
+        PASS [   0.692s] ( 85/148) omnigraph-engine::integration maintenance::cleanup_keep_one_preserves_head_and_table_remains_readable
+        PASS [   0.913s] ( 86/148) omnigraph-engine::integration maintenance::cleanup_keep_exceeding_history_preserves_every_available_version
+        PASS [   1.003s] ( 87/148) omnigraph-engine::integration maintenance::cleanup_preserves_main_version_pinned_by_live_lazy_branch
+        PASS [   4.682s] ( 88/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_optimize_post_detached_1
+        PASS [   1.147s] ( 89/148) omnigraph-engine::integration maintenance::cleanup_on_a_detached_only_graph_counts_manifest_versions_for_keep
+        PASS [   0.389s] ( 90/148) omnigraph-engine::integration maintenance::cleanup_without_any_policy_option_errors
+        PASS [   0.840s] ( 91/148) omnigraph-engine::integration maintenance::cleanup_reconciles_live_branch_orphan_fork_and_keeps_the_branch_write
+        PASS [   0.846s] ( 92/148) omnigraph-engine::integration maintenance::cleanup_reclaims_retirement_archive_after_the_age_window
+        PASS [   2.617s] ( 93/148) omnigraph-engine::failpoints optimize_plans_the_whole_catalog_when_no_op_turns_drain_beside_a_rewrite
+        PASS [   0.653s] ( 94/148) omnigraph-engine::integration maintenance::cleanup_then_optimize_preserves_rows_and_table_remains_writable
+        PASS [   1.153s] ( 95/148) omnigraph-engine::integration maintenance::cleanup_reclaims_dead_incarnation_fork_of_live_branch
+        PASS [   4.777s] ( 96/148) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_optimize_pre_publish
+        PASS [   0.929s] ( 97/148) omnigraph-engine::integration maintenance::cleanup_retains_the_commit_a_branch_starts_at
+        PASS [   1.059s] ( 98/148) omnigraph-engine::integration maintenance::cleanup_reports_foreign_head_drift_and_keeps_it
+        PASS [   0.951s] ( 99/148) omnigraph-engine::integration maintenance::cleanup_uses_oldest_pin_across_multiple_live_lazy_branches
+        PASS [   0.510s] (100/148) omnigraph-engine::integration maintenance::collector_reclaims_blob_sidecars_after_the_last_retained_pin
+        PASS [   1.345s] (101/148) omnigraph-engine::integration maintenance::cleanup_reconciles_orphaned_branch_forks
+        PASS [   0.731s] (102/148) omnigraph-engine::integration maintenance::collector_cost_is_bounded_by_retained_versions_and_garbage_examined
+        PASS [   0.253s] (103/148) omnigraph-engine::integration maintenance::full_text_rebuild_reports_empty_builds_but_not_no_work
+        PASS [   0.744s] (104/148) omnigraph-engine::integration maintenance::collector_reclaims_aged_orphans_without_deleting_recent_blob_sidecars
+        PASS [   0.226s] (105/148) omnigraph-engine::integration maintenance::index_build_tolerates_null_vector_rows
+        PASS [   0.677s] (106/148) omnigraph-engine::integration maintenance::full_text_rebuild_on_a_branch_stages_on_the_inherited_location_without_changing_main
+        PASS [   0.832s] (107/148) omnigraph-engine::integration maintenance::collector_keeps_a_pin_pruned_on_main_while_a_branch_retains_it
+        PASS [   0.871s] (108/148) omnigraph-engine::integration maintenance::collector_sweeps_the_unpinned_links_behind_a_merge_chain_tip
+        PASS [   0.942s] (109/148) omnigraph-engine::integration maintenance::collector_retains_malformed_witnesses_after_retirement_history_is_gone
+        PASS [   0.947s] (110/148) omnigraph-engine::integration maintenance::collector_sweeps_the_pin_that_only_a_pruned_manifest_version_names
+        PASS [   0.429s] (111/148) omnigraph-engine::integration maintenance::optimize_after_load_then_again_is_idempotent
+        PASS [   1.039s] (112/148) omnigraph-engine::integration maintenance::collector_repeat_run_discovers_what_an_earlier_pass_left
+        PASS [   2.155s] (113/148) omnigraph-engine::integration maintenance::cleanup_preserves_the_pin_a_lazy_child_reads_after_its_parent_retires
+        PASS [   1.120s] (114/148) omnigraph-engine::integration maintenance::collector_finds_nothing_to_sweep_after_todays_cleanup
+        PASS [   0.810s] (115/148) omnigraph-engine::integration maintenance::full_text_rebuild_refuses_unsupported_physical_inventory_before_effects
+        PASS [   0.617s] (116/148) omnigraph-engine::integration maintenance::index_build_on_a_branch_builds_missing_and_lagging_indexes_issue_840
+        PASS [   0.344s] (117/148) omnigraph-engine::integration maintenance::optimize_compacts_blob_fragments_with_deleted_rows
+        PASS [   0.867s] (118/148) omnigraph-engine::integration maintenance::full_text_rebuild_replaces_all_columns_and_segments_in_one_publication
+        PASS [   0.151s] (119/148) omnigraph-engine::integration maintenance::optimize_on_empty_graph_returns_stats_per_table_with_no_changes
+        PASS [   0.549s] (120/148) omnigraph-engine::integration maintenance::optimize_cancelled_before_it_starts_publishes_nothing
+        PASS [   0.243s] (121/148) omnigraph-engine::integration maintenance::optimize_materializes_index_after_type_rename
+        PASS [   0.582s] (122/148) omnigraph-engine::integration maintenance::optimize_calls_before_publish_once_with_the_nonce_its_commit_answers
+        PASS [   0.287s] (123/148) omnigraph-engine::integration maintenance::optimize_does_not_size_a_blob_batch_by_external_references
+        PASS [   0.242s] (124/148) omnigraph-engine::integration maintenance::optimize_materializes_index_declared_but_unbuilt
+        PASS [   0.418s] (125/148) omnigraph-engine::integration maintenance::optimize_compacts_blob_table_alongside_plain_table
+        PASS [   0.828s] (126/148) omnigraph-engine::integration maintenance::optimize_byte_budget_defers_the_tables_after_it_and_resumes_there
+        PASS [   0.526s] (127/148) omnigraph-engine::integration maintenance::optimize_compacts_large_blob_rows_in_bounded_batches
+        PASS [   0.703s] (128/148) omnigraph-engine::integration maintenance::optimize_clears_stale_auto_cleanup_and_preserves_versions
+        PASS [   0.535s] (129/148) omnigraph-engine::integration maintenance::optimize_finishes_a_cancellation_that_arrives_after_its_last_check
+        PASS [   0.341s] (130/148) omnigraph-engine::integration maintenance::optimize_rewrite_keeps_index_coverage_so_index_rows_count_only_a_lagging_rebuild
+        PASS [   0.656s] (131/148) omnigraph-engine::integration maintenance::optimize_compacts_the_pin_under_foreign_head_drift
+        PASS [   0.373s] (132/148) omnigraph-engine::integration maintenance::optimize_reindexes_fragments_appended_after_index_build
+        PASS [   0.644s] (133/148) omnigraph-engine::integration maintenance::optimize_defers_a_table_over_a_ceiling_and_writes_nothing_for_it
+        PASS [   2.885s] (134/148) omnigraph-engine::integration maintenance::cleanup_plans_from_the_manifest_listing_issue_644
+        PASS [   0.410s] (135/148) omnigraph-engine::integration maintenance::optimize_sizes_a_blob_batch_by_the_sum_of_a_rows_blob_columns
+        PASS [   0.390s] (136/148) omnigraph-engine::integration maintenance::optimize_skips_an_artifact_over_its_size_limit
+        PASS [   0.616s] (137/148) omnigraph-engine::integration maintenance::optimize_preserves_versions_under_stale_auto_cleanup_config_on_data_tables
+        PASS [   0.447s] (138/148) omnigraph-engine::integration maintenance::optimize_sizes_each_compaction_task_from_its_own_fragments
+        PASS [   0.353s] (139/148) omnigraph-engine::integration maintenance::optimize_stops_at_the_gate_hold_and_resumes_at_the_first_deferred_table
+        PASS [   0.354s] (140/148) omnigraph-engine::integration maintenance::optimize_table_list_runs_only_those_tables_and_refuses_bad_requests
+        PASS [   0.562s] (141/148) omnigraph-engine::integration maintenance::optimize_publishes_nothing_when_before_publish_fails
+        PASS [   0.573s] (142/148) omnigraph-engine::integration maintenance::optimize_publishes_compaction_to_manifest_so_schema_apply_succeeds
+        PASS [   0.202s] (143/148) omnigraph-engine::integration maintenance::write_on_a_never_written_table_succeeds_over_foreign_drift_and_repair_reports_it
+        PASS [   0.243s] (144/148) omnigraph-engine::integration maintenance::repair_report_never_adopts_a_foreign_delete
+        PASS [   0.389s] (145/148) omnigraph-engine::integration maintenance::repair_report_names_foreign_drift_without_adopting_it
+        PASS [   0.348s] (146/148) omnigraph-engine::integration maintenance::resolve_publication_judges_the_input_heads_child
+        PASS [   1.963s] (147/148) omnigraph-engine::integration maintenance::optimize_then_cleanup_erases_dropped_property_values
+        PASS [   7.291s] (148/148) omnigraph-engine::integration maintenance::optimize_preserves_manifest_registry_fragments
+     Summary [  17.249s] 148 tests run: 148 passed, 3214 skipped

@@ -1,0 +1,6 @@
+1,030-table catalog, local root, DEBUG builds (cargo dev profile, unoptimized):
+record with 1 op: lookup p50 27 ms
+record full (3,494,919 bytes, 32 terminal ops, eviction mark set): lookup p50 602 ms, acceptance 922 ms
+no-op runs: gate_hold ~160-280 ms throughout; compute_ms grew 349 -> 926 ms as the record filled
+publishing run (3 tables x 3 fragments): gate_hold 1,089 ms with the full record vs 390 ms with an empty record
+(the before-publish record write happens under the writer gates)

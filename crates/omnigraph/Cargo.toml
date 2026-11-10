@@ -98,3 +98,8 @@ libc = "0.2"
 
 [lints]
 workspace = true
+
+# Stress harness (stress/): campaign 1, engine optimize beside live writers.
+[[test]]
+name = "engine_optimize_stress"
+path = "../../stress/engine_optimize_stress.rs"

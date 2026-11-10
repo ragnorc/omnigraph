@@ -1,0 +1,390 @@
+[
+ {
+  "scenario": "final_refused",
+  "nth_write": 4,
+  "mode": "fail",
+  "submit": 202,
+  "lookups_during_fault": [
+   [
+    200,
+    "succeeded",
+    null
+   ],
+   [
+    200,
+    "succeeded",
+    null
+   ]
+  ],
+  "lookup_statuses_during_fault": [
+   200
+  ],
+  "lookup_after": [
+   200,
+   "succeeded"
+  ],
+  "fresh_submit_after": [
+   202,
+   null
+  ],
+  "fresh_terminal": "succeeded",
+  "record_state": "succeeded",
+  "record_reason": null,
+  "record_published": "hb1.01M73HD930M5T0QEENNY786SYR.12.01M73HD9RDVNWRA65YXZYHSR9M",
+  "operator_commits_on_main": 2,
+  "sigterm_exit": 0,
+  "restart_needed_unlock": false,
+  "lookup_after_restart": [
+   200,
+   "succeeded"
+  ],
+  "submit_after_restart": 202
+ },
+ {
+  "scenario": "running_refused",
+  "nth_write": 2,
+  "mode": "fail",
+  "submit": 202,
+  "lookups_during_fault": [
+   [
+    200,
+    "interrupted",
+    null
+   ],
+   [
+    200,
+    "interrupted",
+    null
+   ]
+  ],
+  "lookup_statuses_during_fault": [
+   200
+  ],
+  "lookup_after": [
+   200,
+   "interrupted"
+  ],
+  "fresh_submit_after": [
+   202,
+   null
+  ],
+  "fresh_terminal": "succeeded",
+  "record_state": "interrupted",
+  "record_reason": "no live run held it at 2026-11-10T20:12:02.149534262Z",
+  "record_published": null,
+  "operator_commits_on_main": 2,
+  "sigterm_exit": 0,
+  "restart_needed_unlock": false,
+  "lookup_after_restart": [
+   200,
+   "interrupted"
+  ],
+  "submit_after_restart": 202
+ },
+ {
+  "scenario": "publishing_refused",
+  "nth_write": 3,
+  "mode": "fail",
+  "submit": 202,
+  "lookups_during_fault": [
+   [
+    200,
+    "interrupted",
+    null
+   ],
+   [
+    200,
+    "interrupted",
+    null
+   ]
+  ],
+  "lookup_statuses_during_fault": [
+   200
+  ],
+  "lookup_after": [
+   200,
+   "interrupted"
+  ],
+  "fresh_submit_after": [
+   202,
+   null
+  ],
+  "fresh_terminal": "succeeded",
+  "record_state": "interrupted",
+  "record_reason": "no live run held it at 2026-11-10T20:12:07.983054149Z",
+  "record_published": null,
+  "operator_commits_on_main": 2,
+  "sigterm_exit": 0,
+  "restart_needed_unlock": false,
+  "lookup_after_restart": [
+   200,
+   "interrupted"
+  ],
+  "submit_after_restart": 202
+ },
+ {
+  "scenario": "noop_final_refused",
+  "nth_write": 3,
+  "mode": "fail",
+  "submit": 202,
+  "lookups_during_fault": [
+   [
+    200,
+    "succeeded",
+    null
+   ],
+   [
+    200,
+    "succeeded",
+    null
+   ]
+  ],
+  "lookup_statuses_during_fault": [
+   200
+  ],
+  "lookup_after": [
+   200,
+   "succeeded"
+  ],
+  "fresh_submit_after": [
+   202,
+   null
+  ],
+  "fresh_terminal": "succeeded",
+  "record_state": "succeeded",
+  "record_reason": null,
+  "record_published": null,
+  "operator_commits_on_main": 1,
+  "sigterm_exit": 0,
+  "restart_needed_unlock": false,
+  "lookup_after_restart": [
+   200,
+   "succeeded"
+  ],
+  "submit_after_restart": 202
+ },
+ {
+  "scenario": "accept_refused",
+  "nth_write": 1,
+  "mode": "fail",
+  "submit": 503,
+  "lookups_during_fault": [
+   [
+    200,
+    null,
+    null
+   ],
+   [
+    200,
+    null,
+    null
+   ]
+  ],
+  "lookup_statuses_during_fault": [
+   200
+  ],
+  "lookup_after": [
+   200,
+   {
+    "lookup": "unknown",
+    "operation": null,
+    "in_progress": false
+   }
+  ],
+  "fresh_submit_after": [
+   202,
+   null
+  ],
+  "fresh_terminal": "succeeded",
+  "record_state": null,
+  "record_reason": null,
+  "record_published": null,
+  "operator_commits_on_main": 2,
+  "sigterm_exit": 0,
+  "restart_needed_unlock": false,
+  "lookup_after_restart": [
+   200,
+   {
+    "lookup": "unknown",
+    "operation": null,
+    "in_progress": false
+   }
+  ],
+  "submit_after_restart": 202
+ },
+ {
+  "scenario": "final_lost_answer",
+  "nth_write": 4,
+  "mode": "fail_after",
+  "submit": 202,
+  "lookups_during_fault": [
+   [
+    200,
+    "succeeded",
+    null
+   ],
+   [
+    200,
+    "succeeded",
+    null
+   ]
+  ],
+  "lookup_statuses_during_fault": [
+   200
+  ],
+  "lookup_after": [
+   200,
+   "succeeded"
+  ],
+  "fresh_submit_after": [
+   202,
+   null
+  ],
+  "fresh_terminal": "succeeded",
+  "record_state": "succeeded",
+  "record_reason": null,
+  "record_published": "hb1.01M73HE4T1A2ZATBZ246JQ7BG0.12.01M73HE5DG1ZKQ3CXEJ6P87YRN",
+  "operator_commits_on_main": 2,
+  "sigterm_exit": 0,
+  "restart_needed_unlock": false,
+  "lookup_after_restart": [
+   200,
+   "succeeded"
+  ],
+  "submit_after_restart": 202
+ },
+ {
+  "scenario": "publishing_lost_answer",
+  "nth_write": 3,
+  "mode": "fail_after",
+  "submit": 202,
+  "lookups_during_fault": [
+   [
+    200,
+    "succeeded",
+    null
+   ],
+   [
+    200,
+    "succeeded",
+    null
+   ]
+  ],
+  "lookup_statuses_during_fault": [
+   200
+  ],
+  "lookup_after": [
+   200,
+   "succeeded"
+  ],
+  "fresh_submit_after": [
+   202,
+   null
+  ],
+  "fresh_terminal": "succeeded",
+  "record_state": "succeeded",
+  "record_reason": null,
+  "record_published": "hb1.01M73HEA192Z66R1XMNMS745ZQ.12.01M73HEANY8V0HMYMG0YEK53QB",
+  "operator_commits_on_main": 2,
+  "sigterm_exit": 0,
+  "restart_needed_unlock": false,
+  "lookup_after_restart": [
+   200,
+   "succeeded"
+  ],
+  "submit_after_restart": 202
+ },
+ {
+  "scenario": "accept_lost_answer",
+  "nth_write": 1,
+  "mode": "fail_after",
+  "submit": 202,
+  "lookups_during_fault": [
+   [
+    200,
+    "succeeded",
+    null
+   ],
+   [
+    200,
+    "succeeded",
+    null
+   ]
+  ],
+  "lookup_statuses_during_fault": [
+   200
+  ],
+  "lookup_after": [
+   200,
+   "succeeded"
+  ],
+  "fresh_submit_after": [
+   202,
+   null
+  ],
+  "fresh_terminal": "succeeded",
+  "record_state": "succeeded",
+  "record_reason": null,
+  "record_published": "hb1.01M73HEFADVGX6Y6GS57HMEGM4.12.01M73HEFZS7HE26BAM4PSAP3Y2",
+  "operator_commits_on_main": 2,
+  "sigterm_exit": 0,
+  "restart_needed_unlock": false,
+  "lookup_after_restart": [
+   200,
+   "succeeded"
+  ],
+  "submit_after_restart": 202
+ },
+ {
+  "scenario": "final_sticky",
+  "nth_write": 4,
+  "mode": "fail",
+  "submit": 202,
+  "lookups_during_fault": [
+   [
+    503,
+    null,
+    "the operation record write was refused and applied nothing: storage write_if_match failed for 'file:///tmp/r2/s2_local/final_sticky/root/__cluster/operations.json': Generic LocalFileSystem error: Unable to rename file: Input/output error (os error 5); nothing was accepted, and a refusal that names an unsettled earlier request holds until the server restarts"
+   ],
+   [
+    503,
+    null,
+    "the operation record write was refused and applied nothing: storage write_if_match failed for 'file:///tmp/r2/s2_local/final_sticky/root/__cluster/operations.json': Generic LocalFileSystem error: Unable to rename file: Input/output error (os error 5); nothing was accepted, and a refusal that names an unsettled earlier request holds until the server restarts"
+   ],
+   [
+    503,
+    null,
+    "the operation record write was refused and applied nothing: storage write_if_match failed for 'file:///tmp/r2/s2_local/final_sticky/root/__cluster/operations.json': Generic LocalFileSystem error: Unable to rename file: Input/output error (os error 5); nothing was accepted, and a refusal that names an unsettled earlier request holds until the server restarts"
+   ],
+   "...",
+   [
+    503,
+    null,
+    "the operation record write was refused and applied nothing: storage write_if_match failed for 'file:///tmp/r2/s2_local/final_sticky/root/__cluster/operations.json': Generic LocalFileSystem error: Unable to rename file: Input/output error (os error 5); nothing was accepted, and a refusal that names an unsettled earlier request holds until the server restarts"
+   ]
+  ],
+  "lookup_statuses_during_fault": [
+   503
+  ],
+  "lookup_after": [
+   200,
+   "succeeded"
+  ],
+  "fresh_submit_after": [
+   202,
+   null
+  ],
+  "fresh_terminal": "succeeded",
+  "record_state": "succeeded",
+  "record_reason": null,
+  "record_published": "hb1.01M73HEMMA1ZH95F724XAJ97H0.12.01M73HEN8F41YZ7B5ATS9ZNPTV",
+  "operator_commits_on_main": 2,
+  "sigterm_exit": 0,
+  "restart_needed_unlock": false,
+  "lookup_after_restart": [
+   200,
+   "succeeded"
+  ],
+  "submit_after_restart": 202
+ }
+]

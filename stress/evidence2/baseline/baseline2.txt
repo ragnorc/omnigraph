@@ -1,0 +1,36 @@
+        PASS [   0.056s] ( 1/35) omnigraph-engine::detached_commit_matrix every_writer_window_is_a_matrix_point
+        PASS [   0.676s] ( 2/35) omnigraph-engine::detached_commit_matrix cleanup_retains_live_branch_staging_until_owner_recreation
+        PASS [   7.487s] ( 3/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_load_post_detached_1
+        PASS [   7.521s] ( 4/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_load_pre_publish
+        PASS [   7.522s] ( 5/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_insert_post_detached_1
+        PASS [   7.652s] ( 6/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_insert_pre_publish
+        PASS [   7.677s] ( 7/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_multi_table_post_detached_1
+        PASS [   7.667s] ( 8/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_multi_table_post_detached_2
+        PASS [   7.896s] ( 9/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_blob_put_post_detached_1
+        PASS [   8.010s] (10/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_blob_put_pre_publish
+        PASS [   8.256s] (11/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_ensure_indices_post_detached_1
+        PASS [   8.457s] (12/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_ensure_indices_pre_publish
+        PASS [   7.790s] (13/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_multi_table_pre_publish
+        PASS [   8.782s] (14/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_merge_pre_publish
+        PASS [   8.830s] (15/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_blob_clear_post_detached_1
+        PASS [   0.058s] (16/35) omnigraph-server recorded_operations::tests::cancellation_reaches_only_the_named_run
+        PASS [   0.057s] (17/35) omnigraph-server recorded_operations::tests::only_a_settled_lookup_answers_without_the_record_gate
+        PASS [   0.050s] (18/35) omnigraph-server recorded_operations::tests::settings_default_off_and_read_their_variables
+        PASS [   8.913s] (19/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_blob_clear_pre_publish
+        PASS [   0.506s] (20/35) omnigraph-server::operation_routes routes_refuse_without_a_grant_an_operator_switch_or_a_cluster
+        PASS [   0.870s] (21/35) omnigraph-server::operation_routes recorded_optimize_keeps_a_record_a_caller_reads_by_id
+        PASS [  11.898s] (22/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_fts_rebuild_pre_publish
+        PASS [  11.945s] (23/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_fts_rebuild_post_detached_1
+        PASS [   3.648s] (24/35) omnigraph-server::operation_routes a_known_ending_survives_a_failed_final_write_and_a_repeat_answers_the_running_record
+        PASS [   4.930s] (25/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_system_column_upgrade_post_detached_1
+        PASS [   4.935s] (26/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_system_column_upgrade_post_detached_2
+        PASS [   4.960s] (27/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_system_column_upgrade_pre_publish
+        PASS [   6.031s] (28/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_prepared_schema_apply_post_detached_1
+        PASS [   5.915s] (29/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_schema_apply_post_detached_1
+        PASS [   6.080s] (30/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_prepared_schema_apply_pre_publish
+        PASS [   5.865s] (31/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_schema_apply_post_detached_2
+        PASS [   6.112s] (32/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_prepared_schema_apply_post_detached_2
+        PASS [   5.826s] (33/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_schema_apply_pre_publish
+        PASS [   7.169s] (34/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_optimize_post_detached_1
+        PASS [   7.208s] (35/35) omnigraph-engine::detached_commit_matrix rfc_0067_failure_window_matrix_optimize_pre_publish
+     Summary [  14.732s] 35 tests run: 35 passed, 577 skipped
