@@ -36,6 +36,25 @@ GRAPH = "kg"
 REPO = og.REPO
 
 
+def kill_own(path):
+    """SIGKILL only this harness's servers: a process whose command line or
+    environment names `path` (a global pkill also killed other campaigns'
+    servers running beside this one)."""
+    needle = str(path).encode()
+    for d in Path("/proc").iterdir():
+        if not d.name.isdigit() or int(d.name) == os.getpid():
+            continue
+        try:
+            blob = (d / "cmdline").read_bytes() + (d / "environ").read_bytes()
+        except OSError:
+            continue
+        if needle in blob and b"python" not in (d / "cmdline").read_bytes()[:64]:
+            try:
+                os.kill(int(d.name), 9)
+            except OSError:
+                pass
+
+
 def child_binary():
     cands = ([os.environ["OG_CHILD_BIN"]] if os.environ.get("OG_CHILD_BIN") else
              sorted(glob.glob(str(REPO / "target/debug/deps/stress_served_child-*")), key=os.path.getmtime))
@@ -298,7 +317,7 @@ def main():
         except Exception as e:  # noqa: BLE001
             results.append({"scenario": name, "error": repr(e)[:800]})
             print("ERROR", name, repr(e)[:800], flush=True)
-        os.system("pkill -x omnigraph-serve; pkill -f stress_served_child- >/dev/null 2>&1")
+        kill_own(out)
     (out / "results.json").write_text(json.dumps(results, indent=1, default=str))
     for r in results:
         print(json.dumps({k: v for k, v in r.items() if k not in ("cleanup_tail",)}, default=str)[:1500])

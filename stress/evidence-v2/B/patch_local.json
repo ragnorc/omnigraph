@@ -1,0 +1,418 @@
+{
+ "rounds": 200,
+ "docs": 284,
+ "updates": 114,
+ "patch_updates": 114,
+ "rewrite_updates": 0,
+ "optimizes": [
+  [
+   "initial",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 8",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 11",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 12",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 13",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 14",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 17",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 20",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 21",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 22",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 32",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 38",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 46",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 47",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 48",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 54",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 57",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 62",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 63",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 66",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 68",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 71",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 74",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 92",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 99",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 105",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 107",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 108",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 119",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 123",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 126",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 129",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 136",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 143",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 144",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 146",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 149",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 150",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 152",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 155",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 164",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 166",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 173",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 175",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 179",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 180",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 193",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 194",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 198",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 199",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "final",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ]
+ ],
+ "violations": []
+}

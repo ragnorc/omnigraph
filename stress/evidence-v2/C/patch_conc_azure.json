@@ -1,0 +1,88 @@
+{
+ "rounds": 60,
+ "docs": 126,
+ "updates": 29,
+ "patch_updates": 0,
+ "rewrite_updates": 0,
+ "optimizes": [
+  [
+   "initial",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 14",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 34",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 37",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 50",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "final",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ]
+ ],
+ "concurrent_runs": 174,
+ "concurrent_doc_outcomes": {
+  "deferred": 56,
+  "optimized": 40,
+  "unchanged": 78
+ },
+ "violations": [
+  "update d55 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71E9KC9P8CMQJWQKD4ABFN9.16.01M71EAHVS97D9NAJVQKJBE80Z, current hb1.01M71E9KC9P8CMQJWQKD4ABFN9.17.01M71EAMW5AR1R",
+  "optimize submit 429 {'error': 'operation 01M71EAR67FT4VRPWEW2RS4PYW is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "update d63 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71E9KC9P8CMQJWQKD4ABFN9.20.01M71EAX1Y1HCDNGX89D174RQ4, current hb1.01M71E9KC9P8CMQJWQKD4ABFN9.21.01M71EB0FYNJJ5",
+  "update d57 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71E9KC9P8CMQJWQKD4ABFN9.33.01M71EBHRTGK1NYKT984M9P21Q, current hb1.01M71E9KC9P8CMQJWQKD4ABFN9.34.01M71EBKQY5BW0",
+  "optimize submit 429 {'error': 'operation 01M71EBTE9JXZ9XMVAQK0ESBF4 is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "update d23 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71E9KC9P8CMQJWQKD4ABFN9.45.01M71EBWS9ABCFBMTQ5AFAVPTM, current hb1.01M71E9KC9P8CMQJWQKD4ABFN9.46.01M71EBYN4AQVJ",
+  "optimize submit 429 {'error': 'operation 01M71EC04ZN2CBV6SNG38GAB90 is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "optimize submit 429 {'error': 'operation 01M71EC1M692JWPQP34ZN07ZMD is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "optimize submit 429 {'error': 'operation 01M71ECC2RDEVPG5J7WPG4K3VW is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "optimize submit 429 {'error': 'operation 01M71ECDSJ4EHTN64H23H519RN is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "optimize submit 429 {'error': 'operation 01M71ECMAVTCA424NVWK3TKY15 is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "optimize submit 429 {'error': 'operation 01M71ECS6B415EYEDD685847SZ is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "update d76 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71E9KC9P8CMQJWQKD4ABFN9.70.01M71ECY6VN7V25VBHJ2AAC1T1, current hb1.01M71E9KC9P8CMQJWQKD4ABFN9.71.01M71ECYPP7PKW",
+  "update d25 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71E9KC9P8CMQJWQKD4ABFN9.83.01M71ED6MZ9B56CMYE5BP4KY40, current hb1.01M71E9KC9P8CMQJWQKD4ABFN9.84.01M71ED8DM6JE3",
+  "update d76 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71E9KC9P8CMQJWQKD4ABFN9.87.01M71EDAHJYCV448R424EYNB2P, current hb1.01M71E9KC9P8CMQJWQKD4ABFN9.88.01M71EDAZ27YJ4",
+  "optimize submit 429 {'error': 'operation 01M71EDHV9GZMY34CJ1SFP6ZGX is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "update d90 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71E9KC9P8CMQJWQKD4ABFN9.100.01M71EDNVB8Y7AX0X2434RN3TR, current hb1.01M71E9KC9P8CMQJWQKD4ABFN9.101.01M71EDQ0CRX",
+  "update d8 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71E9KC9P8CMQJWQKD4ABFN9.104.01M71EDSHXX3TAWVQKCPGQPHMJ, current hb1.01M71E9KC9P8CMQJWQKD4ABFN9.105.01M71EDVKEC1",
+  "update d113 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71E9KC9P8CMQJWQKD4ABFN9.107.01M71EDW70QADG1KBTRYH7T4K0, current hb1.01M71E9KC9P8CMQJWQKD4ABFN9.108.01M71EDWNP86",
+  "optimize submit 429 {'error': 'operation 01M71EE4A7Q839XK8ZPVQC6WZD is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "optimize submit 429 {'error': 'operation 01M71EE8WA5J35Z3A9NWPNCC11 is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "optimize submit 429 {'error': 'operation 01M71EEBJ4ACX8M7K1V3Q0RWJY is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "update d17 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71E9KC9P8CMQJWQKD4ABFN9.120.01M71EEQ7JHANQVDCN7418HFJ6, current hb1.01M71E9KC9P8CMQJWQKD4ABFN9.121.01M71EES9Y0R"
+ ]
+}

@@ -1,0 +1,188 @@
+{
+ "served": {
+  "operator": {
+   "status": 202,
+   "code": null,
+   "error": "",
+   "state": "succeeded",
+   "principal": "operator"
+  },
+  "maintainer": {
+   "status": 202,
+   "code": null,
+   "error": "",
+   "state": "succeeded",
+   "principal": "maintainer"
+  },
+  "branchmaint": {
+   "status": 403,
+   "code": "forbidden",
+   "error": "policy denied action 'maintain' on branch 'main' for actor 'branchmaint'",
+   "lookup": [
+    403,
+    "forbidden"
+   ]
+  },
+  "writer": {
+   "status": 403,
+   "code": "forbidden",
+   "error": "policy denied action 'maintain' on branch 'main' for actor 'writer'",
+   "lookup": [
+    403,
+    "forbidden"
+   ]
+  },
+  "reclaimer": {
+   "status": 403,
+   "code": "forbidden",
+   "error": "policy denied action 'maintain' on branch 'main' for actor 'reclaimer'",
+   "lookup": [
+    403,
+    "forbidden"
+   ]
+  },
+  "reader": {
+   "status": 403,
+   "code": "forbidden",
+   "error": "policy denied action 'maintain' on branch 'main' for actor 'reader'",
+   "lookup": [
+    403,
+    "forbidden"
+   ]
+  }
+ },
+ "direct": {
+  "writer/optimize": {
+   "rc": 1,
+   "out": "Error:     0: \u001b[91moptimize does not accept --as\u001b[0m",
+   "unlocked": false,
+   "secs": 0.1
+  },
+  "writer/index_build": {
+   "rc": 0,
+   "out": "{   \"uri\": \"/tmp/v2/B/policy/root/graphs/kg.omni\",   \"branch\": \"main\",   \"graph_commit_id\": \"hb1.01M7179EMWFNTV1Y1GH558S1W3.329.01M717AR5ZAACH0CJ1AEK5KXZ7\",   \"indexes\": [     {       \"type_key\": \"node:Person\",       \"pr",
+   "unlocked": true,
+   "secs": 0.4
+  },
+  "writer/fts_rebuild": {
+   "rc": 0,
+   "out": "{   \"uri\": \"/tmp/v2/B/policy/root/graphs/kg.omni\",   \"branch\": \"main\",   \"graph_commit_id\": \"hb1.01M7179EMWFNTV1Y1GH558S1W3.330.01M717ARKS44K2WD1NA5GQ8GE2\",   \"warnings\": [     \"Full-text indexes were rebuilt with the de",
+   "unlocked": true,
+   "secs": 0.4
+  },
+  "writer/cleanup": {
+   "rc": 1,
+   "out": "Error:     0: \u001b[91mcleanup does not accept --as\u001b[0m",
+   "unlocked": false,
+   "secs": 0.1
+  },
+  "writer/repair": {
+   "rc": 1,
+   "out": "Error:     0: \u001b[91mrepair does not accept --as\u001b[0m",
+   "unlocked": false,
+   "secs": 0.1
+  },
+  "reclaimer/optimize": {
+   "rc": 1,
+   "out": "Error:     0: \u001b[91moptimize does not accept --as\u001b[0m",
+   "unlocked": false,
+   "secs": 0.1
+  },
+  "reclaimer/index_build": {
+   "rc": 0,
+   "out": "{   \"uri\": \"/tmp/v2/B/policy/root/graphs/kg.omni\",   \"branch\": \"main\",   \"graph_commit_id\": null,   \"indexes\": [],   \"pending_indexes\": [] } target /tmp/v2/B/policy/root (inline): direct root /tmp/v2/B/policy/root; reque",
+   "unlocked": true,
+   "secs": 0.1
+  },
+  "reclaimer/fts_rebuild": {
+   "rc": 0,
+   "out": "{   \"uri\": \"/tmp/v2/B/policy/root/graphs/kg.omni\",   \"branch\": \"main\",   \"graph_commit_id\": \"hb1.01M7179EMWFNTV1Y1GH558S1W3.331.01M717AS9VPS8HG40876VFN2MH\",   \"warnings\": [     \"Full-text indexes were rebuilt with the de",
+   "unlocked": true,
+   "secs": 0.4
+  },
+  "reclaimer/cleanup": {
+   "rc": 1,
+   "out": "Error:     0: \u001b[91mcleanup does not accept --as\u001b[0m",
+   "unlocked": false,
+   "secs": 0.1
+  },
+  "reclaimer/repair": {
+   "rc": 1,
+   "out": "Error:     0: \u001b[91mrepair does not accept --as\u001b[0m",
+   "unlocked": false,
+   "secs": 0.1
+  },
+  "maintainer/optimize": {
+   "rc": 1,
+   "out": "Error:     0: \u001b[91moptimize does not accept --as\u001b[0m",
+   "unlocked": false,
+   "secs": 0.1
+  },
+  "maintainer/index_build": {
+   "rc": 0,
+   "out": "{   \"uri\": \"/tmp/v2/B/policy/root/graphs/kg.omni\",   \"branch\": \"main\",   \"graph_commit_id\": null,   \"indexes\": [],   \"pending_indexes\": [] } target /tmp/v2/B/policy/root (inline): direct root /tmp/v2/B/policy/root; reque",
+   "unlocked": true,
+   "secs": 0.1
+  },
+  "maintainer/fts_rebuild": {
+   "rc": 0,
+   "out": "{   \"uri\": \"/tmp/v2/B/policy/root/graphs/kg.omni\",   \"branch\": \"main\",   \"graph_commit_id\": \"hb1.01M7179EMWFNTV1Y1GH558S1W3.332.01M717ASZA5Q5824HB2T6KYZWJ\",   \"warnings\": [     \"Full-text indexes were rebuilt with the de",
+   "unlocked": true,
+   "secs": 0.4
+  },
+  "maintainer/cleanup": {
+   "rc": 1,
+   "out": "Error:     0: \u001b[91mcleanup does not accept --as\u001b[0m",
+   "unlocked": false,
+   "secs": 0.1
+  },
+  "maintainer/repair": {
+   "rc": 1,
+   "out": "Error:     0: \u001b[91mrepair does not accept --as\u001b[0m",
+   "unlocked": false,
+   "secs": 0.1
+  },
+  "nobody/optimize": {
+   "rc": 1,
+   "out": "Error:     0: \u001b[91moptimize does not accept --as\u001b[0m",
+   "unlocked": false,
+   "secs": 0.1
+  },
+  "nobody/index_build": {
+   "rc": 0,
+   "out": "{   \"uri\": \"/tmp/v2/B/policy/root/graphs/kg.omni\",   \"branch\": \"main\",   \"graph_commit_id\": null,   \"indexes\": [],   \"pending_indexes\": [] } target /tmp/v2/B/policy/root (inline): direct root /tmp/v2/B/policy/root; reque",
+   "unlocked": true,
+   "secs": 0.1
+  },
+  "nobody/fts_rebuild": {
+   "rc": 0,
+   "out": "{   \"uri\": \"/tmp/v2/B/policy/root/graphs/kg.omni\",   \"branch\": \"main\",   \"graph_commit_id\": \"hb1.01M7179EMWFNTV1Y1GH558S1W3.333.01M717ATN2RFE31FZH0EHBFFFC\",   \"warnings\": [     \"Full-text indexes were rebuilt with the de",
+   "unlocked": true,
+   "secs": 0.4
+  },
+  "nobody/cleanup": {
+   "rc": 1,
+   "out": "Error:     0: \u001b[91mcleanup does not accept --as\u001b[0m",
+   "unlocked": false,
+   "secs": 0.1
+  },
+  "nobody/repair": {
+   "rc": 1,
+   "out": "Error:     0: \u001b[91mrepair does not accept --as\u001b[0m",
+   "unlocked": false,
+   "secs": 0.1
+  }
+ },
+ "served_under_load": {
+  "denied_submissions": 199025,
+  "statuses": {
+   "403": 199025
+  },
+  "leaked_into_record": 0,
+  "new_commits": 1105,
+  "commits_by_non_writer": 0,
+  "acked": 5525,
+  "acked_missing": 0
+ },
+ "violations": []
+}

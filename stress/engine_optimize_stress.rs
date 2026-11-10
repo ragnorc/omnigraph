@@ -1013,6 +1013,17 @@ async fn engine_optimize_beside_live_writers() {
     }
     let v = violations.lock().unwrap();
     eprintln!("=== violations: {}", v.len());
+    // Category counts: the text after "run N: " up to its first 40 characters.
+    let mut categories = std::collections::BTreeMap::<String, usize>::new();
+    for x in v.iter() {
+        let body = x.split_once(": ").map_or(x.as_str(), |(_, rest)| rest);
+        *categories
+            .entry(body.chars().take(40).collect())
+            .or_default() += 1;
+    }
+    for (category, count) in &categories {
+        eprintln!("=== category {count:>5} {category}");
+    }
     for x in v.iter().take(60) {
         eprintln!("  {x}");
     }

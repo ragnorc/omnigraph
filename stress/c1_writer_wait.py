@@ -43,7 +43,13 @@ def phase(name, optimize):
             rows = [{"type": typ, "data": {"name": f"{name}w{w}i{i}k{k}", **({"bio": "x"} if typ == "Person" else {})}}
                     for k in range(5)]
             t0 = time.time()
-            s, _, _ = h.load("kg", "\n".join(json.dumps(r) for r in rows))
+            if KIND == "update":
+                # one row of this writer's own seed, so writers never conflict with each other
+                q = "query u($n: String, $a: I32) { update Person set { age: $a } where name = $n }"
+                s, _, _ = h.mutate("kg", q, {"n": f"seed-w{w}-{i % 20}", "a": i % 1000})
+                typ = "update"
+            else:
+                s, _, _ = h.load("kg", "\n".join(json.dumps(r) for r in rows))
             writes.append((t0, time.time(), typ, s))
 
     def submitter():
@@ -74,6 +80,11 @@ def phase(name, optimize):
 
 
 res = {}
+KIND = os.environ.get("STRESS_WRITE_KIND", "load")
+if KIND == "update":
+    for w in range(nwriters):
+        h.load("kg", "\n".join(json.dumps({"type": "Person", "data": {"name": f"seed-w{w}-{k}", "bio": "x", "age": 0}})
+                               for k in range(20)))
 for name, optimize in (("control", False), ("optimize", True), ("control2", False)):
     writes, runs = phase(name, optimize)
     ok = sorted(t1 - t0 for t0, t1, _, s in writes if s == 200)

@@ -1,0 +1,495 @@
+{
+ "summary": {
+  "root": "/tmp/v2/C/bighold_local/root",
+  "hold_ms": 1000,
+  "runs": 40,
+  "excess_p50": -77,
+  "excess_max": 1171,
+  "first5": [
+   [
+    0,
+    -893
+   ],
+   [
+    202803,
+    -870
+   ],
+   [
+    404017,
+    -839
+   ],
+   [
+    603969,
+    -795
+   ],
+   [
+    799975,
+    -755
+   ]
+  ],
+  "last5": [
+   [
+    4408807,
+    109
+   ],
+   [
+    4366726,
+    109
+   ],
+   [
+    4523585,
+    138
+   ],
+   [
+    4499386,
+    148
+   ],
+   [
+    4494660,
+    141
+   ]
+  ]
+ },
+ "runs": [
+  {
+   "run": 0,
+   "record_bytes_before": 0,
+   "hold": 129,
+   "longest": 22,
+   "excess": -893,
+   "optimized": 3,
+   "listed": 1024,
+   "wall_s": 0.24,
+   "state": "succeeded"
+  },
+  {
+   "run": 1,
+   "record_bytes_before": 202803,
+   "hold": 146,
+   "longest": 16,
+   "excess": -870,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 0.33,
+   "state": "succeeded"
+  },
+  {
+   "run": 2,
+   "record_bytes_before": 404017,
+   "hold": 174,
+   "longest": 13,
+   "excess": -839,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 0.44,
+   "state": "succeeded"
+  },
+  {
+   "run": 3,
+   "record_bytes_before": 603969,
+   "hold": 218,
+   "longest": 13,
+   "excess": -795,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 0.58,
+   "state": "succeeded"
+  },
+  {
+   "run": 4,
+   "record_bytes_before": 799975,
+   "hold": 258,
+   "longest": 13,
+   "excess": -755,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 0.7,
+   "state": "succeeded"
+  },
+  {
+   "run": 5,
+   "record_bytes_before": 992535,
+   "hold": 299,
+   "longest": 14,
+   "excess": -715,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 0.82,
+   "state": "succeeded"
+  },
+  {
+   "run": 6,
+   "record_bytes_before": 1179973,
+   "hold": 331,
+   "longest": 14,
+   "excess": -683,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 0.93,
+   "state": "succeeded"
+  },
+  {
+   "run": 7,
+   "record_bytes_before": 1365483,
+   "hold": 367,
+   "longest": 8,
+   "excess": -641,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 1.05,
+   "state": "succeeded"
+  },
+  {
+   "run": 8,
+   "record_bytes_before": 1569548,
+   "hold": 414,
+   "longest": 13,
+   "excess": -599,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 1.32,
+   "state": "succeeded"
+  },
+  {
+   "run": 9,
+   "record_bytes_before": 1752705,
+   "hold": 460,
+   "longest": 13,
+   "excess": -553,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 1.44,
+   "state": "succeeded"
+  },
+  {
+   "run": 10,
+   "record_bytes_before": 1934939,
+   "hold": 511,
+   "longest": 9,
+   "excess": -498,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 1.56,
+   "state": "succeeded"
+  },
+  {
+   "run": 11,
+   "record_bytes_before": 2139591,
+   "hold": 552,
+   "longest": 15,
+   "excess": -463,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 1.68,
+   "state": "succeeded"
+  },
+  {
+   "run": 12,
+   "record_bytes_before": 2320649,
+   "hold": 598,
+   "longest": 22,
+   "excess": -424,
+   "optimized": 5,
+   "listed": 1024,
+   "wall_s": 1.83,
+   "state": "succeeded"
+  },
+  {
+   "run": 13,
+   "record_bytes_before": 2494330,
+   "hold": 644,
+   "longest": 21,
+   "excess": -377,
+   "optimized": 3,
+   "listed": 1024,
+   "wall_s": 1.96,
+   "state": "succeeded"
+  },
+  {
+   "run": 14,
+   "record_bytes_before": 2664056,
+   "hold": 701,
+   "longest": 12,
+   "excess": -311,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 2.11,
+   "state": "succeeded"
+  },
+  {
+   "run": 15,
+   "record_bytes_before": 2833017,
+   "hold": 724,
+   "longest": 9,
+   "excess": -285,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 2.25,
+   "state": "succeeded"
+  },
+  {
+   "run": 16,
+   "record_bytes_before": 3025575,
+   "hold": 790,
+   "longest": 25,
+   "excess": -235,
+   "optimized": 5,
+   "listed": 1024,
+   "wall_s": 2.38,
+   "state": "succeeded"
+  },
+  {
+   "run": 17,
+   "record_bytes_before": 3186575,
+   "hold": 850,
+   "longest": 19,
+   "excess": -169,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 2.54,
+   "state": "succeeded"
+  },
+  {
+   "run": 18,
+   "record_bytes_before": 3343442,
+   "hold": 862,
+   "longest": 10,
+   "excess": -148,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 2.63,
+   "state": "succeeded"
+  },
+  {
+   "run": 19,
+   "record_bytes_before": 3520966,
+   "hold": 906,
+   "longest": 9,
+   "excess": -103,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 2.74,
+   "state": "succeeded"
+  },
+  {
+   "run": 20,
+   "record_bytes_before": 3683536,
+   "hold": 934,
+   "longest": 11,
+   "excess": -77,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 2.86,
+   "state": "succeeded"
+  },
+  {
+   "run": 21,
+   "record_bytes_before": 3854597,
+   "hold": 986,
+   "longest": 10,
+   "excess": -24,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 3.03,
+   "state": "succeeded"
+  },
+  {
+   "run": 22,
+   "record_bytes_before": 4050600,
+   "hold": 1027,
+   "longest": 10,
+   "excess": 17,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 3.14,
+   "state": "succeeded"
+  },
+  {
+   "run": 23,
+   "record_bytes_before": 4220313,
+   "hold": 1081,
+   "longest": 9,
+   "excess": 72,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 3.29,
+   "state": "succeeded"
+  },
+  {
+   "run": 24,
+   "record_bytes_before": 4403464,
+   "hold": 1114,
+   "longest": 19,
+   "excess": 95,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 3.49,
+   "state": "succeeded"
+  },
+  {
+   "run": 25,
+   "record_bytes_before": 4355955,
+   "hold": 1112,
+   "longest": 9,
+   "excess": 103,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 3.54,
+   "state": "succeeded"
+  },
+  {
+   "run": 26,
+   "record_bytes_before": 4350744,
+   "hold": 1092,
+   "longest": 5,
+   "excess": 87,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 3.44,
+   "state": "succeeded"
+  },
+  {
+   "run": 27,
+   "record_bytes_before": 4346795,
+   "hold": 2179,
+   "longest": 8,
+   "excess": 1171,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 4.48,
+   "state": "succeeded"
+  },
+  {
+   "run": 28,
+   "record_bytes_before": 4507770,
+   "hold": 1143,
+   "longest": 15,
+   "excess": 128,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 3.63,
+   "state": "succeeded"
+  },
+  {
+   "run": 29,
+   "record_bytes_before": 4465356,
+   "hold": 1135,
+   "longest": 8,
+   "excess": 127,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 3.59,
+   "state": "succeeded"
+  },
+  {
+   "run": 30,
+   "record_bytes_before": 4474007,
+   "hold": 1148,
+   "longest": 9,
+   "excess": 139,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 3.59,
+   "state": "succeeded"
+  },
+  {
+   "run": 31,
+   "record_bytes_before": 4489292,
+   "hold": 1154,
+   "longest": 9,
+   "excess": 145,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 3.58,
+   "state": "succeeded"
+  },
+  {
+   "run": 32,
+   "record_bytes_before": 4481304,
+   "hold": 1133,
+   "longest": 5,
+   "excess": 128,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 3.62,
+   "state": "succeeded"
+  },
+  {
+   "run": 33,
+   "record_bytes_before": 4454761,
+   "hold": 1113,
+   "longest": 9,
+   "excess": 104,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 3.57,
+   "state": "succeeded"
+  },
+  {
+   "run": 34,
+   "record_bytes_before": 4428463,
+   "hold": 1120,
+   "longest": 11,
+   "excess": 109,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 3.51,
+   "state": "succeeded"
+  },
+  {
+   "run": 35,
+   "record_bytes_before": 4408807,
+   "hold": 1114,
+   "longest": 5,
+   "excess": 109,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 3.5,
+   "state": "succeeded"
+  },
+  {
+   "run": 36,
+   "record_bytes_before": 4366726,
+   "hold": 1118,
+   "longest": 9,
+   "excess": 109,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 3.44,
+   "state": "succeeded"
+  },
+  {
+   "run": 37,
+   "record_bytes_before": 4523585,
+   "hold": 1142,
+   "longest": 4,
+   "excess": 138,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 3.6,
+   "state": "succeeded"
+  },
+  {
+   "run": 38,
+   "record_bytes_before": 4499386,
+   "hold": 1156,
+   "longest": 8,
+   "excess": 148,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 3.61,
+   "state": "succeeded"
+  },
+  {
+   "run": 39,
+   "record_bytes_before": 4494660,
+   "hold": 1155,
+   "longest": 14,
+   "excess": 141,
+   "optimized": 1,
+   "listed": 1024,
+   "wall_s": 3.64,
+   "state": "succeeded"
+  }
+ ]
+}

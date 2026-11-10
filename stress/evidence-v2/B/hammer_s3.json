@@ -1,0 +1,102 @@
+{
+ "ops": 1029,
+ "states": {
+  "cancelled": 4,
+  "running": 13,
+  "publishing": 0,
+  "interrupted": 0,
+  "succeeded": 794,
+  "failed": 0,
+  "unsettled": 0,
+  "accepted": 218
+ },
+ "writes": 1262,
+ "write_p50": 1.4452786445617676,
+ "write_p99": 19.177658081054688,
+ "write_max": 37.04461216926575,
+ "max_gate_hold_ms_seen": 1866,
+ "marks": [
+  [
+   1794267966.237791,
+   1794267910223
+  ],
+  [
+   1794267967.8022513,
+   1794267912364
+  ],
+  [
+   1794267969.5920727,
+   1794267913917
+  ]
+ ],
+ "evicted_seen": 997,
+ "violations": [
+  "01M71A4BS4YCWEGJ17TAV638WX: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71A4BS4YCWEGJ17TAV638WX: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71A4CFKWF0V52W056E0YBWX: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71A521HXGJHJ4FY90HE6CNG: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71A5S0R2QTYPGHM3Z0CZNA9: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71A625DFJWVXR18EET2HN4R: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71A7S25DB57CGE6RAZA3B13: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71ACRA69YRJ6MYMHZTYYAGQ: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71AD1390HM9XGES13G3DNHD: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71ASTRX59697TBJJ3CC1K2W: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71AY7PT7MDBFV5A56Y7W824: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71B04VFFR9KRZ8Q1HB8YBYR: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71B225FDREKXBACGF1G3WHC: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71B04VFFR9KRZ8Q1HB8YBYR: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71AY7PT7MDBFV5A56Y7W824: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71AY7PT7MDBFV5A56Y7W824: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71B2E16FTYGM7NNEN5K14AW: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71B5MQEVV8S8C8X791M34N1: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}"
+ ],
+ "event_counts": {
+  "submit:202": 1047,
+  "submit:429": 20802,
+  "submit:400": 3931,
+  "submit:409": 11891,
+  "lookup:200": 7709,
+  "submit:200": 627,
+  "write:409": 148,
+  "cancel:200": 5169,
+  "cancel:202": 12
+ },
+ "write_by_kind": {
+  "company": {
+   "n": 161,
+   "p50": 0.8914270401000977,
+   "p99": 12.22901177406311,
+   "max": 12.73582148551941
+  },
+  "docs": {
+   "n": 168,
+   "p50": 1.3731184005737305,
+   "p99": 20.56251287460327,
+   "max": 29.733590126037598
+  },
+  "edges": {
+   "n": 95,
+   "p50": 2.489342212677002,
+   "p99": 37.04461216926575,
+   "max": 37.04461216926575
+  },
+  "merge": {
+   "n": 343,
+   "p50": 1.668001413345337,
+   "p99": 3.7138171195983887,
+   "max": 3.8128247261047363
+  },
+  "mutate": {
+   "n": 44,
+   "p50": 0.3755500316619873,
+   "p99": 1.5046274662017822,
+   "max": 1.5046274662017822
+  },
+  "persons": {
+   "n": 303,
+   "p50": 1.2620346546173096,
+   "p99": 17.015285968780518,
+   "max": 33.60908532142639
+  }
+ }
+}

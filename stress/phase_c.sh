@@ -8,6 +8,9 @@ until grep -q 'phase B done' /tmp/v2/B/queue.log 2>/dev/null; do sleep 20; done
 export OG_BIN_DIR=/tmp/sut-bin OG_CHILD_BIN=/tmp/sut-bin/stress_served_child RUST_MIN_STACK=16777216
 log() { echo "$(date -u +%FT%TZ) $*" >> $C/queue.log; }
 run() { local name=$1; shift; log "start $name"; "$@" > "$C/$name.out" 2>&1; log "end $name rc=$?"; }
+# N15 on object storage: gate hold beyond the request vs record size, no writers
+run bighold_local python3 c12_big_hold.py $C/bighold_local 40 40
+run bighold_s3 env STRESS_S3_PREFIX=s3://omnigraph-stress/v2bighold STRESS_PORT=13971 python3 c12_big_hold.py $C/bighold_s3 40 40
 # small-cache instrumented variant (2 handles, 64 KiB)
 run small_cache env OG_BIN_DIR=/tmp/sut-smallcache python3 c11_cache_pressure.py $C/small_cache 600 60
 run small_patch env OG_BIN_DIR=/tmp/sut-smallcache STRESS_CONCURRENT_OPT=1 python3 c9_column_patch_optimize.py $C/small_patch 150 21

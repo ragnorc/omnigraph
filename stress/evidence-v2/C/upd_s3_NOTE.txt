@@ -1,0 +1,1 @@
+upd_s3 control2 is invalid: c3_crash's global pkill killed this server at 00:42:02 (harness interference, since fixed)

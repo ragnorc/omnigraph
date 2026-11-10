@@ -1,0 +1,123 @@
+{
+ "control": {
+  "writes_ok": 727,
+  "writes_other": 0,
+  "p50": 0.16402554512023926,
+  "p99": 0.28251099586486816,
+  "max": 1.322589635848999,
+  "runs": 0,
+  "gate_hold_ms_max": null,
+  "gate_hold_fraction": 0.0,
+  "writes_spanning_2plus_holds": 0,
+  "writes_spanning_3plus_holds": 0,
+  "slowest_writes (latency, holds overlapped, held seconds inside)": [
+   [
+    1.32,
+    0,
+    0
+   ],
+   [
+    0.3,
+    0,
+    0
+   ],
+   [
+    0.3,
+    0,
+    0
+   ],
+   [
+    0.3,
+    0,
+    0
+   ],
+   [
+    0.3,
+    0,
+    0
+   ],
+   [
+    0.28,
+    0,
+    0
+   ],
+   [
+    0.28,
+    0,
+    0
+   ],
+   [
+    0.28,
+    0,
+    0
+   ]
+  ]
+ },
+ "optimize": {
+  "writes_ok": 87,
+  "writes_other": 72,
+  "p50": 0.29393744468688965,
+  "p99": 0.4755215644836426,
+  "max": 0.4755215644836426,
+  "runs": 72,
+  "gate_hold_ms_max": 933,
+  "gate_hold_fraction": 0.293,
+  "writes_spanning_2plus_holds": 0,
+  "writes_spanning_3plus_holds": 0,
+  "slowest_writes (latency, holds overlapped, held seconds inside)": [
+   [
+    0.48,
+    1,
+    0.43
+   ],
+   [
+    0.46,
+    1,
+    0.4
+   ],
+   [
+    0.46,
+    0,
+    0
+   ],
+   [
+    0.41,
+    1,
+    0.37
+   ],
+   [
+    0.36,
+    0,
+    0
+   ],
+   [
+    0.35,
+    1,
+    0.31
+   ],
+   [
+    0.35,
+    1,
+    0.3
+   ],
+   [
+    0.34,
+    1,
+    0.3
+   ]
+  ]
+ },
+ "control2": {
+  "writes_ok": 0,
+  "writes_other": 0,
+  "p50": null,
+  "p99": null,
+  "max": null,
+  "runs": 0,
+  "gate_hold_ms_max": null,
+  "gate_hold_fraction": 0.0,
+  "writes_spanning_2plus_holds": 0,
+  "writes_spanning_3plus_holds": 0,
+  "slowest_writes (latency, holds overlapped, held seconds inside)": []
+ }
+}

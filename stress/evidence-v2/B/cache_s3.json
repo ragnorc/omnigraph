@@ -1,0 +1,25 @@
+{
+ "tables": 120,
+ "acked_rows": 859,
+ "writes": {
+  "insert:200": 619,
+  "update:409": 66,
+  "update:200": 365,
+  "insert:409": 41
+ },
+ "runs": 118,
+ "runs_states": {
+  "succeeded": 118
+ },
+ "tables_optimized": 178,
+ "read_p50": 0.025960445404052734,
+ "read_p99": 0.12942123413085938,
+ "read_max": 8.098294973373413,
+ "reads": 25336,
+ "gate_hold_max": 18329,
+ "gate_hold_excess_max_ms": 16317,
+ "final_bad": 0,
+ "restart_bad": 0,
+ "violations": [],
+ "violation_count": 0
+}

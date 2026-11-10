@@ -1,0 +1,92 @@
+{
+ "ops": 333,
+ "states": {
+  "cancelled": 15,
+  "running": 1,
+  "publishing": 0,
+  "interrupted": 0,
+  "succeeded": 310,
+  "failed": 0,
+  "unsettled": 0,
+  "accepted": 7
+ },
+ "writes": 535,
+ "write_p50": 2.312211751937866,
+ "write_p99": 42.78133225440979,
+ "write_max": 82.92486310005188,
+ "max_gate_hold_ms_seen": 5598,
+ "marks": [
+  [
+   1794268885.219003,
+   1794268731184
+  ],
+  [
+   1794268894.1102777,
+   1794268733237
+  ],
+  [
+   1794268896.5363452,
+   1794268735804
+  ]
+ ],
+ "evicted_seen": 301,
+ "violations": [
+  "01M71B9X3E3W6T1JF60E9MDDRN: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71BA555833Z8H92DMYK0KQ8: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71BD1NBFKE05B3WWHA5RKMY: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71BD0G4P0RK035CAGPQH5WS: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71BFFZ67Z95YWFGVFPC54JE: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71BKZMWDEHMGEDEBHSZ046K: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}",
+  "01M71BKG3TNB5MJFD522WTZCQA: submit expected {409, 503} got 400 {\"error\": \"max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms\", \"code\": \"bad_request\", \"disposition\": {\"effects\": \"none\", \"action\": \"fix\"}}"
+ ],
+ "event_counts": {
+  "submit:202": 360,
+  "submit:429": 5868,
+  "lookup:200": 2179,
+  "submit:409": 2913,
+  "cancel:202": 16,
+  "submit:200": 539,
+  "submit:400": 1182,
+  "cancel:200": 1479,
+  "write:409": 60,
+  "record_read:-1": 1
+ },
+ "write_by_kind": {
+  "company": {
+   "n": 72,
+   "p50": 1.0598666667938232,
+   "p99": 10.811518430709839,
+   "max": 10.811518430709839
+  },
+  "docs": {
+   "n": 63,
+   "p50": 2.6041176319122314,
+   "p99": 17.39668560028076,
+   "max": 17.39668560028076
+  },
+  "edges": {
+   "n": 44,
+   "p50": 4.955579042434692,
+   "p99": 82.92486310005188,
+   "max": 82.92486310005188
+  },
+  "merge": {
+   "n": 143,
+   "p50": 3.268321990966797,
+   "p99": 11.770965099334717,
+   "max": 13.86723017692566
+  },
+  "mutate": {
+   "n": 20,
+   "p50": 0.6788444519042969,
+   "p99": 1.5019617080688477,
+   "max": 1.5019617080688477
+  },
+  "persons": {
+   "n": 133,
+   "p50": 0.9509768486022949,
+   "p99": 18.08955955505371,
+   "max": 21.688977003097534
+  }
+ }
+}

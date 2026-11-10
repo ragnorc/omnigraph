@@ -1,0 +1,93 @@
+
+running 1 test
+campaign 1 root: s3://omnigraph-stress/v2c1/1794269177/g.omni
+test engine_optimize_beside_live_writers has been running for over 60 seconds
+=== phase A
+runs 333 ok 169 published 111; writes 206 (p50 0.338s p99 7.185s max 12.237s); persons 1047 docs 54 companies 14
+gate_hold max 0.293s; gate_hold - (max_gate_hold + longest table) max 0.181s
+worst excess run 280: hold Some(43ms) gate_hold 275.943914ms wall 832.123458ms commit true cancellation NotRequested tables ["edge:Authored=Unchanged@1ms", "edge:Knows=Optimized@12ms", "edge:WorksAt=Unchanged@12ms", "node:Company=Optimized@23ms", "node:Doc=Unchanged@20ms", "node:Person=Optimized@51ms"]
+run errors: {
+    "BeforeGates: write authority 'graph_head:main' changed during preparation (expected 01M71CDSA": 1,
+    "BeforeGates: write authority 'graph_head:main' changed during preparation (expected hb1.01M71": 163,
+}
+write errors: {
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M71CDSGRYAAA2": 8,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M71CDSGRYAAA2": 14,
+}
+slowest writes (latency, kind, bound from overlapping run, (run, gate_hold)):
+  (12.237023119s, "load_edge", Some(377.151265ms), Some((308, 292.647299ms)))
+  (11.213331289s, "load_edge", Some(94.708633ms), Some((280, 275.943914ms)))
+  (9.697442008s, "load_person", Some(94.708633ms), Some((280, 275.943914ms)))
+  (7.184962093s, "load_person", Some(235.041882ms), Some((167, 217.786248ms)))
+  (6.661689125s, "load_person", Some(173.752564ms), Some((217, 224.670497ms)))
+  (6.186938569s, "load_doc", Some(94.708633ms), Some((280, 275.943914ms)))
+  (5.985686813s, "load_doc", Some(195.972218ms), Some((323, 272.063726ms)))
+  (5.208490997s, "load_person", Some(227.021446ms), Some((142, 165.66636ms)))
+
+=== phase B
+runs 477 ok 245 published 164; writes 409 (p50 0.236s p99 8.769s max 12.237s); persons 2098 docs 121 companies 28
+gate_hold max 0.500s; gate_hold - (max_gate_hold + longest table) max 0.320s
+worst excess run 470: hold Some(31ms) gate_hold 362.712694ms wall 573.205555ms commit true cancellation NotRequested tables ["node:Company=Optimized@11ms", "node:Doc=Deferred(GateHoldLimit)@0ms", "node:Person=Deferred(GateHoldLimit)@0ms", "edge:Authored=Deferred(GateHoldLimit)@0ms", "edge:Knows=Deferred(GateHoldLimit)@0ms", "edge:WorksAt=Deferred(GateHoldLimit)@0ms"]
+run errors: {
+    "BeforeGates: write authority 'graph_head:main' changed during preparation (expected 01M71CDSA": 1,
+    "BeforeGates: write authority 'graph_head:main' changed during preparation (expected hb1.01M71": 231,
+}
+write errors: {
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M71CDSGRYAAA2": 8,
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M71CFRQP83GER": 7,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M71CDSGRYAAA2": 15,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M71CFRQP83GER": 7,
+}
+slowest writes (latency, kind, bound from overlapping run, (run, gate_hold)):
+  (12.237023119s, "load_edge", Some(377.151265ms), Some((308, 292.647299ms)))
+  (11.213331289s, "load_edge", Some(94.708633ms), Some((280, 275.943914ms)))
+  (9.697442008s, "load_person", Some(94.708633ms), Some((280, 275.943914ms)))
+  (9.159046485s, "load_person", Some(515.099831ms), Some((434, 482.909946ms)))
+  (8.801197012s, "load_person", Some(395.320646ms), Some((425, 467.045493ms)))
+  (8.768533813s, "load_person", Some(269.697761ms), Some((452, 497.578547ms)))
+  (7.184962093s, "load_person", Some(235.041882ms), Some((167, 217.786248ms)))
+  (6.661689125s, "load_person", Some(173.752564ms), Some((217, 224.670497ms)))
+
+=== violations: 29
+  run 2: resume_at None but first gate/budget deferral Some("edge:WorksAt"); cancellation NotRequested cancelled_after None hold Some(222ms) start_at Some("node:Person") gate_hold 49.68259ms planning 2 commit Some("hb1.01M71CDSGRYAAA2NX9PCQW4BRZ.4.01M71CDSPZXCT6SVBGB986035J") tables [("node:Person", "Optimized"), ("edge:Authored", "Unchanged"), ("edge:Knows", "Unchanged"), ("edge:WorksAt", "Deferred(GateHoldLimit)"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)")]
+  run 11: resume_at None but first gate/budget deferral Some("node:Company"); cancellation NotRequested cancelled_after None hold Some(167ms) start_at Some("node:Doc") gate_hold 53.538778ms planning 3 commit Some("hb1.01M71CDSGRYAAA2NX9PCQW4BRZ.17.01M71CDTPA7EAS27Z5YZ06B7YB") tables [("node:Doc", "Unchanged"), ("node:Person", "Optimized"), ("edge:Authored", "Unchanged"), ("edge:Knows", "Unchanged"), ("edge:WorksAt", "Unchanged"), ("node:Company", "Deferred(GateHoldLimit)")]
+  run 26: resume_at None but first gate/budget deferral Some("node:Company"); cancellation NotRequested cancelled_after None hold None start_at Some("node:Person") gate_hold 66.782049ms planning 3 commit Some("hb1.01M71CDSGRYAAA2NX9PCQW4BRZ.37.01M71CDW50SG13H35VXS6K5VQM") tables [("node:Person", "Optimized"), ("edge:Authored", "Unchanged"), ("edge:Knows", "Unchanged"), ("edge:WorksAt", "Unchanged"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)")]
+  run 37: resume_at None but first gate/budget deferral Some("node:Doc"); cancellation NotRequested cancelled_after None hold Some(89ms) start_at Some("edge:Authored") gate_hold 75.430963ms planning 2 commit Some("hb1.01M71CDSGRYAAA2NX9PCQW4BRZ.49.01M71CDX945FDY0Y9SBK519PYG") tables [("edge:Authored", "Unchanged"), ("edge:Knows", "Optimized"), ("edge:WorksAt", "Unchanged"), ("node:Company", "Unchanged"), ("node:Doc", "Deferred(GateHoldLimit)"), ("node:Person", "Deferred(GateHoldLimit)")]
+  run 58: resume_at None but first gate/budget deferral Some("edge:WorksAt"); cancellation NotRequested cancelled_after None hold Some(252ms) start_at Some("edge:Knows") gate_hold 31.188881ms planning 1 commit None tables [("edge:Knows", "Unchanged"), ("edge:WorksAt", "Deferred(GateHoldLimit)"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)"), ("node:Person", "Deferred(GateHoldLimit)"), ("edge:Authored", "Deferred(GateHoldLimit)")]
+  run 63: resume_at None but first gate/budget deferral Some("node:Person"); cancellation NotRequested cancelled_after None hold Some(272ms) start_at None gate_hold 92.754967ms planning 3 commit Some("hb1.01M71CDSGRYAAA2NX9PCQW4BRZ.73.01M71CE05GS9TGXP8XXY073SSP") tables [("edge:Authored", "Unchanged"), ("edge:Knows", "Optimized"), ("edge:WorksAt", "Unchanged"), ("node:Company", "Unchanged"), ("node:Doc", "Unchanged"), ("node:Person", "Deferred(GateHoldLimit)")]
+  run 72: resume_at None but first gate/budget deferral Some("edge:Knows"); cancellation NotRequested cancelled_after None hold Some(17ms) start_at None gate_hold 29.074976ms planning 1 commit None tables [("edge:Authored", "Unchanged"), ("edge:Knows", "Deferred(GateHoldLimit)"), ("edge:WorksAt", "Deferred(GateHoldLimit)"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)"), ("node:Person", "Deferred(GateHoldLimit)")]
+  run 128: resume_at None but first gate/budget deferral Some("edge:WorksAt"); cancellation NotRequested cancelled_after None hold Some(31ms) start_at Some("node:Doc") gate_hold 117.802504ms planning 2 commit Some("hb1.01M71CDSGRYAAA2NX9PCQW4BRZ.131.01M71CE8G1XAG11YXKK53HHSF2") tables [("node:Doc", "Unchanged"), ("node:Person", "Optimized"), ("edge:Authored", "Unchanged"), ("edge:Knows", "Unchanged"), ("edge:WorksAt", "Deferred(GateHoldLimit)"), ("node:Company", "Deferred(GateHoldLimit)")]
+  run 129: resume_at None but first gate/budget deferral Some("edge:Knows"); cancellation NotRequested cancelled_after None hold Some(258ms) start_at None gate_hold 40.088899ms planning 1 commit None tables [("edge:Authored", "Unchanged"), ("edge:Knows", "Deferred(GateHoldLimit)"), ("edge:WorksAt", "Deferred(GateHoldLimit)"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)"), ("node:Person", "Deferred(GateHoldLimit)")]
+  run 177: resume_at None but first gate/budget deferral Some("edge:WorksAt"); cancellation NotRequested cancelled_after None hold Some(118ms) start_at Some("node:Person") gate_hold 218.004266ms planning 2 commit Some("hb1.01M71CDSGRYAAA2NX9PCQW4BRZ.177.01M71CEHA3RA321T7D1C0G6HY6") tables [("node:Person", "Optimized"), ("edge:Authored", "Unchanged"), ("edge:Knows", "Unchanged"), ("edge:WorksAt", "Deferred(GateHoldLimit)"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)")]
+  run 188: resume_at None but first gate/budget deferral Some("edge:Authored"); cancellation NotRequested cancelled_after Some(374ms) hold Some(46ms) start_at Some("node:M") gate_hold 41.546481ms planning 1 commit None tables [("node:Person", "Unchanged"), ("edge:Authored", "Deferred(GateHoldLimit)"), ("edge:Knows", "Deferred(GateHoldLimit)"), ("edge:WorksAt", "Deferred(GateHoldLimit)"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)")]
+  run 191: resume_at None but first gate/budget deferral Some("edge:Knows"); cancellation NotRequested cancelled_after None hold Some(186ms) start_at None gate_hold 49.025577ms planning 1 commit None tables [("edge:Authored", "Unchanged"), ("edge:Knows", "Deferred(GateHoldLimit)"), ("edge:WorksAt", "Deferred(GateHoldLimit)"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)"), ("node:Person", "Deferred(GateHoldLimit)")]
+  run 193: resume_at None but first gate/budget deferral Some("edge:Knows"); cancellation NotRequested cancelled_after None hold Some(136ms) start_at None gate_hold 55.253962ms planning 1 commit None tables [("edge:Authored", "Unchanged"), ("edge:Knows", "Deferred(GateHoldLimit)"), ("edge:WorksAt", "Deferred(GateHoldLimit)"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)"), ("node:Person", "Deferred(GateHoldLimit)")]
+  run 202: resume_at None but first gate/budget deferral Some("edge:WorksAt"); cancellation NotRequested cancelled_after None hold Some(102ms) start_at Some("node:M") gate_hold 181.08755ms planning 2 commit Some("hb1.01M71CDSGRYAAA2NX9PCQW4BRZ.203.01M71CEQ5NQQT8SEZTAHBW4EA8") tables [("node:Person", "Optimized"), ("edge:Authored", "Unchanged"), ("edge:Knows", "Unchanged"), ("edge:WorksAt", "Deferred(GateHoldLimit)"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)")]
+  run 221: resume_at None but first gate/budget deferral Some("edge:WorksAt"); cancellation NotRequested cancelled_after None hold None start_at Some("node:Person") gate_hold 200.296713ms planning 2 commit Some("hb1.01M71CDSGRYAAA2NX9PCQW4BRZ.219.01M71CETM6MC292XBYEJQEDMFD") tables [("node:Person", "Optimized"), ("edge:Authored", "Unchanged"), ("edge:Knows", "Unchanged"), ("edge:WorksAt", "Deferred(GateHoldLimit)"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)")]
+  run 232: resume_at None but first gate/budget deferral Some("edge:Knows"); cancellation NotRequested cancelled_after Some(324ms) hold None start_at Some("edge:Authored") gate_hold 73.757193ms planning 1 commit None tables [("edge:Authored", "Unchanged"), ("edge:Knows", "Deferred(GateHoldLimit)"), ("edge:WorksAt", "Deferred(GateHoldLimit)"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)"), ("node:Person", "Deferred(GateHoldLimit)")]
+  run 242: resume_at None but first gate/budget deferral Some("edge:Knows"); cancellation NotRequested cancelled_after None hold Some(23ms) start_at None gate_hold 93.734002ms planning 1 commit None tables [("edge:Authored", "Unchanged"), ("edge:Knows", "Deferred(GateHoldLimit)"), ("edge:WorksAt", "Deferred(GateHoldLimit)"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)"), ("node:Person", "Deferred(GateHoldLimit)")]
+  run 277: resume_at None but first gate/budget deferral Some("edge:Knows"); cancellation NotRequested cancelled_after None hold None start_at None gate_hold 80.76749ms planning 1 commit None tables [("edge:Authored", "Unchanged"), ("edge:Knows", "Deferred(GateHoldLimit)"), ("edge:WorksAt", "Deferred(GateHoldLimit)"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)"), ("node:Person", "Deferred(GateHoldLimit)")]
+  run 283: resume_at None but first gate/budget deferral Some("node:Company"); cancellation NotRequested cancelled_after None hold Some(89ms) start_at Some("node:M") gate_hold 209.259246ms planning 3 commit Some("hb1.01M71CDSGRYAAA2NX9PCQW4BRZ.270.01M71CF84W958S19J4J03FR5H8") tables [("node:Person", "Optimized"), ("edge:Authored", "Unchanged"), ("edge:Knows", "Unchanged"), ("edge:WorksAt", "Unchanged"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)")]
+  run 338: resume_at None but first gate/budget deferral Some("edge:Knows"); cancellation NotRequested cancelled_after None hold None start_at Some("node:Doc") gate_hold 219.727526ms planning 2 commit Some("hb1.01M71CDSGRYAAA2NX9PCQW4BRZ.328.01M71CFQX9J3V4HE6G1QD91NC1") tables [("node:Doc", "Optimized"), ("node:Person", "Unchanged"), ("edge:Authored", "Unchanged"), ("edge:Knows", "Deferred(GateHoldLimit)"), ("edge:WorksAt", "Deferred(GateHoldLimit)"), ("node:Company", "Deferred(GateHoldLimit)")]
+  run 370: resume_at None but first gate/budget deferral Some("edge:Knows"); cancellation NotRequested cancelled_after Some(381ms) hold None start_at None gate_hold 81.337178ms planning 1 commit None tables [("edge:Authored", "Unchanged"), ("edge:Knows", "Deferred(GateHoldLimit)"), ("edge:WorksAt", "Deferred(GateHoldLimit)"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)"), ("node:Person", "Deferred(GateHoldLimit)")]
+  run 373: resume_at None but first gate/budget deferral Some("edge:Knows"); cancellation NotRequested cancelled_after None hold None start_at Some("node:Company") gate_hold 303.02809ms planning 1 commit Some("hb1.01M71CFRQP83GERPJ8TKXW4JNQ.67.01M71CG58FMKC6130B5X3B49M6") tables [("node:Company", "Optimized"), ("node:Doc", "Optimized"), ("node:Person", "Optimized"), ("edge:Authored", "Unchanged"), ("edge:Knows", "Deferred(GateHoldLimit)"), ("edge:WorksAt", "Deferred(GateHoldLimit)")]
+  run 382: resume_at None but first gate/budget deferral Some("edge:Knows"); cancellation ArrivedLate cancelled_after Some(261ms) hold None start_at Some("node:Person") gate_hold 257.247953ms planning 1 commit Some("hb1.01M71CFRQP83GERPJ8TKXW4JNQ.87.01M71CG8YTDCDZ6GVQKB6CFA9R") tables [("node:Person", "Optimized"), ("edge:Authored", "Unchanged"), ("edge:Knows", "Deferred(GateHoldLimit)"), ("edge:WorksAt", "Deferred(GateHoldLimit)"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)")]
+  run 385: resume_at None but first gate/budget deferral Some("edge:Knows"); cancellation NotRequested cancelled_after None hold None start_at None gate_hold 111.007934ms planning 1 commit None tables [("edge:Authored", "Unchanged"), ("edge:Knows", "Deferred(GateHoldLimit)"), ("edge:WorksAt", "Deferred(GateHoldLimit)"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)"), ("node:Person", "Deferred(GateHoldLimit)")]
+  run 410: resume_at None but first gate/budget deferral Some("node:Company"); cancellation ArrivedLate cancelled_after Some(296ms) hold Some(185ms) start_at Some("edge:WorksAt") gate_hold 149.403482ms planning 1 commit None tables [("edge:WorksAt", "Unchanged"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)"), ("node:Person", "Deferred(GateHoldLimit)"), ("edge:Authored", "Deferred(GateHoldLimit)"), ("edge:Knows", "Deferred(GateHoldLimit)")]
+  run 415: resume_at None but first gate/budget deferral Some("node:Company"); cancellation NotRequested cancelled_after None hold Some(270ms) start_at Some("edge:WorksAt") gate_hold 116.435515ms planning 1 commit None tables [("edge:WorksAt", "Unchanged"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)"), ("node:Person", "Deferred(GateHoldLimit)"), ("edge:Authored", "Deferred(GateHoldLimit)"), ("edge:Knows", "Deferred(GateHoldLimit)")]
+  run 442: resume_at None but first gate/budget deferral Some("edge:Knows"); cancellation NotRequested cancelled_after None hold Some(184ms) start_at Some("edge:Authored") gate_hold 112.156377ms planning 1 commit None tables [("edge:Authored", "Unchanged"), ("edge:Knows", "Deferred(GateHoldLimit)"), ("edge:WorksAt", "Deferred(GateHoldLimit)"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)"), ("node:Person", "Deferred(GateHoldLimit)")]
+  run 445: resume_at None but first gate/budget deferral Some("node:Company"); cancellation NotRequested cancelled_after None hold None start_at Some("edge:Knows") gate_hold 295.996952ms planning 1 commit Some("hb1.01M71CFRQP83GERPJ8TKXW4JNQ.192.01M71CH3NJDC0P8KP6A3QJ51TR") tables [("edge:Knows", "Optimized"), ("edge:WorksAt", "Unchanged"), ("node:Company", "Deferred(GateHoldLimit)"), ("node:Doc", "Deferred(GateHoldLimit)"), ("node:Person", "Deferred(GateHoldLimit)"), ("edge:Authored", "Deferred(GateHoldLimit)")]
+  run 464: resume_at None but first gate/budget deferral Some("edge:WorksAt"); cancellation NotRequested cancelled_after None hold Some(164ms) start_at Some("node:Company") gate_hold 351.318504ms planning 2 commit Some("hb1.01M71CFRQP83GERPJ8TKXW4JNQ.222.01M71CHC1NEHJTW6ZCVM2K0QF0") tables [("node:Company", "Unchanged"), ("node:Doc", "Deferred(ResourceLimit(ResourceExceeded { measure: BlobBytes, measured: Some(250381), ceiling: 194533 }))"), ("node:Person", "Optimized"), ("edge:Authored", "Unchanged"), ("edge:Knows", "Unchanged"), ("edge:WorksAt", "Deferred(GateHoldLimit)")]
+
+thread 'engine_optimize_beside_live_writers' (10123) panicked at crates/omnigraph/../../stress/engine_optimize_stress.rs:1019:5:
+29 violations
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test engine_optimize_beside_live_writers ... FAILED
+
+failures:
+
+failures:
+    engine_optimize_beside_live_writers
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 148.81s
+
