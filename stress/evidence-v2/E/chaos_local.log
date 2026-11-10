@@ -1,0 +1,38 @@
+03:24:44 round 0 killed SIGKILL exit -9 ops 31 acked 597
+03:24:45 round 1 restart needed force-unlock 01M71QS3931H71PDJ2A888P5PN
+03:24:49 round 1 killed SIGKILL exit -9 ops 62 acked 1049
+03:24:50 round 2 restart needed force-unlock 01M71QS67T3BDTGNSNAN16R4GN
+03:24:51 round 2 killed SIGKILL exit -9 ops 66 acked 1078
+03:24:51 round 3 restart needed force-unlock 01M71QSB1HVHHQGRY7WRN234S7
+03:24:55 deploy rc 0 took 0.84 d_at": 1794281094633989,                 "published": true               },               "contract": {                 "source_hash": "dbdbed9d2b8b1b594a0c84aaf810aca061852f3ecb9141b2ca1199ca7290a656",                 "schema_ir_hash": "sha256:8b2460b32d1e971b42b37581f6762f9cc42231a24b0840ecd13e96d0be8f2356",                 "schema_identity_domain": "01M71QS34GBBMEJTGNXNSQRWVD",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14704/; config=/tmp/v2/E/chaos_local/operator-3.yaml Deployment-ID: 01M71QS33Z76VJE3CDXY2VF402:2:01M71QSF7RM30P4MYY074QPE80 
+03:24:56 round 3 deployment 01M71QS33Z76VJE3CDXY2VF402:2:01M71QSF7RM30P4MYY074QPE80 rc 0 0.8s then SIGTERM exit 0
+03:24:59 deploy rc 0 took 0.9 d_at": 1794281099389078,                 "published": true               },               "contract": {                 "source_hash": "c60a6681aece5411d88ba38ef87111683a84edf200283947bce077a20f589b9d",                 "schema_ir_hash": "sha256:34153f7106327e9057eac55cf184c6376a00e140343d51bddc9d6a8bbb8dcc35",                 "schema_identity_domain": "01M71QS34GBBMEJTGNXNSQRWVD",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14705/; config=/tmp/v2/E/chaos_local/operator-4.yaml Deployment-ID: 01M71QS33Z76VJE3CDXY2VF402:3:01M71QSKSWHSAP2XDRF8H1A246 
+03:25:02 round 4 deployment 01M71QS33Z76VJE3CDXY2VF402:3:01M71QSKSWHSAP2XDRF8H1A246 rc 0 0.9s then SIGTERM exit 0
+03:25:05 round 5 killed SIGKILL exit -9 ops 128 acked 1870
+03:25:05 round 6 restart needed force-unlock 01M71QSPTEKF6Q4ZBH2ZD8P9HB
+03:25:12 round 6 killed SIGTERM exit 0 ops 164 acked 2748
+03:25:19 round 7 killed SIGKILL exit -9 ops 205 acked 3332
+03:25:20 round 8 restart needed force-unlock 01M71QT0PMCRY5TYANBDQ71BW7
+03:25:26 deploy rc 0 took 0.81 d_at": 1794281126149662,                 "published": true               },               "contract": {                 "source_hash": "39d6be7620be35cef8b4b4ad09ba064a284a8ba9b04c23600f61a9cec07ebe5c",                 "schema_ir_hash": "sha256:07ed70af42c493abc4d52969de443b38ed7c0e4b36301566c822fbd23703f80e",                 "schema_identity_domain": "01M71QS34GBBMEJTGNXNSQRWVD",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14709/; config=/tmp/v2/E/chaos_local/operator-8.yaml Deployment-ID: 01M71QS33Z76VJE3CDXY2VF402:4:01M71QTE1474QZHGCCABBTEQ43 
+03:25:27 round 8 deployment 01M71QS33Z76VJE3CDXY2VF402:4:01M71QTE1474QZHGCCABBTEQ43 rc 0 0.8s then SIGTERM exit 0
+03:25:32 round 9 killed SIGKILL exit -9 ops 234 acked 3703
+03:25:32 round 10 restart needed force-unlock 01M71QTG0HN86DH23J31VENYA0
+03:25:36 round 10 killed SIGKILL exit -9 ops 244 acked 3819
+03:25:37 round 11 restart needed force-unlock 01M71QTMFSNAJKDETX902F1T64
+03:25:41 deploy rc 0 took 0.85 d_at": 1794281141242871,                 "published": true               },               "contract": {                 "source_hash": "cfd554e5dd5c1f31c74879c74360284445e1492e8d26f2e393af32ebe426b3fc",                 "schema_ir_hash": "sha256:563284305030573cb74c1dae49def865d5e380e2842a4dc86c738be70f1cddfe",                 "schema_identity_domain": "01M71QS34GBBMEJTGNXNSQRWVD",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14712/; config=/tmp/v2/E/chaos_local/operator-11.yaml Deployment-ID: 01M71QS33Z76VJE3CDXY2VF402:5:01M71QTWQGRZ4BCBEQD65ERSPA 
+03:25:43 round 11 deployment 01M71QS33Z76VJE3CDXY2VF402:5:01M71QTWQGRZ4BCBEQD65ERSPA rc 0 0.9s then SIGTERM exit 0
+03:25:51 round 12 killed SIGKILL exit -9 ops 294 acked 4885
+03:25:51 round 13 restart needed force-unlock 01M71QTYY9YR4ERQFS9T6BH50K
+03:26:01 round 13 killed SIGKILL exit -9 ops 312 acked 5128
+03:26:01 round 14 restart needed force-unlock 01M71QV7DZTG375TCDCXDB1NQQ
+03:26:06 round 14 killed SIGKILL exit -9 ops 319 acked 5201
+03:26:06 round 15 restart needed force-unlock 01M71QVH03WAPGHGRNAK5S5250
+03:26:11 round 15 killed SIGKILL exit -9 ops 333 acked 5407
+03:26:11 round 16 restart needed force-unlock 01M71QVNHQ32KR27X2R79S5CQP
+03:26:20 round 16 killed SIGTERM exit 0 ops 363 acked 5771
+03:26:24 round 17 killed SIGKILL exit -9 ops 369 acked 5826
+03:26:25 round 18 restart needed force-unlock 01M71QW2X3BHKGJ9XWDVPMF39W
+03:26:30 deploy rc 0 took 0.81 d_at": 1794281190097294,                 "published": true               },               "contract": {                 "source_hash": "23a48015a216662b4b7df2bac754d4355fa4b1ade9a8b38a24ee823d5abf9729",                 "schema_ir_hash": "sha256:70653c5aaed3d2a624c71d3c60927525624cd6872662be9d7900cc247acf207b",                 "schema_identity_domain": "01M71QS34GBBMEJTGNXNSQRWVD",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14719/; config=/tmp/v2/E/chaos_local/operator-18.yaml Deployment-ID: 01M71QS33Z76VJE3CDXY2VF402:6:01M71QWCFMAQE2MW3K2J0EQR66 
+03:26:31 round 18 deployment 01M71QS33Z76VJE3CDXY2VF402:6:01M71QWCFMAQE2MW3K2J0EQR66 rc 0 0.8s then SIGTERM exit 0
+03:26:40 round 19 killed SIGTERM exit 0 ops 407 acked 6615
+03:26:44 SUMMARY {"rounds": 20, "deployments": 5, "ops_seen": 407, "acked_rows": 6615, "final_states": {"unknown": 375, "succeeded": 29, "cancelled": 3}, "terminal_reasons": {"succeeded:": 376, "cancelled:cancelled by operator": 20, "interrupted:no live run held it at 2026-11-10T03:26:": 3, "failed:not_committed": 2, "interrupted:no live run held it at 2026-11-10T03:24:": 1, "cancelled:deployment 01M71QS33Z76VJE3CDXY2VF402:2:": 1, "succeeded:a cancellation arrived after the publica": 1, "cancelled:the server is shutting down": 1, "cancelled:deployment 01M71QS33Z76VJE3CDXY2VF402:4:": 1, "cancelled:deployment 01M71QS33Z76VJE3CDXY2VF402:5:": 1}, "violations": []}

@@ -1,0 +1,107 @@
+{
+ "rounds": 40,
+ "docs": 116,
+ "updates": 16,
+ "patch_updates": 0,
+ "rewrite_updates": 0,
+ "optimizes": [
+  [
+   "initial",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 0",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 1",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 7",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 9",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 11",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 16",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 32",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 39",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "final",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ]
+ ],
+ "concurrent_runs": 128,
+ "concurrent_doc_outcomes": {
+  "deferred": 41,
+  "optimized": 17,
+  "unchanged": 70
+ },
+ "violations": [
+  "optimize submit 429 {'error': 'operation 01M71K40N6BVS5SYYPCH7DFS58 is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "optimize submit 429 {'error': 'operation 01M71K42GYZ44JK8JWYF5CMNDB is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "optimize submit 429 {'error': 'operation 01M71K459WBW6PT0J187KEXQAV is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "optimize submit 429 {'error': 'operation 01M71K46XC68N5GKYJ4F45Y40V is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "optimize submit 429 {'error': 'operation 01M71K4E8S1BBHFJ4E9DGVDGGD is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "optimize submit 429 {'error': 'operation 01M71K4RD0JGK5VPZCW4CVW3HA is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "update d29 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71K3SN1Z2TTX5CX5YXCTQWK.42.01M71K5KKXJKQVY6CGYN63PR2E, current hb1.01M71K3SN1Z2TTX5CX5YXCTQWK.43.01M71K5M8MG41K",
+  "update d58 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71K3SN1Z2TTX5CX5YXCTQWK.54.01M71K62BMWHFT1QHCRJCGP151, current hb1.01M71K3SN1Z2TTX5CX5YXCTQWK.55.01M71K63BAS21C",
+  "optimize submit 429 {'error': 'operation 01M71K6AEM7JB0N2K5PDMAD69P is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "update d59 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71K3SN1Z2TTX5CX5YXCTQWK.62.01M71K6ES9NZZ03MRR41QZPN02, current hb1.01M71K3SN1Z2TTX5CX5YXCTQWK.63.01M71K6H3RPBHK"
+ ]
+}

@@ -1,0 +1,284 @@
+{
+ "rounds": 150,
+ "docs": 344,
+ "updates": 71,
+ "patch_updates": 71,
+ "rewrite_updates": 0,
+ "optimizes": [
+  [
+   "initial",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 13",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 20",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 43",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 45",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 47",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 56",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 59",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 67",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 70",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 71",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 76",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 78",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 82",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 85",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 86",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 87",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 88",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 100",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 101",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 115",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 117",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 119",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 123",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 126",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 131",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 139",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 142",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "round 144",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ],
+  [
+   "round 148",
+   "succeeded",
+   [
+    "optimized",
+    null
+   ]
+  ],
+  [
+   "final",
+   "succeeded",
+   [
+    "unchanged",
+    null
+   ]
+  ]
+ ],
+ "concurrent_runs": 146,
+ "concurrent_doc_outcomes": {
+  "deferred": 55,
+  "optimized": 45,
+  "unchanged": 46
+ },
+ "violations": [
+  "update d63 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71K1XN3NNNYPRVMN6PHVYBP.25.01M71K1ZVNPVG10SR7R8M91CW9, current hb1.01M71K1XN3NNNYPRVMN6PHVYBP.26.01M71K1ZW3NRKH",
+  "update d110 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71K1XN3NNNYPRVMN6PHVYBP.44.01M71K223P4EZ5J89XZGQJZ19N, current hb1.01M71K1XN3NNNYPRVMN6PHVYBP.45.01M71K2250NRES",
+  "optimize submit 429 {'error': 'operation 01M71K22ASB63BJCTET0E2Z7BH is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "update d34 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71K1XN3NNNYPRVMN6PHVYBP.70.01M71K246PDKXD7SXD0GY70FAB, current hb1.01M71K1XN3NNNYPRVMN6PHVYBP.71.01M71K247DFBNT",
+  "optimize submit 429 {'error': 'operation 01M71K25MV3V4FAVFXFY381GH9 is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "update d156 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71K1XN3NNNYPRVMN6PHVYBP.97.01M71K27TS3CXBP3WJ41J40A9B, current hb1.01M71K1XN3NNNYPRVMN6PHVYBP.98.01M71K27Z7JF1M",
+  "update d143 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71K1XN3NNNYPRVMN6PHVYBP.101.01M71K282HNJC7VGRKN5YTER68, current hb1.01M71K1XN3NNNYPRVMN6PHVYBP.102.01M71K286W95",
+  "update d118 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71K1XN3NNNYPRVMN6PHVYBP.118.01M71K2A1FYJ08GQ26FW1HS7Z9, current hb1.01M71K1XN3NNNYPRVMN6PHVYBP.119.01M71K2A4AT4",
+  "optimize submit 429 {'error': 'operation 01M71K2AGQF3C55YV6EJVG3F4D is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "optimize submit 429 {'error': 'operation 01M71K2KAVH19AF365QQK3EKG4 is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "update d131 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71K1XN3NNNYPRVMN6PHVYBP.185.01M71K2KSKN41GHAP0332GN7XB, current hb1.01M71K1XN3NNNYPRVMN6PHVYBP.186.01M71K2KVAPC",
+  "update d17 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71K1XN3NNNYPRVMN6PHVYBP.203.01M71K2PG4YG3TXEVHH8QXPM19, current hb1.01M71K1XN3NNNYPRVMN6PHVYBP.204.01M71K2PHM9E",
+  "optimize submit 429 {'error': 'operation 01M71K2PYMRWDBH3JRVVZBQY21 is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "update d164 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71K1XN3NNNYPRVMN6PHVYBP.213.01M71K2QPHDG3KP3WTRPWWQNHZ, current hb1.01M71K1XN3NNNYPRVMN6PHVYBP.214.01M71K2QR4W4",
+  "optimize submit 429 {'error': 'operation 01M71K2SN469926QKJWHS08FY7 is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "update d11 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71K1XN3NNNYPRVMN6PHVYBP.237.01M71K2VSSK5366MQHV6Y20HFP, current hb1.01M71K1XN3NNNYPRVMN6PHVYBP.238.01M71K2VV95B",
+  "update d306 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71K1XN3NNNYPRVMN6PHVYBP.245.01M71K2WXKT3SC7NDRP013ZQWJ, current hb1.01M71K1XN3NNNYPRVMN6PHVYBP.246.01M71K2X2EFD",
+  "optimize submit 429 {'error': 'operation 01M71K2X85E97XSPBCFNVCQTQX is active in the maintenance scope of this cluster; retry after it finishes', 'code': 'too_many_requests', 'disposition': {'effects': 'none', 'action': ",
+  "update d215 409 {'error': \"write authority 'graph_head:main' changed during preparation (expected hb1.01M71K1XN3NNNYPRVMN6PHVYBP.265.01M71K30BDG1XP3448MVZ8YMTV, current hb1.01M71K1XN3NNNYPRVMN6PHVYBP.266.01M71K30D09F"
+ ]
+}

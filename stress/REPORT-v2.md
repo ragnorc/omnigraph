@@ -16,7 +16,61 @@ that fixes apply to the code under test.
 from the release zip (checksum matched `SHA256SUMS`), Azurite 3.35.0 from npm.
 **Started** 2026-11-09 20:55 UTC.
 
-<!-- VERDICT -->
+## Verdict
+
+**#1275 (`feat/optimize-engine` at `761a4e66`): not mergeable as it stands.**
+The merge of `origin/main` did not touch `db/omnigraph/optimize.rs`, and the
+blocking pipeline early exit (B1) reproduces byte for byte: runs with no bound
+report `deferred(gate_hold_limit)` tables and an empty `resume_at`, and on a
+1,030-table catalog each served run still optimizes one table. The artifact
+refresh still ignores cancellation (S4). Both fixes, with regression tests,
+are on the stress branch and merge cleanly with the new head.
+
+**#1282 (`feat/optimize-served` at `1c67541c`): not yet.** Every v1
+should-fix still reproduces unchanged (S1, S2, S3, S5, S6; their code is
+byte-identical), S7 still reproduces on S3 and Azure (somewhat smaller: runs
+and writes are faster at the new head, most likely from #1291's probe
+placement), and this campaign found S8: lookups
+queue the run's before-publish record write, which holds the writer gates, so
+polling clients lengthen every run's writer stall (a median +1.8 s per run
+with 8 pollers on S3). A fix for S8 is on the stress branch beside the v1
+fixes. The merge itself held up: the new column-patch updates stayed correct
+beside sequential and concurrent optimizes on local, S3 and Azure; cache
+eviction under the 64-handle budget, and under a 2-handle instrumented
+variant, never served a stale or missing row; `maintain` is enforced exactly
+on the served path with no effects from 199,025 denials; and crash, kill and
+chaos rounds on all three backends kept every invariant. New notes: direct
+index commands record any `--as` actor (N16), back-to-back runs refuse ~45%
+of a single writer's updates (N17, documented), and a history release from
+main can add ~9 s to any publication, a run's included (N18).
+
+**Stopping point.** A second full round (phase E, new seeds and shapes,
+`evidence-v2/E/`) found nothing new: concurrent column patches on local, S3
+and Azure matched the model; cache pressure over 300 tables and the
+small-cache variant over 100 tables were clean, and both overshooting runs
+overlapped a history release (N18); hammers on local (2,648 operations), S3
+(808) and Azure (107) and seam-armed kills (20 rounds, 34 seams) and chaos
+(local 20, S3 10) kept every invariant. Azure added S8 (4 pollers: excess up
+to 3.5 s) and N17 (49% of updates refused) to the backends that show them.
+Campaign time: 20:55 to 03:32 UTC.
+
+## Findings by severity
+
+| # | Severity | Status at the new heads | PR | Fix on the stress branch |
+|---|---|---|---|---|
+| B1 | **blocking** | reproduces, unchanged | #1275 | `23e1d66f` (+ test) |
+| S1 | should-fix | reproduces, unchanged (S3) | #1282 | `fa5cd0ff` (+ test) |
+| S2 | should-fix | reproduces, unchanged (local) | #1282 | `08d2a0e7` (part) |
+| S3 | should-fix | reproduces, unchanged | #1282 | `8d02fc6e` |
+| S4 | should-fix | reproduces, unchanged | #1275 | `331d8485` + `24614965` (+ test) |
+| S5 | should-fix | reproduces, unchanged | #1282 | `de11e65d` (+ test) |
+| S6 | should-fix | reproduces, unchanged | #1282 | `5a1bbeec` |
+| S7 | should-fix | reproduces on S3 and Azure, somewhat smaller (#1291) | #1282 | `e189d893` (docs only) |
+| **S8** | should-fix | **new**: lookups lengthen each run's writer stall | #1282 | `5b0f0dcb` (+ test) |
+| N1, N2, N6, N8, N9, N11–N13, N15 | note | reproduce (N9 measured, N15 extended into S8) | — | N2 `53107bc9`, N8 `a6594475` |
+| **N16** | note | **new**: direct index commands record any `--as` actor; docs disagree on the default actor | #1282 docs | — |
+| **N17** | note | **new measurement**: back-to-back runs refuse 44–49% of a single writer's updates (documented behavior) | #1282 | — |
+| **N18** | note (main) | **new**: a history release (~9 s on a 1,030-table catalog) runs inside a publication, a run's included | main | — |
 
 ## What changed between the heads
 
@@ -111,6 +165,7 @@ correction (`e189d893`) is on this branch, not in the PR.
   | S3 | 8 | **1,789 / 3,338** | 4.36 s | 2.10 s |
   | local | 4 | 753 / 2,595 | 3.60 s | 1.17 s |
   | S3, **stress-branch fix** | 4 | −46 / 479 | 1.50 s | 0.03 s |
+  | Azure | 4 | 208 / 3,459 | 4.72 s | 0.89 s |
 
   The excess grows linearly with the pollers. Under the cache-pressure
   campaign on S3 (3 writers, 2 readers, one submitter polling its own run) a
@@ -148,9 +203,10 @@ correction (`e189d893`) is on this branch, not in the PR.
   optimize publishes is refused `read_set_conflict` and not re-prepared
   (inserts are), as maintenance.md documents. Under back-to-back served runs
   this refuses **44% of a single writer's single-row updates locally (869 of
-  1,956) and 45% on S3 (72 of 159)**, about one refusal per run, none without
-  optimize (`C/upd_local.json`, `C/upd_s3.json`; the S3 second control is
-  void, see `C/upd_s3_NOTE.txt`). Content-preserving maintenance thus costs
+  1,956), 45% on S3 (72 of 159) and 49% on Azure (64 of 130)**, about one
+  refusal per run, none without optimize (`C/upd_local.json`,
+  `C/upd_s3.json`, `E/upd_azure.json`; the S3 second control is void, see
+  `C/upd_s3_NOTE.txt`). Content-preserving maintenance thus costs
   writers refusals as well as waits (S7); spacing runs would bound both.
 - **N9** (above): one id dated up to 60 s ahead closes admission on the whole
   cluster for up to that lead once it is evicted (42.5 s measured).
@@ -176,9 +232,12 @@ correction (`e189d893`) is on this branch, not in the PR.
 Every campaign on the SUT kept the invariants from v1: no acknowledged write
 lost, no double publish, nothing published by a failed, cancelled or
 interrupted run, reads never blocked (they kept being answered through every
-gate hold, including the 17.6 s one), and every run's gate hold within
+gate hold: 1,404 queries during the 17.6 s one), and every run's gate hold within
 `max_gate_hold` + longest table + a publication that is small unless N18 or S8
-applies.
+applies. Read p99 stayed at 39 ms locally and 130 ms on S3; the slowest reads
+(up to 3.1 s locally, 8.1 s on S3) cluster in gate holds, about two thirds of
+the reads over 0.5 s (`D/cache_*`), which on this 2-core box fits CPU and I/O
+contention from the rewrites rather than waiting on a gate.
 
 - **Column-patch updates beside optimize (new code path).** Differential
   against a model (`c9_column_patch_optimize.py`): every title lookup through
@@ -197,8 +256,9 @@ applies.
   before acceptance with no record entry and no commit. 199,025 denied
   submissions in 120 s beside two writers: all 403, none in the record or
   history, 5,525 acknowledged rows intact (`B/policy.json`). The engine-level
-  matrix is the PR's own `policy_engine_chassis` (passes in the workspace
-  run). Direct CLI: N16.
+  matrix is the PR's own `policy_engine_chassis`, which passes in the
+  workspace run on the stress branch (whose engine policy code is the PR
+  head's). Direct CLI: N16.
 - **Cache pressure (#1319).** 1,030-table catalog, writers inserting and
   updating rows of 200 tables (local) or 120 (S3) against a 64-handle cache,
   readers checking every acknowledged row and value, back-to-back runs: no
@@ -245,7 +305,15 @@ part, `fa5cd0ff` S1, `331d8485` + `24614965` S4, `5a1bbeec` S6, `53107bc9` N2,
 `e189d893` S7 docs, `a6594475` N8) merged cleanly with the PR head
 (`62f1f057`). New: `5b0f0dcb` S8.
 
-<!-- VALIDATION -->
+Validation of the stress branch (PR head + v1 fixes + `5b0f0dcb`):
+`cargo dev-nextest --no-fail-fast` ran 5,213 tests, 5,203 passed; the 10
+failures are the same environmental ones as in v1 (8 `omnigraph-bench`
+symlink and machine-identity probes,
+`cli_cluster::managed_lifecycle_capture_and_retry_records_refuse_symlinks_without_reading_targets`,
+`db::upgrade::tests::interrupted::unreadable_legacy_object_asks_for_a_rerun`;
+`evidence-v2/nextest_stress_branch_summary.txt`), including the PR's
+`policy_engine_chassis` maintain matrix. `cargo dev-clippy` and
+`cargo fmt --all --check` are clean.
 
 ## How to reproduce
 

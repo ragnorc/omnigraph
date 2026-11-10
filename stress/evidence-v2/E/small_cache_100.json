@@ -1,0 +1,57 @@
+{
+ "tables": 100,
+ "acked_rows": 1968,
+ "writes": {
+  "insert:200": 1768,
+  "update:409": 222,
+  "update:200": 1028,
+  "insert:409": 30
+ },
+ "runs": 116,
+ "runs_states": {
+  "succeeded": 116
+ },
+ "tables_optimized": 150,
+ "read_p50": 0.024793386459350586,
+ "read_p99": 0.03768157958984375,
+ "read_max": 3.1280364990234375,
+ "reads": 32750,
+ "gate_hold_max": 1178,
+ "gate_hold_excess_max_ms": -833,
+ "gate_hold_excess_p50_ms": -954,
+ "runs_with_excess_over_1s": 0,
+ "runs_with_excess_over_5s": 0,
+ "slow_reads": 217,
+ "slow_reads_inside_a_gate_hold": 139,
+ "slowest_reads": [
+  [
+   1794277879.5759883,
+   3.1280364990234375,
+   "T0770"
+  ],
+  [
+   1794277879.5763774,
+   3.1263656616210938,
+   "T0565"
+  ],
+  [
+   1794277836.6469169,
+   2.5059006214141846,
+   "T0482"
+  ],
+  [
+   1794278051.027991,
+   2.3396806716918945,
+   "T0995"
+  ],
+  [
+   1794277836.4866815,
+   2.3224196434020996,
+   "T0106"
+  ]
+ ],
+ "final_bad": 0,
+ "restart_bad": 0,
+ "violations": [],
+ "violation_count": 0
+}
