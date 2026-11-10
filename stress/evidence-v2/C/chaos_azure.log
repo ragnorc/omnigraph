@@ -1,0 +1,47 @@
+01:12:37 round 0 az recovery {'lease_broken': False, 'unlocked': None}
+01:12:39 round 0 killed SIGTERM exit 0 ops 1 acked 23
+01:12:39 round 1 az recovery {'lease_broken': False, 'unlocked': '01M71G787EVMH6PS91RM04RAH9'}
+01:12:44 deploy rc 0 took 2.41 d_at": 1794273163534909,                 "published": true               },               "contract": {                 "source_hash": "dbdbed9d2b8b1b594a0c84aaf810aca061852f3ecb9141b2ca1199ca7290a656",                 "schema_ir_hash": "sha256:32840642beecffe5fcd78730f28ad4834613174228f3aadfdb0d92ae425bee65",                 "schema_identity_domain": "01M71G76E5SJDVVT1Z0B8R7FMY",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14702/; config=/tmp/v2/C/chaos_azure/operator-1.yaml Deployment-ID: 01M71G763RAR4C6E20YY2JJZJR:2:01M71G7CR6QQ9QT5VYJAE937HY 
+01:12:46 round 1 deployment 01M71G763RAR4C6E20YY2JJZJR:2:01M71G7CR6QQ9QT5VYJAE937HY rc 0 2.4s then SIGTERM exit 0
+01:12:47 round 2 az recovery {'lease_broken': False, 'unlocked': '01M71G7ACE8FT3THJAAP303BBQ'}
+01:12:50 deploy rc 0 took 1.99 d_at": 1794273170104970,                 "published": true               },               "contract": {                 "source_hash": "c60a6681aece5411d88ba38ef87111683a84edf200283947bce077a20f589b9d",                 "schema_ir_hash": "sha256:9d86da098bb06f951318fc8889ea5e4d075c14adafd090e4ef91d7ce75d7b5d1",                 "schema_identity_domain": "01M71G76E5SJDVVT1Z0B8R7FMY",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14703/; config=/tmp/v2/C/chaos_azure/operator-2.yaml Deployment-ID: 01M71G763RAR4C6E20YY2JJZJR:3:01M71G7KEN9G135DMVQBSPFGYZ 
+01:12:52 round 2 deployment 01M71G763RAR4C6E20YY2JJZJR:3:01M71G7KEN9G135DMVQBSPFGYZ rc 0 2.0s then SIGTERM exit 0
+01:12:53 round 3 az recovery {'lease_broken': False, 'unlocked': '01M71G7HWK7G261E5Q0SHFZS43'}
+01:12:57 round 3 killed SIGKILL exit -9 ops 12 acked 163
+01:12:57 round 4 az recovery {'lease_broken': True, 'unlocked': '01M71G7QN1RB8Y0SN596WSEBW4'}
+01:13:00 round 4 killed SIGKILL exit -9 ops 14 acked 178
+01:13:01 round 5 az recovery {'lease_broken': True, 'unlocked': '01M71G7W7443YZCFXMZRXYATNJ'}
+01:13:04 deploy rc 0 took 2.17 d_at": 1794273184077974,                 "published": true               },               "contract": {                 "source_hash": "39d6be7620be35cef8b4b4ad09ba064a284a8ba9b04c23600f61a9cec07ebe5c",                 "schema_ir_hash": "sha256:5763eb54dd05705f12179726a34151d27a61cbc480224916b1c6a9a9764d5a6e",                 "schema_identity_domain": "01M71G76E5SJDVVT1Z0B8R7FMY",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14706/; config=/tmp/v2/C/chaos_azure/operator-5.yaml Deployment-ID: 01M71G763RAR4C6E20YY2JJZJR:4:01M71G813KMNNS1J7MBRF13NAB 
+01:13:07 round 5 deployment 01M71G763RAR4C6E20YY2JJZJR:4:01M71G813KMNNS1J7MBRF13NAB rc 0 2.2s then SIGTERM exit 0
+01:13:07 round 6 az recovery {'lease_broken': False, 'unlocked': '01M71G7ZHAW07N9XTNVBASAZSW'}
+01:13:12 round 6 killed SIGKILL exit -9 ops 20 acked 281
+01:13:12 round 7 az recovery {'lease_broken': True, 'unlocked': '01M71G85XDFYQ0D8VY9CS2J8HX'}
+01:13:16 round 7 killed SIGKILL exit -9 ops 23 acked 319
+01:13:17 round 8 az recovery {'lease_broken': True, 'unlocked': '01M71G8B0DMY1D8SZ0PFK8WJ78'}
+01:13:23 round 8 killed SIGKILL exit -9 ops 27 acked 373
+01:13:23 round 9 az recovery {'lease_broken': True, 'unlocked': '01M71G8F6755ZV70ZF1CTWJP3Q'}
+01:13:26 round 9 killed SIGKILL exit -9 ops 29 acked 392
+01:13:26 round 10 az recovery {'lease_broken': True, 'unlocked': '01M71G8NEEBQSJSYPYCBH7XYHD'}
+01:13:30 round 10 killed SIGKILL exit -9 ops 31 acked 414
+01:13:30 round 11 az recovery {'lease_broken': True, 'unlocked': '01M71G8RRN984E1KBW9H1FHEA0'}
+01:13:35 deploy rc 0 took 2.62 d_at": 1794273214736061,                 "published": true               },               "contract": {                 "source_hash": "cfd554e5dd5c1f31c74879c74360284445e1492e8d26f2e393af32ebe426b3fc",                 "schema_ir_hash": "sha256:155684efef28f583695a16b80f256ba6faeffc7f10e6935a9829ec51242a5edf",                 "schema_identity_domain": "01M71G76E5SJDVVT1Z0B8R7FMY",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14712/; config=/tmp/v2/C/chaos_azure/operator-11.yaml Deployment-ID: 01M71G763RAR4C6E20YY2JJZJR:5:01M71G8YKEMR2T9VZ1R0XCFYRN 
+01:13:38 round 11 deployment 01M71G763RAR4C6E20YY2JJZJR:5:01M71G8YKEMR2T9VZ1R0XCFYRN rc 0 2.6s then SIGTERM exit 0
+01:13:38 round 12 az recovery {'lease_broken': False, 'unlocked': '01M71G8WF475K49Q3GR5VTZ18A'}
+01:13:44 deploy rc 0 took 2.58 d_at": 1794273224020442,                 "published": true               },               "contract": {                 "source_hash": "23a48015a216662b4b7df2bac754d4355fa4b1ade9a8b38a24ee823d5abf9729",                 "schema_ir_hash": "sha256:b138cd68be0b783f89b82ba8f3f6590c5c9b32c6f0b034e0377de1da6f2842a2",                 "schema_identity_domain": "01M71G76E5SJDVVT1Z0B8R7FMY",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14713/; config=/tmp/v2/C/chaos_azure/operator-12.yaml Deployment-ID: 01M71G763RAR4C6E20YY2JJZJR:6:01M71G97S2Y4FGQV272DXTW1PT 
+01:13:47 round 12 deployment 01M71G763RAR4C6E20YY2JJZJR:6:01M71G97S2Y4FGQV272DXTW1PT rc 0 2.6s then SIGTERM exit 0
+01:13:48 round 13 az recovery {'lease_broken': False, 'unlocked': '01M71G94AHECW0CWWRXHAPT5YN'}
+01:13:52 round 13 killed SIGKILL exit -9 ops 39 acked 577
+01:13:52 round 14 az recovery {'lease_broken': True, 'unlocked': '01M71G9DAV33YHZ9383A69F0ST'}
+01:13:56 round 14 killed SIGKILL exit -9 ops 40 acked 588
+01:13:57 round 15 az recovery {'lease_broken': True, 'unlocked': '01M71G9HKCEK501RX3W0A57NGW'}
+01:14:05 round 15 killed SIGTERM exit 0 ops 45 acked 648
+01:14:05 round 16 az recovery {'lease_broken': False, 'unlocked': '01M71G9P633SFKT7QS3KCTW1W5'}
+01:14:12 round 16 killed SIGKILL exit -9 ops 49 acked 692
+01:14:12 round 17 az recovery {'lease_broken': True, 'unlocked': '01M71G9YGZ0AAX47FSKHKE3JC0'}
+01:14:16 round 17 killed SIGKILL exit -9 ops 50 acked 695
+01:14:17 round 18 az recovery {'lease_broken': True, 'unlocked': '01M71GA5KJ0YDNVSN9F8ZHKZKZ'}
+01:14:24 round 18 killed SIGKILL exit -9 ops 55 acked 733
+01:14:24 round 19 az recovery {'lease_broken': True, 'unlocked': '01M71GA9M7BN1VJKRW99K53MPD'}
+01:14:31 round 19 killed SIGKILL exit -9 ops 58 acked 754
+01:14:31 round final az recovery {'lease_broken': True, 'unlocked': '01M71GAHCEEYH4GFN9MMCA03M1'}
+01:14:34 SUMMARY {"rounds": 20, "deployments": 5, "ops_seen": 58, "acked_rows": 754, "final_states": {"unknown": 27, "cancelled": 3, "interrupted": 5, "succeeded": 22, "failed": 1}, "terminal_reasons": {"succeeded:": 39, "cancelled:cancelled by operator": 6, "interrupted:no live run held it at 2026-11-10T01:13:": 4, "interrupted:no live run held it at 2026-11-10T01:14:": 2, "cancelled:the server is shutting down": 1, "cancelled:deployment 01M71G763RAR4C6E20YY2JJZJR:2:": 1, "cancelled:deployment 01M71G763RAR4C6E20YY2JJZJR:3:": 1, "interrupted:no live run held it at 2026-11-10T01:12:": 1, "cancelled:deployment 01M71G763RAR4C6E20YY2JJZJR:6:": 1, "failed:not_committed": 1, "succeeded:a cancellation arrived after the publica": 1}, "violations": []}

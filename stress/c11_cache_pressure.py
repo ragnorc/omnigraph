@@ -166,6 +166,9 @@ summary = {"tables": ntables, "acked_rows": len(acked), "writes": wstats, "runs"
            "read_max": lat[-1] if lat else None, "reads": len(lat),
            "gate_hold_max": max((r["hold"] for r in runs if r["hold"] is not None), default=None),
            "gate_hold_excess_max_ms": max(excess) if excess else None,
+           "gate_hold_excess_p50_ms": sorted(excess)[len(excess) // 2] if excess else None,
+           "runs_with_excess_over_1s": sum(1 for e in excess if e > 1000),
+           "runs_with_excess_over_5s": sum(1 for e in excess if e > 5000),
            "slow_reads": len(slow_reads),
            "slow_reads_inside_a_gate_hold": sum(1 for (a, d, t) in slow_reads
                                                 if any(r["hold_interval"][0] < a + d and r["hold_interval"][1] > a for r in runs)),
@@ -173,3 +176,4 @@ summary = {"tables": ntables, "acked_rows": len(acked), "writes": wstats, "runs"
            "final_bad": bad1, "restart_bad": bad2, "violations": violations[:50], "violation_count": len(violations)}
 log("SUMMARY", json.dumps(summary)[:3000])
 (out / "summary.json").write_text(json.dumps(summary, indent=1))
+(out / "runs.json").write_text(json.dumps(runs, indent=1))

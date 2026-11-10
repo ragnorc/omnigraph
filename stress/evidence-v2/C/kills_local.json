@@ -1,0 +1,13 @@
+{
+ "rounds": 30,
+ "ops_seen": 581,
+ "acked_rows": 10855,
+ "final_states": {
+  "unknown": 549,
+  "succeeded": 32
+ },
+ "seams_armed": 0,
+ "violations": [],
+ "az_recoveries": 0,
+ "az_leases_broken": 0
+}
