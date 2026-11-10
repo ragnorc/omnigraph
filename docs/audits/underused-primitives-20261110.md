@@ -138,7 +138,7 @@ common the path is.
 
 ### 1. L-scan-limit-pushdown: a query limit over a scan without a filter never reaches Lance (Lance) — S
 
-**Issue:** see "Filed issues".
+**Issue:** [#1335](https://github.com/ModernRelay/omnigraph/issues/1335).
 
 - **Now.** `limit_over_scan` (`E/engine/lower.rs:355-366`) finds a `Limit` directly over the
   projection over a scan and passes its rows only as the gather size (`E/engine/lower.rs:641-643`,
@@ -159,6 +159,8 @@ common the path is.
   20 MB, which matches `:3160-3162`.
 
 ### 2. D-filter-preselect: the in-memory filter does not short-circuit (DataFusion) — S to M
+
+**Issue:** [#1336](https://github.com/ModernRelay/omnigraph/issues/1336).
 
 - **Now.** `conjoined_mask` (`E/engine/operators/filter.rs:25-38`) evaluates every conjunct over the
   whole batch and ANDs the masks. `evaluate_filter` (`E/engine/expr.rs:160-179`) evaluates both
@@ -187,6 +189,8 @@ common the path is.
   often production queries reach this path is not measured.
 
 ### 3. A-typeindex-dict: graph-index id lookups use a SipHash map of owned strings (Arrow) — M
+
+**Issue:** [#1337](https://github.com/ModernRelay/omnigraph/issues/1337).
 
 - **Now.** `TypeIndex` (`E/graph_index/mod.rs:12-75`) is a std `HashMap<String, u32>` plus a
   `Vec<String>`. `get_or_insert` (`:28-36`) allocates two `String`s per new id; the build interns
@@ -225,6 +229,8 @@ common the path is.
 
 ### 4. D-correlated-fold-streams: a correlated block holds its whole inner output before folding (DataFusion) — S
 
+**Issue:** [#1338](https://github.com/ModernRelay/omnigraph/issues/1338).
+
 - **Now.** The per-row correlated path drains the inner plan into a `Vec`, each batch charged
   (`E/engine/operators/anti_join.rs:366-372`), then `absorb_inner_batches`
   (`E/engine/operators/subquery_aggregate.rs:455-479`) folds the batches one at a time. The key-set
@@ -237,6 +243,8 @@ common the path is.
 - **Evidence.** Code inspection.
 
 ### 5. D-spill-report: spills are invisible in the execution report, and uncompressed (DataFusion) — S
+
+**Issue:** [#1339](https://github.com/ModernRelay/omnigraph/issues/1339).
 
 - **Now.** The report row (`E/engine/run.rs:121-137`) has polls, output rows, `drained` and the
   switch. `SpillMetrics` from `AggregateExec` and from the `SortExec` inside the bound-edge `Expand`
@@ -255,6 +263,8 @@ common the path is.
 - **Evidence.** Code inspection.
 
 ### 6. Small items — S each
+
+**Issue:** [#1340](https://github.com/ModernRelay/omnigraph/issues/1340).
 
 - **A-ordered-interleave.** `next_ordered_batch` (`E/ordered_cursor.rs:325-349`), on the export
   path, copies each chunk twice: `concat_batches` then `take_record_batch`, on chunks up to 64 MiB.
@@ -276,6 +286,8 @@ common the path is.
   `GroupValues` with `GroupsAccumulator` would let this fold lower to `AggregateExec`, which spills.
 
 ### Sent to #724 as evidence (not filed separately)
+
+**Comment:** [#724 comment](https://github.com/ModernRelay/omnigraph/issues/724#issuecomment-6765977674).
 
 #724 (process admission control) already says memory outside the query pool, including scanner
 buffers, must be bounded. The comment adds:
@@ -364,4 +376,15 @@ Each of these looks like an underused primitive and is not. Do not undo them.
 
 ## Filed issues
 
-To be filled in after filing.
+| Finding | Issue |
+|---|---|
+| L-scan-limit-pushdown | [#1335](https://github.com/ModernRelay/omnigraph/issues/1335) |
+| D-filter-preselect | [#1336](https://github.com/ModernRelay/omnigraph/issues/1336) |
+| A-typeindex-dict | [#1337](https://github.com/ModernRelay/omnigraph/issues/1337) |
+| D-correlated-fold-streams | [#1338](https://github.com/ModernRelay/omnigraph/issues/1338) |
+| D-spill-report, D-spill-compression | [#1339](https://github.com/ModernRelay/omnigraph/issues/1339) |
+| A-ordered-interleave, A-hydrate-estimate, D-keyset-groups | [#1340](https://github.com/ModernRelay/omnigraph/issues/1340) |
+| L-scan-default-buffers, L-scan-fragment-readahead, L-topology-build-collect | comment on [#724](https://github.com/ModernRelay/omnigraph/issues/724#issuecomment-6765977674) |
+
+Skipped as already covered: none. Not filed on their own: `collect_bool` sieve masks (measured 1.22 times
+faster, dominated by the hash probe) and `set_indices_u32` in the runtime filter (trivial).
