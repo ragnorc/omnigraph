@@ -37,6 +37,9 @@ REPO = og.REPO
 
 
 def child_binary():
+    pinned = og.BIN / "stress_served_child"
+    if pinned.exists():
+        return str(pinned)
     cands = sorted(glob.glob(str(REPO / "target/debug/deps/stress_served_child-*")), key=os.path.getmtime)
     cands = [c for c in cands if os.access(c, os.X_OK) and not c.endswith(".d")]
     return cands[-1]
