@@ -347,3 +347,52 @@ fn the_corpus_type_checks_alike_under_the_edition_line() {
     assert_eq!(changed, want);
     assert!(agree * 100 >= total * 85, "{agree} of {total}");
 }
+
+/// One declaration's verdict: accepted, or its diagnostic's code and text.
+fn verdict(result: Result<(), (String, String)>) -> String {
+    match result {
+        Ok(()) => "ok".to_string(),
+        Err((code, message)) => format!("{code}: {message}"),
+    }
+}
+
+/// Temporary, deleted with the edition-2 checker: every edition-2
+/// declaration in the repository read by the one checker, as the
+/// edition-window tree under edition 2's acceptance, is accepted or refused
+/// exactly as the edition-2 checker does, with the same code and message.
+#[test]
+fn every_query_text_checks_alike_in_the_one_checker() {
+    use omnigraph_compiler::query::syntax::edition_window::surface::surface;
+    let mut differ = Vec::new();
+    let mut total = 0usize;
+    for text in corpus() {
+        let Some(cat) = catalog(&text) else { continue };
+        let Ok(file) = edition_window::parse(&text.source) else {
+            continue;
+        };
+        let one = check_file(&cat, &surface(&file));
+        for (decl, (name, new)) in declarations(file).iter().zip(one) {
+            total += 1;
+            let old = verdict(typecheck_query_decl(&cat, decl).map(|_| ()).map_err(|e| {
+                e.diagnostic().map_or_else(
+                    || ("other".to_string(), e.to_string()),
+                    |d| (d.code.as_str().to_string(), d.message.clone()),
+                )
+            }));
+            let new = verdict(
+                new.map(|_| ())
+                    .map_err(|d| (d.code.as_str().to_string(), d.message.clone())),
+            );
+            if old != new {
+                differ.push(format!("{} `{name}`\n  edition 2: {old}\n  one:       {new}", text.origin));
+            }
+        }
+    }
+    assert!(total > 1000, "the corpus walk found {total} declarations");
+    assert!(
+        differ.is_empty(),
+        "{} of {total} declarations differ:\n{}",
+        differ.len(),
+        differ.join("\n")
+    );
+}

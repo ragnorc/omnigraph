@@ -30,11 +30,22 @@ mod tests;
 #[grammar = "query/syntax/grammar.pest"]
 pub(crate) struct QueryParser;
 
-/// A source that opened with `gq 3;`.
+/// A parsed source: its edition, its settings and its body.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SourceFile {
+    pub edition: Edition,
     pub settings: Vec<SettingStmt>,
     pub body: Body,
+}
+
+/// The edition a source is read in (docs/rfcs/2026-11-07-gq-3.md, section
+/// 6): `Two` for a source without the edition line or with `gq 2;`, read by
+/// the edition-window grammar and checked under edition 2's acceptance;
+/// `Three` for `gq 3;`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Edition {
+    Two,
+    Three,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -182,6 +193,19 @@ pub enum Stmt {
     },
     Delete {
         variable: String,
+    },
+    /// `update T set { … } where φ`, edition 2 only (edition 3 refuses it at
+    /// parse, `Q008`). The predicate reads the target's properties as
+    /// `$T.p`, the target type standing where a binding would.
+    UpdateWhere {
+        type_name: String,
+        assignments: Vec<Assignment>,
+        predicate: Expr,
+    },
+    /// `delete T where φ`, edition 2 only, read as [`Stmt::UpdateWhere`].
+    DeleteWhere {
+        type_name: String,
+        predicate: Expr,
     },
 }
 

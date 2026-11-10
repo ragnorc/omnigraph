@@ -266,7 +266,9 @@ pub enum Term {
     Fuse {
         arms: Vec<Term>,
         target: String,
-        k: u64,
+        /// The fusion constant; `None` is edition 2's unwritten one, the
+        /// default `RRF_DEFAULT_K` (edition 3 writes the default).
+        k: Option<Count>,
         weights: Vec<f64>,
     },
     /// The least fixpoint of a declared read over itself; `body` reads the

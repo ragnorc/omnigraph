@@ -162,6 +162,20 @@ fn statement(s: &Stmt, style: Style) -> String {
             assignments: a,
         } => format!("update ${variable} set {{ {} }}", assignments(a)),
         Stmt::Delete { variable } => format!("delete ${variable}"),
+        // Edition 2's spellings, which edition 3 refuses.
+        Stmt::UpdateWhere {
+            type_name,
+            assignments: a,
+            predicate,
+        } => format!(
+            "update {type_name} set {{ {} }} where {}",
+            assignments(a),
+            expr(predicate)
+        ),
+        Stmt::DeleteWhere {
+            type_name,
+            predicate,
+        } => format!("delete {type_name} where {}", expr(predicate)),
     }
 }
 

@@ -457,6 +457,7 @@ pub(crate) fn round_trip(d: &Decl, style: Style) -> Result<Trip, String> {
     let text = format!("gq 3;\n{}", print_decl(d, style));
     match parse_source(&text) {
         Ok(SourceFile {
+            edition: crate::query::syntax::Edition::Three,
             body: Body::Decls(decls),
             ..
         }) if decls.len() == 1 && decls[0] == *d => Ok(Trip::Equal),

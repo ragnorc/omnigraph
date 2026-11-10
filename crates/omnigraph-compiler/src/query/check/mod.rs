@@ -85,7 +85,7 @@ pub fn check_file(
     let unit: HashMap<String, &Decl> = decls.iter().map(|d| (d.name.clone(), *d)).collect();
     decls
         .iter()
-        .map(|d| (d.name.clone(), check_decl(catalog, &unit, d)))
+        .map(|d| (d.name.clone(), check_decl(catalog, &unit, d, file.edition)))
         .collect()
 }
 
@@ -102,7 +102,7 @@ pub fn check_syntax_decl(
         Body::Statement(_) => Vec::new(),
     };
     let unit: HashMap<String, &Decl> = decls.iter().map(|d| (d.name.clone(), *d)).collect();
-    check_decl(catalog, &unit, syntax.decl()).map(|checked| checked.core)
+    check_decl(catalog, &unit, syntax.decl(), file.edition).map(|checked| checked.core)
 }
 
 /// Each declaration's name and its checked form or refusal.
@@ -114,15 +114,20 @@ pub fn check_source(catalog: &Catalog, source: &str) -> Result<CheckedDecls, Que
     Ok(check_file(catalog, &file))
 }
 
-/// Type-check one declaration of a source unit.
+/// Type-check one declaration of a source unit under `edition`'s
+/// acceptance.
 pub fn check_decl(
     catalog: &Catalog,
     unit: &HashMap<String, &Decl>,
     decl: &Decl,
+    edition: Edition,
 ) -> Result<CheckedDecl, QueryDiagnostic> {
+    let rewritten = edition::rewrite(catalog, decl, edition)?;
+    let decl = &rewritten;
     let mut ctx = Ctx {
         catalog,
         unit,
+        edition,
         fresh: 0,
         frames: Vec::new(),
         assume: HashMap::new(),
@@ -252,6 +257,9 @@ fn is_registry_name(name: &str) -> bool {
 struct Ctx<'a> {
     catalog: &'a Catalog,
     unit: &'a HashMap<String, &'a Decl>,
+    /// The edition the source is read in: edition 2's spellings and
+    /// acceptance are [`edition`]'s switches.
+    edition: Edition,
     fresh: u32,
     /// The declared reads being inlined, outermost first.
     frames: Vec<Frame>,
@@ -2369,9 +2377,13 @@ impl Ctx<'_> {
                 ));
             }
         }
+        // Edition 2 fuses duplicate arms as it always has.
         for i in 0..arms.len() {
             for j in 0..i {
-                if arms[i].1.identity.is_some() && arms[i].1.identity == arms[j].1.identity {
+                if self.edition == Edition::Three
+                    && arms[i].1.identity.is_some()
+                    && arms[i].1.identity == arms[j].1.identity
+                {
                     return Err(err(
                         T75,
                         format!(
@@ -2383,12 +2395,23 @@ impl Ctx<'_> {
                 }
             }
         }
-        let mut k = RRF_DEFAULT_K;
+        let mut k = match self.edition {
+            Edition::Two => None,
+            Edition::Three => Some(Count::Literal(RRF_DEFAULT_K)),
+        };
         let mut weights = vec![1.0; n];
         for (o, v) in &c.options {
             match (o.as_str(), v) {
                 ("k", Expr::Literal(Literal::Integer(x))) if *x >= 1 && *x <= RRF_MAX_K as i128 => {
-                    k = *x as u64
+                    k = Some(Count::Literal(*x as u64))
+                }
+                // Edition 2 reads the constant from an integer parameter too;
+                // the engine refuses a value out of range, as today.
+                ("k", Expr::Variable(p))
+                    if self.edition == Edition::Two
+                        && sc.params.get(p).is_some_and(|t| !t.list && is_integer(t.scalar)) =>
+                {
+                    k = Some(Count::Param(p.clone()))
                 }
                 ("k", _) => {
                     return Err(err(
@@ -2828,6 +2851,10 @@ impl Ctx<'_> {
                     WriteClass::Constructive,
                 ))
             }
+            Stmt::UpdateWhere { .. } | Stmt::DeleteWhere { .. } => Err(err(
+                Q008,
+                "an update or delete statement carries a where; the edition-window rewrite binds and filters it",
+            )),
             Stmt::Delete { variable } => {
                 let target = self.statement_target(sc, variable, "delete")?;
                 Ok((
@@ -3059,6 +3086,34 @@ impl Ctx<'_> {
         };
         let boolean = Ty::scalar(ScalarType::Bool, false);
         Ok(match e {
+            Expr::InfixString {
+                op,
+                left,
+                right,
+                at: written,
+            } if self.edition == Edition::Two => {
+                // The rewriter's rows: over a list `contains` is membership,
+                // over a String the registry call.
+                let list = self
+                    .expr(sc, left, sub)?
+                    .ty
+                    .as_value()
+                    .is_some_and(|p| p.list);
+                let rewritten = if list && *op == InfixStringOp::Contains {
+                    Expr::In {
+                        needle: right.clone(),
+                        list: left.clone(),
+                        at: written.clone(),
+                    }
+                } else {
+                    Expr::Call(Call {
+                        name: op.name().to_string(),
+                        args: vec![Arg::Expr((**left).clone()), Arg::Expr((**right).clone())],
+                        options: Vec::new(),
+                    })
+                };
+                return self.expr(sc, &rewritten, at);
+            }
             Expr::InfixString {
                 op,
                 left,
@@ -3451,7 +3506,9 @@ impl Ctx<'_> {
                         ),
                     ));
                 }
-                if args.len() != 2 {
+                // Edition 2 writes `fuzzy`'s edit budget as a third argument.
+                let window_budget = self.edition == Edition::Two && name == "fuzzy" && args.len() == 3;
+                if args.len() != 2 && !window_budget {
                     return Err(err(
                         T71,
                         format!(
@@ -3459,11 +3516,16 @@ impl Ctx<'_> {
                         ),
                     ));
                 }
+                let mut args = args;
+                let positional_budget = window_budget.then(|| args.pop()).flatten();
                 search_field(self, &args)?;
                 if !string(&args[1].ty) {
                     return Err(err(T19, format!("`{name}`'s query is a String")));
                 }
-                let mut options = Vec::new();
+                let mut options: Vec<(String, SExpr)> = positional_budget
+                    .map(|b| ("max_edits".to_string(), b))
+                    .into_iter()
+                    .collect();
                 for (o, v) in &c.options {
                     if name == "fuzzy" && o == "max_edits" {
                         if let Expr::Literal(Literal::Integer(n)) = v
@@ -3476,7 +3538,7 @@ impl Ctx<'_> {
                         return Err(err(T71, format!("`{name}` has no option `{o}`")));
                     }
                 }
-                if name == "fuzzy" && options.is_empty() {
+                if name == "fuzzy" && options.is_empty() && self.edition == Edition::Three {
                     // `fuzzy(f, q)` with no budget is two edits, as today.
                     options.push(("max_edits".into(), int_lit(2)));
                 }
@@ -4869,6 +4931,7 @@ fn expr_vars(e: &Expr, out: &mut Vec<String>) {
     }
 }
 
+mod edition;
 mod scalar;
 pub use scalar::{SExpr, SKind, Terms};
 

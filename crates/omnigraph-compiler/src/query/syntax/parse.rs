@@ -415,6 +415,7 @@ fn structural(input: &str) -> R<SourceFile> {
         }
     }
     Ok(SourceFile {
+        edition: Edition::Three,
         settings,
         body: statement.unwrap_or(Body::Decls(decls)),
     })

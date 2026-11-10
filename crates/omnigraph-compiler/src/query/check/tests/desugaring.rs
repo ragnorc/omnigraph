@@ -477,7 +477,7 @@ fn every_surface_form_lowers_to_the_term_the_table_names() {
         "query f($s: String, $v: Vector(3)) { match { let $docs = { match { $d: Doc } return { $d } }  from rrf(nearest($docs, $d.embedding, $v, k: 5), bm25($docs, $d.body, $s)) } return { $d } }",
     );
     assert!(
-        matches!(match_term(&got), Term::Fuse { arms, k: 60, weights, .. } if arms.len() == 2 && weights == &vec![1.0, 1.0])
+        matches!(match_term(&got), Term::Fuse { arms, k: Some(Count::Literal(60)), weights, .. } if arms.len() == 2 && weights == &vec![1.0, 1.0])
     );
     let got = lower(
         "query g($h: String) { match { $p: Person { handle: $h } } return { $p } }\nquery f() { match { from g(\"a\") } return { $p } }",

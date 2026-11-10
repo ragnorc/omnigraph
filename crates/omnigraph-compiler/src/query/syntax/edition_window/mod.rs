@@ -1690,5 +1690,7 @@ fn parse_nearest_ordering(pair: pest::iterators::Pair<Rule>, scope: NameScope<'_
     })
 }
 
+pub mod surface;
+
 #[cfg(test)]
 mod tests;
