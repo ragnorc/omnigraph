@@ -393,3 +393,60 @@ both authority modes, Fix A + B build): 189 runs, 120 published, beside
 2,329 writes, 0 violations; every run visited each table once in order and
 `resume_at` stayed consistent, which rechecks B1 with `tables` and
 `start_at` subsets (`evidence2/chaos/c1_engine_90s_fixbuild.log`).
+
+## Could not test
+
+- **Live Azure, real S3 latency, in-region qualification:** RustFS and
+  Azurite on loopback only, as in round 1. The stall of R2-N1 depends on
+  how long a preparation takes against how often writers commit; real S3
+  latency will change the proportions, not the mechanism.
+- **`max_writer_yield` over HTTP:** it is not settable over HTTP (by design,
+  RFC §1.2), so every served run used the default 10 s; 0, a few ms, and a
+  limit longer than the gate-hold bound were tested at the engine API only.
+- **A kill at an exact point inside the served yield:** the PR has no seam
+  inside the yield that the served child can park on (the
+  `gate.writer_yield.*` seams are observation-only). Kills, SIGTERM, cancel
+  and deployment during the yield were placed by timing (`c12`, ~1.5 s into
+  a yield the record and `writer_yield_ms` confirm), and random kills in
+  campaign 4 land in or just after a yield most of the time on S3.
+- **CLI `--timeout` on a managed target:** no managed control plane on the
+  box; R2-N7 is from reading the code.
+- **The S2 read-back on S3:** `settle_returned_local_write` runs only for
+  the local codec by design; the S3 counterpart is S1's settle-on-read,
+  exercised by the lost-answer cases.
+- **Fix B alone:** the Fix B commit was not built and tested on its own;
+  Fix A and Fix B were built, tested and measured together (the regression
+  test of each was red on the PR head and green on the pair).
+- **`origin/main` comparison builds:** not built. "Reproduces on main" is
+  judged from the code: the writer yield, the CLI `--timeout` and the
+  served optimize do not exist on main.
+- **`scripts/check-docs.py`** ran (pinned packages installed in a venv):
+  `Documentation OK (494 Markdown files checked)` on the docs commits.
+
+## Commits on the retest branch
+
+| Commit | What |
+|---|---|
+| `adc77033` | round-1 harnesses brought over, round-1 report moved to `REPORT-round1.md`, stress test targets declared, baseline and regression evidence |
+| `01d14124` | harnesses `c9_writer_yield.py`, `c10_cli_timeout.py` (+ `tlsproxy.py` `stall_request`), `c11_notes.py`; PR-binary evidence |
+| `34d73261` | harness only: `stress/engine_writer_yield_stress.rs` (target `engine_writer_yield_stress`) |
+| `301286a2` | **Fix B** (R2-S1, R2-S2): the yield waits for writes in flight across the last optimize publication; two regression tests in `failpoints.rs`; RFC §1.2 and `maintenance.md` |
+| `d389846c` | **Fix A** (R2-N5): a run cancelled in its yield returns before the gates; regression test in `failpoints.rs` |
+| `7a79342b`, `fb000900`, `34a3e2a6` | after-fix and mix evidence, `c12_yield_events.py`, report |
+| `53ef07f4` | docs: `maintenance.md` says a run under steady concurrent writes often waits the whole yield (R2-N1) |
+
+## How to reproduce
+
+As round 1 ("How to reproduce" in `REPORT-round1.md`): RustFS 1.0.0-beta.12
+on 127.0.0.1:9000 (`omnigraphci` / `omnigraphci-secret`, bucket
+`omnigraph-stress` via `s3util.py mb`), Azurite 3.35.0 on 127.0.0.1:10000
+(container `omnigraph-stress` via `azutil.ensure_container`), a CA and a
+127.0.0.1 server certificate under `/tmp/tls` (`ca.pem`, `cert.pem`,
+`key.pem`) for the TLS proxy. Build with `cargo dev-build-tests`; copy
+`omnigraph`, `omnigraph-server`, `omnigraph-azure-admission` and the
+`stress_served_child-*` test binary (as `stress_served_child`) into one
+directory and pass it as `OG_BIN_DIR` (the PR-head set was `/tmp/r2bin`, the
+fixed set `/tmp/r2fix`). `run_queue2.sh`, `run_queue3.sh` and
+`run_queue4.sh` are the exact campaign lists of this round;
+`c9_summary.py` and `c9_yield_holders.py` summarize `c9_writer_yield.py`
+output.
