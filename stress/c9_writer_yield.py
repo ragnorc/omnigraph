@@ -46,6 +46,8 @@ env = {"OMNIGRAPH_OPTIMIZE_GATE_HOLD_SECONDS": str(max(1, HOLD_MS // 1000)),
        "OMNIGRAPH_OPTIMIZE_MAX_GATE_HOLD_SECONDS": "5",
        "RUST_LOG": os.environ.get("RUST_LOG", "info,omnigraph::loader=debug,omnigraph::exec=debug")}
 srv = og.Server(root, int(os.environ.get("STRESS_PORT", "13950")), str(out / "server.log"), env).start(timeout=120)
+import atexit
+atexit.register(lambda: srv.kill(signal.SIGKILL, wait=10))
 h = srv.http
 if BRANCH_WRITERS:
     s, b, _ = h.branch_create("kg", "side")
@@ -53,6 +55,8 @@ if BRANCH_WRITERS:
 
 
 def ts(text):
+    if isinstance(text, (int, float)):
+        return text / 1e6
     text = text.replace("Z", "+00:00")
     base, _, tz = text.partition("+")
     if "." in base:

@@ -1,0 +1,45 @@
+{
+ "N6_empty_tables": {
+  "submit": 202,
+  "error": null,
+  "terminal": [
+   "failed",
+   "optimize table list is empty"
+  ]
+ },
+ "N6_duplicate_tables": {
+  "submit": 202,
+  "error": null,
+  "terminal": [
+   "failed",
+   "optimize table 'node:Person' is listed twice"
+  ]
+ },
+ "N1_evicted_id_plain": [
+  409,
+  "conflict",
+  "[operation_id_expired] operation id 01M73MWGN9ECRQA7NXY0WV6CHY is at or before the record's eviction mark (1794345157712 ms); mint a new id"
+ ],
+ "N1_evicted_id_over_ceiling": [
+  400,
+  "bad_request",
+  "max_gate_hold_ms 1000000000 exceeds this server's ceiling of 60000 ms"
+ ],
+ "N13_export_during_run": [
+  413,
+  "payload_too_large",
+  "resource limit exceeded for stream_export_slots: actual 2, limit 1",
+  null
+ ],
+ "N5_damaged_lookup": [
+  409,
+  "conflict",
+  "[operation_record_invalid] could not parse the operation record: EOF while parsing an object at line 1 column 20987"
+ ],
+ "N5_damaged_submit": [
+  409,
+  "conflict",
+  "[operation_record_invalid] could not parse the operation record: EOF while parsing an object at line 1 column 20987"
+ ],
+ "N5_record_untouched": true
+}

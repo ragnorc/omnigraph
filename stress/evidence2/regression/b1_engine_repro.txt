@@ -1,1 +1,11 @@
-target/debug/deps/engine_optimize_stress-40141d5e3bdc7252
+running 1 test
+planning 1: resume_at None gate_hold 522.314104ms
+  node:T00=optimized node:T01=unchanged node:T02=unchanged node:T03=unchanged node:T04=unchanged node:T05=unchanged node:T06=unchanged node:T07=unchanged node:T08=unchanged node:T09=unchanged node:T10=unchanged node:T11=unchanged
+planning 2: resume_at None gate_hold 519.796121ms
+  node:T00=optimized node:T01=unchanged node:T02=unchanged node:T03=unchanged node:T04=unchanged node:T05=unchanged node:T06=unchanged node:T07=unchanged node:T08=unchanged node:T09=unchanged node:T10=unchanged node:T11=unchanged
+planning 4: resume_at None gate_hold 521.486706ms
+  node:T00=optimized node:T01=unchanged node:T02=unchanged node:T03=unchanged node:T04=unchanged node:T05=unchanged node:T06=unchanged node:T07=unchanged node:T08=unchanged node:T09=unchanged node:T10=unchanged node:T11=unchanged
+planning 8: resume_at None gate_hold 518.5241ms
+  node:T00=optimized node:T01=unchanged node:T02=unchanged node:T03=unchanged node:T04=unchanged node:T05=unchanged node:T06=unchanged node:T07=unchanged node:T08=unchanged node:T09=unchanged node:T10=unchanged node:T11=unchanged
+test stress_repro_pipeline_exits_before_planning_the_tail ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 2.69s

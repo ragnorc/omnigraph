@@ -1,0 +1,309 @@
+{
+ "config": {
+  "seconds": 120.0,
+  "writers": 1,
+  "pollers": 0,
+  "poll_ms": 100,
+  "branch_writers": 0,
+  "mutators": 0,
+  "hold_ms": 1000,
+  "root": "s3://omnigraph-stress/wy3/wy-1794343282158349105"
+ },
+ "control": {
+  "writes_ok_main": 645,
+  "writes_ok_side": 0,
+  "writes_other": {},
+  "throughput_main_per_s": 5.38,
+  "p50": 0.195,
+  "p90": 0.289,
+  "p99": 0.335,
+  "max": 0.3650074005126953,
+  "side_p99": null,
+  "side_max": null,
+  "runs": 0,
+  "run_states": {},
+  "publications": 0,
+  "writer_yield_ms": {
+   "p50": null,
+   "p90": null,
+   "max": null,
+   "at_limit(>=9900)": 0,
+   "zero": 0
+  },
+  "gate_hold_ms": {
+   "p50": null,
+   "max": null
+  },
+  "gate_hold_fraction": 0.0,
+  "writes_by_publications_inside": {
+   "0": 645
+  },
+  "writes_with_2plus_publications": 0,
+  "writes_with_3plus_publications": 0,
+  "writes_spanning_2plus_holds": 0,
+  "writes_spanning_3plus_holds": 0,
+  "slowest (latency, pubs inside, holds overlapped, held s inside, kind)": [
+   [
+    0.37,
+    0,
+    0,
+    0,
+    "Company"
+   ],
+   [
+    0.36,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.36,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.36,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.34,
+    0,
+    0,
+    0,
+    "Company"
+   ],
+   [
+    0.34,
+    0,
+    0,
+    0,
+    "Company"
+   ],
+   [
+    0.34,
+    0,
+    0,
+    0,
+    "Company"
+   ],
+   [
+    0.33,
+    0,
+    0,
+    0,
+    "Company"
+   ]
+  ],
+  "reprepares_load": 0,
+  "reprepares_other": 0,
+  "polls": 0,
+  "poll_p99": null,
+  "poll_statuses": []
+ },
+ "optimize": {
+  "writes_ok_main": 176,
+  "writes_ok_side": 0,
+  "writes_other": {},
+  "throughput_main_per_s": 1.47,
+  "p50": 0.75,
+  "p90": 1.196,
+  "p99": 1.39,
+  "max": 1.426110029220581,
+  "side_p99": null,
+  "side_max": null,
+  "runs": 88,
+  "run_states": {
+   "succeeded": 88
+  },
+  "publications": 88,
+  "writer_yield_ms": {
+   "p50": 444,
+   "p90": 523,
+   "max": 636,
+   "at_limit(>=9900)": 0,
+   "zero": 1
+  },
+  "gate_hold_ms": {
+   "p50": 541,
+   "max": 936
+  },
+  "gate_hold_fraction": 0.406,
+  "writes_by_publications_inside": {
+   "0": 88,
+   "1": 88
+  },
+  "writes_with_2plus_publications": 0,
+  "writes_with_3plus_publications": 0,
+  "writes_spanning_2plus_holds": 87,
+  "writes_spanning_3plus_holds": 0,
+  "slowest (latency, pubs inside, holds overlapped, held s inside, kind)": [
+   [
+    1.43,
+    1,
+    2,
+    0.48,
+    "Company"
+   ],
+   [
+    1.39,
+    1,
+    2,
+    0.24,
+    "Company"
+   ],
+   [
+    1.33,
+    1,
+    2,
+    0.27,
+    "Company"
+   ],
+   [
+    1.31,
+    1,
+    2,
+    0.27,
+    "Company"
+   ],
+   [
+    1.26,
+    1,
+    2,
+    0.3,
+    "Company"
+   ],
+   [
+    1.26,
+    1,
+    1,
+    0.05,
+    "Company"
+   ],
+   [
+    1.26,
+    1,
+    2,
+    0.31,
+    "Company"
+   ],
+   [
+    1.25,
+    1,
+    2,
+    0.28,
+    "Company"
+   ]
+  ],
+  "reprepares_load": 88,
+  "reprepares_other": 0,
+  "polls": 0,
+  "poll_p99": null,
+  "poll_statuses": []
+ },
+ "control2": {
+  "writes_ok_main": 329,
+  "writes_ok_side": 0,
+  "writes_other": {},
+  "throughput_main_per_s": 2.74,
+  "p50": 0.353,
+  "p90": 0.417,
+  "p99": 0.519,
+  "max": 3.161609172821045,
+  "side_p99": null,
+  "side_max": null,
+  "runs": 0,
+  "run_states": {},
+  "publications": 0,
+  "writer_yield_ms": {
+   "p50": null,
+   "p90": null,
+   "max": null,
+   "at_limit(>=9900)": 0,
+   "zero": 0
+  },
+  "gate_hold_ms": {
+   "p50": null,
+   "max": null
+  },
+  "gate_hold_fraction": 0.0,
+  "writes_by_publications_inside": {
+   "0": 329
+  },
+  "writes_with_2plus_publications": 0,
+  "writes_with_3plus_publications": 0,
+  "writes_spanning_2plus_holds": 0,
+  "writes_spanning_3plus_holds": 0,
+  "slowest (latency, pubs inside, holds overlapped, held s inside, kind)": [
+   [
+    3.16,
+    0,
+    0,
+    0,
+    "Company"
+   ],
+   [
+    0.74,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.57,
+    0,
+    0,
+    0,
+    "Company"
+   ],
+   [
+    0.52,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.5,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.48,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.48,
+    0,
+    0,
+    0,
+    "Company"
+   ],
+   [
+    0.48,
+    0,
+    0,
+    0,
+    "Person"
+   ]
+  ],
+  "reprepares_load": 0,
+  "reprepares_other": 0,
+  "polls": 0,
+  "poll_p99": null,
+  "poll_statuses": []
+ },
+ "acked_rows_missing": {},
+ "record_violations": [],
+ "sigterm_exit": 0
+}

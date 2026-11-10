@@ -1,0 +1,318 @@
+{
+ "config": {
+  "seconds": 120.0,
+  "writers": 2,
+  "pollers": 4,
+  "poll_ms": 100,
+  "branch_writers": 0,
+  "mutators": 0,
+  "hold_ms": 1000,
+  "root": "az://omnigraph-stress/wy5/wy-1794344011413832407"
+ },
+ "control": {
+  "writes_ok_main": 250,
+  "writes_ok_side": 0,
+  "writes_other": {
+   "409:write authority 'graph_head:main' changed during preparation (expected hb1.01M73": 7
+  },
+  "throughput_main_per_s": 2.08,
+  "p50": 0.491,
+  "p90": 0.797,
+  "p99": 0.99,
+  "max": 16.007901430130005,
+  "side_p99": null,
+  "side_max": null,
+  "runs": 0,
+  "run_states": {},
+  "publications": 0,
+  "writer_yield_ms": {
+   "p50": null,
+   "p90": null,
+   "max": null,
+   "at_limit(>=9900)": 0,
+   "zero": 0
+  },
+  "gate_hold_ms": {
+   "p50": null,
+   "max": null
+  },
+  "gate_hold_fraction": 0.0,
+  "writes_by_publications_inside": {
+   "0": 250
+  },
+  "writes_with_2plus_publications": 0,
+  "writes_with_3plus_publications": 0,
+  "writes_spanning_2plus_holds": 0,
+  "writes_spanning_3plus_holds": 0,
+  "slowest (latency, pubs inside, holds overlapped, held s inside, kind)": [
+   [
+    16.01,
+    0,
+    0,
+    0,
+    "Company"
+   ],
+   [
+    1.03,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.99,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.96,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.96,
+    0,
+    0,
+    0,
+    "Company"
+   ],
+   [
+    0.93,
+    0,
+    0,
+    0,
+    "Company"
+   ],
+   [
+    0.92,
+    0,
+    0,
+    0,
+    "Company"
+   ],
+   [
+    0.92,
+    0,
+    0,
+    0,
+    "Person"
+   ]
+  ],
+  "reprepares_load": 242,
+  "reprepares_other": 0,
+  "polls": 0,
+  "poll_p99": null,
+  "poll_statuses": []
+ },
+ "optimize": {
+  "writes_ok_main": 334,
+  "writes_ok_side": 0,
+  "writes_other": {
+   "409:write authority 'graph_head:main' changed during preparation (expected hb1.01M73": 8
+  },
+  "throughput_main_per_s": 2.78,
+  "p50": 0.302,
+  "p90": 0.43,
+  "p99": 3.93,
+  "max": 15.286498069763184,
+  "side_p99": null,
+  "side_max": null,
+  "runs": 12,
+  "run_states": {
+   "succeeded": 12
+  },
+  "publications": 12,
+  "writer_yield_ms": {
+   "p50": 9792,
+   "p90": 10001,
+   "max": 10002,
+   "at_limit(>=9900)": 4,
+   "zero": 1
+  },
+  "gate_hold_ms": {
+   "p50": 620,
+   "max": 1480
+  },
+  "gate_hold_fraction": 0.072,
+  "writes_by_publications_inside": {
+   "0": 323,
+   "1": 9,
+   "2": 2
+  },
+  "writes_with_2plus_publications": 2,
+  "writes_with_3plus_publications": 0,
+  "writes_spanning_2plus_holds": 3,
+  "writes_spanning_3plus_holds": 0,
+  "slowest (latency, pubs inside, holds overlapped, held s inside, kind)": [
+   [
+    15.29,
+    2,
+    2,
+    2.62,
+    "Person"
+   ],
+   [
+    12.63,
+    2,
+    2,
+    1.27,
+    "Company"
+   ],
+   [
+    11.44,
+    1,
+    2,
+    0.85,
+    "Company"
+   ],
+   [
+    3.93,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    2.2,
+    1,
+    1,
+    1.31,
+    "Company"
+   ],
+   [
+    1.44,
+    1,
+    1,
+    0.62,
+    "Person"
+   ],
+   [
+    1.43,
+    1,
+    1,
+    0.59,
+    "Person"
+   ],
+   [
+    1.39,
+    1,
+    1,
+    0.53,
+    "Person"
+   ]
+  ],
+  "reprepares_load": 339,
+  "reprepares_other": 0,
+  "polls": 3150,
+  "poll_p99": 0.284,
+  "poll_statuses": [
+   200
+  ]
+ },
+ "control2": {
+  "writes_ok_main": 188,
+  "writes_ok_side": 0,
+  "writes_other": {
+   "409:write authority 'graph_head:main' changed during preparation (expected hb1.01M73": 5
+  },
+  "throughput_main_per_s": 1.57,
+  "p50": 0.647,
+  "p90": 0.994,
+  "p99": 1.313,
+  "max": 22.478400230407715,
+  "side_p99": null,
+  "side_max": null,
+  "runs": 0,
+  "run_states": {},
+  "publications": 0,
+  "writer_yield_ms": {
+   "p50": null,
+   "p90": null,
+   "max": null,
+   "at_limit(>=9900)": 0,
+   "zero": 0
+  },
+  "gate_hold_ms": {
+   "p50": null,
+   "max": null
+  },
+  "gate_hold_fraction": 0.0,
+  "writes_by_publications_inside": {
+   "0": 188
+  },
+  "writes_with_2plus_publications": 0,
+  "writes_with_3plus_publications": 0,
+  "writes_spanning_2plus_holds": 0,
+  "writes_spanning_3plus_holds": 0,
+  "slowest (latency, pubs inside, holds overlapped, held s inside, kind)": [
+   [
+    22.48,
+    0,
+    0,
+    0,
+    "Company"
+   ],
+   [
+    1.31,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    1.16,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    1.15,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    1.14,
+    0,
+    0,
+    0,
+    "Company"
+   ],
+   [
+    1.11,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    1.09,
+    0,
+    0,
+    0,
+    "Company"
+   ],
+   [
+    1.07,
+    0,
+    0,
+    0,
+    "Person"
+   ]
+  ],
+  "reprepares_load": 182,
+  "reprepares_other": 0,
+  "polls": 0,
+  "poll_p99": null,
+  "poll_statuses": []
+ },
+ "acked_rows_missing": {},
+ "record_violations": [],
+ "sigterm_exit": 0
+}

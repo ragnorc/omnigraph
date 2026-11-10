@@ -1,0 +1,309 @@
+{
+ "config": {
+  "seconds": 120.0,
+  "writers": 2,
+  "pollers": 0,
+  "poll_ms": 100,
+  "branch_writers": 0,
+  "mutators": 0,
+  "hold_ms": 1000,
+  "root": "/tmp/q2/wy_local_2w/root"
+ },
+ "control": {
+  "writes_ok_main": 1434,
+  "writes_ok_side": 0,
+  "writes_other": {},
+  "throughput_main_per_s": 11.95,
+  "p50": 0.124,
+  "p90": 0.302,
+  "p99": 0.704,
+  "max": 3.7059662342071533,
+  "side_p99": null,
+  "side_max": null,
+  "runs": 0,
+  "run_states": {},
+  "publications": 0,
+  "writer_yield_ms": {
+   "p50": null,
+   "p90": null,
+   "max": null,
+   "at_limit(>=9900)": 0,
+   "zero": 0
+  },
+  "gate_hold_ms": {
+   "p50": null,
+   "max": null
+  },
+  "gate_hold_fraction": 0.0,
+  "writes_by_publications_inside": {
+   "0": 1434
+  },
+  "writes_with_2plus_publications": 0,
+  "writes_with_3plus_publications": 0,
+  "writes_spanning_2plus_holds": 0,
+  "writes_spanning_3plus_holds": 0,
+  "slowest (latency, pubs inside, holds overlapped, held s inside, kind)": [
+   [
+    3.71,
+    0,
+    0,
+    0,
+    "Company"
+   ],
+   [
+    3.37,
+    0,
+    0,
+    0,
+    "Company"
+   ],
+   [
+    0.97,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.97,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.94,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.79,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.74,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.74,
+    0,
+    0,
+    0,
+    "Person"
+   ]
+  ],
+  "reprepares_load": 1433,
+  "reprepares_other": 0,
+  "polls": 0,
+  "poll_p99": null,
+  "poll_statuses": []
+ },
+ "optimize": {
+  "writes_ok_main": 1552,
+  "writes_ok_side": 0,
+  "writes_other": {},
+  "throughput_main_per_s": 12.93,
+  "p50": 0.147,
+  "p90": 0.259,
+  "p99": 0.413,
+  "max": 0.6895301342010498,
+  "side_p99": null,
+  "side_max": null,
+  "runs": 627,
+  "run_states": {
+   "succeeded": 627
+  },
+  "publications": 627,
+  "writer_yield_ms": {
+   "p50": 57,
+   "p90": 131,
+   "max": 528,
+   "at_limit(>=9900)": 0,
+   "zero": 10
+  },
+  "gate_hold_ms": {
+   "p50": 69,
+   "max": 422
+  },
+  "gate_hold_fraction": 0.37,
+  "writes_by_publications_inside": {
+   "0": 300,
+   "1": 1252
+  },
+  "writes_with_2plus_publications": 0,
+  "writes_with_3plus_publications": 0,
+  "writes_spanning_2plus_holds": 594,
+  "writes_spanning_3plus_holds": 0,
+  "slowest (latency, pubs inside, holds overlapped, held s inside, kind)": [
+   [
+    0.69,
+    1,
+    2,
+    0.09,
+    "Person"
+   ],
+   [
+    0.64,
+    1,
+    2,
+    0.16,
+    "Company"
+   ],
+   [
+    0.64,
+    1,
+    2,
+    0.14,
+    "Person"
+   ],
+   [
+    0.58,
+    1,
+    2,
+    0.43,
+    "Person"
+   ],
+   [
+    0.58,
+    1,
+    2,
+    0.13,
+    "Person"
+   ],
+   [
+    0.52,
+    1,
+    1,
+    0.39,
+    "Person"
+   ],
+   [
+    0.47,
+    1,
+    2,
+    0.11,
+    "Person"
+   ],
+   [
+    0.47,
+    1,
+    2,
+    0.1,
+    "Person"
+   ]
+  ],
+  "reprepares_load": 2803,
+  "reprepares_other": 0,
+  "polls": 0,
+  "poll_p99": null,
+  "poll_statuses": []
+ },
+ "control2": {
+  "writes_ok_main": 1404,
+  "writes_ok_side": 0,
+  "writes_other": {},
+  "throughput_main_per_s": 11.7,
+  "p50": 0.135,
+  "p90": 0.314,
+  "p99": 0.591,
+  "max": 0.9811949729919434,
+  "side_p99": null,
+  "side_max": null,
+  "runs": 0,
+  "run_states": {},
+  "publications": 0,
+  "writer_yield_ms": {
+   "p50": null,
+   "p90": null,
+   "max": null,
+   "at_limit(>=9900)": 0,
+   "zero": 0
+  },
+  "gate_hold_ms": {
+   "p50": null,
+   "max": null
+  },
+  "gate_hold_fraction": 0.0,
+  "writes_by_publications_inside": {
+   "0": 1404
+  },
+  "writes_with_2plus_publications": 0,
+  "writes_with_3plus_publications": 0,
+  "writes_spanning_2plus_holds": 0,
+  "writes_spanning_3plus_holds": 0,
+  "slowest (latency, pubs inside, holds overlapped, held s inside, kind)": [
+   [
+    0.98,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.92,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.87,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.83,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.78,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.78,
+    0,
+    0,
+    0,
+    "Company"
+   ],
+   [
+    0.78,
+    0,
+    0,
+    0,
+    "Person"
+   ],
+   [
+    0.76,
+    0,
+    0,
+    0,
+    "Company"
+   ]
+  ],
+  "reprepares_load": 1403,
+  "reprepares_other": 0,
+  "polls": 0,
+  "poll_p99": null,
+  "poll_statuses": []
+ },
+ "acked_rows_missing": {},
+ "record_violations": [],
+ "sigterm_exit": 0
+}

@@ -12,6 +12,8 @@ request from files in CTL (checked when a request's headers arrive):
   CTL/truncate        forward, then send only half the upstream answer
   CTL/gateway_504     forward, discard the answer, send 504
   CTL/delay_ms        N: hold the upstream answer N ms before relaying it
+  CTL/stall_request   keep the client connection open, never forward (a
+                      server that accepted the connection and stalls)
   CTL/match           only requests whose request line contains this text fault
   CTL/count           N: only the next N matching requests fault (decremented)
   CTL/log             appended: one line per request and the fault applied
@@ -40,7 +42,7 @@ def choose_fault(ctl: Path, request_line: str):
     if match and match not in request_line:
         return None, 0
     fault = None
-    for name in ("drop_request", "drop_response", "truncate", "gateway_504"):
+    for name in ("drop_request", "drop_response", "truncate", "gateway_504", "stall_request"):
         if (ctl / name).exists():
             fault = name
             break
@@ -100,6 +102,10 @@ async def handle(client_r, client_w, upstream_port: int, ctl: Path):
     with open(ctl / "log", "a") as f:
         f.write(f"{time.time():.3f} {request_line} fault={fault} delay={delay}\n")
     if fault == "drop_request":
+        client_w.close()
+        return
+    if fault == "stall_request":
+        await asyncio.sleep(600)
         client_w.close()
         return
     up_r, up_w = await asyncio.open_connection("127.0.0.1", upstream_port)

@@ -1,0 +1,189 @@
+[
+ {
+  "case": "stalled_submission_answer",
+  "timeout": "3s",
+  "exit": 2,
+  "wall_s": 3.04,
+  "id": "01M73MV80MCH4TPG2161T3VZ7Z",
+  "posts": 1,
+  "stopped_waiting": true,
+  "operation_hint": true,
+  "stderr": "target srv (explicit): server https://127.0.0.1:15801/; graph=kg; config=/tmp/r2/c10/stalled_submission_answer/operator.yaml\noperation id: 01M73MV80MCH4TPG2161T3VZ7Z\nstopped waiting; the operation may run or continue on the server: observe it with `omnigraph optimize --operation 01M73MV80MCH4TPG2161T3VZ7Z`",
+  "later_operation": {
+   "exit": 0,
+   "state": "succeeded",
+   "server_lookup": [
+    200,
+    "succeeded",
+    "found"
+   ],
+   "stderr": "target srv (explicit): server https://127.0.0.1:15801/; graph=kg; config=/tmp/r2/c10/stalled_submission_answer/operator.yaml"
+  }
+ },
+ {
+  "case": "stalled_submission_blackhole",
+  "timeout": "3s",
+  "exit": 2,
+  "wall_s": 3.04,
+  "id": "01M73MVCFY7ED8Y5ZE5CSH69CC",
+  "posts": 1,
+  "stopped_waiting": true,
+  "operation_hint": true,
+  "stderr": "target srv (explicit): server https://127.0.0.1:15802/; graph=kg; config=/tmp/r2/c10/stalled_submission_blackhole/operator.yaml\noperation id: 01M73MVCFY7ED8Y5ZE5CSH69CC\nstopped waiting; the operation may run or continue on the server: observe it with `omnigraph optimize --operation 01M73MVCFY7ED8Y5ZE5CSH69CC`",
+  "error": "AttributeError(\"'NoneType' object has no attribute 'get'\")"
+ },
+ {
+  "case": "stalled_lookups",
+  "timeout": "3s",
+  "exit": 2,
+  "wall_s": 3.06,
+  "id": "01M73MVG3QEJS5416X4BTHJ2DV",
+  "posts": 1,
+  "stopped_waiting": true,
+  "operation_hint": true,
+  "stderr": "target srv (explicit): server https://127.0.0.1:15803/; graph=kg; config=/tmp/r2/c10/stalled_lookups/operator.yaml\noperation id: 01M73MVG3QEJS5416X4BTHJ2DV\nstopped waiting; the operation may run or continue on the server: observe it with `omnigraph optimize --operation 01M73MVG3QEJS5416X4BTHJ2DV`",
+  "later_operation": {
+   "exit": 0,
+   "state": "succeeded",
+   "server_lookup": [
+    200,
+    "succeeded",
+    "found"
+   ],
+   "stderr": "target srv (explicit): server https://127.0.0.1:15803/; graph=kg; config=/tmp/r2/c10/stalled_lookups/operator.yaml"
+  }
+ },
+ {
+  "case": "long_poll",
+  "timeout": "2s",
+  "exit": 2,
+  "wall_s": 2.04,
+  "id": "01M73MVKQ1D2GAMW9ENDXF82XG",
+  "posts": 1,
+  "stopped_waiting": true,
+  "operation_hint": true,
+  "stderr": "target srv (explicit): server https://127.0.0.1:15804/; graph=kg; config=/tmp/r2/c10/long_poll/operator.yaml\noperation id: 01M73MVKQ1D2GAMW9ENDXF82XG\nstopped waiting; the operation may run or continue on the server: observe it with `omnigraph optimize --operation 01M73MVKQ1D2GAMW9ENDXF82XG`",
+  "later_operation": {
+   "exit": 0,
+   "state": "succeeded",
+   "server_lookup": [
+    200,
+    "succeeded",
+    "found"
+   ],
+   "stderr": "target srv (explicit): server https://127.0.0.1:15804/; graph=kg; config=/tmp/r2/c10/long_poll/operator.yaml"
+  }
+ },
+ {
+  "case": "timeout_below_poll",
+  "timeout": "200ms",
+  "exit": 1,
+  "wall_s": 0.04,
+  "id": null,
+  "posts": 0,
+  "stopped_waiting": false,
+  "operation_hint": false,
+  "stderr": "target srv (explicit): server https://127.0.0.1:15805/; graph=kg; config=/tmp/r2/c10/timeout_below_poll/operator.yaml\nError: \n   0: \u001b[91minvalid duration '200ms': invalid digit found in string\u001b[0m"
+ },
+ {
+  "case": "timeout_zero",
+  "timeout": "0s",
+  "exit": 2,
+  "wall_s": 0.04,
+  "id": "01M73MVPZFDE8GRHJNJMGV7MCR",
+  "posts": 0,
+  "stopped_waiting": true,
+  "operation_hint": true,
+  "stderr": "target srv (explicit): server https://127.0.0.1:15806/; graph=kg; config=/tmp/r2/c10/timeout_zero/operator.yaml\noperation id: 01M73MVPZFDE8GRHJNJMGV7MCR\nstopped waiting; the operation may run or continue on the server: observe it with `omnigraph optimize --operation 01M73MVPZFDE8GRHJNJMGV7MCR`",
+  "error": "AttributeError(\"'NoneType' object has no attribute 'get'\")"
+ },
+ {
+  "case": "blackhole_lookups",
+  "timeout": "3s",
+  "exit": 2,
+  "wall_s": 3.04,
+  "id": "01M73MVQMGGZ5VMQQ439CPY1FQ",
+  "posts": 1,
+  "stopped_waiting": true,
+  "operation_hint": true,
+  "stderr": "target srv (explicit): server https://127.0.0.1:15807/; graph=kg; config=/tmp/r2/c10/blackhole_lookups/operator.yaml\noperation id: 01M73MVQMGGZ5VMQQ439CPY1FQ\nstopped waiting; the operation may run or continue on the server: observe it with `omnigraph optimize --operation 01M73MVQMGGZ5VMQQ439CPY1FQ`",
+  "later_operation": {
+   "exit": 0,
+   "state": "succeeded",
+   "server_lookup": [
+    200,
+    "succeeded",
+    "found"
+   ],
+   "stderr": "target srv (explicit): server https://127.0.0.1:15807/; graph=kg; config=/tmp/r2/c10/blackhole_lookups/operator.yaml"
+  }
+ },
+ {
+  "case": "access",
+  "operator": {
+   "access_status": 200,
+   "access": {
+    "graph_wide_maintain": true,
+    "main_maintain": true,
+    "feature_maintain": true
+   },
+   "submit": 202,
+   "submit_error": null
+  },
+  "writer": {
+   "access_status": 200,
+   "access": {
+    "graph_wide_maintain": false,
+    "main_maintain": false,
+    "feature_maintain": false
+   },
+   "submit": 403,
+   "submit_error": "policy denied action 'maintain' on branch 'main' for actor 'writer'"
+  },
+  "reader": {
+   "access_status": 200,
+   "access": {
+    "graph_wide_maintain": false,
+    "main_maintain": false,
+    "feature_maintain": false
+   },
+   "submit": 403,
+   "submit_error": "policy denied action 'maintain' on branch 'main' for actor 'reader'"
+  },
+  "anonymous": 401
+ },
+ {
+  "case": "access_branch_scoped",
+  "operator": {
+   "access_status": 200,
+   "access": {
+    "graph_wide_maintain": false,
+    "main_maintain": true,
+    "feature_maintain": false
+   },
+   "submit": 202,
+   "submit_error": null
+  },
+  "writer": {
+   "access_status": 200,
+   "access": {
+    "graph_wide_maintain": false,
+    "main_maintain": false,
+    "feature_maintain": true
+   },
+   "submit": 403,
+   "submit_error": "policy denied action 'maintain' on branch 'main' for actor 'writer'"
+  },
+  "reader": {
+   "access_status": 200,
+   "access": {
+    "graph_wide_maintain": false,
+    "main_maintain": false,
+    "feature_maintain": false
+   },
+   "submit": 403,
+   "submit_error": "policy denied action 'maintain' on branch 'main' for actor 'reader'"
+  },
+  "anonymous": 401
+ }
+]
