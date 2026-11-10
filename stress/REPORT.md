@@ -12,7 +12,86 @@ checksum matched the release `SHA256SUMS`) on 127.0.0.1:9000; Azurite 3.35.0
 (npm) on 127.0.0.1:10000.
 **Started** 2026-11-10 20:05 UTC.
 
-_Work in progress; sections are filled as campaigns finish._
+## Verdict
+
+**I would merge #1275 now, and #1282 once it takes Fix B (or an
+equivalent).** Every round-1 finding I could rerun is fixed: B1 (the
+1,030-table catalog now compacts all 20 seeded tables in one run), S1–S6,
+N2 and N8, each with round 1's own reproduction. S2's new design at the
+storage root holds under every local record-write fault I could inject:
+refused, lost-answer and landed writes, at acceptance, `running`,
+`publishing` and the final write, plus a sticky fault. Nothing wedged, SIGTERM
+released the lock every time, and a finished no-op run was never stored
+`interrupted`. Across about 600 recorded operations, 37,000 acknowledged
+rows, 140 kills and 16 deployments on local, S3 (RustFS) and Azure
+(Azurite) roots, plus two 30-minute soaks, no invariant broke: no
+acknowledged write was lost, no run published twice or published while
+reported failed, cancelled or interrupted, no record was left
+`accepted`/`running`, reads never blocked, and `cleanup` kept every retained
+snapshot readable. The writer yield does what S7 needed per write. No write
+saw more than two optimize publications (round 1: up to 14), the slowest S3
+write fell from 14 s to 7–13 s, and S3 write p99 fell from 12.8 s to 1.5 s.
+The yield is imprecise in two ways, both measured and both fixed on this
+branch with red/green regression tests. It misses a sent-back writer that
+is still queued behind another writer (R2-S1). It waits for writers that
+only other writers sent back (R2-S2), which on a local root with three or
+more writers pins every run at the 10 s limit (10 runs in 90 s against 158
+with the fix). Neither affects correctness, so #1282 could merge as is if
+the stall is acceptable. Independent of the fix, on object storage with two
+or more continuous writers most runs wait the full 10 s, because the writers
+a publication sends back then starve each other (pre-existing N12). That is
+within the documented bound, but optimize runs about 8x less often than in
+round 1 (R2-N1); #1331 is the real remedy.
+
+## Round-1 findings, new status
+
+| # | Round 1 severity | Round 2 status |
+|---|---|---|
+| B1 | blocking | fixed (engine, served at planning 1, served at default settings on 1,030 tables; also rechecked with random `tables`/`start_at` in the embedded campaign) |
+| S1 | should-fix | fixed (S3 late and never-landing record puts, all four writes; Azure late puts) |
+| S2 | should-fix | fixed (nine local fault cases); leftovers are notes R2-N2, R2-N3 |
+| S3 | should-fix | fixed (the straddling submission is refused 503; deployment 3.3 s) |
+| S4 | should-fix | fixed (SIGTERM in the artifact scan: 4 s, exit 0, `skipped(cancelled)`) |
+| S5 | should-fix | fixed (`effects: none` → exit 1; 17/17 CLI cases) |
+| S6 | should-fix | fixed (409 names each record, graph, branch and walk state) |
+| S7 | should-fix | changed: per-write compounding fixed by the writer yield (≤ 2 runs per write, see the numbers); the yield has two gaps (R2-S1, R2-S2, fixed on the branch) and a throughput cost under concurrent writers (R2-N1) |
+| N2 | note | fixed (span nonce/commit, terminal nonce); cosmetic duplicate field R2-N4 |
+| N8 | note | fixed (late settlement keeps the newer position, S3) |
+| N1, N4, N5, N6, N7, N13 | notes | unchanged |
+| N3, N9, N11, N12, N14, N15 | notes | not retested on their own; N11 seen again after `cleanup`; N12 causes R2-N1 |
+
+## New findings
+
+| # | Severity | One line | Fix on branch |
+|---|---|---|---|
+| R2-S1 | should-fix | The next run overtakes a writer the last run sent back that is still queued behind another writer: one write waits through two runs | Fix B, verified |
+| R2-S2 | should-fix | The yield waits for writers that other writers sent back; with 3+ writers on a local root every run waits the full 10 s | Fix B, verified |
+| R2-N1 | note | On S3/Azure with 2+ continuous writers most runs wait the full 10 s (writers sent back starve each other, N12); optimize runs ~8x less often than in round 1 | docs sentence only |
+| R2-N5 | note | A run cancelled during its yield still queues for and takes main's gates before returning | Fix A, verified |
+| R2-N2 | note | The 503 text and docs still say an unsettled-request refusal "holds until the server restarts"; misleading ERROR/WARN logs for a settled local write | no |
+| R2-N3 | note | A refused `publishing` write on a local root is stored `interrupted`, not `failed` | no |
+| R2-N4 | note | The recorded-operation span prints `nonce` twice | no |
+| R2-N6 | note | `--timeout 200ms` is refused: the duration parser has no `ms` | no |
+| R2-N7 | note | Managed targets: resource discovery runs before the `--timeout` deadline starts (code reading) | no |
+| R2-N8 | note | `/access?branch=<non-main>` reports `maintain`, which no served operation can use there | no |
+| R2-N9 | note | Two engine handles in one process: a mutation's revalidation misses a run published through the other handle until the publish CAS (pre-existing, not on the server path) | no |
+
+No blocking finding.
+
+## S7 before and after (headline)
+
+| | Round 1 (no yield) | Round 2, PR head | Round 2, Fix A + B |
+|---|---|---|---|
+| S3, 2 writers: slowest write / runs it overlapped | 14.0 s / 9 runs | 7.3 s / 1 publication (12.9 s / 2 with pollers) | 12.3 s / 2 (a starved write past the 10 s limit) |
+| S3, 2 writers: write p99 | 12.8 s | 1.5 s (12.2 s with pollers) | 4.9 s (1.45 s with pollers) |
+| S3, 2 writers: optimize runs per phase | 120 per 180 s | 14 per 120 s, 5–8 at the 10 s limit | 14–15 per 120 s, 8–9 at the limit |
+| Azure, 2 writers: slowest write / p99 | 26 s across 14 runs / 26.0 s | 12.1 s across 2 / 3.1 s | 13.2 s across 2 / 13.0 s |
+| S3, 1 writer: slowest write | 4.4 s | 1.43 s (yield p50 0.44 s) | |
+| local mix (3 loaders + mutator): runs per 90 s / at limit | | 10 / 8 | 158 / 0 |
+| writes with ≥ 3 optimize publications inside | 100 of 121 overlapped ≥ 2 runs on S3 | 0 in every configuration | 0 |
+
+The full table is in campaign 2.
+
 
 ## Decisions taken alone
 
@@ -217,7 +296,7 @@ lists it, and optimize is accepted; a writer granted `maintain` only on
 unprotected branches sees it for `?branch=feature`, is refused on main, and
 no served operation can use that grant (R2-N8). Anonymous: 401.
 
-## New findings
+## New findings in detail
 
 ### R2-S1 (should-fix): the next run overtakes a writer the last run sent back that is still queued behind another writer
 
