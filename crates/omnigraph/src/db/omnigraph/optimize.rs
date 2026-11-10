@@ -962,6 +962,35 @@ pub async fn optimize_all_datasets(
         .map_err(OmniError::before_effect)?;
     let full_catalog = request.tables.is_none();
 
+    // A run cancelled during its writer yield (or before it reaches the
+    // writer gates) stops here, holding only the shared schema permit that
+    // writers also share: it must not queue for main's gates behind writers,
+    // nor hold them, only to report every table cancelled.
+    if request
+        .cancellation
+        .as_ref()
+        .is_some_and(OptimizeCancellation::is_cancelled)
+    {
+        let tables = visit_order
+            .into_iter()
+            .filter(|table_key| authority_txn.base.dataset(table_key).is_some())
+            .map(|table_key| DatasetOptimizeStats::deferred(table_key, DeferReason::Cancelled))
+            .collect();
+        drop(schema_permit);
+        return Ok(OptimizeReport {
+            input_commit: authority_txn.authority.graph_head.clone(),
+            input_manifest_version: authority_txn.base.graph_manifest_version(),
+            graph_commit_id: None,
+            tables,
+            resume_at: None,
+            gate_hold: Duration::ZERO,
+            writer_yield,
+            configuration_clear: ConfigurationClear::NotRun,
+            artifact: ArtifactRefresh::Skipped(ArtifactSkip::Cancelled),
+            cancellation: RunCancellation::Cancelled,
+        });
+    }
+
     // Optimize's one visibility point advances main's graph head, so its
     // authority is branch-wide even though physical effects are table-local.
     let main_branch_guard = db.write_queue().acquire_branch(None).await;
