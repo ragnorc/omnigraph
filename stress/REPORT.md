@@ -358,3 +358,38 @@ no served operation can use that grant (R2-N8). Anonymous: 401.
 - **Round-1 notes still open:** N1, N4, N5, N6, N7, N13 (table above); N3,
   N9, N11, N12, N14, N15 not retested beyond what the campaigns touched
   (N12 is the cause of R2-N1).
+
+## Campaign 4: reduced crash and chaos round
+
+Round 1's `c3_random_kills.py` and `c7_chaos.py`, unchanged, plus the yield
+events of campaign 2. On S3 and Azure with two or more writers a run spends
+most of its life in the yield (R2-N1), so random kills during `running`
+land in the yield or right after it most of the time; `c12_yield_events.py`
+targets the yield itself. Evidence: `evidence2/chaos/`.
+
+| Campaign (binaries) | Rounds | Events | Operations | Acknowledged rows | Violations |
+|---|---|---|---|---|---|
+| random kills, S3 (PR) | 20 | 12 SIGKILL, 8 SIGTERM | 39 | 2,735 | 0 |
+| chaos, S3 (PR) | 15 | 5 deployments, 10 kills, cancels throughout | 51 | 2,171 | 0 |
+| random kills, local (PR) | 25 | 18 SIGKILL, 7 SIGTERM | 51 | 11,843 | 0 |
+| chaos, local (PR) | 20 | 6 deployments, 14 kills, cancels throughout | 70 | 8,029 | 0 |
+| chaos, Azure (PR) | 10 | 4 deployments, 6 kills, lease breaks | 23 | 421 | 0 |
+| random kills with 50 random seam faults, local (PR) | 25 | 19 SIGKILL, 6 SIGTERM | 53 | 10,785 | 0 |
+| chaos, S3 (Fix A + B) | 10 | 1 deployment, 9 kills, cancels throughout | 44 | 1,511 | 0 |
+| yield events, S3 (PR and Fix A + B) | 5 + 5 | cancel, SIGTERM, SIGKILL, deployment in the yield | 10 | | 0 |
+
+Each harness checks after every restart: every acknowledged row present;
+every operation a client saw resolves and a terminal state is never
+rewritten; a run reported failed/cancelled/interrupted published nothing;
+at most one commit answers a nonce; at most four unresolved, 32 terminal;
+the eviction mark never moves back; a deployment that cancelled a run is
+named in its record. After the local kill campaign, `cleanup --keep 5`
+left `main` and every retained commit readable (`c8_cleanup_retained.txt`;
+commits whose versions were reclaimed answer 500, round 1's N11).
+
+The embedded campaign (`engine_optimize_beside_live_writers`, 90 s phases,
+random `tables`, `start_at`, gate holds, ceilings, budgets, cancellation and
+both authority modes, Fix A + B build): 189 runs, 120 published, beside
+2,329 writes, 0 violations; every run visited each table once in order and
+`resume_at` stayed consistent, which rechecks B1 with `tables` and
+`start_at` subsets (`evidence2/chaos/c1_engine_90s_fixbuild.log`).

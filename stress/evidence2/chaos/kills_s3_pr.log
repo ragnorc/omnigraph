@@ -1,0 +1,21 @@
+22:05:12 round 0 killed SIGKILL exit -9 0.1s ops 2 acked 279
+22:06:03 round 1 killed SIGTERM exit 0 0.6s ops 4 acked 661
+22:06:06 round 2 killed SIGTERM exit 0 0.6s ops 6 acked 796
+22:06:09 round 3 killed SIGTERM exit 0 0.5s ops 8 acked 970
+22:06:14 round 4 killed SIGKILL exit -9 0.1s ops 10 acked 1129
+22:07:03 round 5 killed SIGKILL exit -9 0.1s ops 12 acked 1292
+22:07:54 round 6 killed SIGTERM exit 0 0.6s ops 14 acked 1472
+22:07:58 round 7 killed SIGTERM exit 0 0.8s ops 16 acked 1609
+22:08:04 round 8 killed SIGKILL exit -9 0.1s ops 18 acked 1780
+22:08:56 round 9 killed SIGKILL exit -9 0.1s ops 20 acked 1962
+22:09:45 round 10 killed SIGTERM exit 0 0.7s ops 22 acked 2084
+22:09:47 round 11 killed SIGKILL exit -9 0.1s ops 24 acked 2114
+22:10:35 round 12 killed SIGKILL exit -9 0.1s ops 26 acked 2133
+22:11:26 round 13 killed SIGTERM exit 0 0.9s ops 28 acked 2329
+22:11:29 round 14 killed SIGKILL exit -9 0.1s ops 30 acked 2369
+22:12:16 round 15 killed SIGKILL exit -9 0.1s ops 31 acked 2374
+22:13:06 round 16 killed SIGKILL exit -9 0.1s ops 33 acked 2487
+22:13:54 round 17 killed SIGTERM exit 0 1.0s ops 35 acked 2543
+22:13:58 round 18 killed SIGKILL exit -9 0.1s ops 37 acked 2604
+22:14:49 round 19 killed SIGKILL exit -9 0.1s ops 39 acked 2735
+22:15:36 SUMMARY {"rounds": 20, "ops_seen": 39, "acked_rows": 2735, "final_states": {"unknown": 7, "cancelled": 6, "succeeded": 16, "interrupted": 10}, "seams_armed": 0, "violations": [], "az_recoveries": 0, "az_leases_broken": 0}

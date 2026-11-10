@@ -1,0 +1,44 @@
+22:23:42 round 0 killed SIGKILL exit -9 0.1s ops 2 acked 640
+22:23:42 round 1 restart needed force-unlock 01M73RYJNJ6ZBJM56F6AE3N5ZV
+22:23:47 round 1 killed SIGKILL exit -9 0.1s ops 4 acked 1421
+22:23:48 round 2 restart needed force-unlock 01M73RYNQRDPK5S19SRN7B07P9
+22:23:52 round 2 killed SIGKILL exit -9 0.1s ops 6 acked 1877
+22:23:52 round 3 restart needed force-unlock 01M73RYVD654WZ8H1HTC368R5T
+22:23:56 round 3 killed SIGTERM exit 0 0.3s ops 9 acked 2258
+22:24:02 round 4 killed SIGTERM exit 0 0.4s ops 11 acked 2757
+22:24:04 round 5 killed SIGKILL exit -9 0.1s ops 13 acked 2954
+22:24:04 round 6 restart needed force-unlock 01M73RZ99AMR3ARGTX8H3NB28X
+22:24:10 round 6 killed SIGKILL exit -9 0.1s ops 15 acked 3747
+22:24:10 round 7 restart needed force-unlock 01M73RZBW6E2WHQR4H9T3YP5QH
+22:24:14 round 7 killed SIGTERM exit 0 0.2s ops 17 acked 4458
+22:24:20 round 8 killed SIGKILL exit -9 0.1s ops 19 acked 5106
+22:24:20 round 9 restart needed force-unlock 01M73RZNEZY3HXPX1SNCY1SCKR
+22:24:26 round 9 killed SIGKILL exit -9 0.1s ops 21 acked 5569
+22:24:26 round 10 restart needed force-unlock 01M73RZV3XEGXEJ1HHJESRFZ55
+22:24:30 round 10 killed SIGTERM exit 0 0.3s ops 23 acked 5871
+22:24:36 round 11 killed SIGTERM exit 0 0.3s ops 25 acked 6677
+22:24:40 round 12 killed SIGKILL exit -9 0.1s ops 27 acked 7328
+22:24:40 round 13 restart needed force-unlock 01M73S0APXYNF28R7YBTGC6KE1
+22:24:46 round 13 killed SIGKILL exit -9 0.1s ops 29 acked 8120
+22:24:47 round 14 restart needed force-unlock 01M73S0ET809MFEAZ9FD94X742
+22:24:50 round 14 killed SIGKILL exit -9 0.1s ops 31 acked 8475
+22:24:50 round 15 restart needed force-unlock 01M73S0N36JN4YFND4J8QWVP9A
+22:24:52 round 15 killed SIGKILL exit -9 0.1s ops 33 acked 8635
+22:24:52 round 16 restart needed force-unlock 01M73S0RHY8PAS3HMWKD3RJEF3
+22:24:54 round 16 killed SIGKILL exit -9 0.1s ops 35 acked 8735
+22:24:54 round 17 restart needed force-unlock 01M73S0TQ14S87M5RNYXZE9RKW
+22:24:55 round 17 killed SIGKILL exit -9 0.1s ops 37 acked 8785
+22:24:56 round 18 restart needed force-unlock 01M73S0WCPAR79YGAFDA2KE83Z
+22:25:01 round 18 killed SIGKILL exit -9 0.1s ops 39 acked 9419
+22:25:01 round 19 restart needed force-unlock 01M73S0XRQT251P5X513VDP0CH
+22:25:06 round 19 killed SIGKILL exit -9 0.1s ops 41 acked 10388
+22:25:06 round 20 restart needed force-unlock 01M73S1354XDXBQA9DV0XBB584
+22:25:08 round 20 killed SIGTERM exit 0 0.2s ops 43 acked 10557
+22:25:11 round 21 killed SIGKILL exit -9 0.1s ops 45 acked 10855
+22:25:11 round 22 restart needed force-unlock 01M73S1A83VVKQSA6440Y1CP4S
+22:25:15 round 22 killed SIGKILL exit -9 0.1s ops 47 acked 11190
+22:25:15 round 23 restart needed force-unlock 01M73S1D97ZPCWM0R7WFVSJGC8
+22:25:19 round 23 killed SIGKILL exit -9 0.1s ops 49 acked 11546
+22:25:19 round 24 restart needed force-unlock 01M73S1GM11PESHYQXENJZ6MVA
+22:25:23 round 24 killed SIGTERM exit 0 0.4s ops 51 acked 11843
+22:25:24 SUMMARY {"rounds": 25, "ops_seen": 51, "acked_rows": 11843, "final_states": {"unknown": 19, "succeeded": 16, "interrupted": 12, "cancelled": 4}, "seams_armed": 0, "violations": [], "az_recoveries": 0, "az_leases_broken": 0}

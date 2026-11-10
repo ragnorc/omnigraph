@@ -1,0 +1,12 @@
+22:30:11 round 0 killed SIGTERM exit 0 ops 10 acked 449
+22:30:14 round 1 killed SIGTERM exit 0 ops 14 acked 591
+22:30:16 round 2 killed SIGTERM exit 0 ops 17 acked 663
+22:30:21 round 3 killed SIGKILL exit -9 ops 20 acked 892
+22:31:09 round 4 killed SIGKILL exit -9 ops 22 acked 966
+22:32:00 round 5 killed SIGKILL exit -9 ops 28 acked 1146
+22:32:49 round 6 killed SIGKILL exit -9 ops 32 acked 1258
+22:33:35 round 7 killed SIGKILL exit -9 ops 35 acked 1274
+22:34:23 deploy rc 0 took 1.37 d_at": 1794350063327404,                 "published": true               },               "contract": {                 "source_hash": "dbdbed9d2b8b1b594a0c84aaf810aca061852f3ecb9141b2ca1199ca7290a656",                 "schema_ir_hash": "sha256:a6e4bb1e60364749bcfa70a951dae228852f3e7d58628ffe2c7b0cdf077f3b6a",                 "schema_identity_domain": "01M73SACJQKZ05N3TFZ4JSW079",                 "schema_identity_version": 2               }             }           }         }       },       "recovery_executors": {},       "converged": true     }   },   "active": true,   "in_progress": false }  target srv (explicit): server https://127.0.0.1:14709/; config=/tmp/q4/chaos_s3_fix/operator-8.yaml Deployment-ID: 01M73SACFN09RVZEWENW9T51CV:2:01M73SJ72Q3SGXFH7CD40PD349 
+22:34:25 round 8 deployment 01M73SACFN09RVZEWENW9T51CV:2:01M73SJ72Q3SGXFH7CD40PD349 rc 0 1.4s then SIGTERM exit 0
+22:34:31 round 9 killed SIGKILL exit -9 ops 44 acked 1511
+22:35:17 SUMMARY {"rounds": 10, "deployments": 1, "ops_seen": 44, "acked_rows": 1511, "final_states": {"unknown": 12, "succeeded": 17, "cancelled": 10, "interrupted": 5}, "terminal_reasons": {"succeeded:": 24, "cancelled:cancelled by operator": 12, "cancelled:the server is shutting down": 3, "interrupted:no live run held it at 2026-11-10T22:31:": 1, "interrupted:no live run held it at 2026-11-10T22:32:": 1, "interrupted:no live run held it at 2026-11-10T22:33:": 1, "interrupted:no live run held it at 2026-11-10T22:34:": 1, "interrupted:no live run held it at 2026-11-10T22:35:": 1}, "violations": []}

@@ -1,0 +1,59 @@
+{
+ "cleanup_rc": 0,
+ "reads_newest_first": [
+  [
+   0,
+   200,
+   11843
+  ],
+  [
+   1,
+   200,
+   11843
+  ],
+  [
+   2,
+   200,
+   11837
+  ],
+  [
+   3,
+   200,
+   11833
+  ],
+  [
+   4,
+   200,
+   11822
+  ],
+  [
+   5,
+   500,
+   "historical published dataset version 15394329841029797423 was reclaimed"
+  ],
+  [
+   6,
+   500,
+   "historical published dataset version 17973590748862201395 was reclaimed"
+  ],
+  [
+   7,
+   500,
+   "historical published dataset version 13901335070471453725 was reclaimed"
+  ],
+  [
+   8,
+   500,
+   "historical published dataset version 17383499405636978934 was reclaimed"
+  ],
+  [
+   9,
+   500,
+   "historical published dataset version 16989591717063711422 was reclaimed"
+  ]
+ ],
+ "retained_unreadable": [],
+ "branches": {
+  "main": 200
+ }
+}

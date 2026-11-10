@@ -1,0 +1,67 @@
+
+running 1 test
+campaign 1 root: /tmp/.tmpdbdCcQ/g.omni
+test engine_optimize_beside_live_writers has been running for over 60 seconds
+=== phase A
+runs 94 ok 77 published 49; writes 879 (p50 0.142s p99 3.030s max 4.621s); persons 4816 docs 244 companies 64
+gate_hold max 0.161s; gate_hold - (max_gate_hold + longest table) max 0.040s
+worst excess run 31: hold Some(16ms) gate_hold 87.042196ms wall 2.433063999s commit true cancellation NotRequested tables ["edge:Authored=Unchanged@0ms", "edge:Knows=Optimized@30ms", "edge:WorksAt=Deferred(GateHoldLimit)@0ms", "node:Company=Deferred(GateHoldLimit)@0ms", "node:Doc=Deferred(GateHoldLimit)@0ms", "node:Person=Deferred(GateHoldLimit)@0ms"]
+run errors: {
+    "BeforeGates: write authority 'graph_head:main' changed during preparation (expected hb1.01M73": 17,
+}
+write errors: {
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SMN45ZVVKB": 15,
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SNN3P4F9FS": 18,
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SPRB2KZ25X": 9,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SMN45ZVVKB": 37,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SNN3P4F9FS": 39,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SPRB2KZ25X": 17,
+}
+slowest writes (latency, kind, bound from overlapping run, (run, gate_hold)):
+  (4.62063059s, "load_edge", Some(259.661043ms), Some((89, 128.332672ms)))
+  (4.566461883s, "load_edge", Some(380.23802ms), Some((65, 138.043546ms)))
+  (4.339662372s, "load_edge", Some(380.23802ms), Some((65, 138.043546ms)))
+  (4.198730202s, "load_edge", Some(259.661043ms), Some((89, 128.332672ms)))
+  (3.375886581s, "load_edge", Some(196.106795ms), Some((21, 119.376816ms)))
+  (3.359550649s, "load_edge", Some(284.769469ms), Some((72, 117.371709ms)))
+  (3.308128329s, "load_edge", Some(324.975965ms), Some((67, 130.743189ms)))
+  (3.30631249s, "load_edge", Some(211.148513ms), Some((92, 129.772564ms)))
+
+=== phase B
+runs 189 ok 169 published 120; writes 2329 (p50 0.066s p99 1.817s max 4.621s); persons 12124 docs 731 companies 184
+gate_hold max 0.181s; gate_hold - (max_gate_hold + longest table) max 0.050s
+worst excess run 172: hold Some(17ms) gate_hold 105.953165ms wall 2.68555549s commit true cancellation NotRequested tables ["edge:Knows=Optimized@38ms", "edge:WorksAt=Deferred(GateHoldLimit)@0ms", "node:Company=Deferred(GateHoldLimit)@0ms", "node:Doc=Deferred(GateHoldLimit)@0ms", "node:Person=Deferred(GateHoldLimit)@0ms", "edge:Authored=Deferred(GateHoldLimit)@0ms"]
+run errors: {
+    "BeforeGates: write authority 'graph_head:main' changed during preparation (expected hb1.01M73": 20,
+}
+write errors: {
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SMN45ZVVKB": 15,
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SNN3P4F9FS": 18,
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SPRB2KZ25X": 15,
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SQQX3JEJ8G": 16,
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SRCWWGRGMW": 15,
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SS1MHAQQ5M": 15,
+    "load_edge: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SSRJPXG8EZ": 12,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SMN45ZVVKB": 37,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SNN3P4F9FS": 39,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SPRB2KZ25X": 21,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SQQX3JEJ8G": 10,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SRCWWGRGMW": 10,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SS1MHAQQ5M": 17,
+    "mutate: write authority 'graph_head:main' changed during preparation (expected hb1.01M73SSRJPXG8EZ": 17,
+}
+slowest writes (latency, kind, bound from overlapping run, (run, gate_hold)):
+  (4.62063059s, "load_edge", Some(259.661043ms), Some((89, 128.332672ms)))
+  (4.566461883s, "load_edge", Some(380.23802ms), Some((65, 138.043546ms)))
+  (4.339662372s, "load_edge", Some(380.23802ms), Some((65, 138.043546ms)))
+  (4.198730202s, "load_edge", Some(259.661043ms), Some((89, 128.332672ms)))
+  (3.375886581s, "load_edge", Some(196.106795ms), Some((21, 119.376816ms)))
+  (3.359550649s, "load_edge", Some(284.769469ms), Some((72, 117.371709ms)))
+  (3.308128329s, "load_edge", Some(324.975965ms), Some((67, 130.743189ms)))
+  (3.30631249s, "load_edge", Some(211.148513ms), Some((92, 129.772564ms)))
+
+=== violations: 0
+test engine_optimize_beside_live_writers ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 188.35s
+

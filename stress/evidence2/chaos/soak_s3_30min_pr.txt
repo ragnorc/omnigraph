@@ -1,0 +1,375 @@
+22:39:08 server up s3://omnigraph-stress/soak3/c2-1794350346766947234 {'OMNIGRAPH_OPTIMIZE_GATE_HOLD_SECONDS': '1', 'OMNIGRAPH_OPTIMIZE_MAX_GATE_HOLD_SECONDS': '3', 'OMNIGRAPH_OPTIMIZE_MAX_SOURCE_FRAGMENTS': '40', 'OMNIGRAPH_OPTIMIZE_RUN_SOURCE_BYTES': '2097152', 'OMNIGRAPH_OPTIMIZE_MAX_SOURCE_BYTES': '1048576', 'OMNIGRAPH_OPERATION_RESOLUTION_WALK_LIMIT': '2'}
+22:39:13 progress ops 5 {'succeeded': 1, 'cancelled': 3, 'running': 1} writes 55 violations 0 marks 0
+22:39:18 progress ops 8 {'succeeded': 1, 'cancelled': 6, 'running': 1} writes 91 violations 0 marks 0
+22:39:23 progress ops 12 {'succeeded': 1, 'cancelled': 10, 'accepted': 1} writes 116 violations 0 marks 0
+22:39:28 progress ops 13 {'succeeded': 1, 'cancelled': 11, 'running': 1} writes 142 violations 0 marks 0
+22:39:33 progress ops 16 {'succeeded': 1, 'cancelled': 14, 'accepted': 1} writes 161 violations 0 marks 0
+22:39:38 progress ops 16 {'succeeded': 1, 'cancelled': 14, 'running': 1} writes 180 violations 0 marks 0
+22:39:43 progress ops 17 {'succeeded': 1, 'cancelled': 14, 'running': 2} writes 196 violations 0 marks 0
+22:39:48 progress ops 17 {'succeeded': 2, 'cancelled': 14, 'running': 1} writes 213 violations 0 marks 0
+22:39:53 progress ops 19 {'succeeded': 2, 'cancelled': 15, 'running': 2} writes 224 violations 0 marks 0
+22:39:58 progress ops 22 {'succeeded': 2, 'cancelled': 18, 'running': 1, 'accepted': 1} writes 242 violations 0 marks 0
+22:40:03 progress ops 22 {'succeeded': 2, 'cancelled': 19, 'running': 1} writes 258 violations 0 marks 0
+22:40:08 progress ops 22 {'succeeded': 2, 'cancelled': 19, 'running': 1} writes 269 violations 0 marks 0
+22:40:13 progress ops 24 {'succeeded': 3, 'cancelled': 20, 'running': 1} writes 281 violations 0 marks 0
+22:40:18 progress ops 24 {'succeeded': 3, 'cancelled': 20, 'running': 1} writes 294 violations 0 marks 0
+22:40:23 progress ops 25 {'succeeded': 3, 'cancelled': 21, 'running': 1} writes 306 violations 0 marks 0
+22:40:30 progress ops 26 {'succeeded': 3, 'cancelled': 21, 'running': 1, 'accepted': 1} writes 315 violations 0 marks 0
+22:40:35 progress ops 27 {'succeeded': 3, 'cancelled': 23, 'running': 1} writes 326 violations 0 marks 0
+22:40:40 progress ops 28 {'succeeded': 3, 'cancelled': 24, 'running': 1} writes 336 violations 0 marks 0
+22:40:48 progress ops 29 {'succeeded': 3, 'cancelled': 24, 'running': 1, 'accepted': 1} writes 348 violations 0 marks 0
+22:40:53 progress ops 30 {'succeeded': 3, 'cancelled': 26, 'running': 1} writes 359 violations 0 marks 0
+22:40:58 progress ops 30 {'succeeded': 3, 'cancelled': 26, 'running': 1} writes 369 violations 0 marks 0
+22:41:03 progress ops 32 {'succeeded': 3, 'cancelled': 28, 'accepted': 1} writes 378 violations 0 marks 0
+22:41:08 progress ops 33 {'succeeded': 3, 'cancelled': 29, 'running': 1} writes 389 violations 0 marks 0
+22:41:13 progress ops 34 {'succeeded': 3, 'cancelled': 29, 'running': 2} writes 400 violations 0 marks 1
+22:41:18 progress ops 34 {'succeeded': 3, 'cancelled': 30, 'running': 1} writes 414 violations 0 marks 1
+22:41:23 progress ops 35 {'succeeded': 4, 'cancelled': 30, 'running': 1} writes 425 violations 0 marks 2
+22:41:28 progress ops 35 {'succeeded': 4, 'cancelled': 30, 'running': 1} writes 437 violations 0 marks 2
+22:41:33 progress ops 36 {'succeeded': 5, 'cancelled': 30, 'running': 1} writes 448 violations 0 marks 3
+22:41:38 progress ops 36 {'succeeded': 5, 'cancelled': 30, 'running': 1} writes 460 violations 0 marks 3
+22:41:43 progress ops 37 {'succeeded': 5, 'cancelled': 30, 'running': 1, 'accepted': 1} writes 466 violations 0 marks 4
+22:41:48 progress ops 37 {'succeeded': 6, 'cancelled': 30, 'running': 1} writes 477 violations 0 marks 4
+22:41:53 progress ops 38 {'succeeded': 6, 'cancelled': 30, 'running': 1, 'accepted': 1} writes 483 violations 0 marks 5
+22:41:58 progress ops 38 {'succeeded': 7, 'cancelled': 30, 'running': 1} writes 490 violations 0 marks 5
+22:42:03 progress ops 40 {'succeeded': 7, 'cancelled': 32, 'accepted': 1} writes 499 violations 0 marks 7
+22:42:08 progress ops 40 {'succeeded': 7, 'cancelled': 32, 'accepted': 1} writes 504 violations 0 marks 7
+22:42:13 progress ops 41 {'succeeded': 8, 'cancelled': 32, 'running': 1} writes 512 violations 0 marks 8
+22:42:18 progress ops 41 {'succeeded': 8, 'cancelled': 32, 'running': 1} writes 521 violations 0 marks 8
+22:42:23 progress ops 41 {'succeeded': 8, 'cancelled': 32, 'running': 1} writes 529 violations 0 marks 8
+22:42:28 progress ops 42 {'succeeded': 9, 'cancelled': 32, 'running': 1} writes 537 violations 0 marks 9
+22:42:33 progress ops 43 {'succeeded': 9, 'cancelled': 33, 'running': 1} writes 547 violations 0 marks 10
+22:42:38 progress ops 43 {'succeeded': 9, 'cancelled': 33, 'running': 1} writes 556 violations 0 marks 10
+22:42:43 progress ops 44 {'succeeded': 9, 'cancelled': 33, 'running': 2} writes 562 violations 0 marks 11
+22:42:48 progress ops 44 {'succeeded': 9, 'cancelled': 33, 'running': 2} writes 569 violations 0 marks 11
+22:42:53 progress ops 45 {'succeeded': 10, 'cancelled': 34, 'accepted': 1} writes 579 violations 0 marks 12
+22:42:58 progress ops 45 {'succeeded': 10, 'cancelled': 34, 'running': 1} writes 586 violations 0 marks 12
+22:43:03 progress ops 46 {'succeeded': 10, 'cancelled': 35, 'accepted': 1} writes 592 violations 0 marks 13
+22:43:08 progress ops 47 {'succeeded': 10, 'cancelled': 35, 'running': 1, 'accepted': 1} writes 600 violations 0 marks 14
+22:43:13 progress ops 47 {'succeeded': 10, 'cancelled': 35, 'running': 1, 'accepted': 1} writes 609 violations 0 marks 14
+22:43:18 progress ops 48 {'succeeded': 10, 'cancelled': 35, 'running': 1, 'accepted': 2} writes 617 violations 0 marks 15
+22:43:23 progress ops 48 {'succeeded': 11, 'cancelled': 36, 'running': 1} writes 627 violations 0 marks 15
+22:43:28 progress ops 48 {'succeeded': 11, 'cancelled': 36, 'running': 1} writes 634 violations 0 marks 15
+22:43:33 progress ops 50 {'succeeded': 12, 'cancelled': 36, 'running': 1, 'accepted': 1} writes 638 violations 0 marks 17
+22:43:38 progress ops 50 {'succeeded': 12, 'cancelled': 37, 'accepted': 1} writes 645 violations 0 marks 17
+22:43:43 progress ops 50 {'succeeded': 12, 'cancelled': 37, 'accepted': 1} writes 653 violations 0 marks 17
+22:43:48 progress ops 52 {'succeeded': 12, 'cancelled': 38, 'accepted': 2} writes 663 violations 0 marks 19
+22:43:53 progress ops 52 {'succeeded': 13, 'cancelled': 38, 'running': 1} writes 669 violations 0 marks 19
+22:43:58 progress ops 53 {'succeeded': 14, 'cancelled': 38, 'running': 1} writes 674 violations 0 marks 21
+22:44:03 progress ops 54 {'succeeded': 14, 'cancelled': 39, 'accepted': 1} writes 683 violations 0 marks 21
+22:44:08 progress ops 54 {'succeeded': 14, 'cancelled': 39, 'running': 1} writes 689 violations 0 marks 21
+22:44:13 progress ops 55 {'succeeded': 14, 'cancelled': 39, 'running': 2} writes 695 violations 0 marks 22
+22:44:18 progress ops 55 {'succeeded': 14, 'cancelled': 40, 'running': 1} writes 702 violations 0 marks 22
+22:44:23 progress ops 56 {'succeeded': 14, 'cancelled': 40, 'running': 1, 'accepted': 1} writes 708 violations 0 marks 23
+22:44:28 progress ops 56 {'succeeded': 14, 'cancelled': 40, 'running': 1, 'accepted': 1} writes 716 violations 0 marks 23
+22:44:33 progress ops 57 {'succeeded': 15, 'cancelled': 40, 'running': 1, 'accepted': 1} writes 722 violations 0 marks 24
+22:44:38 progress ops 57 {'succeeded': 15, 'cancelled': 41, 'accepted': 1} writes 728 violations 0 marks 24
+22:44:43 progress ops 59 {'succeeded': 15, 'cancelled': 42, 'running': 1, 'accepted': 1} writes 736 violations 0 marks 26
+22:44:48 progress ops 59 {'succeeded': 15, 'cancelled': 42, 'running': 2} writes 746 violations 0 marks 26
+22:44:51 VIOLATION 01M73SXB0H0TFSZE8KKA59KH5A: submit expected {409, 503} got 400 {"error": "max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms", "code": "bad_request", "disposition": {"effects": "none", "action": "fix"}}
+22:44:53 progress ops 59 {'succeeded': 15, 'cancelled': 43, 'running': 1} writes 752 violations 1 marks 26
+22:44:56 VIOLATION 01M73SXB0H0TFSZE8KKA59KH5A: submit expected {409, 503} got 400 {"error": "max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms", "code": "bad_request", "disposition": {"effects": "none", "action": "fix"}}
+22:44:57 VIOLATION 01M73SXB0H0TFSZE8KKA59KH5A: submit expected {409, 503} got 400 {"error": "max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms", "code": "bad_request", "disposition": {"effects": "none", "action": "fix"}}
+22:44:58 progress ops 61 {'succeeded': 15, 'cancelled': 43, 'running': 2, 'accepted': 1} writes 757 violations 3 marks 28
+22:45:03 progress ops 61 {'succeeded': 16, 'cancelled': 44, 'accepted': 1} writes 761 violations 3 marks 28
+22:45:08 progress ops 61 {'succeeded': 16, 'cancelled': 44, 'running': 1} writes 768 violations 3 marks 28
+22:45:13 progress ops 62 {'succeeded': 17, 'cancelled': 44, 'accepted': 1} writes 773 violations 3 marks 29
+22:45:18 progress ops 62 {'succeeded': 17, 'cancelled': 44, 'running': 1} writes 778 violations 3 marks 29
+22:45:23 progress ops 63 {'succeeded': 18, 'cancelled': 44, 'accepted': 1} writes 781 violations 3 marks 30
+22:45:28 progress ops 63 {'succeeded': 18, 'cancelled': 44, 'accepted': 1} writes 788 violations 3 marks 30
+22:45:33 progress ops 64 {'succeeded': 18, 'cancelled': 44, 'running': 1, 'accepted': 1} writes 794 violations 3 marks 31
+22:45:38 progress ops 65 {'succeeded': 19, 'cancelled': 45, 'running': 1} writes 799 violations 3 marks 32
+22:45:43 progress ops 66 {'succeeded': 19, 'cancelled': 46, 'accepted': 1} writes 803 violations 3 marks 33
+22:45:48 progress ops 66 {'succeeded': 19, 'cancelled': 46, 'accepted': 1} writes 810 violations 3 marks 33
+22:45:53 progress ops 67 {'succeeded': 19, 'cancelled': 46, 'running': 1, 'accepted': 1} writes 813 violations 3 marks 34
+22:45:59 progress ops 67 {'succeeded': 20, 'cancelled': 46, 'running': 1} writes 817 violations 3 marks 34
+22:46:04 progress ops 68 {'succeeded': 20, 'cancelled': 47, 'accepted': 1} writes 821 violations 3 marks 35
+22:46:09 progress ops 70 {'succeeded': 20, 'cancelled': 48, 'running': 1, 'accepted': 1} writes 825 violations 3 marks 36
+22:46:14 progress ops 71 {'succeeded': 20, 'cancelled': 48, 'running': 2, 'accepted': 1} writes 829 violations 3 marks 36
+22:46:19 progress ops 71 {'succeeded': 20, 'cancelled': 48, 'running': 2, 'accepted': 1} writes 833 violations 3 marks 36
+22:46:24 progress ops 71 {'succeeded': 20, 'cancelled': 50, 'running': 1} writes 838 violations 3 marks 36
+22:46:29 progress ops 74 {'succeeded': 20, 'cancelled': 53, 'running': 1} writes 843 violations 3 marks 39
+22:46:34 progress ops 74 {'succeeded': 20, 'cancelled': 53, 'running': 1} writes 849 violations 3 marks 39
+22:46:39 progress ops 74 {'succeeded': 20, 'cancelled': 53, 'running': 1} writes 856 violations 3 marks 39
+22:46:44 progress ops 75 {'succeeded': 21, 'cancelled': 53, 'accepted': 1} writes 859 violations 3 marks 40
+22:46:49 progress ops 75 {'succeeded': 21, 'cancelled': 53, 'accepted': 1} writes 864 violations 3 marks 40
+22:46:54 progress ops 76 {'succeeded': 21, 'cancelled': 53, 'running': 2} writes 868 violations 3 marks 41
+22:46:59 progress ops 76 {'succeeded': 22, 'cancelled': 53, 'running': 1} writes 873 violations 3 marks 41
+22:47:04 progress ops 76 {'succeeded': 22, 'cancelled': 53, 'running': 1} writes 878 violations 3 marks 41
+22:47:09 progress ops 77 {'succeeded': 23, 'cancelled': 53, 'accepted': 1} writes 883 violations 3 marks 42
+22:47:14 progress ops 77 {'succeeded': 23, 'cancelled': 53, 'accepted': 1} writes 887 violations 3 marks 42
+22:47:19 progress ops 78 {'succeeded': 23, 'cancelled': 54, 'running': 1} writes 891 violations 3 marks 43
+22:47:24 progress ops 78 {'succeeded': 23, 'cancelled': 54, 'running': 1} writes 896 violations 3 marks 43
+22:47:29 progress ops 79 {'succeeded': 23, 'cancelled': 54, 'running': 1, 'accepted': 1} writes 899 violations 3 marks 44
+22:47:34 progress ops 79 {'succeeded': 24, 'cancelled': 54, 'accepted': 1} writes 905 violations 3 marks 44
+22:47:39 progress ops 79 {'succeeded': 24, 'cancelled': 54, 'running': 1} writes 908 violations 3 marks 44
+22:47:44 progress ops 80 {'succeeded': 24, 'cancelled': 55, 'running': 1} writes 913 violations 3 marks 45
+22:47:49 progress ops 81 {'succeeded': 24, 'cancelled': 55, 'running': 1, 'accepted': 1} writes 919 violations 3 marks 46
+22:47:54 progress ops 81 {'succeeded': 24, 'cancelled': 56, 'running': 1} writes 926 violations 3 marks 46
+22:47:59 progress ops 82 {'succeeded': 25, 'cancelled': 56, 'accepted': 1} writes 932 violations 3 marks 46
+22:48:04 progress ops 82 {'succeeded': 25, 'cancelled': 56, 'accepted': 1} writes 937 violations 3 marks 46
+22:48:09 progress ops 83 {'succeeded': 25, 'cancelled': 56, 'running': 1, 'accepted': 1} writes 940 violations 3 marks 47
+22:48:14 progress ops 83 {'succeeded': 25, 'cancelled': 56, 'running': 1, 'accepted': 1} writes 946 violations 3 marks 47
+22:48:19 progress ops 83 {'succeeded': 26, 'cancelled': 56, 'accepted': 1} writes 950 violations 3 marks 47
+22:48:24 progress ops 84 {'succeeded': 26, 'cancelled': 56, 'accepted': 2} writes 955 violations 3 marks 48
+22:48:29 progress ops 84 {'succeeded': 27, 'cancelled': 56, 'accepted': 1} writes 961 violations 3 marks 48
+22:48:34 progress ops 84 {'succeeded': 27, 'cancelled': 56, 'accepted': 1} writes 966 violations 3 marks 48
+22:48:39 progress ops 86 {'succeeded': 28, 'cancelled': 57, 'accepted': 1} writes 969 violations 3 marks 50
+22:48:44 progress ops 87 {'succeeded': 28, 'cancelled': 58, 'accepted': 1} writes 975 violations 3 marks 51
+22:48:49 progress ops 87 {'succeeded': 28, 'cancelled': 58, 'accepted': 1} writes 979 violations 3 marks 51
+22:48:54 progress ops 88 {'succeeded': 28, 'cancelled': 58, 'accepted': 2} writes 983 violations 3 marks 52
+22:48:59 progress ops 89 {'succeeded': 28, 'cancelled': 58, 'accepted': 2, 'running': 1} writes 989 violations 3 marks 53
+22:49:04 progress ops 89 {'succeeded': 29, 'cancelled': 58, 'running': 1, 'accepted': 1} writes 994 violations 3 marks 53
+22:49:09 progress ops 89 {'succeeded': 29, 'cancelled': 59, 'accepted': 1} writes 997 violations 3 marks 53
+22:49:14 progress ops 90 {'succeeded': 29, 'cancelled': 59, 'accepted': 2} writes 999 violations 3 marks 54
+22:49:19 progress ops 90 {'succeeded': 30, 'cancelled': 59, 'accepted': 1} writes 1004 violations 3 marks 54
+22:49:24 progress ops 91 {'succeeded': 30, 'cancelled': 59, 'running': 1, 'accepted': 1} writes 1012 violations 3 marks 55
+22:49:29 progress ops 92 {'succeeded': 30, 'cancelled': 59, 'running': 2, 'accepted': 1} writes 1016 violations 3 marks 56
+22:49:34 progress ops 92 {'succeeded': 30, 'cancelled': 60, 'running': 1, 'accepted': 1} writes 1022 violations 3 marks 56
+22:49:39 progress ops 93 {'succeeded': 30, 'cancelled': 60, 'running': 2, 'accepted': 1} writes 1028 violations 3 marks 57
+22:49:44 progress ops 93 {'succeeded': 32, 'cancelled': 60, 'running': 1} writes 1031 violations 3 marks 57
+22:49:49 progress ops 93 {'succeeded': 32, 'cancelled': 60, 'running': 1} writes 1035 violations 3 marks 57
+22:49:54 progress ops 95 {'succeeded': 32, 'cancelled': 60, 'publishing': 1, 'running': 1, 'accepted': 1} writes 1037 violations 3 marks 59
+22:49:59 progress ops 95 {'succeeded': 33, 'cancelled': 61, 'running': 1} writes 1042 violations 3 marks 59
+22:50:04 progress ops 95 {'succeeded': 33, 'cancelled': 61, 'running': 1} writes 1046 violations 3 marks 59
+22:50:09 progress ops 96 {'succeeded': 33, 'cancelled': 61, 'running': 2} writes 1047 violations 3 marks 60
+22:50:14 progress ops 96 {'succeeded': 33, 'cancelled': 61, 'running': 2} writes 1051 violations 3 marks 60
+22:50:19 progress ops 97 {'succeeded': 33, 'cancelled': 61, 'running': 2, 'accepted': 1} writes 1058 violations 3 marks 61
+22:50:24 progress ops 98 {'succeeded': 33, 'cancelled': 61, 'running': 3, 'accepted': 1} writes 1062 violations 3 marks 62
+22:50:30 progress ops 98 {'succeeded': 33, 'cancelled': 62, 'running': 2, 'accepted': 1} writes 1066 violations 3 marks 62
+22:50:35 progress ops 99 {'succeeded': 35, 'cancelled': 62, 'running': 1, 'accepted': 1} writes 1069 violations 3 marks 63
+22:50:40 progress ops 99 {'succeeded': 35, 'cancelled': 63, 'accepted': 1} writes 1075 violations 3 marks 63
+22:50:46 progress ops 99 {'succeeded': 35, 'cancelled': 63, 'running': 1} writes 1078 violations 3 marks 63
+22:50:51 progress ops 100 {'succeeded': 35, 'cancelled': 63, 'running': 1, 'accepted': 1} writes 1087 violations 3 marks 64
+22:50:56 progress ops 101 {'succeeded': 35, 'cancelled': 64, 'running': 1, 'accepted': 1} writes 1092 violations 3 marks 65
+22:51:01 progress ops 101 {'succeeded': 35, 'cancelled': 65, 'accepted': 1} writes 1095 violations 3 marks 65
+22:51:06 progress ops 101 {'succeeded': 35, 'cancelled': 65, 'running': 1} writes 1101 violations 3 marks 65
+22:51:11 progress ops 102 {'succeeded': 35, 'cancelled': 65, 'running': 2} writes 1104 violations 3 marks 66
+22:51:16 progress ops 102 {'succeeded': 35, 'cancelled': 65, 'running': 2} writes 1107 violations 3 marks 66
+22:51:21 progress ops 103 {'succeeded': 37, 'cancelled': 65, 'accepted': 1} writes 1111 violations 3 marks 67
+22:51:24 VIOLATION 01M73T7RVXPDC313HR4KCJRQ0P: submit expected {409, 503} got 400 {"error": "max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms", "code": "bad_request", "disposition": {"effects": "none", "action": "fix"}}
+22:51:26 progress ops 103 {'succeeded': 37, 'cancelled': 65, 'running': 1} writes 1117 violations 4 marks 67
+22:51:31 progress ops 103 {'succeeded': 37, 'cancelled': 65, 'running': 1} writes 1122 violations 4 marks 67
+22:51:36 progress ops 104 {'succeeded': 38, 'cancelled': 65, 'accepted': 1} writes 1125 violations 4 marks 68
+22:51:41 progress ops 104 {'succeeded': 38, 'cancelled': 65, 'accepted': 1} writes 1129 violations 4 marks 68
+22:51:46 progress ops 105 {'succeeded': 38, 'cancelled': 65, 'accepted': 2} writes 1133 violations 4 marks 69
+22:51:51 progress ops 105 {'succeeded': 38, 'cancelled': 65, 'accepted': 2} writes 1137 violations 4 marks 69
+22:51:56 progress ops 105 {'succeeded': 39, 'cancelled': 65, 'accepted': 1} writes 1139 violations 4 marks 70
+22:52:01 progress ops 106 {'succeeded': 40, 'cancelled': 65, 'accepted': 1} writes 1145 violations 4 marks 70
+22:52:06 progress ops 106 {'succeeded': 40, 'cancelled': 65, 'running': 1} writes 1149 violations 4 marks 70
+22:52:11 progress ops 107 {'succeeded': 40, 'cancelled': 65, 'running': 2} writes 1151 violations 4 marks 71
+22:52:16 progress ops 107 {'succeeded': 41, 'cancelled': 65, 'running': 1} writes 1157 violations 4 marks 71
+22:52:21 progress ops 107 {'succeeded': 41, 'cancelled': 65, 'running': 1} writes 1161 violations 4 marks 71
+22:52:26 progress ops 109 {'succeeded': 42, 'cancelled': 65, 'running': 1, 'accepted': 1} writes 1166 violations 4 marks 73
+22:52:31 progress ops 109 {'succeeded': 42, 'cancelled': 66, 'accepted': 1} writes 1169 violations 4 marks 73
+22:52:36 progress ops 109 {'succeeded': 42, 'cancelled': 66, 'accepted': 1} writes 1174 violations 4 marks 73
+22:52:41 progress ops 110 {'succeeded': 42, 'cancelled': 66, 'accepted': 2} writes 1177 violations 4 marks 74
+22:52:46 progress ops 110 {'succeeded': 43, 'cancelled': 66, 'accepted': 1} writes 1180 violations 4 marks 74
+22:52:51 progress ops 110 {'succeeded': 43, 'cancelled': 66, 'accepted': 1} writes 1185 violations 4 marks 74
+22:52:56 progress ops 112 {'succeeded': 44, 'cancelled': 67, 'accepted': 1} writes 1189 violations 4 marks 76
+22:53:01 progress ops 112 {'succeeded': 44, 'cancelled': 67, 'running': 1} writes 1195 violations 4 marks 76
+22:53:06 progress ops 113 {'succeeded': 44, 'cancelled': 67, 'running': 1, 'accepted': 1} writes 1198 violations 4 marks 77
+22:53:11 progress ops 113 {'succeeded': 44, 'cancelled': 67, 'running': 1, 'accepted': 1} writes 1203 violations 4 marks 77
+22:53:16 progress ops 114 {'succeeded': 45, 'cancelled': 67, 'accepted': 2} writes 1206 violations 4 marks 78
+22:53:21 progress ops 114 {'succeeded': 46, 'cancelled': 67, 'accepted': 1} writes 1212 violations 4 marks 78
+22:53:26 progress ops 114 {'succeeded': 46, 'cancelled': 67, 'running': 1} writes 1214 violations 4 marks 78
+22:53:31 progress ops 115 {'succeeded': 47, 'cancelled': 67, 'accepted': 1} writes 1219 violations 4 marks 79
+22:53:36 progress ops 115 {'succeeded': 47, 'cancelled': 67, 'running': 1} writes 1227 violations 4 marks 79
+22:53:41 progress ops 116 {'succeeded': 48, 'cancelled': 67, 'accepted': 1} writes 1232 violations 4 marks 79
+22:53:46 progress ops 116 {'succeeded': 48, 'cancelled': 67, 'accepted': 1} writes 1237 violations 4 marks 79
+22:53:51 progress ops 117 {'succeeded': 48, 'cancelled': 67, 'accepted': 2} writes 1239 violations 4 marks 80
+22:53:56 progress ops 117 {'succeeded': 48, 'cancelled': 67, 'accepted': 2} writes 1242 violations 4 marks 80
+22:54:01 progress ops 117 {'succeeded': 48, 'cancelled': 67, 'accepted': 2} writes 1246 violations 4 marks 80
+22:54:06 progress ops 118 {'succeeded': 49, 'cancelled': 67, 'running': 1, 'accepted': 1} writes 1250 violations 4 marks 81
+22:54:11 progress ops 119 {'succeeded': 49, 'cancelled': 68, 'running': 1, 'accepted': 1} writes 1254 violations 4 marks 82
+22:54:16 progress ops 119 {'succeeded': 49, 'cancelled': 68, 'running': 1, 'accepted': 1} writes 1258 violations 4 marks 82
+22:54:21 progress ops 120 {'succeeded': 49, 'cancelled': 69, 'accepted': 2} writes 1261 violations 4 marks 83
+22:54:26 progress ops 120 {'succeeded': 50, 'cancelled': 69, 'accepted': 1} writes 1265 violations 4 marks 83
+22:54:31 progress ops 120 {'succeeded': 50, 'cancelled': 69, 'accepted': 1} writes 1269 violations 4 marks 83
+22:54:36 progress ops 121 {'succeeded': 51, 'cancelled': 69, 'accepted': 1} writes 1273 violations 4 marks 84
+22:54:41 progress ops 121 {'succeeded': 51, 'cancelled': 69, 'running': 1} writes 1278 violations 4 marks 84
+22:54:46 progress ops 122 {'succeeded': 52, 'cancelled': 69, 'accepted': 1} writes 1281 violations 4 marks 85
+22:54:51 progress ops 122 {'succeeded': 52, 'cancelled': 69, 'accepted': 1} writes 1289 violations 4 marks 85
+22:54:56 progress ops 123 {'succeeded': 52, 'cancelled': 69, 'accepted': 1, 'running': 1} writes 1291 violations 4 marks 86
+22:55:01 progress ops 124 {'succeeded': 53, 'cancelled': 70, 'running': 1} writes 1298 violations 4 marks 87
+22:55:06 progress ops 125 {'succeeded': 53, 'cancelled': 70, 'running': 1, 'accepted': 1} writes 1301 violations 4 marks 88
+22:55:11 progress ops 126 {'succeeded': 53, 'cancelled': 71, 'running': 1, 'accepted': 1} writes 1307 violations 4 marks 89
+22:55:16 progress ops 126 {'succeeded': 53, 'cancelled': 71, 'running': 2} writes 1314 violations 4 marks 89
+22:55:21 progress ops 126 {'succeeded': 53, 'cancelled': 71, 'running': 2} writes 1318 violations 4 marks 89
+22:55:26 progress ops 127 {'succeeded': 54, 'cancelled': 72, 'accepted': 1} writes 1320 violations 4 marks 90
+22:55:32 progress ops 127 {'succeeded': 54, 'cancelled': 72, 'running': 1} writes 1322 violations 4 marks 90
+22:55:37 progress ops 128 {'succeeded': 54, 'cancelled': 72, 'running': 1, 'accepted': 1} writes 1326 violations 4 marks 91
+22:55:42 progress ops 128 {'succeeded': 55, 'cancelled': 72, 'accepted': 1} writes 1330 violations 4 marks 91
+22:55:47 progress ops 128 {'succeeded': 55, 'cancelled': 72, 'accepted': 1} writes 1333 violations 4 marks 91
+22:55:52 progress ops 129 {'succeeded': 55, 'cancelled': 72, 'accepted': 2} writes 1334 violations 4 marks 92
+22:55:57 progress ops 129 {'succeeded': 56, 'cancelled': 72, 'running': 1} writes 1339 violations 4 marks 92
+22:56:02 progress ops 130 {'succeeded': 56, 'cancelled': 72, 'running': 2} writes 1340 violations 4 marks 93
+22:56:07 progress ops 130 {'succeeded': 56, 'cancelled': 72, 'running': 2} writes 1345 violations 4 marks 93
+22:56:12 progress ops 130 {'succeeded': 56, 'cancelled': 72, 'running': 2} writes 1354 violations 4 marks 93
+22:56:17 progress ops 131 {'succeeded': 57, 'cancelled': 72, 'publishing': 1, 'accepted': 1} writes 1358 violations 4 marks 94
+22:56:22 progress ops 131 {'succeeded': 58, 'cancelled': 72, 'accepted': 1} writes 1361 violations 4 marks 94
+22:56:27 progress ops 132 {'succeeded': 58, 'cancelled': 72, 'accepted': 2} writes 1364 violations 4 marks 95
+22:56:32 progress ops 132 {'succeeded': 59, 'cancelled': 72, 'accepted': 1} writes 1369 violations 4 marks 95
+22:56:37 progress ops 133 {'succeeded': 59, 'cancelled': 72, 'running': 1, 'accepted': 1} writes 1371 violations 4 marks 96
+22:56:42 progress ops 133 {'succeeded': 60, 'cancelled': 72, 'accepted': 1} writes 1377 violations 4 marks 96
+22:56:47 progress ops 133 {'succeeded': 60, 'cancelled': 72, 'running': 1} writes 1382 violations 4 marks 96
+22:56:52 progress ops 134 {'succeeded': 60, 'cancelled': 72, 'running': 1, 'accepted': 1} writes 1383 violations 4 marks 96
+22:56:57 progress ops 135 {'succeeded': 61, 'cancelled': 72, 'running': 1, 'accepted': 1} writes 1388 violations 4 marks 97
+22:57:02 progress ops 135 {'succeeded': 61, 'cancelled': 73, 'accepted': 1} writes 1390 violations 4 marks 97
+22:57:07 progress ops 135 {'succeeded': 61, 'cancelled': 73, 'accepted': 1} writes 1393 violations 4 marks 97
+22:57:12 progress ops 136 {'succeeded': 61, 'cancelled': 73, 'accepted': 1, 'running': 1} writes 1398 violations 4 marks 98
+22:57:17 progress ops 136 {'succeeded': 62, 'cancelled': 73, 'running': 1} writes 1402 violations 4 marks 98
+22:57:22 progress ops 137 {'succeeded': 62, 'cancelled': 73, 'running': 1, 'accepted': 1} writes 1407 violations 4 marks 99
+22:57:27 progress ops 137 {'succeeded': 62, 'cancelled': 73, 'running': 1, 'accepted': 1} writes 1409 violations 4 marks 99
+22:57:32 progress ops 138 {'succeeded': 62, 'cancelled': 73, 'running': 1, 'accepted': 2} writes 1411 violations 4 marks 100
+22:57:37 progress ops 138 {'succeeded': 63, 'cancelled': 73, 'running': 1, 'accepted': 1} writes 1414 violations 4 marks 100
+22:57:42 progress ops 138 {'succeeded': 63, 'cancelled': 73, 'running': 2} writes 1418 violations 4 marks 100
+22:57:47 progress ops 139 {'succeeded': 63, 'cancelled': 73, 'running': 2, 'accepted': 1} writes 1421 violations 4 marks 101
+22:57:52 progress ops 139 {'succeeded': 63, 'cancelled': 74, 'running': 1, 'accepted': 1} writes 1425 violations 4 marks 101
+22:57:57 progress ops 139 {'succeeded': 64, 'cancelled': 74, 'running': 1} writes 1430 violations 4 marks 101
+22:58:02 progress ops 140 {'succeeded': 64, 'cancelled': 74, 'running': 1, 'accepted': 1} writes 1433 violations 4 marks 102
+22:58:07 progress ops 140 {'succeeded': 64, 'cancelled': 74, 'running': 2} writes 1436 violations 4 marks 102
+22:58:12 progress ops 141 {'succeeded': 65, 'cancelled': 74, 'running': 1, 'accepted': 1} writes 1440 violations 4 marks 103
+22:58:17 progress ops 141 {'succeeded': 65, 'cancelled': 74, 'running': 2} writes 1443 violations 4 marks 103
+22:58:22 progress ops 141 {'succeeded': 66, 'cancelled': 74, 'running': 1} writes 1448 violations 4 marks 103
+22:58:27 progress ops 142 {'succeeded': 66, 'cancelled': 74, 'running': 1, 'accepted': 1} writes 1454 violations 4 marks 104
+22:58:32 progress ops 142 {'succeeded': 66, 'cancelled': 74, 'running': 2} writes 1458 violations 4 marks 104
+22:58:37 progress ops 143 {'succeeded': 68, 'cancelled': 74, 'accepted': 1} writes 1461 violations 4 marks 105
+22:58:42 progress ops 143 {'succeeded': 68, 'cancelled': 74, 'accepted': 1} writes 1464 violations 4 marks 105
+22:58:47 progress ops 143 {'succeeded': 68, 'cancelled': 74, 'accepted': 1} writes 1467 violations 4 marks 105
+22:58:52 VIOLATION 01M73TM2C6C9V1AE269X8Y3P01: submit expected {409, 503} got 400 {"error": "max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms", "code": "bad_request", "disposition": {"effects": "none", "action": "fix"}}
+22:58:52 progress ops 144 {'succeeded': 68, 'cancelled': 74, 'accepted': 1, 'running': 1} writes 1470 violations 5 marks 106
+22:58:57 progress ops 144 {'succeeded': 68, 'cancelled': 74, 'accepted': 1, 'running': 1} writes 1473 violations 5 marks 106
+22:59:02 progress ops 145 {'succeeded': 68, 'cancelled': 74, 'accepted': 2, 'publishing': 1} writes 1477 violations 5 marks 107
+22:59:07 progress ops 145 {'succeeded': 68, 'cancelled': 74, 'accepted': 2, 'publishing': 1} writes 1480 violations 5 marks 107
+22:59:12 progress ops 146 {'succeeded': 69, 'cancelled': 74, 'accepted': 3} writes 1485 violations 5 marks 108
+22:59:17 progress ops 146 {'succeeded': 69, 'cancelled': 74, 'accepted': 3} writes 1491 violations 5 marks 108
+22:59:22 progress ops 146 {'succeeded': 69, 'cancelled': 74, 'accepted': 2, 'running': 1} writes 1498 violations 5 marks 108
+22:59:27 progress ops 148 {'succeeded': 70, 'cancelled': 74, 'accepted': 2, 'running': 2} writes 1502 violations 5 marks 110
+22:59:32 progress ops 148 {'succeeded': 70, 'cancelled': 75, 'accepted': 1, 'running': 2} writes 1505 violations 5 marks 110
+22:59:37 progress ops 148 {'succeeded': 70, 'cancelled': 75, 'accepted': 1, 'running': 2} writes 1509 violations 5 marks 110
+22:59:42 progress ops 149 {'succeeded': 70, 'cancelled': 75, 'accepted': 2, 'running': 2} writes 1513 violations 5 marks 111
+22:59:47 progress ops 149 {'succeeded': 70, 'cancelled': 75, 'accepted': 1, 'running': 3} writes 1517 violations 5 marks 111
+22:59:52 progress ops 150 {'succeeded': 70, 'cancelled': 75, 'accepted': 2, 'running': 3} writes 1522 violations 5 marks 112
+22:59:57 progress ops 150 {'succeeded': 74, 'cancelled': 75, 'running': 1} writes 1525 violations 5 marks 112
+23:00:02 progress ops 150 {'succeeded': 74, 'cancelled': 75, 'running': 1} writes 1526 violations 5 marks 112
+23:00:07 progress ops 151 {'succeeded': 74, 'cancelled': 75, 'running': 2} writes 1527 violations 5 marks 113
+23:00:12 progress ops 151 {'succeeded': 74, 'cancelled': 75, 'running': 2} writes 1530 violations 5 marks 113
+23:00:17 progress ops 152 {'succeeded': 74, 'cancelled': 75, 'running': 2, 'accepted': 1} writes 1533 violations 5 marks 114
+23:00:22 progress ops 152 {'succeeded': 74, 'cancelled': 75, 'running': 3} writes 1537 violations 5 marks 114
+23:00:27 progress ops 153 {'succeeded': 74, 'cancelled': 75, 'running': 3, 'accepted': 1} writes 1542 violations 5 marks 115
+23:00:32 progress ops 153 {'succeeded': 74, 'cancelled': 75, 'running': 3, 'accepted': 1} writes 1545 violations 5 marks 115
+23:00:37 progress ops 153 {'succeeded': 75, 'cancelled': 75, 'running': 2, 'accepted': 1} writes 1549 violations 5 marks 115
+23:00:42 progress ops 154 {'succeeded': 76, 'cancelled': 75, 'running': 2, 'accepted': 1} writes 1550 violations 5 marks 116
+23:00:47 progress ops 154 {'succeeded': 76, 'cancelled': 75, 'running': 2, 'accepted': 1} writes 1559 violations 5 marks 116
+23:00:52 progress ops 155 {'succeeded': 76, 'cancelled': 75, 'running': 2, 'accepted': 2} writes 1563 violations 5 marks 117
+23:00:58 progress ops 155 {'succeeded': 76, 'cancelled': 75, 'running': 3, 'accepted': 1} writes 1565 violations 5 marks 117
+23:01:03 progress ops 155 {'succeeded': 78, 'cancelled': 75, 'running': 2} writes 1569 violations 5 marks 117
+23:01:08 progress ops 156 {'succeeded': 79, 'cancelled': 75, 'running': 1, 'accepted': 1} writes 1572 violations 5 marks 118
+23:01:13 progress ops 156 {'succeeded': 79, 'cancelled': 75, 'running': 1, 'accepted': 1} writes 1579 violations 5 marks 118
+23:01:18 progress ops 157 {'succeeded': 81, 'cancelled': 75, 'running': 1} writes 1582 violations 5 marks 119
+23:01:23 progress ops 157 {'succeeded': 81, 'cancelled': 75, 'running': 1} writes 1588 violations 5 marks 119
+23:01:28 progress ops 158 {'succeeded': 82, 'cancelled': 75, 'accepted': 1} writes 1593 violations 5 marks 120
+23:01:33 progress ops 158 {'succeeded': 82, 'cancelled': 75, 'accepted': 1} writes 1597 violations 5 marks 120
+23:01:38 progress ops 159 {'succeeded': 82, 'cancelled': 75, 'running': 1, 'accepted': 1} writes 1601 violations 5 marks 121
+23:01:43 progress ops 159 {'succeeded': 82, 'cancelled': 75, 'running': 1, 'accepted': 1} writes 1605 violations 5 marks 121
+23:01:48 progress ops 160 {'succeeded': 82, 'cancelled': 75, 'running': 1, 'accepted': 2} writes 1610 violations 5 marks 122
+23:01:53 progress ops 160 {'succeeded': 83, 'cancelled': 76, 'accepted': 1} writes 1614 violations 5 marks 122
+23:01:58 progress ops 160 {'succeeded': 83, 'cancelled': 76, 'running': 1} writes 1618 violations 5 marks 122
+23:02:03 progress ops 161 {'succeeded': 83, 'cancelled': 77, 'accepted': 1} writes 1621 violations 5 marks 123
+23:02:08 progress ops 161 {'succeeded': 83, 'cancelled': 77, 'running': 1} writes 1624 violations 5 marks 123
+23:02:13 progress ops 162 {'succeeded': 83, 'cancelled': 77, 'running': 1, 'accepted': 1} writes 1626 violations 5 marks 124
+23:02:18 progress ops 162 {'succeeded': 83, 'cancelled': 77, 'running': 1, 'accepted': 1} writes 1629 violations 5 marks 124
+23:02:23 progress ops 162 {'succeeded': 83, 'cancelled': 77, 'running': 1, 'accepted': 1} writes 1635 violations 5 marks 124
+23:02:28 progress ops 163 {'succeeded': 83, 'cancelled': 77, 'running': 1, 'accepted': 2} writes 1637 violations 5 marks 125
+23:02:33 progress ops 163 {'succeeded': 83, 'cancelled': 77, 'running': 1, 'accepted': 2} writes 1642 violations 5 marks 125
+23:02:38 progress ops 165 {'succeeded': 84, 'cancelled': 77, 'running': 2, 'accepted': 2} writes 1644 violations 5 marks 127
+23:02:43 progress ops 165 {'succeeded': 85, 'cancelled': 78, 'running': 1, 'accepted': 1} writes 1646 violations 5 marks 127
+23:02:48 progress ops 165 {'succeeded': 86, 'cancelled': 78, 'accepted': 1} writes 1650 violations 5 marks 127
+23:02:53 progress ops 166 {'succeeded': 86, 'cancelled': 78, 'accepted': 2} writes 1652 violations 5 marks 128
+23:02:58 progress ops 166 {'succeeded': 86, 'cancelled': 78, 'accepted': 2} writes 1654 violations 5 marks 128
+23:03:03 progress ops 167 {'succeeded': 87, 'cancelled': 78, 'accepted': 2} writes 1657 violations 5 marks 129
+23:03:08 progress ops 167 {'succeeded': 88, 'cancelled': 78, 'running': 1} writes 1662 violations 5 marks 129
+23:03:13 progress ops 167 {'succeeded': 88, 'cancelled': 78, 'running': 1} writes 1664 violations 5 marks 129
+23:03:18 progress ops 168 {'succeeded': 88, 'cancelled': 78, 'running': 1, 'accepted': 1} writes 1667 violations 5 marks 130
+23:03:23 progress ops 168 {'succeeded': 89, 'cancelled': 78, 'accepted': 1} writes 1671 violations 5 marks 130
+23:03:28 progress ops 169 {'succeeded': 89, 'cancelled': 78, 'accepted': 2} writes 1673 violations 5 marks 131
+23:03:33 progress ops 169 {'succeeded': 89, 'cancelled': 78, 'accepted': 2} writes 1675 violations 5 marks 131
+23:03:38 progress ops 169 {'succeeded': 89, 'cancelled': 78, 'accepted': 1, 'running': 1} writes 1678 violations 5 marks 131
+23:03:43 progress ops 170 {'succeeded': 90, 'cancelled': 78, 'running': 1, 'accepted': 1} writes 1683 violations 5 marks 132
+23:03:48 progress ops 170 {'succeeded': 90, 'cancelled': 78, 'running': 1, 'accepted': 1} writes 1688 violations 5 marks 132
+23:03:53 progress ops 171 {'succeeded': 91, 'cancelled': 78, 'running': 1, 'accepted': 1} writes 1691 violations 5 marks 133
+23:03:58 progress ops 171 {'succeeded': 92, 'cancelled': 78, 'accepted': 1} writes 1693 violations 5 marks 133
+23:04:03 progress ops 172 {'succeeded': 92, 'cancelled': 78, 'running': 1, 'accepted': 1} writes 1698 violations 5 marks 134
+23:04:08 progress ops 172 {'succeeded': 92, 'cancelled': 78, 'running': 1, 'accepted': 1} writes 1700 violations 5 marks 134
+23:04:13 progress ops 173 {'succeeded': 92, 'cancelled': 79, 'running': 2} writes 1702 violations 5 marks 135
+23:04:18 progress ops 173 {'succeeded': 93, 'cancelled': 79, 'running': 1} writes 1706 violations 5 marks 135
+23:04:23 progress ops 174 {'succeeded': 93, 'cancelled': 79, 'running': 1, 'accepted': 1} writes 1712 violations 5 marks 136
+23:04:28 progress ops 174 {'succeeded': 94, 'cancelled': 79, 'accepted': 1} writes 1716 violations 5 marks 136
+23:04:33 progress ops 175 {'succeeded': 94, 'cancelled': 79, 'accepted': 2} writes 1717 violations 5 marks 137
+23:04:38 progress ops 175 {'succeeded': 94, 'cancelled': 79, 'accepted': 2} writes 1720 violations 5 marks 137
+23:04:43 progress ops 175 {'succeeded': 94, 'cancelled': 79, 'accepted': 2} writes 1725 violations 5 marks 137
+23:04:48 progress ops 176 {'succeeded': 95, 'cancelled': 79, 'accepted': 2} writes 1729 violations 5 marks 138
+23:04:53 progress ops 176 {'succeeded': 95, 'cancelled': 79, 'accepted': 2} writes 1732 violations 5 marks 138
+23:04:58 progress ops 177 {'succeeded': 95, 'cancelled': 79, 'accepted': 3} writes 1736 violations 5 marks 139
+23:05:03 progress ops 177 {'succeeded': 95, 'cancelled': 79, 'accepted': 3} writes 1740 violations 5 marks 139
+23:05:08 progress ops 177 {'succeeded': 96, 'cancelled': 79, 'accepted': 1, 'running': 1} writes 1743 violations 5 marks 139
+23:05:13 progress ops 178 {'succeeded': 96, 'cancelled': 79, 'accepted': 2, 'running': 1} writes 1744 violations 5 marks 140
+23:05:18 progress ops 178 {'succeeded': 97, 'cancelled': 79, 'running': 1, 'accepted': 1} writes 1747 violations 5 marks 140
+23:05:23 progress ops 178 {'succeeded': 97, 'cancelled': 79, 'running': 1, 'accepted': 1} writes 1749 violations 5 marks 140
+23:05:28 progress ops 179 {'succeeded': 97, 'cancelled': 79, 'running': 1, 'accepted': 2} writes 1752 violations 5 marks 141
+23:05:33 progress ops 179 {'succeeded': 98, 'cancelled': 79, 'accepted': 2} writes 1754 violations 5 marks 141
+23:05:38 progress ops 180 {'succeeded': 98, 'cancelled': 79, 'accepted': 3} writes 1755 violations 5 marks 142
+23:05:46 progress ops 180 {'succeeded': 98, 'cancelled': 79, 'accepted': 3} writes 1758 violations 5 marks 142
+23:05:51 progress ops 181 {'succeeded': 100, 'cancelled': 79, 'accepted': 2} writes 1760 violations 5 marks 143
+23:05:56 progress ops 181 {'succeeded': 100, 'cancelled': 79, 'accepted': 2} writes 1763 violations 5 marks 143
+23:06:01 progress ops 181 {'succeeded': 100, 'cancelled': 79, 'accepted': 2} writes 1767 violations 5 marks 143
+23:06:06 progress ops 181 {'succeeded': 100, 'cancelled': 79, 'accepted': 2} writes 1767 violations 5 marks 143
+23:06:11 progress ops 182 {'succeeded': 101, 'cancelled': 79, 'accepted': 2} writes 1770 violations 5 marks 144
+23:06:16 progress ops 182 {'succeeded': 101, 'cancelled': 79, 'accepted': 1, 'running': 1} writes 1772 violations 5 marks 144
+23:06:21 progress ops 183 {'succeeded': 101, 'cancelled': 79, 'accepted': 2, 'running': 1} writes 1774 violations 5 marks 145
+23:06:26 progress ops 183 {'succeeded': 102, 'cancelled': 79, 'accepted': 2} writes 1776 violations 5 marks 145
+23:06:31 progress ops 183 {'succeeded': 102, 'cancelled': 79, 'accepted': 2} writes 1781 violations 5 marks 145
+23:06:36 progress ops 184 {'succeeded': 104, 'cancelled': 79, 'accepted': 1} writes 1782 violations 5 marks 146
+23:06:41 progress ops 184 {'succeeded': 104, 'cancelled': 79, 'accepted': 1} writes 1787 violations 5 marks 146
+23:06:46 progress ops 185 {'succeeded': 104, 'cancelled': 79, 'accepted': 2} writes 1788 violations 5 marks 147
+23:06:51 progress ops 185 {'succeeded': 104, 'cancelled': 79, 'accepted': 2} writes 1791 violations 5 marks 147
+23:06:56 progress ops 185 {'succeeded': 104, 'cancelled': 79, 'accepted': 1, 'running': 1} writes 1796 violations 5 marks 147
+23:07:01 progress ops 186 {'succeeded': 104, 'cancelled': 79, 'accepted': 2, 'running': 1} writes 1797 violations 5 marks 148
+23:07:06 progress ops 186 {'succeeded': 105, 'cancelled': 79, 'running': 1, 'accepted': 1} writes 1803 violations 5 marks 148
+23:07:11 progress ops 186 {'succeeded': 105, 'cancelled': 79, 'running': 1, 'accepted': 1} writes 1808 violations 5 marks 148
+23:07:16 progress ops 187 {'succeeded': 106, 'cancelled': 79, 'accepted': 2} writes 1809 violations 5 marks 149
+23:07:21 progress ops 187 {'succeeded': 106, 'cancelled': 79, 'accepted': 2} writes 1811 violations 5 marks 149
+23:07:26 progress ops 188 {'succeeded': 107, 'cancelled': 79, 'accepted': 2} writes 1814 violations 5 marks 150
+23:07:31 progress ops 188 {'succeeded': 107, 'cancelled': 79, 'accepted': 1, 'running': 1} writes 1819 violations 5 marks 150
+23:07:36 progress ops 188 {'succeeded': 107, 'cancelled': 79, 'accepted': 1, 'running': 1} writes 1822 violations 5 marks 150
+23:07:41 progress ops 189 {'succeeded': 108, 'cancelled': 79, 'accepted': 2} writes 1823 violations 5 marks 151
+23:07:46 progress ops 189 {'succeeded': 108, 'cancelled': 79, 'accepted': 2} writes 1827 violations 5 marks 151
+23:07:51 progress ops 190 {'succeeded': 108, 'cancelled': 79, 'accepted': 3} writes 1830 violations 5 marks 152
+23:07:56 progress ops 190 {'succeeded': 108, 'cancelled': 79, 'accepted': 3} writes 1835 violations 5 marks 152
+23:08:01 progress ops 190 {'succeeded': 109, 'cancelled': 79, 'accepted': 2} writes 1837 violations 5 marks 152
+23:08:06 progress ops 191 {'succeeded': 110, 'cancelled': 79, 'accepted': 2} writes 1839 violations 5 marks 153
+23:08:11 progress ops 191 {'succeeded': 110, 'cancelled': 79, 'accepted': 2} writes 1842 violations 5 marks 153
+23:08:16 progress ops 192 {'succeeded': 110, 'cancelled': 79, 'accepted': 2, 'running': 1} writes 1846 violations 5 marks 153
+23:08:21 progress ops 192 {'succeeded': 110, 'cancelled': 79, 'accepted': 2, 'running': 1} writes 1849 violations 5 marks 153
+23:08:26 progress ops 192 {'succeeded': 110, 'cancelled': 79, 'accepted': 2, 'running': 1} writes 1852 violations 5 marks 153
+23:08:31 progress ops 193 {'succeeded': 111, 'cancelled': 79, 'running': 3} writes 1854 violations 5 marks 154
+23:08:36 progress ops 194 {'succeeded': 111, 'cancelled': 79, 'running': 4} writes 1858 violations 5 marks 154
+23:08:41 progress ops 194 {'succeeded': 112, 'cancelled': 80, 'running': 2} writes 1862 violations 5 marks 154
+23:08:46 progress ops 194 {'succeeded': 112, 'cancelled': 80, 'running': 2} writes 1866 violations 5 marks 154
+23:08:51 progress ops 195 {'succeeded': 112, 'cancelled': 80, 'running': 2, 'accepted': 1} writes 1868 violations 5 marks 155
+23:08:56 progress ops 195 {'succeeded': 112, 'cancelled': 80, 'running': 2, 'accepted': 1} writes 1871 violations 5 marks 155
+23:09:01 progress ops 195 {'succeeded': 113, 'cancelled': 80, 'running': 1, 'accepted': 1} writes 1874 violations 5 marks 155
+23:09:06 progress ops 196 {'succeeded': 113, 'cancelled': 80, 'running': 2, 'accepted': 1} writes 1881 violations 5 marks 156
+23:09:11 progress ops 196 {'succeeded': 114, 'cancelled': 80, 'accepted': 1, 'running': 1} writes 1890 violations 5 marks 156
+23:09:19 quiescing
+23:09:26 Person: acked 6801 present 6802 uncertain 0
+23:09:26 Company: acked 255 present 255 uncertain 0
+23:09:26 Doc: acked 525 present 525 uncertain 0
+23:09:27 summary {"ops": 196, "states": {"cancelled": 80, "running": 0, "publishing": 0, "interrupted": 0, "succeeded": 116, "failed": 0, "unsettled": 0, "accepted": 0}, "writes": 1894, "write_p50": 0.8016624450683594, "write_p99": 42.03797006607056, "write_max": 76.65010046958923, "max_gate_hold_ms_seen": 1957, "marks": [[1794352109.6836512, 1794351708407], [1794352130.5440657, 1794351732761], [1794352142.3772056, 1794351745895]], "evicted_seen": 164, "event_counts": {"submit:202": 303, "submit:429": 24245, "submit:200": 3161, "submit:400": 4478, "write:409": 123, "submit:409": 10303, "lookup:200": 8474, "cancel:202": 89, "cancel:200": 5508}, "write_by_kind": {"company": {"n": 255, "p50": 0.5679693222045898, "p99": 7.456248760223389, "max": 9.46670937538147}, "docs": {"n": 262, "p50": 0.5399432182312012, "p99": 9.137298107147217, "max": 15.780258178710938}, "edges": {"n": 219, "p50": 1.3550472259521484, "p99": 70.67108845710754, "max": 76.65010046958923}, "merge": {"n": 406, "p50": 2.1782302856445312, "p99": 6.041236639022827, "max": 9.231139659881592}, "mutate": {"n": 183, "p50": 0.4818246364593506, "p99": 3.365029811859131, "max": 5.391078472137451}, "persons": {"n": 446, "p50": 0.6855983734130859, "p99": 10.546717643737793, "max": 26.699453353881836}}}
+23:09:27 violations 5
+23:09:27    01M73SXB0H0TFSZE8KKA59KH5A: submit expected {409, 503} got 400 {"error": "max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms", "code": "bad_request", "disposition": {"effects": "none", "action": "fix"}}
+23:09:27    01M73SXB0H0TFSZE8KKA59KH5A: submit expected {409, 503} got 400 {"error": "max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms", "code": "bad_request", "disposition": {"effects": "none", "action": "fix"}}
+23:09:27    01M73SXB0H0TFSZE8KKA59KH5A: submit expected {409, 503} got 400 {"error": "max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms", "code": "bad_request", "disposition": {"effects": "none", "action": "fix"}}
+23:09:27    01M73T7RVXPDC313HR4KCJRQ0P: submit expected {409, 503} got 400 {"error": "max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms", "code": "bad_request", "disposition": {"effects": "none", "action": "fix"}}
+23:09:27    01M73TM2C6C9V1AE269X8Y3P01: submit expected {409, 503} got 400 {"error": "max_gate_hold_ms 3007 exceeds this server's ceiling of 3000 ms", "code": "bad_request", "disposition": {"effects": "none", "action": "fix"}}
