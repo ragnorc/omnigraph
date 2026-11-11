@@ -1,7 +1,8 @@
 //! The reference cards an agent reads, one per arm, and their pins.
 //!
 //! Arm `gq3`'s card is the edition-3 card of the 2026-11-09 run, changed
-//! only where #1316 differs from it. Both are written by hand and pinned by SHA-256 in
+//! only where #1316 differs from it; arm `where`'s card is that card with
+//! only the syntax changed. Both are written by hand and pinned by SHA-256 in
 //! `manifest.json`, which the runner checks before every run.
 
 use std::path::{Path, PathBuf};

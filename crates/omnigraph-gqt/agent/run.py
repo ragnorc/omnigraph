@@ -3,7 +3,7 @@
 arm's language, and `omnigraph-gqt-agent` judges every answer. See README.md
 beside this file.
 
-    python3 crates/omnigraph-gqt/agent/run.py run --arms gq3 --runs 3
+    python3 crates/omnigraph-gqt/agent/run.py run --arms gq3,where --runs 3
     python3 crates/omnigraph-gqt/agent/run.py summarize crates/omnigraph-gqt/agent/results/<dir>
 
 Standard library only. Every agent call is a fresh `claude -p` process in an
@@ -357,8 +357,8 @@ def cmd_run(args):
     tool(bin_path, "cards", "--check")  # the cards match their pins
     manifest = json.load(open(os.path.join(HERE, "manifest.json")))
     arms = args.arms.split(",")
-    if not set(arms) <= {"gq3"}:
-        raise Refusal(f"the arm is gq3, not {args.arms}")
+    if not set(arms) <= {"gq3", "where"}:
+        raise Refusal(f"arms are gq3 and where, not {args.arms}")
     tasks = json_lines(tool(bin_path, "tasks"))
     if args.only:
         keep = set(args.only.split(","))
@@ -412,7 +412,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="command", required=True)
     r = sub.add_parser("run", help="ask the agent every task and judge every answer")
-    r.add_argument("--arms", default="gq3", help="comma-separated arms: gq3")
+    r.add_argument("--arms", default="gq3,where", help="comma-separated: gq3, where or both")
     r.add_argument("--runs", type=int, default=3)
     r.add_argument("--sets", default="tasks,corpus", help="comma-separated: tasks, corpus or both")
     r.add_argument("--only", default="", help="comma-separated task ids")

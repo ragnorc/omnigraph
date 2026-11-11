@@ -22,6 +22,16 @@ An arm is a language the agent writes and the judge reads.
 | Arm | Card | Grammar |
 |---|---|---|
 | `gq3` | `cards/gq3.md` | GQ 3 as the product parses it (#1316) |
+| `where` | `cards/where.md` | the judge-only variant `match { element, … } where <expression>` (`src/agent/variant/`); the product's grammar does not change |
+
+The variant is a fork of #1316's grammar and parser that builds the
+product's surface tree, so the product's type checker types it: a variant
+text lowers to exactly the core IR of its GQ 3 equivalent. `where a and b` is
+one filter clause per top-level conjunct after the last element, and a
+conjunct `not exists { … }` is GQ 3's `not { … }`. Its diagnostics keep the
+product's codes; a fix the product prints in GQ 3 syntax the variant refuses
+is reprinted in variant syntax. An accepted variant answer runs on the
+engine as the GQ 3 text the product's printer writes for its tree.
 
 Edition 2 is deleted on #1316, so it is no arm; its numbers of the
 2026-11-09 run (`results/2026-11-09/`) are the gate's baseline.
@@ -33,7 +43,7 @@ Edition 2 is deleted on #1316, so it is no arm; its numbers of the
 | `tasks/` | the 45-task competence instrument: 39 kinds of query from the RFC's before-and-after corpus and the six M0 composition tasks (`m1` to `m6`), over the RFC's section 8 schema |
 | `corpus/` | the 30-task agent corpus: realistic requests over three GQT datasets, `s*` (social), `a*` (attribution) and `r*` (reading); 10 of them needed several edition-2 queries |
 | `datasets/` | each dataset's `schema.pg` and `seed.jsonl` (GQT's seed format) |
-| `seeds/` | seeded answers per arm: a ground truth with one injected error per refusal class |
+| `seeds/` | seeded answers per arm: a ground truth with one injected error per refusal class; `where.seeds` converts `gq3.seeds` |
 | `cards/` | the reference card each arm's agent reads |
 | `manifest.json` | the pinned agent model and each card's SHA-256 |
 | `run.py`, `summary.py` | the runner: calls the agent, asks `omnigraph-gqt-agent` to judge, writes results |
@@ -111,7 +121,7 @@ it.
 
 ```bash
 cargo test -p omnigraph-gqt --no-run   # builds target/debug/omnigraph-gqt-agent
-python3 crates/omnigraph-gqt/agent/run.py run --arms gq3 --runs 3
+python3 crates/omnigraph-gqt/agent/run.py run --arms gq3,where --runs 3
 python3 crates/omnigraph-gqt/agent/run.py run --arms gq3 --runs 1 --only t01,s04 --label smoke
 python3 crates/omnigraph-gqt/agent/run.py summarize crates/omnigraph-gqt/agent/results/<dir>
 ```
@@ -132,10 +142,11 @@ B=target/debug/omnigraph-gqt-agent
 $B tasks                                  # every task as JSON
 echo '{"id":1,"task":"t14","text":"query staff($slug: String) { … }"}' | $B judge --arm gq3
 $B truths                                 # every edition-3 truth against the expected rows
+$B variant                                # every truth converted to the variant, and its IR comparison
 $B record --check                         # the edition3-recorded rows still hold
 $B record --write                         # record rows for tasks with none
 $B cards --check                          # the cards match their pins
-$B cards --write                          # re-pin the cards after an intended change
+$B cards --write                          # re-pin both cards after an intended change
 ```
 
 ## How it stays valid
@@ -143,7 +154,10 @@ $B cards --write                          # re-pin the cards after an intended c
 The `agent::tests` module of this crate's library checks that every
 edition-3 ground truth is accepted, that every truth that runs returns the
 expected rows (a planner gap is printed, not failed), that every seed of each
-arm is refused with its code, and that the cards match their pins.
+arm is refused with its code, that both cards match their pins, that every
+truth converted mechanically to the variant lowers to exactly its core IR,
+that the two cards' examples are the same queries, and that the variant's
+own refusals print fixes the variant accepts.
 
 ## Writing a task
 

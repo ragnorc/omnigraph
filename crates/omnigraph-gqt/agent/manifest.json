@@ -1,6 +1,7 @@
 {
   "model": "claude-sonnet-5-5",
   "cards": {
-    "gq3.md": "9aa2fd3cea1192e668336ff38f5f00dc4276a3aa81921c28c4c8a1277f3a07f7"
+    "gq3.md": "9aa2fd3cea1192e668336ff38f5f00dc4276a3aa81921c28c4c8a1277f3a07f7",
+    "where.md": "2637d4a75c666953bc06198d8ff2caeda239717d867c319dd53c73ce42c2b25d"
   }
 }

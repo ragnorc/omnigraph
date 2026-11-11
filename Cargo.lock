@@ -5835,6 +5835,8 @@ dependencies = [
  "omnigraph-dst",
  "omnigraph-engine",
  "omnigraph-gqt-core",
+ "pest",
+ "pest_derive",
  "serde",
  "serde_json",
  "sha2 0.10.9",

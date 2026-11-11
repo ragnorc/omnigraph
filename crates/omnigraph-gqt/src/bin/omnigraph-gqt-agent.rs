@@ -14,11 +14,12 @@ use serde_json::{Value, json};
 const USAGE: &str = "usage: omnigraph-gqt-agent [--root <agent dir>] <command>
 commands:
   tasks                    every task, one JSON object per line
-  seeds --arm gq3  the seeded answers of an arm
-  judge --arm gq3  judge {\"id\", \"task\", \"text\"} lines from stdin
+  seeds --arm <gq3|where>  the seeded answers of an arm
+  judge --arm <gq3|where>  judge {\"id\", \"task\", \"text\"} lines from stdin
   cards --check|--write    the card digests in manifest.json
   record --check|--write   rows from the first edition-3 truth, for tasks with no edition-2 rows
-  truths                   every edition-3 truth run against the expected rows, one JSON line each";
+  truths                   every edition-3 truth run against the expected rows, one JSON line each
+  variant                  every edition-3 truth converted to the variant, with its IR comparison";
 
 struct Args {
     root: PathBuf,
@@ -36,7 +37,7 @@ fn parse() -> Result<Args, String> {
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--root" => root = PathBuf::from(args.next().ok_or("--root needs a directory")?),
-            "--arm" => arm = Some(Arm::parse(&args.next().ok_or("--arm needs gq3")?)?),
+            "--arm" => arm = Some(Arm::parse(&args.next().ok_or("--arm needs gq3 or where")?)?),
             "--check" => write = Some(false),
             "--write" => write = Some(true),
             "-h" | "--help" => return Err(USAGE.into()),
@@ -224,6 +225,17 @@ async fn run(args: Args) -> Result<(), String> {
                         "status": status,
                         "detail": detail,
                     }));
+                }
+            }
+            Ok(())
+        }
+        "variant" => {
+            let instrument = Instrument::load(&args.root)?;
+            for task in &instrument.tasks {
+                let catalog = agent::catalog(&instrument.datasets[&task.dataset])?;
+                for (index, truth) in task.edition3.iter().enumerate() {
+                    let report = agent::variant::lowering_report(&catalog, truth);
+                    print(&json!({"task": task.id, "truth": index + 1, "report": report}));
                 }
             }
             Ok(())

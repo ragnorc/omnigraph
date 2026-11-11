@@ -2,8 +2,11 @@
 //! then the type checker of every declaration into the core IR, as the
 //! engine compiles a source before it runs it.
 //!
-//! An arm is a language the agent writes; arm `gq3` parses with the
-//! product's grammar.
+//! Two arms share the type checker. Arm `gq3` parses with the product's
+//! grammar. Arm `where` parses with the judge-only variant grammar
+//! ([`super::variant`]), which builds the same surface tree; its accepted
+//! text runs on the engine as the GQ 3 text the product's printer writes for
+//! that tree, and the variant's lowering test holds the two to equal core IR.
 
 use omnigraph_compiler::QueryDiagnostic;
 use omnigraph_compiler::catalog::Catalog;
@@ -11,33 +14,38 @@ use omnigraph_compiler::ir::core::CoreDecl;
 use omnigraph_compiler::query::check::check_file;
 use omnigraph_compiler::query::file::FileBody;
 use omnigraph_compiler::query::parser::parse_query_diagnostic;
+use omnigraph_compiler::query::syntax::print::{Style, print_file};
 use omnigraph_compiler::query::syntax::{Body, DeclBody, SourceFile};
 use serde_json::{Value, json};
 
-use super::normalize;
+use super::{normalize, variant};
 
 /// The language an answer is written in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Arm {
     /// GQ 3 as #1316 ships it.
     Gq3,
+    /// The judge-only variant: `match { elements, … } where <expression>`.
+    Where,
 }
 
 impl Arm {
     pub fn parse(text: &str) -> Result<Self, String> {
         match text {
             "gq3" => Ok(Arm::Gq3),
-            other => Err(format!("arm `{other}` is not `gq3`")),
+            "where" => Ok(Arm::Where),
+            other => Err(format!("arm `{other}` is not `gq3` or `where`")),
         }
     }
 
     pub fn name(self) -> &'static str {
         match self {
             Arm::Gq3 => "gq3",
+            Arm::Where => "where",
         }
     }
 
-    pub const ALL: [Arm; 1] = [Arm::Gq3];
+    pub const ALL: [Arm; 2] = [Arm::Gq3, Arm::Where];
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -128,6 +136,7 @@ pub fn parse(arm: Arm, text: &str) -> Result<SourceFile, QueryDiagnostic> {
                 )),
             }
         }
+        Arm::Where => variant::parse_source(text),
     }
 }
 
@@ -154,7 +163,13 @@ pub fn accept(arm: Arm, catalog: &Catalog, text: &str) -> Verdict {
     for ((_, checked), decl) in check_file(catalog, &tree).into_iter().zip(syntax_decls) {
         let core = match checked {
             Ok(checked) => checked.core,
-            Err(d) => return Verdict::Refused(diagnostic_json(&d)),
+            Err(d) => {
+                let d = match arm {
+                    Arm::Gq3 => d,
+                    Arm::Where => variant::adapt_diagnostic(d, decl, text),
+                };
+                return Verdict::Refused(diagnostic_json(&d));
+            }
         };
         let kind = match &core {
             CoreDecl::Read(_) => Kind::Read,
@@ -171,7 +186,10 @@ pub fn accept(arm: Arm, catalog: &Catalog, text: &str) -> Verdict {
             params,
         });
     }
-    let gq3 = text.to_string();
+    let gq3 = match arm {
+        Arm::Gq3 => text.to_string(),
+        Arm::Where => print_file(&tree, Style::default()),
+    };
     Verdict::Accepted {
         decls: out,
         tree,

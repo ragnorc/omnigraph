@@ -14,6 +14,7 @@ mod normalize;
 pub mod task;
 #[cfg(test)]
 mod tests;
+pub mod variant;
 
 use std::collections::HashMap;
 

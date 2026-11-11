@@ -19,6 +19,8 @@ futures = { workspace = true }
 object_store = { workspace = true }
 omnigraph = { package = "omnigraph-engine", path = "../omnigraph", version = "0.15.1" }
 omnigraph-compiler = { path = "../omnigraph-compiler", version = "0.15.1" }
+pest = { workspace = true }
+pest_derive = { workspace = true }
 serde_json = { workspace = true }
 serde = { workspace = true }
 sha2 = { workspace = true }
