@@ -1,0 +1,2837 @@
+{
+  "arms": {
+    "gq3": {
+      "all": {
+        "accepted": [
+          75,
+          75,
+          75
+        ],
+        "after_repair_correct": [
+          33,
+          32,
+          33
+        ],
+        "correct": [
+          33,
+          32,
+          33
+        ],
+        "gap": [
+          20,
+          21,
+          20
+        ],
+        "ir_equal": [
+          41,
+          42,
+          42
+        ],
+        "judged": [
+          57,
+          57,
+          57
+        ],
+        "n": [
+          75,
+          75,
+          75
+        ],
+        "no_expected": [
+          18,
+          18,
+          18
+        ],
+        "refused": [
+          0,
+          0,
+          0
+        ],
+        "repair_bare_accepted": [
+          0,
+          0,
+          0
+        ],
+        "repair_bare_correct": [
+          0,
+          0,
+          0
+        ],
+        "repair_card_accepted": [
+          0,
+          0,
+          0
+        ],
+        "repair_card_correct": [
+          0,
+          0,
+          0
+        ],
+        "tokens_in": [
+          7558,
+          7558,
+          7558
+        ],
+        "tokens_out": [
+          192,
+          196,
+          196
+        ],
+        "unjudged": [
+          18,
+          18,
+          18
+        ]
+      },
+      "corpus": {
+        "accepted": [
+          30,
+          30,
+          30
+        ],
+        "after_repair_correct": [
+          14,
+          13,
+          13
+        ],
+        "correct": [
+          14,
+          13,
+          13
+        ],
+        "gap": [
+          14,
+          15,
+          15
+        ],
+        "ir_equal": [
+          14,
+          14,
+          13
+        ],
+        "judged": [
+          29,
+          29,
+          29
+        ],
+        "n": [
+          30,
+          30,
+          30
+        ],
+        "no_expected": [
+          1,
+          1,
+          1
+        ],
+        "refused": [
+          0,
+          0,
+          0
+        ],
+        "repair_bare_accepted": [
+          0,
+          0,
+          0
+        ],
+        "repair_bare_correct": [
+          0,
+          0,
+          0
+        ],
+        "repair_card_accepted": [
+          0,
+          0,
+          0
+        ],
+        "repair_card_correct": [
+          0,
+          0,
+          0
+        ],
+        "tokens_in": [
+          7469,
+          7469,
+          7469
+        ],
+        "tokens_out": [
+          232,
+          230,
+          238
+        ],
+        "unjudged": [
+          1,
+          1,
+          1
+        ]
+      },
+      "seeded": {
+        "accepted": [
+          25,
+          25,
+          25
+        ],
+        "correct": [
+          18,
+          18,
+          18
+        ],
+        "n": [
+          29,
+          29,
+          29
+        ]
+      },
+      "shared": {
+        "accepted": [
+          45,
+          45,
+          45
+        ],
+        "after_repair_correct": [
+          31,
+          30,
+          31
+        ],
+        "correct": [
+          31,
+          30,
+          31
+        ],
+        "gap": [
+          10,
+          11,
+          10
+        ],
+        "ir_equal": [
+          24,
+          25,
+          25
+        ],
+        "judged": [
+          45,
+          45,
+          45
+        ],
+        "n": [
+          45,
+          45,
+          45
+        ],
+        "no_expected": [
+          0,
+          0,
+          0
+        ],
+        "refused": [
+          0,
+          0,
+          0
+        ],
+        "repair_bare_accepted": [
+          0,
+          0,
+          0
+        ],
+        "repair_bare_correct": [
+          0,
+          0,
+          0
+        ],
+        "repair_card_accepted": [
+          0,
+          0,
+          0
+        ],
+        "repair_card_correct": [
+          0,
+          0,
+          0
+        ],
+        "tokens_in": [
+          7550,
+          7550,
+          7550
+        ],
+        "tokens_out": [
+          150,
+          140,
+          151
+        ],
+        "unjudged": [
+          0,
+          0,
+          0
+        ]
+      },
+      "tasks": {
+        "accepted": [
+          45,
+          45,
+          45
+        ],
+        "after_repair_correct": [
+          19,
+          19,
+          20
+        ],
+        "correct": [
+          19,
+          19,
+          20
+        ],
+        "gap": [
+          6,
+          6,
+          5
+        ],
+        "ir_equal": [
+          27,
+          28,
+          29
+        ],
+        "judged": [
+          28,
+          28,
+          28
+        ],
+        "n": [
+          45,
+          45,
+          45
+        ],
+        "no_expected": [
+          17,
+          17,
+          17
+        ],
+        "refused": [
+          0,
+          0,
+          0
+        ],
+        "repair_bare_accepted": [
+          0,
+          0,
+          0
+        ],
+        "repair_bare_correct": [
+          0,
+          0,
+          0
+        ],
+        "repair_card_accepted": [
+          0,
+          0,
+          0
+        ],
+        "repair_card_correct": [
+          0,
+          0,
+          0
+        ],
+        "tokens_in": [
+          7618,
+          7618,
+          7618
+        ],
+        "tokens_out": [
+          165,
+          173,
+          168
+        ],
+        "unjudged": [
+          17,
+          17,
+          17
+        ]
+      }
+    },
+    "where": {
+      "all": {
+        "accepted": [
+          74,
+          73,
+          72
+        ],
+        "after_repair_correct": [
+          33,
+          34,
+          32
+        ],
+        "correct": [
+          33,
+          34,
+          32
+        ],
+        "gap": [
+          21,
+          19,
+          21
+        ],
+        "ir_equal": [
+          39,
+          40,
+          40
+        ],
+        "judged": [
+          56,
+          55,
+          54
+        ],
+        "n": [
+          75,
+          75,
+          75
+        ],
+        "no_expected": [
+          18,
+          18,
+          18
+        ],
+        "refused": [
+          1,
+          2,
+          3
+        ],
+        "repair_bare_accepted": [
+          0,
+          1,
+          2
+        ],
+        "repair_bare_correct": [
+          0,
+          0,
+          0
+        ],
+        "repair_card_accepted": [
+          1,
+          2,
+          3
+        ],
+        "repair_card_correct": [
+          0,
+          0,
+          0
+        ],
+        "tokens_in": [
+          7682,
+          7682,
+          7682
+        ],
+        "tokens_out": [
+          214,
+          204,
+          208
+        ],
+        "unjudged": [
+          18,
+          18,
+          18
+        ]
+      },
+      "corpus": {
+        "accepted": [
+          30,
+          28,
+          28
+        ],
+        "after_repair_correct": [
+          13,
+          13,
+          13
+        ],
+        "correct": [
+          13,
+          13,
+          13
+        ],
+        "gap": [
+          15,
+          13,
+          14
+        ],
+        "ir_equal": [
+          10,
+          11,
+          11
+        ],
+        "judged": [
+          29,
+          27,
+          27
+        ],
+        "n": [
+          30,
+          30,
+          30
+        ],
+        "no_expected": [
+          1,
+          1,
+          1
+        ],
+        "refused": [
+          0,
+          2,
+          2
+        ],
+        "repair_bare_accepted": [
+          0,
+          1,
+          2
+        ],
+        "repair_bare_correct": [
+          0,
+          0,
+          0
+        ],
+        "repair_card_accepted": [
+          0,
+          2,
+          2
+        ],
+        "repair_card_correct": [
+          0,
+          0,
+          0
+        ],
+        "tokens_in": [
+          7593,
+          7593,
+          7593
+        ],
+        "tokens_out": [
+          267,
+          243,
+          245
+        ],
+        "unjudged": [
+          1,
+          1,
+          1
+        ]
+      },
+      "seeded": {
+        "accepted": [
+          25,
+          25,
+          25
+        ],
+        "correct": [
+          18,
+          17,
+          18
+        ],
+        "n": [
+          29,
+          29,
+          29
+        ]
+      },
+      "shared": {
+        "accepted": [
+          44,
+          44,
+          42
+        ],
+        "after_repair_correct": [
+          31,
+          32,
+          30
+        ],
+        "correct": [
+          31,
+          32,
+          30
+        ],
+        "gap": [
+          11,
+          11,
+          11
+        ],
+        "ir_equal": [
+          21,
+          22,
+          21
+        ],
+        "judged": [
+          44,
+          44,
+          42
+        ],
+        "n": [
+          45,
+          45,
+          45
+        ],
+        "no_expected": [
+          0,
+          0,
+          0
+        ],
+        "refused": [
+          1,
+          1,
+          3
+        ],
+        "repair_bare_accepted": [
+          0,
+          1,
+          2
+        ],
+        "repair_bare_correct": [
+          0,
+          0,
+          0
+        ],
+        "repair_card_accepted": [
+          1,
+          1,
+          3
+        ],
+        "repair_card_correct": [
+          0,
+          0,
+          0
+        ],
+        "tokens_in": [
+          7674,
+          7674,
+          7674
+        ],
+        "tokens_out": [
+          173,
+          158,
+          155
+        ],
+        "unjudged": [
+          0,
+          0,
+          0
+        ]
+      },
+      "tasks": {
+        "accepted": [
+          44,
+          45,
+          44
+        ],
+        "after_repair_correct": [
+          20,
+          21,
+          19
+        ],
+        "correct": [
+          20,
+          21,
+          19
+        ],
+        "gap": [
+          6,
+          6,
+          7
+        ],
+        "ir_equal": [
+          29,
+          29,
+          29
+        ],
+        "judged": [
+          27,
+          28,
+          27
+        ],
+        "n": [
+          45,
+          45,
+          45
+        ],
+        "no_expected": [
+          17,
+          17,
+          17
+        ],
+        "refused": [
+          1,
+          0,
+          1
+        ],
+        "repair_bare_accepted": [
+          0,
+          0,
+          0
+        ],
+        "repair_bare_correct": [
+          0,
+          0,
+          0
+        ],
+        "repair_card_accepted": [
+          1,
+          0,
+          1
+        ],
+        "repair_card_correct": [
+          0,
+          0,
+          0
+        ],
+        "tokens_in": [
+          7742,
+          7742,
+          7742
+        ],
+        "tokens_out": [
+          179,
+          178,
+          183
+        ],
+        "unjudged": [
+          17,
+          17,
+          17
+        ]
+      }
+    }
+  },
+  "by_task": {
+    "a01": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "a02": {
+      "gq3": "ggg",
+      "where": "ggg"
+    },
+    "a03": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "a04": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "a05": {
+      "gq3": "ggg",
+      "where": "ggg"
+    },
+    "a06": {
+      "gq3": "uuu",
+      "where": "uuu"
+    },
+    "a07": {
+      "gq3": "ggg",
+      "where": "ggg"
+    },
+    "a08": {
+      "gq3": "ggg",
+      "where": "ggg"
+    },
+    "a09": {
+      "gq3": "ggg",
+      "where": "grg"
+    },
+    "a10": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "m1": {
+      "gq3": "uuu",
+      "where": "uuu"
+    },
+    "m2": {
+      "gq3": "uuu",
+      "where": "uuu"
+    },
+    "m3": {
+      "gq3": "www",
+      "where": "ggg"
+    },
+    "m4": {
+      "gq3": "uuu",
+      "where": "uuu"
+    },
+    "m5": {
+      "gq3": "uuu",
+      "where": "uuu"
+    },
+    "m6": {
+      "gq3": "uuu",
+      "where": "uuu"
+    },
+    "r01": {
+      "gq3": "ccg",
+      "where": "ggg"
+    },
+    "r02": {
+      "gq3": "ggg",
+      "where": "ggg"
+    },
+    "r03": {
+      "gq3": "cgc",
+      "where": "ccc"
+    },
+    "r04": {
+      "gq3": "ggg",
+      "where": "gwg"
+    },
+    "r05": {
+      "gq3": "www",
+      "where": "wrr"
+    },
+    "r06": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "r07": {
+      "gq3": "ggg",
+      "where": "ggg"
+    },
+    "r08": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "r09": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "r10": {
+      "gq3": "ggg",
+      "where": "ggg"
+    },
+    "r11": {
+      "gq3": "ggg",
+      "where": "ggg"
+    },
+    "s01": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "s02": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "s03": {
+      "gq3": "ggg",
+      "where": "ggr"
+    },
+    "s04": {
+      "gq3": "ggg",
+      "where": "ggg"
+    },
+    "s05": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "s06": {
+      "gq3": "ggg",
+      "where": "ggg"
+    },
+    "s07": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "s08": {
+      "gq3": "ggg",
+      "where": "ggg"
+    },
+    "s09": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "t01": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "t02": {
+      "gq3": "www",
+      "where": "www"
+    },
+    "t03": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "t04": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "t05": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "t06": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "t07": {
+      "gq3": "uuu",
+      "where": "uuu"
+    },
+    "t08": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "t09": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "t10": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "t11": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "t12": {
+      "gq3": "uuu",
+      "where": "uuu"
+    },
+    "t13": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "t14": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "t15": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "t16": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "t17": {
+      "gq3": "uuu",
+      "where": "uuu"
+    },
+    "t18": {
+      "gq3": "ggc",
+      "where": "cgg"
+    },
+    "t19": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "t20": {
+      "gq3": "uuu",
+      "where": "uuu"
+    },
+    "t21": {
+      "gq3": "uuu",
+      "where": "uuu"
+    },
+    "t22": {
+      "gq3": "uuu",
+      "where": "uuu"
+    },
+    "t23": {
+      "gq3": "uuu",
+      "where": "uuu"
+    },
+    "t24": {
+      "gq3": "ggg",
+      "where": "ggg"
+    },
+    "t25": {
+      "gq3": "ggg",
+      "where": "ggg"
+    },
+    "t26": {
+      "gq3": "uuu",
+      "where": "uuu"
+    },
+    "t27": {
+      "gq3": "ggg",
+      "where": "gcg"
+    },
+    "t28": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "t29": {
+      "gq3": "www",
+      "where": "rcr"
+    },
+    "t30": {
+      "gq3": "uuu",
+      "where": "uuu"
+    },
+    "t31": {
+      "gq3": "uuu",
+      "where": "uuu"
+    },
+    "t32": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "t33": {
+      "gq3": "ggg",
+      "where": "ggg"
+    },
+    "t34": {
+      "gq3": "ggg",
+      "where": "ggg"
+    },
+    "t35": {
+      "gq3": "uuu",
+      "where": "uuu"
+    },
+    "t36": {
+      "gq3": "uuu",
+      "where": "uuu"
+    },
+    "t37": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "t38": {
+      "gq3": "ccc",
+      "where": "ccc"
+    },
+    "t39": {
+      "gq3": "ccc",
+      "where": "ccc"
+    }
+  },
+  "gate": {
+    "gq3": {
+      "acceptance_at_or_above": true,
+      "accepted": [
+        45,
+        45,
+        45
+      ],
+      "correct": [
+        31,
+        30,
+        31
+      ],
+      "correctness_at_or_above": false,
+      "edition2_accepted": [
+        43,
+        43,
+        43
+      ],
+      "edition2_correct": [
+        39,
+        39,
+        40
+      ],
+      "planner_gaps": [
+        10,
+        11,
+        10
+      ],
+      "shared_items": 45,
+      "verdict": "fail"
+    },
+    "where": {
+      "acceptance_at_or_above": true,
+      "accepted": [
+        44,
+        44,
+        42
+      ],
+      "correct": [
+        31,
+        32,
+        30
+      ],
+      "correctness_at_or_above": false,
+      "edition2_accepted": [
+        43,
+        43,
+        43
+      ],
+      "edition2_correct": [
+        39,
+        39,
+        40
+      ],
+      "planner_gaps": [
+        11,
+        11,
+        11
+      ],
+      "shared_items": 45,
+      "verdict": "fail"
+    }
+  },
+  "not_correct": [
+    {
+      "arm": "gq3",
+      "detail": "P006: `channel_source_touchpoints` failed: plan error: P006: `channel_source_touchpoints`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "a02"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `delete_unwatched_touchpoints` failed: plan error: P006: `delete_unwatched_touchpoints`: the planner does not lower a write group whose clauses are more t",
+      "outcome": "gap",
+      "run": 1,
+      "task": "a05"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "a06"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `heavy_identities` failed: plan error: P006: `heavy_identities`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "a07"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `sources_of_heaviest_identity` failed: plan error: P006: `sources_of_heaviest_identity`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "a08"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `set_touchpoint_weight` failed: plan error: P006: `set_touchpoint_weight`: the planner does not lower a write group whose clauses are more than a filtered",
+      "outcome": "gap",
+      "run": 1,
+      "task": "a09"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "m1"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "m2"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 1,
+      "task": "m3"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "m4"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "m5"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "m6"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `nearest_cites` failed: plan error: P006: `nearest_cites`: the planner does not lower a `ApproxTopK` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "r02"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `top_docs_and_readers` failed: plan error: P006: `top_docs_and_readers`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "r04"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 1,
+      "task": "r05"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `know_cited` failed: plan error: P006: `know_cited`: the planner does not lower a write group whose clauses are more than a filtered scan of the target",
+      "outcome": "gap",
+      "run": 1,
+      "task": "r07"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `docs_known_per_person` failed: plan error: P006: `docs_known_per_person`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "r10"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `delete_unknown_docs` failed: plan error: P006: `delete_unknown_docs`: the planner does not lower a write group whose clauses are more than a filtered sca",
+      "outcome": "gap",
+      "run": 1,
+      "task": "r11"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `comment_author_likes` failed: plan error: P006: `comment_author_likes`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "s03"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `liked_counts` failed: plan error: P006: `liked_counts`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "s04"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `remove_long_comment_likes` failed: plan error: P006: `remove_long_comment_likes`: the planner does not lower a write group whose clauses are more than a ",
+      "outcome": "gap",
+      "run": 1,
+      "task": "s06"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `popular_comments` failed: plan error: P006: `popular_comments`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "s08"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 1,
+      "task": "t02"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t07"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t12"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t17"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `knows_at_least` failed: plan error: P006: `knows_at_least`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "t18"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t20"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t21"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t22"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t23"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `recent_similar` failed: plan error: P006: `recent_similar`: the planner does not lower a `nearest` window `k` other than the read's `limit`",
+      "outcome": "gap",
+      "run": 1,
+      "task": "t24"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `similar_docs` failed: plan error: P006: `similar_docs`: the planner does not lower a `nearest` window `k` other than the read's `limit`",
+      "outcome": "gap",
+      "run": 1,
+      "task": "t25"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t26"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `top_docs` failed: plan error: P006: `top_docs`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "t27"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 1,
+      "task": "t29"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t30"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t31"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `remove_employment` failed: plan error: P006: `remove_employment`: the planner does not lower a write group whose clauses are more than a filtered scan of",
+      "outcome": "gap",
+      "run": 1,
+      "task": "t33"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `close_company` failed: plan error: P006: `close_company`: the planner does not lower a write group whose clauses are more than a filtered scan of the tar",
+      "outcome": "gap",
+      "run": 1,
+      "task": "t34"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t35"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t36"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `watched_source_touchpoints` failed: plan error: P006: `watched_source_touchpoints`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "a02"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `delete_touchpoints_on_unwatched_sources` failed: plan error: P006: `delete_touchpoints_on_unwatched_sources`: the planner does not lower a write group wh",
+      "outcome": "gap",
+      "run": 2,
+      "task": "a05"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "a06"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `heavy_identities` failed: plan error: P006: `heavy_identities`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "a07"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `identity_sources` failed: plan error: P006: `identity_sources`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "a08"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `set_touchpoint_weight` failed: plan error: P006: `set_touchpoint_weight`: the planner does not lower a write group whose clauses are more than a filtered",
+      "outcome": "gap",
+      "run": 2,
+      "task": "a09"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "m1"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "m2"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 2,
+      "task": "m3"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "m4"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "m5"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "m6"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `nearest_cites` failed: plan error: P006: `nearest_cites`: the planner does not lower a `ApproxTopK` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "r02"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `nearest_known` failed: plan error: P006: `nearest_known`: the planner does not lower a `nearest` window `k` other than the read's `limit`",
+      "outcome": "gap",
+      "run": 2,
+      "task": "r03"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `top_docs_known` failed: plan error: P006: `top_docs_known`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "r04"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 2,
+      "task": "r05"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `know_cited` failed: plan error: P006: `know_cited`: the planner does not lower a write group whose clauses are more than a filtered scan of the target",
+      "outcome": "gap",
+      "run": 2,
+      "task": "r07"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `docs_known_per_person` failed: plan error: P006: `docs_known_per_person`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "r10"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `delete_unknown_docs` failed: plan error: P006: `delete_unknown_docs`: the planner does not lower a write group whose clauses are more than a filtered sca",
+      "outcome": "gap",
+      "run": 2,
+      "task": "r11"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `author_like_stats` failed: plan error: P006: `author_like_stats`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "s03"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `liked_counts` failed: plan error: P006: `liked_counts`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "s04"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `remove_long_likes` failed: plan error: P006: `remove_long_likes`: the planner does not lower a write group whose clauses are more than a filtered scan of",
+      "outcome": "gap",
+      "run": 2,
+      "task": "s06"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `popular_comments` failed: plan error: P006: `popular_comments`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "s08"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 2,
+      "task": "t02"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t07"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t12"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t17"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `knows_at_least` failed: plan error: P006: `knows_at_least`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "t18"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t20"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t21"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t22"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t23"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `similar_recent_docs` failed: plan error: P006: `similar_recent_docs`: the planner does not lower a `nearest` window `k` other than the read's `limit`",
+      "outcome": "gap",
+      "run": 2,
+      "task": "t24"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `similar_docs` failed: plan error: P006: `similar_docs`: the planner does not lower a `nearest` window `k` other than the read's `limit`",
+      "outcome": "gap",
+      "run": 2,
+      "task": "t25"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t26"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `top_docs` failed: plan error: P006: `top_docs`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "t27"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 2,
+      "task": "t29"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t30"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t31"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `remove_employment` failed: plan error: P006: `remove_employment`: the planner does not lower a write group whose clauses are more than a filtered scan of",
+      "outcome": "gap",
+      "run": 2,
+      "task": "t33"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `close_company` failed: plan error: P006: `close_company`: the planner does not lower a write group whose clauses are more than a filtered scan of the tar",
+      "outcome": "gap",
+      "run": 2,
+      "task": "t34"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t35"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t36"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `source_touchpoints` failed: plan error: P006: `source_touchpoints`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "a02"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `purge_unwatched_touchpoints` failed: plan error: P006: `purge_unwatched_touchpoints`: the planner does not lower a write group whose clauses are more tha",
+      "outcome": "gap",
+      "run": 3,
+      "task": "a05"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "a06"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `heavy_identities` failed: plan error: P006: `heavy_identities`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "a07"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `sources_of_heaviest_identity` failed: plan error: P006: `sources_of_heaviest_identity`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "a08"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `set_touchpoint_weight` failed: plan error: P006: `set_touchpoint_weight`: the planner does not lower a write group whose clauses are more than a filtered",
+      "outcome": "gap",
+      "run": 3,
+      "task": "a09"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "m1"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "m2"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 3,
+      "task": "m3"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "m4"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "m5"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "m6"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `top_docs` failed: plan error: P006: `top_docs`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "r01"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `nearest_cites` failed: plan error: P006: `nearest_cites`: the planner does not lower a `ApproxTopK` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "r02"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `top_docs_known` failed: plan error: P006: `top_docs_known`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "r04"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 3,
+      "task": "r05"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `know_cited` failed: plan error: P006: `know_cited`: the planner does not lower a write group whose clauses are more than a filtered scan of the target",
+      "outcome": "gap",
+      "run": 3,
+      "task": "r07"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `docs_known` failed: plan error: P006: `docs_known`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "r10"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `delete_unknown_docs` failed: plan error: P006: `delete_unknown_docs`: the planner does not lower a write group whose clauses are more than a filtered sca",
+      "outcome": "gap",
+      "run": 3,
+      "task": "r11"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `author_likes` failed: plan error: P006: `author_likes`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "s03"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `liked_counts` failed: plan error: P006: `liked_counts`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "s04"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `remove_long_comment_likes` failed: plan error: P006: `remove_long_comment_likes`: the planner does not lower a write group whose clauses are more than a ",
+      "outcome": "gap",
+      "run": 3,
+      "task": "s06"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `popular_comments` failed: plan error: P006: `popular_comments`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "s08"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 3,
+      "task": "t02"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t07"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t12"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t17"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t20"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t21"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t22"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t23"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `similar_recent_docs` failed: plan error: P006: `similar_recent_docs`: the planner does not lower a `nearest` window `k` other than the read's `limit`",
+      "outcome": "gap",
+      "run": 3,
+      "task": "t24"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `similar_docs` failed: plan error: P006: `similar_docs`: the planner does not lower an `order` over a ranking that does not lead with its score",
+      "outcome": "gap",
+      "run": 3,
+      "task": "t25"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t26"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `top_docs` failed: plan error: P006: `top_docs`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "t27"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 3,
+      "task": "t29"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t30"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t31"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `remove_employment` failed: plan error: P006: `remove_employment`: the planner does not lower a write group whose clauses are more than a filtered scan of",
+      "outcome": "gap",
+      "run": 3,
+      "task": "t33"
+    },
+    {
+      "arm": "gq3",
+      "detail": "P006: `close_company` failed: plan error: P006: `close_company`: the planner does not lower a write group whose clauses are more than a filtered scan of the tar",
+      "outcome": "gap",
+      "run": 3,
+      "task": "t34"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t35"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t36"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `channel_sources` failed: plan error: P006: `channel_sources`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "a02"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `delete_touchpoints_on_unwatched_sources` failed: plan error: P006: `delete_touchpoints_on_unwatched_sources`: the planner does not lower a write group wh",
+      "outcome": "gap",
+      "run": 1,
+      "task": "a05"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "a06"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `heavy_identities` failed: plan error: P006: `heavy_identities`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "a07"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `heaviest_identity_sources` failed: plan error: P006: `heaviest_identity_sources`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "a08"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `set_touchpoint_weight` failed: plan error: P006: `set_touchpoint_weight`: the planner does not lower a write group whose clauses are more than a filtered",
+      "outcome": "gap",
+      "run": 1,
+      "task": "a09"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "m1"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "m2"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `big_companies` failed: plan error: P006: `big_companies`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "m3"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "m4"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "m5"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "m6"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `top_docs` failed: plan error: P006: `top_docs`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "r01"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `nearest_cited` failed: plan error: P006: `nearest_cited`: the planner does not lower a `ApproxTopK` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "r02"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `top_docs_known_by` failed: plan error: P006: `top_docs_known_by`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "r04"
+    },
+    {
+      "arm": "where",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 1,
+      "task": "r05"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `know_cited` failed: plan error: P006: `know_cited`: the planner does not lower a write group whose clauses are more than a filtered scan of the target",
+      "outcome": "gap",
+      "run": 1,
+      "task": "r07"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `docs_known_per_person` failed: plan error: P006: `docs_known_per_person`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "r10"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `delete_unknown_docs` failed: plan error: P006: `delete_unknown_docs`: the planner does not lower a write group whose clauses are more than a filtered sca",
+      "outcome": "gap",
+      "run": 1,
+      "task": "r11"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `author_likes` failed: plan error: P006: `author_likes`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "s03"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `liked_counts` failed: plan error: P006: `liked_counts`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "s04"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `remove_long_likes` failed: plan error: P006: `remove_long_likes`: the planner does not lower a write group whose clauses are more than a filtered scan of",
+      "outcome": "gap",
+      "run": 1,
+      "task": "s06"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `popular_comments` failed: plan error: P006: `popular_comments`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "s08"
+    },
+    {
+      "arm": "where",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 1,
+      "task": "t02"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t07"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t12"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t17"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t20"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t21"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t22"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t23"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `recent_similar` failed: plan error: P006: `recent_similar`: the planner does not lower a `nearest` window `k` other than the read's `limit`",
+      "outcome": "gap",
+      "run": 1,
+      "task": "t24"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `nearest_docs` failed: plan error: P006: `nearest_docs`: the planner does not lower an `order` over a ranking that does not lead with its score",
+      "outcome": "gap",
+      "run": 1,
+      "task": "t25"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t26"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `top_docs` failed: plan error: P006: `top_docs`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 1,
+      "task": "t27"
+    },
+    {
+      "arm": "where",
+      "detail": "Q001",
+      "outcome": "refused",
+      "run": 1,
+      "task": "t29"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t30"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t31"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `remove_employment` failed: plan error: P006: `remove_employment`: the planner does not lower a write group whose clauses are more than a filtered scan of",
+      "outcome": "gap",
+      "run": 1,
+      "task": "t33"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `close_company` failed: plan error: P006: `close_company`: the planner does not lower a write group whose clauses are more than a filtered scan of the tar",
+      "outcome": "gap",
+      "run": 1,
+      "task": "t34"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t35"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t36"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `watched_sources` failed: plan error: P006: `watched_sources`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "a02"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `delete_touchpoints_on_unwatched_sources` failed: plan error: P006: `delete_touchpoints_on_unwatched_sources`: the planner does not lower a write group wh",
+      "outcome": "gap",
+      "run": 2,
+      "task": "a05"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "a06"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `heavy_identities` failed: plan error: P006: `heavy_identities`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "a07"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `sources_of_heaviest_identity` failed: plan error: P006: `sources_of_heaviest_identity`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "a08"
+    },
+    {
+      "arm": "where",
+      "detail": "Q001",
+      "outcome": "refused",
+      "run": 2,
+      "task": "a09"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "m1"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "m2"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `big_companies` failed: plan error: P006: `big_companies`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "m3"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "m4"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "m5"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "m6"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `top_docs` failed: plan error: P006: `top_docs`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "r01"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `nearest_cited` failed: plan error: P006: `nearest_cited`: the planner does not lower a `ApproxTopK` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "r02"
+    },
+    {
+      "arm": "where",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 2,
+      "task": "r04"
+    },
+    {
+      "arm": "where",
+      "detail": "T6",
+      "outcome": "refused",
+      "run": 2,
+      "task": "r05"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `know_cited` failed: plan error: P006: `know_cited`: the planner does not lower a write group whose clauses are more than a filtered scan of the target",
+      "outcome": "gap",
+      "run": 2,
+      "task": "r07"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `docs_known` failed: plan error: P006: `docs_known`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "r10"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `delete_unknown_docs` failed: plan error: P006: `delete_unknown_docs`: the planner does not lower a write group whose clauses are more than a filtered sca",
+      "outcome": "gap",
+      "run": 2,
+      "task": "r11"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `author_likes` failed: plan error: P006: `author_likes`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "s03"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `liked_counts` failed: plan error: P006: `liked_counts`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "s04"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `remove_long_likes` failed: plan error: P006: `remove_long_likes`: the planner does not lower a write group whose clauses are more than a filtered scan of",
+      "outcome": "gap",
+      "run": 2,
+      "task": "s06"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `popular_comments` failed: plan error: P006: `popular_comments`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "s08"
+    },
+    {
+      "arm": "where",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 2,
+      "task": "t02"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t07"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t12"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t17"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `knows_at_least` failed: plan error: P006: `knows_at_least`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 2,
+      "task": "t18"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t20"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t21"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t22"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t23"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `recent_similar` failed: plan error: P006: `recent_similar`: the planner does not lower a `nearest` window `k` other than the read's `limit`",
+      "outcome": "gap",
+      "run": 2,
+      "task": "t24"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `nearest_docs` failed: plan error: P006: `nearest_docs`: the planner does not lower an `order` over a ranking that does not lead with its score",
+      "outcome": "gap",
+      "run": 2,
+      "task": "t25"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t26"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t30"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t31"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `remove_employment` failed: plan error: P006: `remove_employment`: the planner does not lower a write group whose clauses are more than a filtered scan of",
+      "outcome": "gap",
+      "run": 2,
+      "task": "t33"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `close_company` failed: plan error: P006: `close_company`: the planner does not lower a write group whose clauses are more than a filtered scan of the tar",
+      "outcome": "gap",
+      "run": 2,
+      "task": "t34"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t35"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t36"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `watched_source_touchpoints` failed: plan error: P006: `watched_source_touchpoints`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "a02"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `delete_unwatched_touchpoints` failed: plan error: P006: `delete_unwatched_touchpoints`: the planner does not lower a write group whose clauses are more t",
+      "outcome": "gap",
+      "run": 3,
+      "task": "a05"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "a06"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `heavy_identities` failed: plan error: P006: `heavy_identities`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "a07"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `sources_of_heaviest_identity` failed: plan error: P006: `sources_of_heaviest_identity`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "a08"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `set_touchpoint_weight` failed: plan error: P006: `set_touchpoint_weight`: the planner does not lower a write group whose clauses are more than a filtered",
+      "outcome": "gap",
+      "run": 3,
+      "task": "a09"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "m1"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "m2"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `big_companies` failed: plan error: P006: `big_companies`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "m3"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "m4"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "m5"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "m6"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `top_docs` failed: plan error: P006: `top_docs`: the planner does not lower an `order` over a ranking that does not lead with its score",
+      "outcome": "gap",
+      "run": 3,
+      "task": "r01"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `nearest_cited` failed: plan error: P006: `nearest_cited`: the planner does not lower a `ApproxTopK` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "r02"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `top_docs_known_by` failed: plan error: P006: `top_docs_known_by`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "r04"
+    },
+    {
+      "arm": "where",
+      "detail": "T6",
+      "outcome": "refused",
+      "run": 3,
+      "task": "r05"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `know_cited` failed: plan error: P006: `know_cited`: the planner does not lower a write group whose clauses are more than a filtered scan of the target",
+      "outcome": "gap",
+      "run": 3,
+      "task": "r07"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `docs_known_per_person` failed: plan error: P006: `docs_known_per_person`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "r10"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `delete_unknown_docs` failed: plan error: P006: `delete_unknown_docs`: the planner does not lower a write group whose clauses are more than a filtered sca",
+      "outcome": "gap",
+      "run": 3,
+      "task": "r11"
+    },
+    {
+      "arm": "where",
+      "detail": "Q001",
+      "outcome": "refused",
+      "run": 3,
+      "task": "s03"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `liked_counts` failed: plan error: P006: `liked_counts`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "s04"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `remove_long_likes` failed: plan error: P006: `remove_long_likes`: the planner does not lower a write group whose clauses are more than a filtered scan of",
+      "outcome": "gap",
+      "run": 3,
+      "task": "s06"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `popular_comments` failed: plan error: P006: `popular_comments`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "s08"
+    },
+    {
+      "arm": "where",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 3,
+      "task": "t02"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t07"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t12"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t17"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `knows_at_least` failed: plan error: P006: `knows_at_least`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "t18"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t20"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t21"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t22"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t23"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `recent_similar` failed: plan error: P006: `recent_similar`: the planner does not lower a `nearest` window `k` other than the read's `limit`",
+      "outcome": "gap",
+      "run": 3,
+      "task": "t24"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `nearest_docs` failed: plan error: P006: `nearest_docs`: the planner does not lower an `order` over a ranking that does not lead with its score",
+      "outcome": "gap",
+      "run": 3,
+      "task": "t25"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t26"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `top_docs` failed: plan error: P006: `top_docs`: the planner does not lower a `Project` node in a pattern",
+      "outcome": "gap",
+      "run": 3,
+      "task": "t27"
+    },
+    {
+      "arm": "where",
+      "detail": "Q001",
+      "outcome": "refused",
+      "run": 3,
+      "task": "t29"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t30"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t31"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `remove_employment` failed: plan error: P006: `remove_employment`: the planner does not lower a write group whose clauses are more than a filtered scan of",
+      "outcome": "gap",
+      "run": 3,
+      "task": "t33"
+    },
+    {
+      "arm": "where",
+      "detail": "P006: `close_company` failed: plan error: P006: `close_company`: the planner does not lower a write group whose clauses are more than a filtered scan of the tar",
+      "outcome": "gap",
+      "run": 3,
+      "task": "t34"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t35"
+    },
+    {
+      "arm": "where",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t36"
+    }
+  ]
+}
