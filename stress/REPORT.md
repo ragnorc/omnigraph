@@ -10,7 +10,7 @@ the new harnesses and evidence under `stress/evidence2/`).
 **Box:** `nproc` 2, 64 GiB, gVisor. RustFS 1.0.0-beta.12 (official binary,
 checksum matched the release `SHA256SUMS`) on 127.0.0.1:9000; Azurite 3.35.0
 (npm) on 127.0.0.1:10000.
-**Started** 2026-11-10 20:05 UTC.
+**Started** 2026-11-10 20:05 UTC; campaigns ended 2026-11-11 00:21 UTC.
 
 ## Verdict
 
@@ -29,7 +29,8 @@ acknowledged write was lost, no run published twice or published while
 reported failed, cancelled or interrupted, no record was left
 `accepted`/`running`, reads never blocked, and `cleanup` kept every retained
 snapshot readable. The writer yield does what S7 needed per write. No write
-saw more than two optimize publications (round 1: up to 14), the slowest S3
+saw more than two optimize publications in any writer-wait campaign or in
+the Azure soak (round 1: a write overlapped up to 14 runs), the slowest S3
 write fell from 14 s to 7–13 s, and S3 write p99 fell from 12.8 s to 1.5 s.
 The yield is imprecise in two ways, both measured and both fixed on this
 branch with red/green regression tests. It misses a sent-back writer that
@@ -133,8 +134,16 @@ the workspace owners). Logs: `evidence2/baseline/`.
 | DST pinned suite (`crates/omnigraph-dst`, `cargo test --locked`), incl. `dst_bench_cost_count_golden` | 55 + 2 + 56 (33 ignored) | 55 + 2 + 56 passed (33 ignored) |
 | `cargo test -p omnigraph-gqt --locked` | 462 cases + 52 + 14 + 29 | 467 cases + 52 + 14 + 29 passed |
 
-All green. The known server telemetry/span flake was not in these
-selections; see "Could not test".
+All green. After the fixes, the whole canonical graph
+(`cargo dev-nextest --no-fail-fast`, 5,228 tests) passed except exactly the
+10 environmental failures round 1 recorded on this box (8 `omnigraph-bench`
+symlink and machine-identity probes,
+`cli_cluster::managed_lifecycle_capture_and_retry_records_refuse_symlinks_without_reading_targets`,
+`db::upgrade::tests::interrupted::unreadable_legacy_object_asks_for_a_rerun`;
+they fail the same way on the PR-head sources under gVisor as root), and the
+known server telemetry/span flake did not appear under nextest
+(`evidence2/baseline/nextest_full_fixbuild.txt`). GQT after the fixes: 467
+cases + 52 + 14 + 29 passed.
 
 ## Campaign 1: regression check of the round-1 findings
 
@@ -220,7 +229,8 @@ PR head's local mix, all 9 were held only by writes that started after it.
 ### What the numbers say
 
 - **The claim holds per write.** No write saw more than two optimize
-  publications in any configuration (round 1: up to 14). A write that sees
+  publications in any configuration (round 1: a write overlapped up to 14
+  runs). A write that sees
   two is either a starved write that outlasted the 10 s limit (its latency
   is 12–15 s, `max_writer_yield` plus a run, the documented exception) or
   the queued-writer race below (R2-S1). Slowest write on S3: 7.3–12.9 s
