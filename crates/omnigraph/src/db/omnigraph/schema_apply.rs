@@ -225,7 +225,7 @@ where
         actor,
     )?;
 
-    let _export_exclusion = db.reserve_export_destructive_control("schema apply")?;
+    let _export_exclusion = db.reserve_export_destructive_control("schema apply").await?;
 
     let _schema_gate = db.write_queue().acquire_schema_exclusive().await;
     apply_schema_with_lock(db, desired_schema_source, actor, validate_catalog, None).await
@@ -238,7 +238,7 @@ pub(super) async fn apply_prepared_schema(
 ) -> Result<SchemaApplyResult> {
     prepared::authorize(db, actor)?;
     prepared.validate_envelope(db, actor)?;
-    let _export_exclusion = db.reserve_export_destructive_control("schema apply")?;
+    let _export_exclusion = db.reserve_export_destructive_control("schema apply").await?;
     let _schema_gate = db.write_queue().acquire_schema_exclusive().await;
     apply_schema_with_lock(
         db,

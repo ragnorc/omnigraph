@@ -4006,12 +4006,15 @@ impl Omnigraph {
 
     /// Cooperatively exclude a live immutable export while a control may
     /// remove or reuse its exact path/version coordinates.
-    pub(super) fn reserve_export_destructive_control(
+    pub(super) async fn reserve_export_destructive_control(
         &self,
         control: &str,
     ) -> Result<crate::db::write_queue::ExportDestructivePermit> {
+        /// How long a control waits for a live export to end before refusing.
+        const EXPORT_CONTROL_WAIT: std::time::Duration = std::time::Duration::from_secs(5);
         self.write_queue()
-            .try_acquire_export_destructive()
+            .acquire_export_destructive(EXPORT_CONTROL_WAIT)
+            .await
             .ok_or_else(|| {
                 OmniError::ExportInProgress {
                     control: control.to_string(),
@@ -4039,7 +4042,7 @@ impl Omnigraph {
         )?;
         let target = normalize_branch_name(name)?
             .ok_or_else(|| OmniError::manifest("cannot create branch 'main'".to_string()))?;
-        let _export_exclusion = self.reserve_export_destructive_control("branch create")?;
+        let _export_exclusion = self.reserve_export_destructive_control("branch create").await?;
         self.ensure_schema_state_valid()
             .await
             .map_err(OmniError::before_effect)?;
@@ -4174,7 +4177,7 @@ impl Omnigraph {
         };
         let target_branch = normalize_branch_name(name)?
             .ok_or_else(|| OmniError::manifest("cannot create branch 'main'".to_string()))?;
-        let _export_exclusion = self.reserve_export_destructive_control("branch create")?;
+        let _export_exclusion = self.reserve_export_destructive_control("branch create").await?;
         self.ensure_schema_state_valid()
             .await
             .map_err(OmniError::before_effect)?;
@@ -4434,7 +4437,7 @@ impl Omnigraph {
         )?;
         let branch = normalize_branch_name(name)?
             .ok_or_else(|| OmniError::manifest("cannot delete branch 'main'".to_string()))?;
-        let _export_exclusion = self.reserve_export_destructive_control("branch delete")?;
+        let _export_exclusion = self.reserve_export_destructive_control("branch delete").await?;
         self.ensure_schema_state_valid()
             .await
             .map_err(OmniError::before_effect)?;

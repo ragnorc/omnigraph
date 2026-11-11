@@ -868,6 +868,29 @@ impl WriteQueueManager {
         })
     }
 
+    /// Wait at most `wait` for a live export cut to end, then exclude the next
+    /// one while destructive control is active. Under a DST turn this keeps
+    /// the nonwaiting attempt, so simulated schedules stay deterministic.
+    pub(crate) async fn acquire_export_destructive(
+        self: &Arc<Self>,
+        wait: std::time::Duration,
+    ) -> Option<ExportDestructivePermit> {
+        if let Some(permit) = self.try_acquire_export_destructive() {
+            return Some(permit);
+        }
+        if crate::dst_gate::turn().is_some() {
+            return None;
+        }
+        let permit = tokio::time::timeout(wait, Arc::clone(&self.export_gate).read_owned())
+            .await
+            .ok()?;
+        observed(&GATE_EXPORT_HOLD);
+        Some(ExportDestructivePermit {
+            _manager: Arc::clone(self),
+            _permit: permit,
+        })
+    }
+
     /// Acquire several graph-branch control gates in one deterministic order.
     ///
     /// Native branch create-from reads a source ref and mutates a target ref, so

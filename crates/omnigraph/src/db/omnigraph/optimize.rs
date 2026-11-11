@@ -930,6 +930,7 @@ pub async fn optimize_all_datasets(
         .await;
     let _export_exclusion = db
         .reserve_export_destructive_control("optimize")
+        .await
         .map_err(OmniError::before_effect)?;
     db.ensure_schema_state_valid()
         .await
@@ -2105,7 +2106,7 @@ pub async fn cleanup_all_datasets(
         ));
     }
 
-    let _export_exclusion = db.reserve_export_destructive_control("cleanup")?;
+    let _export_exclusion = db.reserve_export_destructive_control("cleanup").await?;
     db.ensure_schema_state_valid().await?;
     fail(&CLEANUP_PRE_GATES)?;
 
