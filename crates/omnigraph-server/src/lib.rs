@@ -1935,6 +1935,12 @@ impl ApiError {
             OmniError::RetryableCommitConflict(message) => {
                 Self::conflict(format!("retryable storage commit conflict: {message}"))
             }
+            // A live export holds the root's cut. The control did nothing and
+            // can run when the export ends: temporary contention, so 503 with
+            // `Retry-After`, not a size limit the caller must fix.
+            err @ OmniError::ExportInProgress { .. } => {
+                Self::new(ErrorCode::ServiceUnavailable, err.to_string())
+            }
             OmniError::Io(err) => Self::internal(format!("io: {err}")),
             // Engine-layer policy enforcement (MR-722). Authentication
             // middleware has already distinguished a missing/invalid bearer

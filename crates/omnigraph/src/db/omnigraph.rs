@@ -4008,13 +4008,15 @@ impl Omnigraph {
     /// remove or reuse its exact path/version coordinates.
     pub(super) fn reserve_export_destructive_control(
         &self,
+        control: &str,
     ) -> Result<crate::db::write_queue::ExportDestructivePermit> {
         self.write_queue()
             .try_acquire_export_destructive()
-            .ok_or_else(|| OmniError::ResourceLimitExceeded {
-                resource: "stream_export_slots".to_string(),
-                limit: 1,
-                actual: 2,
+            .ok_or_else(|| {
+                OmniError::ExportInProgress {
+                    control: control.to_string(),
+                }
+                .before_effect()
             })
     }
 
@@ -4037,7 +4039,7 @@ impl Omnigraph {
         )?;
         let target = normalize_branch_name(name)?
             .ok_or_else(|| OmniError::manifest("cannot create branch 'main'".to_string()))?;
-        let _export_exclusion = self.reserve_export_destructive_control()?;
+        let _export_exclusion = self.reserve_export_destructive_control("branch create")?;
         self.ensure_schema_state_valid()
             .await
             .map_err(OmniError::before_effect)?;
@@ -4172,7 +4174,7 @@ impl Omnigraph {
         };
         let target_branch = normalize_branch_name(name)?
             .ok_or_else(|| OmniError::manifest("cannot create branch 'main'".to_string()))?;
-        let _export_exclusion = self.reserve_export_destructive_control()?;
+        let _export_exclusion = self.reserve_export_destructive_control("branch create")?;
         self.ensure_schema_state_valid()
             .await
             .map_err(OmniError::before_effect)?;
@@ -4432,7 +4434,7 @@ impl Omnigraph {
         )?;
         let branch = normalize_branch_name(name)?
             .ok_or_else(|| OmniError::manifest("cannot delete branch 'main'".to_string()))?;
-        let _export_exclusion = self.reserve_export_destructive_control()?;
+        let _export_exclusion = self.reserve_export_destructive_control("branch delete")?;
         self.ensure_schema_state_valid()
             .await
             .map_err(OmniError::before_effect)?;

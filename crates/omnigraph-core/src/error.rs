@@ -363,6 +363,11 @@ pub enum OmniError {
         limit: u64,
         actual: u64,
     },
+    /// A control that may remove or reuse a live export cut's path/version
+    /// coordinates met that cut on the same graph root. It did nothing; it
+    /// can run once the export ends. Temporary contention, not a size limit.
+    #[error("{control} cannot run while an export of this graph is streaming; nothing was changed, retry after the export ends")]
+    ExportInProgress { control: String },
     /// A change continuation (page token or feed cursor) failed decoding or
     /// names a different scope — graph, commit, branch incarnation, filter, or
     /// continuation kind. Kept typed so callers can tell a caller-side

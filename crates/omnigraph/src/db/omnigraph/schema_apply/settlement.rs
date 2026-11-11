@@ -316,7 +316,7 @@ pub(in crate::db::omnigraph) async fn settle_prepared_schema(
     {
         return Ok(SchemaApplySettlement::Unknown);
     }
-    let _export_exclusion = db.reserve_export_destructive_control()?;
+    let _export_exclusion = db.reserve_export_destructive_control("schema apply")?;
     let keys = snapshot
         .datasets()
         .map(|entry| (entry.type_key.clone(), entry.native_dataset_branch.clone()))

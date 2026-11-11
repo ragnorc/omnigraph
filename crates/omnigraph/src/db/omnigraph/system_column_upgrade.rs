@@ -201,7 +201,7 @@ pub(super) async fn upgrade_system_columns(
         return Ok(report);
     }
 
-    let _export_exclusion = db.reserve_export_destructive_control()?;
+    let _export_exclusion = db.reserve_export_destructive_control("system column upgrade")?;
     let graph_manifest_version = execute_with_lock(
         db,
         actor,

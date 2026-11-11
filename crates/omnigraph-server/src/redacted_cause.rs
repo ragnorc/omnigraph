@@ -50,6 +50,7 @@ impl RedactedCause {
             OmniError::StoredExternalBlobDenied { .. } => "StoredExternalBlobDenied",
             OmniError::BlobIntegrity { .. } => "BlobIntegrity",
             OmniError::BlobRangeNotSatisfiable { .. } => "BlobRangeNotSatisfiable",
+            OmniError::ExportInProgress { .. } => "ExportInProgress",
             OmniError::RecoveryRequired { .. } => "RecoveryRequired",
             OmniError::PreconditionFailed { .. } => "PreconditionFailed",
             OmniError::BlobWritePreconditionFailed { .. } => "BlobWritePreconditionFailed",
