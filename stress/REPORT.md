@@ -22,9 +22,9 @@ storage root holds under every local record-write fault I could inject:
 refused, lost-answer and landed writes, at acceptance, `running`,
 `publishing` and the final write, plus a sticky fault. Nothing wedged, SIGTERM
 released the lock every time, and a finished no-op run was never stored
-`interrupted`. Across about 600 recorded operations, 37,000 acknowledged
-rows, 140 kills and 16 deployments on local, S3 (RustFS) and Azure
-(Azurite) roots, plus two 30-minute soaks, no invariant broke: no
+`interrupted`. Across 822 recorded operations, 54,748 acknowledged rows,
+113 kills and 18 deployments on local, S3 (RustFS) and Azure (Azurite)
+roots, including three 30-minute soaks, no invariant broke: no
 acknowledged write was lost, no run published twice or published while
 reported failed, cancelled or interrupted, no record was left
 `accepted`/`running`, reads never blocked, and `cleanup` kept every retained
@@ -99,6 +99,23 @@ The full table is in campaign 2.
 - The stress test targets (`stress_served_child`, `engine_optimize_stress`)
   are re-declared in the two crates' `Cargo.toml` on the retest branch, as
   round 1 did; they are harness-only.
+- PR-head binaries were frozen in `/tmp/r2bin` right after the baseline
+  build and every "PR head" number comes from them; the fixed build is a
+  separate copy (`/tmp/r2fix`). `c3_crash.child_binary()` used to pick the
+  newest `stress_served_child` in `target/`; it now prefers the one in
+  `OG_BIN_DIR`, so the chaos campaigns ran the build they name. The
+  child-based campaigns before that change (c4, c6, c10, c11) ran before
+  any fix was built.
+- The engine probes share one handle between the run and the writers, as
+  the server does; with separate handles a writer's revalidation misses a
+  run published through the other handle (R2-N9), which hides the yield.
+- `max_writer_yield` is not settable over HTTP, so its variations were
+  tested at the engine API only.
+- R2-N1 is a note, not should-fix: it stays within the documented bound and
+  its cause (writers starving each other) predates the PR. I added a
+  docs sentence rather than a code change.
+- Fix A and Fix B are stress-branch commits labeled `[stress round 2]`;
+  the PR branches were not touched.
 
 ## Baseline (new head `0f2a80fa`, before any change)
 
@@ -456,6 +473,9 @@ targets the yield itself. Evidence: `evidence2/chaos/`.
 | random kills with 50 random seam faults, local (PR) | 25 | 19 SIGKILL, 6 SIGTERM | 53 | 10,785 | 0 |
 | chaos, S3 (Fix A + B) | 10 | 1 deployment, 9 kills, cancels throughout | 44 | 1,511 | 0 |
 | yield events, S3 (PR and Fix A + B) | 5 + 5 | cancel, SIGTERM, SIGKILL, deployment in the yield | 10 | | 0 |
+| served hammer soak, S3, 30 min (PR) | | writers, merges, submitters, cancels, evictions | 196 | 7,581 | 0 (5 flags: the hammer's deliberate over-ceiling probe, N1) |
+| served hammer soak, Azure, 30 min (PR) | | same | 82 | 1,279 | 0 (1 probe flag) |
+| served hammer soak, S3, 30 min (Fix A + B) | | same | 203 | 8,393 | 0 (4 probe flags) |
 
 Each harness checks after every restart: every acknowledged row present;
 every operation a client saw resolves and a terminal state is never
@@ -465,6 +485,21 @@ the eviction mark never moves back; a deployment that cancelled a run is
 named in its record. After the local kill campaign, `cleanup --keep 5`
 left `main` and every retained commit readable (`c8_cleanup_retained.txt`;
 commits whose versions were reclaimed answer 500, round 1's N11).
+
+Soaks (`c2_served_hammer.py`, 3 writers incl. edges, merges and
+mutations, 3 submitters, cancels; `evidence2/chaos/soak_*`): S3 PR head 196
+operations (116 succeeded, 80 cancelled), 1,894 writes, write p99 42 s
+(edge loads p99 71 s, as in round 1's control without optimize: 66 s),
+largest gate hold 1.96 s; S3 with the fixes 203 operations, 1,969 writes,
+p99 41 s (edges 76 s), mutation p99 1.3 s (PR head 3.4 s), largest gate hold
+4.3 s. Azure PR head: 82 operations, 281 writes, p99 85 s, 59 of 82 runs
+waited the full 10 s yield (R2-N1), and the largest gate hold was 15.1 s:
+a run whose first table, `node:Doc` with Blobs, took 12.6 s on Azurite, plus
+the publication, inside the per-run bound (the first table always starts).
+Round 1's Azure soak (fixed build, no yield) had 671 writes and p99 59 s; the
+emulator's throughput varies between runs, so I do not attribute the
+difference, but every acknowledged write there saw at most two optimize
+publications (189 none, 48 one, 5 two, judged by publication instants).
 
 The embedded campaign (`engine_optimize_beside_live_writers`, 90 s phases,
 random `tables`, `start_at`, gate holds, ceilings, budgets, cancellation and
