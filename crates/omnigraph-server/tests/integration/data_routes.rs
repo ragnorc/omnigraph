@@ -1604,6 +1604,91 @@ async fn stalled_export_refuses_a_second_cut_and_disconnect_releases_it() {
     }
 }
 
+/// Issue #1355: a live export holds the root's export cut, which branch create
+/// and delete exclude. Their refusal is temporary contention, not a size limit:
+/// it must tell the caller to retry, with `Retry-After`, and must not report an
+/// export slot the control never asked for. Once the export ends, both succeed.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn branch_control_refused_by_a_live_export_is_retryable_issue_1355() {
+    let temp = init_loaded_graph().await;
+    let state = AppState::open(graph_path(temp.path()).to_string_lossy().to_string())
+        .await
+        .unwrap();
+    let app = build_app(state);
+    let data = (0..128)
+        .map(|row| {
+            json!({
+                "type": "Person",
+                "data": {"name": format!("export-{row:03}-{}", "x".repeat(1024)), "age": 12}
+            })
+            .to_string()
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    load_commit(&app, &data).await;
+    let create = |name: &str| json_post("/branches", &json!({"name": name, "from": "main"}));
+    let delete = |name: &str| {
+        Request::builder()
+            .header(HTTP_API_CONTRACT_HEADER, HTTP_API_CONTRACT)
+            .uri(g(&format!("/branches/{name}")))
+            .method(Method::DELETE)
+            .body(Body::empty())
+            .unwrap()
+    };
+    let existing = app.clone().oneshot(create("existing")).await.unwrap();
+    assert_eq!(existing.status(), StatusCode::OK);
+
+    // An unpolled body keeps the export, and so its cut, live.
+    let export = app.clone().oneshot(export_request(Vec::new())).await.unwrap();
+    assert_eq!(export.status(), StatusCode::OK);
+
+    for (control, request) in [("create", create("during")), ("delete", delete("existing"))] {
+        let refused = app.clone().oneshot(request).await.unwrap();
+        let status = refused.status();
+        let retry_after = refused.headers().get("retry-after").cloned();
+        let body = to_bytes(refused.into_body(), usize::MAX).await.unwrap();
+        let error: ErrorOutput = serde_json::from_slice(&body).unwrap();
+        assert!(
+            status.is_client_error() || status.is_server_error(),
+            "{control}: {status}"
+        );
+        let disposition = error.disposition.expect("served errors carry a disposition");
+        assert_eq!(
+            disposition.action,
+            omnigraph_server::api::DispositionAction::Retry,
+            "{control}: {status} {}",
+            error.error
+        );
+        assert_eq!(
+            disposition.effects,
+            omnigraph_server::api::DispositionEffects::None,
+            "{control}"
+        );
+        assert!(retry_after.is_some(), "{control}: {status} has no Retry-After");
+        assert!(
+            error.resource_limit.is_none(),
+            "{control}: an export exclusion is not a resource limit: {}",
+            error.error
+        );
+    }
+
+    drop(export);
+    let created = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            let response = app.clone().oneshot(create("after")).await.unwrap();
+            if response.status() == StatusCode::OK {
+                break response;
+            }
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .expect("the export's end must release branch control");
+    assert_eq!(created.status(), StatusCode::OK);
+    let deleted = app.clone().oneshot(delete("existing")).await.unwrap();
+    assert_eq!(deleted.status(), StatusCode::OK);
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn snapshot_route_returns_graph_and_published_dataset_versions() {
     let (temp, app) = app_for_loaded_graph().await;
