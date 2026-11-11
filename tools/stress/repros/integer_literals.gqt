@@ -1,0 +1,56 @@
+# issue: 1279
+# notes: A negative integer or float literal, and a U64 literal above the I64 range, in a filter and an insert.
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Account {
+    slug: String @key
+    balance: I64
+    size: U64?
+}
+
+--- seed
+{"type":"Account","data":{"slug":"a","balance":-250}}
+{"type":"Account","data":{"slug":"b","balance":40,"size":18446744073709551615}}
+
+--- query
+query overdrawn() {
+    match {
+        $a: Account
+        $a.balance < -100
+    }
+    return { $a.slug }
+}
+
+--- expect unordered
+{"a.slug": "a"}
+
+--- expect shape
+a.slug: String
+
+--- query
+query largest() {
+    match {
+        $a: Account
+        $a.size = 18446744073709551615
+    }
+    return { $a.slug }
+}
+
+--- expect unordered
+{"a.slug": "b"}
+
+--- expect shape
+a.slug: String
+
+--- mutate
+query open_negative() {
+    insert Account { slug: "c", balance: -5 }
+}
+
+--- expect affected: nodes=1 edges=0
