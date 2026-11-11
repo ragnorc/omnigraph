@@ -22,6 +22,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+pub mod agent;
 pub mod check;
 mod concurrent;
 mod discovery;
@@ -182,7 +183,7 @@ pub fn measure_model_names() -> Vec<&'static str> {
     measure::MODELS.iter().map(|model| model.name).collect()
 }
 
-async fn open_case_store(case: &Case) -> Result<(Session, String, tempfile::TempDir), String> {
+pub(crate) async fn open_case_store(case: &Case) -> Result<(Session, String, tempfile::TempDir), String> {
     let fixture = case
         .fixture
         .as_ref()
