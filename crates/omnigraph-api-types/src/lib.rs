@@ -2448,6 +2448,10 @@ error_codes! {
     /// Retained history can no longer reconstruct a change continuation; see
     /// `change_feed_gap`. Resume from a new baseline.
     ChangeFeedGap = "change_feed_gap", [410];
+    /// The read names a commit that is still in the graph's history, but
+    /// cleanup has reclaimed the table versions it needs, so it can no
+    /// longer be read. Read a retained commit instead.
+    HistoryNotRetained = "history_not_retained", [410];
     /// The graph, branch, commit, query, entity or route the request names
     /// does not exist, or the caller may not learn that it does.
     NotFound = "not_found", [404];
@@ -2565,6 +2569,7 @@ impl ErrorCode {
             | Self::MethodNotAllowed
             | Self::UnattachedCannotPublish
             | Self::BranchStartRefusal
+            | Self::HistoryNotRetained
             | Self::PayloadTooLarge
             | Self::UnsupportedMediaType
             | Self::RangeNotSatisfiable

@@ -1775,13 +1775,13 @@ impl ApiError {
                 },
             ),
             // Change paths rewrite this into a typed feed gap before it can
-            // escape; anywhere else a reclaimed pinned version is an internal
-            // retention surprise, not a caller error.
-            OmniError::HistoricalVersionReclaimed {
-                published_dataset_version,
-            } => Self::internal(format!(
-                "historical published dataset version {published_dataset_version} was reclaimed"
-            )),
+            // escape; a read at a commit cleanup reclaimed is an expected
+            // outcome of the retention policy (#645), answered 410.
+            OmniError::HistoricalVersionReclaimed { .. } => Self::new(
+                ErrorCode::HistoryNotRetained,
+                "the commit is no longer retained: cleanup reclaimed the table versions it needs; \
+                 read a retained commit",
+            ),
             error @ OmniError::FullTextIndexRebuildRequired { .. } => {
                 let mut response = Self::conflict(error.to_string());
                 let OmniError::FullTextIndexRebuildRequired { index, reason } = error else {

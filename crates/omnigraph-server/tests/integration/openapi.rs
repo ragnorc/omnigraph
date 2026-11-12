@@ -1802,6 +1802,7 @@ fn error_code_schema_has_expected_variants() {
             "recovery_required",
             "external_blob_source",
             "change_feed_gap",
+            "history_not_retained",
             "not_found",
             "method_not_allowed",
             "request_timeout",
