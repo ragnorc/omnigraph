@@ -307,7 +307,7 @@ impl Session {
             matches!(&resolved.requested, ReadTarget::Snapshot(_)),
             has_wildcard,
         )?;
-        engine::plan_pins_snapshot(plan, Some(&resolved.snapshot))?;
+        engine::plan_pins_snapshot(plan, Some(&resolved.snapshot), &catalog)?;
         engine::replayed_coverage_holds(plan, &resolved.snapshot).await?;
         let CompiledRead::Query(query) =
             self.compile_named_query(&catalog, &envelope.query.source, &envelope.query.name)?

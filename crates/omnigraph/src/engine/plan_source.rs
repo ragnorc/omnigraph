@@ -392,32 +392,33 @@ impl PlanSource for QuerySource<'_> {
                     detail: format!("unknown node type `{type_name}`"),
                 })?;
         let type_key = format!("node:{type_name}");
-        let (table, version, row_count) = if let Some(table) = super::catalogue::table(type_name) {
-            (TableRef::catalogue(type_key), None, Some(table.row_count()))
-        } else {
-            let snapshot = self
-                .snapshot(&format!("the stored type `{type_name}`"))
-                .map_err(|error| PlanError::Unresolved {
-                    detail: error.to_string(),
-                })?;
-            match snapshot.dataset(&type_key) {
-                Some(entry) => (
-                    TableRef::dataset(
-                        type_key,
-                        entry.dataset_path.clone(),
-                        entry.native_dataset_branch.clone(),
+        let (table, version, row_count) =
+            if let Some(table) = super::catalogue::query_table(type_name, self.catalog) {
+                (TableRef::catalogue(type_key), None, Some(table.row_count()))
+            } else {
+                let snapshot = self
+                    .snapshot(&format!("the stored type `{type_name}`"))
+                    .map_err(|error| PlanError::Unresolved {
+                        detail: error.to_string(),
+                    })?;
+                match snapshot.dataset(&type_key) {
+                    Some(entry) => (
+                        TableRef::dataset(
+                            type_key,
+                            entry.dataset_path.clone(),
+                            entry.native_dataset_branch.clone(),
+                        ),
+                        Some(
+                            entry
+                                .version_metadata
+                                .staged_version()
+                                .unwrap_or(entry.published_dataset_version),
+                        ),
+                        Some(entry.entity_count),
                     ),
-                    Some(
-                        entry
-                            .version_metadata
-                            .staged_version()
-                            .unwrap_or(entry.published_dataset_version),
-                    ),
-                    Some(entry.entity_count),
-                ),
-                None => (TableRef::dataset(type_key, String::new(), None), None, None),
-            }
-        };
+                    None => (TableRef::dataset(type_key, String::new(), None), None, None),
+                }
+            };
         Ok(NodeTypeSpec {
             table,
             version,
@@ -483,7 +484,8 @@ impl PlanSource for QuerySource<'_> {
     }
 
     fn catalogue_fingerprint(&self, type_key: &str) -> Option<String> {
-        super::catalogue::table_of_key(type_key).map(|table| table.fingerprint.clone())
+        super::catalogue::query_table_of_key(type_key, self.catalog)
+            .map(|table| table.fingerprint.clone())
     }
 
     fn traversal(&self) -> Traversal {
@@ -813,9 +815,7 @@ async fn query_table_statistics(
     }
     let mut bytes = HashMap::new();
     for (type_key, destination) in types {
-        if super::catalogue::table_of_key(&type_key).is_some()
-            || snapshot.dataset(&type_key).is_none()
-        {
+        if super::catalogue::is_catalogue_key(&type_key) || snapshot.dataset(&type_key).is_none() {
             continue;
         }
         fail(&QUERY_INDEX_FACTS_PRE_LOAD)?;

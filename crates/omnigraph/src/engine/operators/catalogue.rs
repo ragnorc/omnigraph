@@ -41,7 +41,7 @@ impl CatalogueExec {
         projection: Option<&NeededColumns>,
         catalog: &Catalog,
     ) -> Result<Self> {
-        let table = catalogue::table(type_name).ok_or_else(|| {
+        let table = catalogue::query_table(type_name, catalog).ok_or_else(|| {
             OmniError::manifest_internal(format!("`{type_name}` is not a catalogue type"))
         })?;
         let node_type = catalog.query_node_type(type_name).ok_or_else(|| {

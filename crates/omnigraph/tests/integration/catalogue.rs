@@ -196,3 +196,90 @@ async fn catalogue_replay_requires_fingerprints_and_executable_scans() {
     assert!(error.contains("pushed-down predicate"), "{error}");
     assert!(error.contains("node:@Operator"), "{error}");
 }
+
+/// Issue #650: the graph's own schema reads like data, beside its rows, and
+/// `@Schema.revision` changes exactly when the accepted schema does.
+#[tokio::test]
+async fn schema_catalogue_types_describe_the_accepted_schema() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = session(
+        Omnigraph::init(
+            dir.path().to_str().unwrap(),
+            "node Person { name: String @key\n age: I32?\n tags: [String]? }\n\
+             node Company { name: String @key }\n\
+             edge Knows: Person -> Person { since: Date? }\n\
+             edge WorksAt: Person -> Company @card(0..1)\n",
+        )
+        .await
+        .unwrap(),
+    );
+    let params = ParamMap::new();
+    let rows = |source: &'static str, name: &'static str| {
+        let db = &db;
+        let params = &params;
+        async move {
+            query_main(db, source, name, params)
+                .await
+                .unwrap()
+                .to_rust_json()
+                .unwrap()
+        }
+    };
+    assert_eq!(
+        rows(
+            r#"query props() {
+                match { $p: @Property { owner: "Person" } }
+                return { $p.name, $p.value_type }
+                order { $p.name }
+            }"#,
+            "props",
+        )
+        .await,
+        serde_json::json!([
+            {"p.name": "age", "p.value_type": "I32?"},
+            {"p.name": "name", "p.value_type": "String"},
+            {"p.name": "tags", "p.value_type": "[String]?"},
+        ])
+    );
+    assert_eq!(
+        rows(
+            r#"query adjacent() {
+                match { $e: @EdgeType $e.from = "Person" }
+                return { $e.name, $e.to, $e.cardinality }
+                order { $e.name }
+            }"#,
+            "adjacent",
+        )
+        .await,
+        serde_json::json!([
+            {"e.name": "Knows", "e.to": "Person", "e.cardinality": "0.."},
+            {"e.name": "WorksAt", "e.to": "Company", "e.cardinality": "0..1"},
+        ])
+    );
+    assert_eq!(
+        rows(
+            r#"query keys() { match { $n: @NodeType { name: "Person" } } return { $n.key } }"#,
+            "keys",
+        )
+        .await,
+        serde_json::json!([{"n.key": ["name"]}])
+    );
+    let revision = || {
+        rows(
+            "query revision() { match { $s: @Schema } return { $s.revision } }",
+            "revision",
+        )
+    };
+    let before = revision().await;
+    assert_eq!(before.as_array().unwrap().len(), 1, "{before}");
+    db.apply_schema(
+        "node Person { name: String @key\n age: I32?\n tags: [String]?\n nickname: String? }\n\
+         node Company { name: String @key }\n\
+         edge Knows: Person -> Person { since: Date? }\n\
+         edge WorksAt: Person -> Company @card(0..1)\n",
+    )
+    .await
+    .unwrap();
+    let after = revision().await;
+    assert_ne!(before, after);
+}

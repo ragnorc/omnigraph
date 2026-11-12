@@ -168,9 +168,14 @@ pub(crate) fn dataset_pin(entry: &DatasetEntry) -> DatasetPin {
 /// catalogue tables the plan read are checked against this binary's
 /// fingerprints the same way; a plan that pinned a dataset cannot replay
 /// without a snapshot.
-pub(crate) fn plan_pins_snapshot(plan: &PhysicalPlan, snapshot: Option<&Snapshot>) -> Result<()> {
+pub(crate) fn plan_pins_snapshot(
+    plan: &PhysicalPlan,
+    snapshot: Option<&Snapshot>,
+    catalog: &omnigraph_compiler::catalog::Catalog,
+) -> Result<()> {
     for (table, recorded) in &plan.assumptions().catalogue {
-        let current = catalogue::table_of_key(table).map(|table| table.fingerprint.as_str());
+        let current = catalogue::query_table_of_key(table, catalog);
+        let current = current.as_ref().map(|table| table.fingerprint.as_str());
         if current != Some(recorded.as_str()) {
             return Err(OmniError::manifest_conflict(format!(
                 "`{table}` was planned against catalogue fingerprint {recorded}; this binary holds {}",

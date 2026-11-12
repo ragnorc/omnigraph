@@ -5,12 +5,13 @@
 
 use std::sync::{Arc, LazyLock};
 
-use arrow_array::builder::{Int64Builder, ListBuilder};
+use arrow_array::builder::{Int64Builder, ListBuilder, StringBuilder};
 use arrow_array::{ArrayRef, Int64Array, RecordBatch, StringArray};
-use omnigraph_compiler::catalog::NodeType;
 use omnigraph_compiler::catalog::catalogue::{
-    CATALOGUE_TYPES, CatalogueProp, CatalogueType, ENGINE, LOGICAL_KIND, OPERATOR, PASS, SETTING,
+    CATALOGUE_TYPES, CatalogueProp, CatalogueType, EDGE_TYPE, ENGINE, LOGICAL_KIND, NODE_TYPE,
+    OPERATOR, PASS, PROPERTY, SCHEMA, SCHEMA_CATALOGUE_TYPES, SETTING,
 };
+use omnigraph_compiler::catalog::{Catalog, CatalogIdentity, NodeType};
 use omnigraph_compiler::settings::{DEFINITIONS, SettingKind};
 use omnigraph_planner::{LogicalKind, operator_rows, pass_rows};
 use sha2::{Digest, Sha256};
@@ -24,6 +25,7 @@ use crate::error::{OmniError, Result};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Cell {
     Text(String),
+    Texts(Vec<String>),
     Integer(i64),
     Integers(Vec<i64>),
 }
@@ -38,20 +40,131 @@ pub(crate) struct CatalogueTable {
 
 /// Every catalogue table, built from the binary's registries.
 pub(crate) struct Catalogue {
-    tables: Vec<CatalogueTable>,
+    tables: Vec<Arc<CatalogueTable>>,
 }
 
 static CATALOGUE: LazyLock<Catalogue> = LazyLock::new(Catalogue::derive);
 
-/// The catalogue table of the type `name` (`@Operator`), `None` for any
-/// other name.
-pub(crate) fn table(name: &str) -> Option<&'static CatalogueTable> {
-    CATALOGUE.tables.iter().find(|table| table.ty.name == name)
+/// The engine catalogue table of the type `name` (`@Operator`), `None` for
+/// any other name, schema catalogue types included.
+pub(crate) fn table(name: &str) -> Option<Arc<CatalogueTable>> {
+    CATALOGUE
+        .tables
+        .iter()
+        .find(|table| table.ty.name == name)
+        .cloned()
 }
 
-/// The catalogue table of the type key `node:@Operator`.
-pub(crate) fn table_of_key(type_key: &str) -> Option<&'static CatalogueTable> {
-    table(type_key.strip_prefix("node:")?)
+/// The catalogue table a read of `name` scans: an engine table, or a schema
+/// catalogue table derived from the read's own `catalog`.
+pub(crate) fn query_table(name: &str, catalog: &Catalog) -> Option<Arc<CatalogueTable>> {
+    if let Some(table) = table(name) {
+        return Some(table);
+    }
+    let ty = SCHEMA_CATALOGUE_TYPES.iter().find(|ty| ty.name == name)?;
+    let rows = schema_rows(ty, catalog);
+    Some(Arc::new(CatalogueTable {
+        fingerprint: fingerprint(ty, &rows),
+        ty,
+        rows,
+    }))
+}
+
+/// The catalogue table of the type key `node:@Operator` for one read.
+pub(crate) fn query_table_of_key(type_key: &str, catalog: &Catalog) -> Option<Arc<CatalogueTable>> {
+    query_table(type_key.strip_prefix("node:")?, catalog)
+}
+
+/// Whether the type key `node:@…` names any declared catalogue type.
+pub(crate) fn is_catalogue_key(type_key: &str) -> bool {
+    type_key
+        .strip_prefix("node:")
+        .and_then(omnigraph_compiler::catalog::catalogue::catalogue_type)
+        .is_some()
+}
+
+/// The rows of one schema catalogue type, from the read's accepted schema:
+/// types in name order, properties in declaration order. None without a
+/// bound schema.
+fn schema_rows(ty: &CatalogueType, catalog: &Catalog) -> Vec<Vec<Cell>> {
+    let CatalogIdentity::Bound(ir) = &catalog.identity else {
+        return Vec::new();
+    };
+    let mut nodes: Vec<_> = catalog.node_types.values().collect();
+    nodes.sort_by(|a, b| a.name.cmp(&b.name));
+    let mut edges: Vec<_> = catalog.edge_types.values().collect();
+    edges.sort_by(|a, b| a.name.cmp(&b.name));
+    if *ty == SCHEMA {
+        omnigraph_compiler::schema_ir_hash(ir)
+            .map(|hash| vec![vec![Cell::Text(hash)]])
+            .unwrap_or_default()
+    } else if *ty == NODE_TYPE {
+        nodes
+            .iter()
+            .map(|node| {
+                vec![
+                    Cell::Text(node.name.clone()),
+                    Cell::Texts(node.key.clone().unwrap_or_default()),
+                ]
+            })
+            .collect()
+    } else if *ty == EDGE_TYPE {
+        edges
+            .iter()
+            .map(|edge| {
+                let max = edge.cardinality.max.map(|max| max.to_string());
+                vec![
+                    Cell::Text(edge.name.clone()),
+                    Cell::Text(edge.from_type.clone()),
+                    Cell::Text(edge.to_type.clone()),
+                    Cell::Text(format!(
+                        "{}..{}",
+                        edge.cardinality.min,
+                        max.unwrap_or_default()
+                    )),
+                    Cell::Texts(edge.key.clone().unwrap_or_default()),
+                ]
+            })
+            .collect()
+    } else if *ty == PROPERTY {
+        let owners = nodes
+            .iter()
+            .map(|node| {
+                (
+                    &node.name,
+                    &node.arrow_schema,
+                    &node.properties,
+                    Some(&node.embed_sources),
+                )
+            })
+            .chain(
+                edges
+                    .iter()
+                    .map(|edge| (&edge.name, &edge.arrow_schema, &edge.properties, None)),
+            );
+        let mut rows = Vec::new();
+        for (owner, schema, properties, embeds) in owners {
+            let declared = schema
+                .fields()
+                .iter()
+                .filter_map(|field| Some((field.name(), properties.get(field.name())?)));
+            for (name, prop) in declared {
+                let embed = embeds
+                    .and_then(|embeds| embeds.get(name))
+                    .map(|embed| embed.source.clone());
+                rows.push(vec![
+                    Cell::Text(format!("{owner}.{name}")),
+                    Cell::Text(owner.clone()),
+                    Cell::Text(name.clone()),
+                    Cell::Text(prop.display_name()),
+                    Cell::Text(embed.unwrap_or_default()),
+                ]);
+            }
+        }
+        rows
+    } else {
+        Vec::new()
+    }
 }
 
 impl Catalogue {
@@ -60,11 +173,11 @@ impl Catalogue {
             .iter()
             .map(|ty| {
                 let rows = rows_of(ty);
-                CatalogueTable {
+                Arc::new(CatalogueTable {
                     fingerprint: fingerprint(ty, &rows),
                     ty,
                     rows,
-                }
+                })
             })
             .collect();
         Self { tables }
@@ -158,6 +271,13 @@ fn fingerprint(ty: &CatalogueType, rows: &[Vec<Cell>]) -> String {
                     hasher.update(b"t:");
                     hasher.update(text.as_bytes());
                 }
+                Cell::Texts(texts) => {
+                    hasher.update(b"s:");
+                    for text in texts {
+                        hasher.update(text.as_bytes());
+                        hasher.update(b"\x1e");
+                    }
+                }
                 Cell::Integer(value) => {
                     hasher.update(b"i:");
                     hasher.update(value.to_le_bytes());
@@ -199,7 +319,7 @@ impl CatalogueTable {
             .iter()
             .map(|row| match &row[0] {
                 Cell::Text(key) => key.as_str(),
-                Cell::Integer(_) | Cell::Integers(_) => "",
+                Cell::Texts(_) | Cell::Integer(_) | Cell::Integers(_) => "",
             })
             .collect();
         columns.push(Arc::new(StringArray::from(ids)));
@@ -214,6 +334,19 @@ impl CatalogueTable {
                         })
                         .collect::<Result<Vec<_>>>()?,
                 )),
+                CatalogueProp::StringList => {
+                    let mut builder = ListBuilder::new(StringBuilder::new());
+                    for cell in cells {
+                        let Cell::Texts(values) = cell else {
+                            return Err(cell_mismatch(self.ty, name));
+                        };
+                        for value in values {
+                            builder.values().append_value(value);
+                        }
+                        builder.append(true);
+                    }
+                    Arc::new(builder.finish())
+                }
                 CatalogueProp::I64 => Arc::new(Int64Array::from(
                     cells
                         .map(|cell| match cell {

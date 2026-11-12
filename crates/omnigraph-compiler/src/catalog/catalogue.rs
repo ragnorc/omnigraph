@@ -27,6 +27,7 @@ pub const SYSTEM_GRAPH_ID_PREFIX: &str = "og_";
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CatalogueProp {
     String,
+    StringList,
     I64,
     I64List,
 }
@@ -35,6 +36,7 @@ impl CatalogueProp {
     pub fn prop_type(self) -> PropType {
         match self {
             Self::String => PropType::scalar(ScalarType::String, false),
+            Self::StringList => PropType::list_of(ScalarType::String, false),
             Self::I64 => PropType::scalar(ScalarType::I64, false),
             Self::I64List => PropType::list_of(ScalarType::I64, false),
         }
@@ -103,6 +105,54 @@ pub const LOGICAL_KIND: CatalogueType = CatalogueType {
 /// Every catalogue type, in the order `schema show` lists them.
 pub const CATALOGUE_TYPES: &[CatalogueType] = &[OPERATOR, PASS, SETTING, ENGINE, LOGICAL_KIND];
 
+/// The one row naming the accepted schema the read's own types come from:
+/// its identity digest, which changes exactly when the compiled schema does.
+/// No row where no schema is bound (`og_catalog`, source-only checks).
+pub const SCHEMA: CatalogueType = CatalogueType {
+    name: "@Schema",
+    columns: &[("revision", CatalogueProp::String)],
+};
+
+/// One row per declared node type, with its key fields.
+pub const NODE_TYPE: CatalogueType = CatalogueType {
+    name: "@NodeType",
+    columns: &[
+        ("name", CatalogueProp::String),
+        ("key", CatalogueProp::StringList),
+    ],
+};
+
+/// One row per declared edge type: endpoints, per-source cardinality as
+/// `min..max` (`min..` when unbounded) and key fields.
+pub const EDGE_TYPE: CatalogueType = CatalogueType {
+    name: "@EdgeType",
+    columns: &[
+        ("name", CatalogueProp::String),
+        ("from", CatalogueProp::String),
+        ("to", CatalogueProp::String),
+        ("cardinality", CatalogueProp::String),
+        ("key", CatalogueProp::StringList),
+    ],
+};
+
+/// One row per declared property of a node or edge type, keyed
+/// `<Owner>.<name>`, with its `.pg` type spelling (`?` when nullable) and the
+/// text property an `@embed` vector derives from (empty otherwise).
+pub const PROPERTY: CatalogueType = CatalogueType {
+    name: "@Property",
+    columns: &[
+        ("id", CatalogueProp::String),
+        ("owner", CatalogueProp::String),
+        ("name", CatalogueProp::String),
+        ("value_type", CatalogueProp::String),
+        ("embed_source", CatalogueProp::String),
+    ],
+};
+
+/// The catalogue types whose rows describe the read's own accepted schema,
+/// derived per read from its catalog rather than once per process.
+pub const SCHEMA_CATALOGUE_TYPES: &[CatalogueType] = &[SCHEMA, NODE_TYPE, EDGE_TYPE, PROPERTY];
+
 /// Whether `name` is spelled as a catalogue type, declared or not.
 pub fn is_catalogue_type_name(name: &str) -> bool {
     name.starts_with(CATALOGUE_TYPE_PREFIX)
@@ -110,7 +160,10 @@ pub fn is_catalogue_type_name(name: &str) -> bool {
 
 /// The catalogue type `name` denotes, if one is declared.
 pub fn catalogue_type(name: &str) -> Option<&'static CatalogueType> {
-    CATALOGUE_TYPES.iter().find(|ty| ty.name == name)
+    CATALOGUE_TYPES
+        .iter()
+        .chain(SCHEMA_CATALOGUE_TYPES)
+        .find(|ty| ty.name == name)
 }
 
 impl CatalogueType {
@@ -167,6 +220,7 @@ impl CatalogueType {
 pub fn catalogue_node_types(columns: SystemColumns) -> HashMap<String, NodeType> {
     CATALOGUE_TYPES
         .iter()
+        .chain(SCHEMA_CATALOGUE_TYPES)
         .map(|ty| (ty.name.to_string(), ty.node_type(columns)))
         .collect()
 }
@@ -176,6 +230,7 @@ pub fn catalogue_node_types(columns: SystemColumns) -> HashMap<String, NodeType>
 pub fn catalogue_declarations() -> String {
     CATALOGUE_TYPES
         .iter()
+        .chain(SCHEMA_CATALOGUE_TYPES)
         .map(CatalogueType::declaration)
         .collect::<Vec<_>>()
         .join("\n\n")
