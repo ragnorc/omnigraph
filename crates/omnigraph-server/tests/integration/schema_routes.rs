@@ -145,3 +145,51 @@ async fn schema_route_denied_when_actor_lacks_read_permission() {
         Some(omnigraph_server::api::ErrorCode::Forbidden)
     );
 }
+
+/// Issue #650: a client reads one type's structured description (its
+/// properties and adjacent edges) and a cache revision without parsing `.pg`
+/// source. Either served surface may answer: the schema route, or GQ over the
+/// graph's own types as the engine catalogue already does for the binary.
+#[tokio::test(flavor = "multi_thread")]
+async fn one_type_is_described_without_parsing_source_issue_650() {
+    let (_temp, app) = app_for_loaded_graph().await;
+
+    let (status, schema) = json_response(
+        &app,
+        Request::builder()
+            .header(HTTP_API_CONTRACT_HEADER, HTTP_API_CONTRACT)
+            .uri(g("/schema"))
+            .method(Method::GET)
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let route_keys: Vec<&String> = schema.as_object().unwrap().keys().collect();
+    let described_by_route =
+        schema.get("types").is_some() && schema.get("schema_revision").is_some();
+
+    let (gq_status, gq_body) = json_response(
+        &app,
+        Request::builder()
+            .header(HTTP_API_CONTRACT_HEADER, HTTP_API_CONTRACT)
+            .uri(g("/query"))
+            .method(Method::POST)
+            .header("content-type", "application/json")
+            .body(Body::from(
+                serde_json::to_vec(&json!({
+                    "query": "query person() { match { $p: @Property { owner: \"Person\" } } return { $p.name } }"
+                }))
+                .unwrap(),
+            ))
+            .unwrap(),
+    )
+    .await;
+    let described_by_gq = gq_status == StatusCode::OK;
+
+    assert!(
+        described_by_route || described_by_gq,
+        "no served surface describes Person without its .pg source: \
+         GET /schema has only {route_keys:?}; GQ over @Property answered {gq_status}: {gq_body}"
+    );
+}
