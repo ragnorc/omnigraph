@@ -2396,6 +2396,27 @@ mod api_error_tests {
         assert_eq!(gap.first_unreadable_commit_id, "01JTESTGAP");
     }
 
+    /// #645: a read at a commit that `commit list` still returns, after
+    /// cleanup reclaimed its table versions, is an expected outcome of the
+    /// retention policy. It must answer a typed 410 the caller can act on,
+    /// as the change feed (`change_feed_gap`) and `branch create … from
+    /// commit` (`branch_start_refusal`, `not_retained`) already do, not a 500
+    /// `internal` that tells the caller to refresh and retry.
+    #[tokio::test]
+    async fn a_read_of_reclaimed_history_is_typed_410_issue_645() {
+        let response = ApiError::from_omni(OmniError::HistoricalVersionReclaimed {
+            published_dataset_version: 7,
+        })
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::GONE);
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let error: ErrorOutput = serde_json::from_slice(&body).unwrap();
+        assert_ne!(error.code, Some(ErrorCode::Internal), "{error:?}");
+    }
+
     async fn output_of(error: ApiError) -> ErrorOutput {
         let body = axum::body::to_bytes(error.into_response().into_body(), usize::MAX)
             .await
