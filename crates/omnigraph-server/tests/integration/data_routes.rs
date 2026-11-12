@@ -2709,6 +2709,146 @@ async fn branch_merge_receipts_keep_own_publication_when_a_later_writer_finishes
     }
 }
 
+/// Fail only this request thread's crossing of a merge seam. Other server
+/// tests may merge concurrently without failing.
+struct MergeFailOnThread {
+    thread: std::thread::ThreadId,
+}
+
+impl omnigraph::seams::Behavior for MergeFailOnThread {}
+
+impl omnigraph::seams::Decide for MergeFailOnThread {
+    fn decide(&self, _name: &'static str) -> omnigraph::seams::Decision {
+        if std::thread::current().id() == self.thread {
+            omnigraph::seams::Decision::Fire(omnigraph::seams::Effect::Fail)
+        } else {
+            omnigraph::seams::Decision::Pass
+        }
+    }
+}
+
+/// Issue #415: a client whose `POST /branches/merge` response is lost (proxy
+/// timeout, disconnect) must be able to tell a merge that is still running
+/// from one that failed. The server keeps an admitted merge running after the
+/// caller goes away, but exposes no handle for it: every read the client can
+/// make is identical while a merge is in flight and after the same merge has
+/// failed, so "not on main yet" is all it can learn.
+#[tokio::test(flavor = "multi_thread")]
+async fn branch_merge_in_flight_is_distinguishable_from_a_failed_one_issue_415() {
+    use omnigraph::seams::catalog::BRANCH_MERGE_POST_AUTHORITY_CAPTURE;
+
+    let (_temp, app) = app_for_loaded_graph().await;
+    let (status, body) = json_response(
+        &app,
+        json_post("/mutate", &json!({"query": "branch create feature"})),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    // Both sides move, so the merge is a three-way publication, the shape
+    // of the reported incident.
+    for (branch, name) in [("feature", "Source"), ("main", "Target")] {
+        let (status, body) = json_response(
+            &app,
+            json_post(
+                "/mutate",
+                &json!({
+                    "query": MUTATION_QUERIES,
+                    "name": "insert_person",
+                    "params": {"name": name, "age": 31},
+                    "branch": branch
+                }),
+            ),
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK, "{body}");
+    }
+    let get = |uri: String| {
+        Request::builder()
+            .header(HTTP_API_CONTRACT_HEADER, HTTP_API_CONTRACT)
+            .uri(uri)
+            .body(Body::empty())
+            .unwrap()
+    };
+    // Everything a client that lost its merge response can read about it.
+    let client_view = |app: axum::Router| async move {
+        let mut view = serde_json::Map::new();
+        for (name, uri) in [
+            ("main_commits", g("/commits?branch=main")),
+            ("feature_commits", g("/commits?branch=feature")),
+            ("branches", g("/branches")),
+            ("readyz", "/readyz".to_string()),
+        ] {
+            let (status, body) = json_response(&app, get(uri)).await;
+            view.insert(
+                name.to_string(),
+                json!({"status": status.as_u16(), "body": body}),
+            );
+        }
+        Value::Object(view)
+    };
+    let send_merge = |app: axum::Router| {
+        let (start, started) = std::sync::mpsc::channel::<()>();
+        let thread = std::thread::spawn(move || {
+            started.recv().unwrap();
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap()
+                .block_on(json_response(
+                    &app,
+                    json_post(
+                        "/branches/merge",
+                        &json!({"source": "feature", "target": "main"}),
+                    ),
+                ))
+        });
+        (start, thread)
+    };
+    let before = client_view(app.clone()).await;
+
+    // A merge that fails before publication. Its response is never seen by
+    // the client; the test only checks that it did fail and published nothing.
+    let (start, thread) = send_merge(app.clone());
+    let guard = BRANCH_MERGE_POST_AUTHORITY_CAPTURE.install(Arc::new(MergeFailOnThread {
+        thread: thread.thread().id(),
+    }));
+    start.send(()).unwrap();
+    let (status, lost) = thread.join().unwrap();
+    drop(guard);
+    assert!(
+        !status.is_success(),
+        "the injected failure must fail the merge: {lost}"
+    );
+    let after_failure = client_view(app.clone()).await;
+    assert_eq!(after_failure, before, "a failed merge publishes nothing");
+
+    // The same merge, admitted and still running when the client looks.
+    let (start, thread) = send_merge(app.clone());
+    let hold = Arc::new(omnigraph::seams::Hold::default());
+    let guard = BRANCH_MERGE_POST_AUTHORITY_CAPTURE.install(Arc::new(MergeReturnHold {
+        thread: thread.thread().id(),
+        hold: hold.clone(),
+    }));
+    start.send(()).unwrap();
+    hold.wait_until_reached();
+    let while_running = client_view(app.clone()).await;
+    hold.release();
+    let (status, receipt) = thread.join().unwrap();
+    assert!(!hold.timed_out(), "the test must release the reached hold");
+    drop(guard);
+    // The held merge really was running: it lands once released.
+    assert_eq!(status, StatusCode::OK, "{receipt}");
+    assert_eq!(receipt["outcome"], "merged", "{receipt}");
+    let (_, main) = json_response(&app, get(g("/commits?branch=main"))).await;
+    assert_eq!(main["commits"][0], receipt["commit"]);
+
+    assert_ne!(
+        while_running, after_failure,
+        "a client that lost its merge response cannot tell a running merge \
+         from a failed one: every read it can make is identical"
+    );
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn branch_statements_dispatch_to_their_route_bodies() {
     let (_temp, app) = app_for_loaded_graph().await;
