@@ -1377,3 +1377,111 @@ graphs:
     assert_eq!(body["row_count"], 1, "body: {body}");
     assert_eq!(body["rows"][0]["conj"], 0, "body: {body}");
 }
+
+/// Issue 654: a client that discovered a stored query must be able to tell
+/// that the name now means something else. Redefining `find_person` under the
+/// same name and parameters (returning `name` instead of `age`) must change its
+/// `GET /queries` entry, so discovery can be bound to what is invoked.
+#[tokio::test(flavor = "multi_thread")]
+async fn catalog_entry_changes_when_a_stored_query_is_redefined_issue_654() {
+    let redefined = "query find_person($name: String) { match { $p: Person { name: $name } } return { $p.name } }";
+    let mut entries = Vec::new();
+    for source in [FIND_PERSON_GQ, redefined] {
+        let (_temp, app) = app_with_stored_queries(
+            &[("find_person", source, true)],
+            &[("act-invoke", "t-invoke")],
+            INVOKE_POLICY_YAML,
+        )
+        .await;
+        let (status, body) = json_response(&app, get_request(&g("/queries"), "t-invoke")).await;
+        assert_eq!(status, StatusCode::OK, "body: {body}");
+        entries.push(body["queries"][0].clone());
+    }
+    assert_ne!(
+        entries[0], entries[1],
+        "two different queries named find_person list identically, so a client \
+         cannot bind discovery to the operation it later invokes"
+    );
+}
+
+/// Issue 654 prototype: an invocation that names a revision runs only that
+/// definition; a stale revision is refused with 412 before any effect.
+#[tokio::test(flavor = "multi_thread")]
+async fn invocation_bound_to_a_stale_revision_is_refused_issue_654() {
+    let add_v1 = "query add_person($name: String) { insert Person { name: $name } }";
+    let add_v2 = "query add_person($name: String) { insert Person { name: $name, age: 99 } }";
+    let revision = |app: axum::Router| async move {
+        let (_, body) = json_response(&app, get_request(&g("/queries"), "t-full")).await;
+        body["queries"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|q| q["name"] == "add_person")
+            .unwrap()["revision"]
+            .as_str()
+            .unwrap()
+            .to_string()
+    };
+    let specs = |add: &'static str| -> Vec<(&'static str, &'static str, bool)> {
+        vec![
+            ("add_person", add, true),
+            ("find_person", FIND_PERSON_GQ, true),
+        ]
+    };
+    let (_t1, app_v1) = app_with_stored_queries(
+        &specs(add_v1),
+        &[("act-full", "t-full")],
+        INVOKE_POLICY_YAML,
+    )
+    .await;
+    let (_t2, app_v2) = app_with_stored_queries(
+        &specs(add_v2),
+        &[("act-full", "t-full")],
+        INVOKE_POLICY_YAML,
+    )
+    .await;
+    let discovered = revision(app_v1.clone()).await;
+    let current = revision(app_v2.clone()).await;
+    assert_ne!(discovered, current);
+
+    // The client discovered v1; the server now serves v2.
+    let (status, body) = json_response(
+        &app_v2,
+        invoke_request(
+            "add_person",
+            "t-full",
+            json!({ "params": { "name": "Eve" }, "expected_revision": discovered }),
+        ),
+    )
+    .await;
+    assert_eq!(status, StatusCode::PRECONDITION_FAILED, "body: {body}");
+    assert_eq!(
+        body["precondition_failure"]["actual"], current,
+        "body: {body}"
+    );
+    let (_, rows) = json_response(
+        &app_v2,
+        invoke_request(
+            "find_person",
+            "t-full",
+            json!({ "params": { "name": "Eve" } }),
+        ),
+    )
+    .await;
+    assert_eq!(
+        rows["row_count"], 0,
+        "a refused invocation writes nothing: {rows}"
+    );
+
+    let (status, body) = json_response(
+        &app_v2,
+        invoke_request(
+            "add_person",
+            "t-full",
+            json!({ "params": { "name": "Eve" }, "expected_revision": current }),
+        ),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "body: {body}");
+    assert_eq!(body["affected_nodes"], 1, "body: {body}");
+}

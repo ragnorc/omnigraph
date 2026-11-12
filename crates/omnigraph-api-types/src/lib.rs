@@ -1815,6 +1815,11 @@ pub struct InvokeStoredQueryRequest {
     /// (the default) skips the check — preserving older clients and aliases.
     #[serde(default)]
     pub expect_mutation: Option<bool>,
+    /// The `revision` the caller discovered in `GET /queries`. When set and
+    /// the stored query has since been redefined, the call fails with 412
+    /// before any effect.
+    #[serde(default)]
+    pub expected_revision: Option<String>,
 }
 
 /// Response for `POST /queries/{name}`: the read envelope for a stored
@@ -1882,6 +1887,9 @@ pub struct QueryCatalogEntry {
     /// `true` for a stored mutation → an MCP read-only hint of `false`.
     pub mutation: bool,
     pub params: Vec<ParamDescriptor>,
+    /// The definition's revision. Pass it back as `expected_revision` so an
+    /// invocation runs only the query that was discovered.
+    pub revision: String,
 }
 
 /// Response for `GET /queries`: every stored query in a graph's

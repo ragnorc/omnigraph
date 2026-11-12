@@ -20,5 +20,6 @@ pub fn query_catalog_entry(query: &StoredQuery) -> QueryCatalogEntry {
         instruction: query.decl.instruction.clone(),
         mutation: query.is_mutation(),
         params: query.decl.params.iter().map(param_descriptor).collect(),
+        revision: query.revision.clone(),
     }
 }

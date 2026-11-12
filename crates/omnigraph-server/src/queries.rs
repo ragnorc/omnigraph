@@ -41,6 +41,19 @@ pub struct StoredQuery {
     pub expose: bool,
     /// Optional MCP tool-name override; defaults to `name`.
     pub tool_name: Option<String>,
+    /// Issue 654 prototype: what a caller binds discovery to. The hex
+    /// SHA-256 of the name and the full `.gq` source the invocation runs.
+    pub revision: String,
+}
+
+/// Issue 654 prototype: the revision of a stored query's definition.
+pub fn stored_query_revision(name: &str, source: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(name.as_bytes());
+    hasher.update([0u8]);
+    hasher.update(source.as_bytes());
+    format!("{:x}", hasher.finalize())
 }
 
 impl StoredQuery {
@@ -131,6 +144,7 @@ impl QueryRegistry {
                         by_name.insert(
                             spec.name.clone(),
                             StoredQuery {
+                                revision: stored_query_revision(&spec.name, &spec.source),
                                 name: spec.name,
                                 source: Arc::from(spec.source),
                                 decl,

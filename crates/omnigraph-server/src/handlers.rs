@@ -2348,6 +2348,19 @@ async fn invoke_stored_query(
     let query_name = stored.name.clone();
     let is_mutation = stored.is_mutation();
 
+    // Issue 654: bind invocation to the definition the caller discovered.
+    if let Some(expected) = req.expected_revision.as_deref() {
+        if expected != stored.revision {
+            return Err(ApiError::precondition_failed(
+                format!("stored query '{query_name}' was redefined since it was discovered"),
+                api::PreconditionFailureOutput {
+                    expected: expected.to_string(),
+                    actual: Some(stored.revision.clone()),
+                },
+            ));
+        }
+    }
+
     // RFC-011 D3: the CLI verb asserts the stored query's kind. `query <name>`
     // sends `expect_mutation: false`, `mutate <name>` sends `true`; a mismatch
     // is rejected here so the wrong verb errors instead of silently running.

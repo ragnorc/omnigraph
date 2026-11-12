@@ -68,6 +68,9 @@ pub struct QueryArguments {
     pub branch: Option<String>,
     #[serde(default)]
     pub snapshot: Option<String>,
+    /// A stored read's `revision` from `queries`.
+    #[serde(default)]
+    pub revision: Option<String>,
 }
 /// The change vocabulary's filters and page continuation, sent to the route
 /// as the same repeated query parameters an HTTP caller sends.
@@ -176,6 +179,9 @@ pub struct MutateArguments {
     pub branch: Option<String>,
     #[serde(default)]
     pub if_graph_commit: Option<String>,
+    /// A stored mutation's `revision` from `queries`.
+    #[serde(default)]
+    pub revision: Option<String>,
 }
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]

@@ -376,6 +376,7 @@ mod tests {
                         param("near", ParamKind::Vector, None, Some(3), false),
                         param("since", ParamKind::DateTime, None, None, false),
                     ],
+                    revision: "r1".into(),
                 },
                 omnigraph_api_types::QueryCatalogEntry {
                     name: "retag".into(),
@@ -384,6 +385,7 @@ mod tests {
                     instruction: Some("Use for bulk changes".into()),
                     mutation: true,
                     params: vec![param("count", ParamKind::BigInt, None, None, false)],
+                    revision: "r2".into(),
                 },
             ],
         };
