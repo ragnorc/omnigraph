@@ -1377,3 +1377,29 @@ graphs:
     assert_eq!(body["row_count"], 1, "body: {body}");
     assert_eq!(body["rows"][0]["conj"], 0, "body: {body}");
 }
+
+/// Issue 654: a client that discovered a stored query must be able to tell
+/// that the name now means something else. Redefining `find_person` under the
+/// same name and parameters (returning `name` instead of `age`) must change its
+/// `GET /queries` entry, so discovery can be bound to what is invoked.
+#[tokio::test(flavor = "multi_thread")]
+async fn catalog_entry_changes_when_a_stored_query_is_redefined_issue_654() {
+    let redefined = "query find_person($name: String) { match { $p: Person { name: $name } } return { $p.name } }";
+    let mut entries = Vec::new();
+    for source in [FIND_PERSON_GQ, redefined] {
+        let (_temp, app) = app_with_stored_queries(
+            &[("find_person", source, true)],
+            &[("act-invoke", "t-invoke")],
+            INVOKE_POLICY_YAML,
+        )
+        .await;
+        let (status, body) = json_response(&app, get_request(&g("/queries"), "t-invoke")).await;
+        assert_eq!(status, StatusCode::OK, "body: {body}");
+        entries.push(body["queries"][0].clone());
+    }
+    assert_ne!(
+        entries[0], entries[1],
+        "two different queries named find_person list identically, so a client \
+         cannot bind discovery to the operation it later invokes"
+    );
+}
