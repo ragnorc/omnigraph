@@ -680,6 +680,8 @@ impl GraphClient {
                     schema_source: db.schema_source().to_string(),
                     system_columns: Some(db.catalog().system_columns.into()),
                     catalogue_source: Some(omnigraph_compiler::catalogue_declarations()),
+                    schema_revision: Some(db.schema_contract_digest().schema_ir_hash),
+                    types: None,
                 })
             }
             GraphClient::Catalogue => {
@@ -688,6 +690,8 @@ impl GraphClient {
                     schema_source: String::new(),
                     system_columns: Some(scope.catalog().system_columns.into()),
                     catalogue_source: Some(scope.schema_source()),
+                    schema_revision: None,
+                    types: None,
                 })
             }
         }

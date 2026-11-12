@@ -1970,6 +1970,154 @@ pub struct SchemaOutput {
     /// source above. Optional for compatibility with servers predating it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub catalogue_source: Option<String>,
+    /// The accepted schema's identity digest: it changes exactly when the
+    /// compiled schema changes, so a client can cache a description under it.
+    /// Optional for compatibility with servers predating it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub schema_revision: Option<String>,
+    /// With `?type=<Name>`: that type's structured description, followed by
+    /// every edge type with it as an endpoint. Absent otherwise.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub types: Option<Vec<SchemaTypeOutput>>,
+}
+
+/// Query parameters for `GET /graphs/{graph_id}/schema`.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct SchemaQuery {
+    /// A node or edge type name to describe. An unknown name is `404`.
+    #[serde(rename = "type")]
+    #[param(rename = "type")]
+    pub type_name: Option<String>,
+}
+
+/// One node or edge type as the compiled schema declares it.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+pub struct SchemaTypeOutput {
+    /// `node` or `edge`.
+    pub kind: String,
+    pub name: String,
+    /// Edge source node type.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub from: Option<String>,
+    /// Edge destination node type.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub to: Option<String>,
+    /// Edge cardinality per source node, as `min..max` (`max` absent when unbounded).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cardinality: Option<String>,
+    /// Key fields; edge keys spell endpoints `@src`/`@dst`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub key: Option<Vec<String>>,
+    pub unique: Vec<Vec<String>>,
+    pub indexed: Vec<Vec<String>>,
+    pub properties: Vec<SchemaPropertyOutput>,
+}
+
+/// One declared property.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+pub struct SchemaPropertyOutput {
+    pub name: String,
+    /// The `.pg` type spelling without nullability, such as `String`,
+    /// `[I64]`, `Vector(8)` or `enum(a, b)`.
+    #[serde(rename = "type")]
+    pub type_name: String,
+    pub nullable: bool,
+    pub list: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub enum_values: Option<Vec<String>>,
+    /// The text property an `@embed` vector is derived from.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub embed_source: Option<String>,
+}
+
+impl SchemaTypeOutput {
+    /// The description of `name` and every edge type with it as an
+    /// endpoint, from one compiled catalog; `None` when no type has that name.
+    pub fn describe(
+        catalog: &omnigraph_compiler::catalog::Catalog,
+        name: &str,
+    ) -> Option<Vec<Self>> {
+        if let Some(node) = catalog.node_types.get(name) {
+            let mut out = vec![Self {
+                kind: "node".to_string(),
+                name: node.name.clone(),
+                from: None,
+                to: None,
+                cardinality: None,
+                key: node.key.clone(),
+                unique: node.unique_constraints.clone(),
+                indexed: node.indices.clone(),
+                properties: describe_properties(
+                    node.arrow_schema.fields().iter().map(|field| field.name()),
+                    &node.properties,
+                    |prop| {
+                        node.embed_sources
+                            .get(prop)
+                            .map(|embed| embed.source.clone())
+                    },
+                ),
+            }];
+            let mut edges: Vec<_> = catalog
+                .edge_types
+                .values()
+                .filter(|edge| edge.from_type == name || edge.to_type == name)
+                .collect();
+            edges.sort_by(|a, b| a.name.cmp(&b.name));
+            out.extend(edges.into_iter().map(Self::edge));
+            return Some(out);
+        }
+        catalog
+            .edge_types
+            .get(name)
+            .map(|edge| vec![Self::edge(edge)])
+    }
+
+    fn edge(edge: &omnigraph_compiler::catalog::EdgeType) -> Self {
+        Self {
+            kind: "edge".to_string(),
+            name: edge.name.clone(),
+            from: Some(edge.from_type.clone()),
+            to: Some(edge.to_type.clone()),
+            cardinality: Some(match edge.cardinality.max {
+                Some(max) => format!("{}..{max}", edge.cardinality.min),
+                None => format!("{}..", edge.cardinality.min),
+            }),
+            key: edge.key.clone(),
+            unique: edge.unique_constraints.clone(),
+            indexed: edge.indices.clone(),
+            properties: describe_properties(
+                edge.arrow_schema.fields().iter().map(|field| field.name()),
+                &edge.properties,
+                |_| None,
+            ),
+        }
+    }
+}
+
+/// Declared properties in the compiled type's column order.
+fn describe_properties<'a>(
+    names: impl Iterator<Item = &'a String>,
+    properties: &std::collections::HashMap<String, omnigraph_compiler::types::PropType>,
+    embed_source: impl Fn(&str) -> Option<String>,
+) -> Vec<SchemaPropertyOutput> {
+    names
+        .filter_map(|name| {
+            let prop = properties.get(name)?;
+            Some(SchemaPropertyOutput {
+                name: name.clone(),
+                type_name: omnigraph_compiler::types::PropType {
+                    nullable: false,
+                    ..prop.clone()
+                }
+                .display_name(),
+                nullable: prop.nullable,
+                list: prop.list,
+                enum_values: prop.enum_values.clone(),
+                embed_source: embed_source(name),
+            })
+        })
+        .collect()
 }
 
 /// A graph's system column spellings (see `SchemaOutput::system_columns`).

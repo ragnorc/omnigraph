@@ -2467,10 +2467,12 @@ pub(crate) async fn server_list_queries(
     get,
     path = "/schema",
     tag = "schema",
+    params(api::SchemaQuery),
     responses(
         (status = 200, description = "Current schema source", body = SchemaOutput),
         (status = 401, description = "Unauthorized", body = ErrorOutput),
         (status = 403, description = "Forbidden", body = ErrorOutput),
+        (status = 404, description = "No node or edge type has the requested name", body = ErrorOutput),
         (status = 500, description = "Internal failure (code `internal`) before a successful response", body = ErrorOutput),
     ),
     security(("bearer_token" = [])),
@@ -2479,10 +2481,13 @@ pub(crate) async fn server_list_queries(
 ///
 /// Returns the project's schema as a single string in `.pg` source form.
 /// Useful for clients that want to introspect available types and properties
-/// before constructing GQ queries. Read-only.
+/// before constructing GQ queries. `?type=<Name>` adds that type's structured
+/// description and its adjacent edge types; `schema_revision` names the
+/// accepted schema they were read from. Read-only.
 pub(crate) async fn server_schema_get(
     Extension(handle): Extension<GraphRequest>,
     actor: Option<Extension<AuthenticatedActor>>,
+    ApiQuery(query): ApiQuery<api::SchemaQuery>,
 ) -> std::result::Result<Json<SchemaOutput>, ApiError> {
     authorize_request(
         actor.as_ref().map(|Extension(actor)| actor),
@@ -2493,14 +2498,21 @@ pub(crate) async fn server_schema_get(
             target_branch: None,
         },
     )?;
-    let (schema_source, system_columns) = {
-        let db = &handle.engine;
-        (db.schema_source().to_string(), db.catalog().system_columns)
-    };
+    let db = &handle.engine;
+    let catalog = db.catalog();
+    let types =
+        match query.type_name.as_deref() {
+            Some(name) => Some(api::SchemaTypeOutput::describe(&catalog, name).ok_or_else(
+                || ApiError::not_found(format!("no node or edge type is named `{name}`")),
+            )?),
+            None => None,
+        };
     Ok(Json(SchemaOutput {
-        schema_source,
-        system_columns: Some(system_columns.into()),
+        schema_source: db.schema_source().to_string(),
+        system_columns: Some(catalog.system_columns.into()),
         catalogue_source: Some(omnigraph_compiler::catalogue_declarations()),
+        schema_revision: Some(db.schema_contract_digest().schema_ir_hash),
+        types,
     }))
 }
 

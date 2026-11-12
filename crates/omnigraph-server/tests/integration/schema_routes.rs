@@ -166,6 +166,17 @@ async fn one_type_is_described_without_parsing_source_issue_650() {
     .await;
     assert_eq!(status, StatusCode::OK);
     let route_keys: Vec<&String> = schema.as_object().unwrap().keys().collect();
+    let (status, schema) = json_response(
+        &app,
+        Request::builder()
+            .header(HTTP_API_CONTRACT_HEADER, HTTP_API_CONTRACT)
+            .uri(g("/schema?type=Person"))
+            .method(Method::GET)
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{schema}");
     let described_by_route =
         schema.get("types").is_some() && schema.get("schema_revision").is_some();
 
@@ -192,4 +203,54 @@ async fn one_type_is_described_without_parsing_source_issue_650() {
         "no served surface describes Person without its .pg source: \
          GET /schema has only {route_keys:?}; GQ over @Property answered {gq_status}: {gq_body}"
     );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn schema_route_describes_one_type_and_its_edges() {
+    let (_temp, app) = app_for_loaded_graph().await;
+    let get = |uri: &str| {
+        Request::builder()
+            .header(HTTP_API_CONTRACT_HEADER, HTTP_API_CONTRACT)
+            .uri(g(uri))
+            .method(Method::GET)
+            .body(Body::empty())
+            .unwrap()
+    };
+    let (status, body) = json_response(&app, get("/schema?type=Person")).await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    let output: SchemaOutput = serde_json::from_value(body).unwrap();
+    let revision = output.schema_revision.clone().expect("revision");
+    let types = output.types.expect("types");
+    let names: Vec<_> = types
+        .iter()
+        .map(|ty| (ty.kind.as_str(), ty.name.as_str()))
+        .collect();
+    assert_eq!(
+        names,
+        [("node", "Person"), ("edge", "Knows"), ("edge", "WorksAt")]
+    );
+    let person = &types[0];
+    assert_eq!(person.key.as_deref(), Some(&["name".to_string()][..]));
+    let mut props: Vec<_> = person
+        .properties
+        .iter()
+        .map(|p| (p.name.as_str(), p.type_name.as_str(), p.nullable))
+        .collect();
+    props.sort();
+    assert_eq!(props, [("age", "I32", true), ("name", "String", false)]);
+    assert_eq!(types[2].from.as_deref(), Some("Person"));
+    assert_eq!(types[2].to.as_deref(), Some("Company"));
+
+    let (status, body) = json_response(&app, get("/schema?type=Knows")).await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    let output: SchemaOutput = serde_json::from_value(body).unwrap();
+    assert_eq!(output.schema_revision.as_deref(), Some(revision.as_str()));
+    assert_eq!(output.types.unwrap().len(), 1);
+
+    let (status, body) = json_response(&app, get("/schema?type=Nobody")).await;
+    assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
+    let (status, body) = json_response(&app, get("/schema")).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.get("types").is_none());
+    assert_eq!(body["schema_revision"], revision.as_str());
 }

@@ -123,6 +123,8 @@ pub(crate) async fn catalogue_schema(
         schema_source: String::new(),
         system_columns: Some(scope.catalog().system_columns.into()),
         catalogue_source: Some(scope.schema_source()),
+        schema_revision: None,
+        types: None,
     }))
 }
 

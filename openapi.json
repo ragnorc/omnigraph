@@ -13202,7 +13202,7 @@
           "schema"
         ],
         "summary": "Read the current schema source.",
-        "description": "Returns the project's schema as a single string in `.pg` source form.\nUseful for clients that want to introspect available types and properties\nbefore constructing GQ queries. Read-only.",
+        "description": "Returns the project's schema as a single string in `.pg` source form.\nUseful for clients that want to introspect available types and properties\nbefore constructing GQ queries. `?type=<Name>` adds that type's structured\ndescription and its adjacent edge types; `schema_revision` names the\naccepted schema they were read from. Read-only.",
         "operationId": "schemaShow",
         "parameters": [
           {
@@ -13210,6 +13210,15 @@
             "in": "path",
             "description": "Graph id to route the request to. The `og_` prefix is reserved for system graphs. `og_catalog` is the built-in, storage-free catalogue: it serves only POST /query and GET /schema with their ordinary response bodies. Its query refuses `branch` and `snapshot`; every other route under /graphs/og_catalog returns 405 `method_not_allowed` before effects.",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "A node or edge type name to describe. An unknown name is `404`.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -13328,7 +13337,7 @@
             }
           },
           "404": {
-            "description": "not_found when no graph `graph_id` is served or the caller may not see it, or when no route serves the path",
+            "description": "No node or edge type has the requested name; not_found when no graph `graph_id` is served or the caller may not see it, or when no route serves the path",
             "headers": {
               "Omnigraph-Http-Api": {
                 "schema": {
@@ -16865,6 +16874,13 @@
             ],
             "description": "The engine catalogue's built-in `@` types as `.pg`-style\ndeclarations, listed beside the graph's own schema: read-only rows\nthe binary derives from its registries, never part of the schema\nsource above. Optional for compatibility with servers predating it."
           },
+          "schema_revision": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The accepted schema's identity digest: it changes exactly when the\ncompiled schema changes, so a client can cache a description under it.\nOptional for compatibility with servers predating it."
+          },
           "schema_source": {
             "type": "string"
           },
@@ -16878,6 +16894,132 @@
                 "description": "The graph's physical system column spellings: `__id`/`__src`/`__dst`\non current-vintage graphs, `id`/`src`/`dst` on legacy ones. This is\nstorage discovery for loaders, exports and raw readers of mixed\nvintages; query results address identity and endpoints through the\nmeta-fields `@id`, `@src` and `@dst` on every vintage. Optional for\ncompatibility with servers predating the field."
               }
             ]
+          },
+          "types": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/SchemaTypeOutput"
+            },
+            "description": "With `?type=<Name>`: that type's structured description, followed by\nevery edge type with it as an endpoint. Absent otherwise."
+          }
+        }
+      },
+      "SchemaPropertyOutput": {
+        "type": "object",
+        "description": "One declared property.",
+        "required": [
+          "name",
+          "type",
+          "nullable",
+          "list"
+        ],
+        "properties": {
+          "embed_source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The text property an `@embed` vector is derived from."
+          },
+          "enum_values": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "list": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "nullable": {
+            "type": "boolean"
+          },
+          "type": {
+            "type": "string",
+            "description": "The `.pg` type spelling without nullability, such as `String`,\n`[I64]`, `Vector(8)` or `enum(a, b)`."
+          }
+        }
+      },
+      "SchemaTypeOutput": {
+        "type": "object",
+        "description": "One node or edge type as the compiled schema declares it.",
+        "required": [
+          "kind",
+          "name",
+          "unique",
+          "indexed",
+          "properties"
+        ],
+        "properties": {
+          "cardinality": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Edge cardinality per source node, as `min..max` (`max` absent when unbounded)."
+          },
+          "from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Edge source node type."
+          },
+          "indexed": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "key": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Key fields; edge keys spell endpoints `@src`/`@dst`."
+          },
+          "kind": {
+            "type": "string",
+            "description": "`node` or `edge`."
+          },
+          "name": {
+            "type": "string"
+          },
+          "properties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchemaPropertyOutput"
+            }
+          },
+          "to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Edge destination node type."
+          },
+          "unique": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           }
         }
       },

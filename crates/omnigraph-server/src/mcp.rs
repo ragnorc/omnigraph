@@ -407,9 +407,12 @@ impl ServerHost {
             ToolCall::Schema(args) => {
                 boxed(move || async move {
                     let (handle, actor) = self.graph(&args.graph, actor, &graph)?;
-                    let output =
-                        handlers::server_schema_get(Extension(handle), Some(Extension(actor)))
-                            .await?;
+                    let output = handlers::server_schema_get(
+                        Extension(handle),
+                        Some(Extension(actor)),
+                        ApiQuery(Default::default()),
+                    )
+                    .await?;
                     bounded_result(&output.0)
                 })
                 .await
@@ -933,8 +936,12 @@ impl ServerHost {
             }
             ResourceRequest::Schema(name) => {
                 let (handle, actor) = self.graph(&name, actor, &graph)?;
-                let output =
-                    handlers::server_schema_get(Extension(handle), Some(Extension(actor))).await?;
+                let output = handlers::server_schema_get(
+                    Extension(handle),
+                    Some(Extension(actor)),
+                    ApiQuery(Default::default()),
+                )
+                .await?;
                 Ok(("text/plain", output.0.schema_source))
             }
             ResourceRequest::Branches(name) => {
