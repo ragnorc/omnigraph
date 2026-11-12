@@ -1815,6 +1815,11 @@ pub struct InvokeStoredQueryRequest {
     /// (the default) skips the check — preserving older clients and aliases.
     #[serde(default)]
     pub expect_mutation: Option<bool>,
+    /// The catalog `revision` the caller discovered in `GET /queries`. When
+    /// set and any stored query has since changed, the call fails with 412
+    /// before any effect.
+    #[serde(default)]
+    pub expected_catalog_revision: Option<String>,
 }
 
 /// Response for `POST /queries/{name}`: the read envelope for a stored
@@ -1889,6 +1894,11 @@ pub struct QueryCatalogEntry {
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct QueriesCatalogOutput {
     pub queries: Vec<QueryCatalogEntry>,
+    /// The served catalog's revision. Pass it back as
+    /// `expected_catalog_revision` so an invocation runs only against the
+    /// catalog that was discovered. Absent when the graph serves no registry.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub revision: Option<String>,
 }
 
 /// Total map from a resolved scalar to its catalog kind. Exhaustive on

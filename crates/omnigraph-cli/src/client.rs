@@ -2070,6 +2070,7 @@ impl GraphClient {
                     branch,
                     snapshot,
                     expect_mutation: Some(expect_mutation),
+                    expected_catalog_revision: None,
                 };
                 remote_json_bounded(
                     http,

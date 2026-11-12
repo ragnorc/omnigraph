@@ -64,6 +64,9 @@ impl StoredQuery {
 #[derive(Debug, Clone, Default)]
 pub struct QueryRegistry {
     by_name: BTreeMap<String, StoredQuery>,
+    /// Issue 654 prototype (option B): one revision for the whole served
+    /// catalog, the hex SHA-256 over every query's name and source.
+    revision: String,
 }
 
 /// In-memory registry spec: a query's name + already-read `.gq` source. The
@@ -178,10 +181,26 @@ impl QueryRegistry {
         }
 
         if errors.is_empty() {
-            Ok(Self { by_name })
+            let revision = {
+                use sha2::{Digest, Sha256};
+                let mut hasher = Sha256::new();
+                for query in by_name.values() {
+                    for part in [query.name.as_bytes(), query.source.as_bytes()] {
+                        hasher.update((part.len() as u64).to_le_bytes());
+                        hasher.update(part);
+                    }
+                }
+                format!("{:x}", hasher.finalize())
+            };
+            Ok(Self { by_name, revision })
         } else {
             Err(errors)
         }
+    }
+
+    /// The whole catalog's revision (issue 654 prototype, option B).
+    pub fn revision(&self) -> &str {
+        &self.revision
     }
 
     pub fn lookup(&self, name: &str) -> Option<&StoredQuery> {

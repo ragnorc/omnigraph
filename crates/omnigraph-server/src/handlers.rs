@@ -2335,6 +2335,20 @@ async fn invoke_stored_query(
         Authz::Denied(_) => return Err(ApiError::not_found(NOT_FOUND)),
     }
 
+    // Issue 654 (option B): bind invocation to the discovered catalog.
+    if let Some(expected) = req.expected_catalog_revision.as_deref() {
+        let actual = handle.queries.as_ref().map(|r| r.revision().to_string());
+        if actual.as_deref() != Some(expected) {
+            return Err(ApiError::precondition_failed(
+                "the stored-query catalog changed since it was discovered".to_string(),
+                api::PreconditionFailureOutput {
+                    expected: expected.to_string(),
+                    actual,
+                },
+            ));
+        }
+    }
+
     // Resolve against the per-graph registry (same 404 on a miss).
     let stored = handle
         .queries
@@ -2460,7 +2474,11 @@ pub(crate) async fn server_list_queries(
             .collect(),
         None => Vec::new(),
     };
-    Ok(Json(QueriesCatalogOutput { queries }))
+    let revision = handle
+        .queries
+        .as_ref()
+        .map(|registry| registry.revision().to_string());
+    Ok(Json(QueriesCatalogOutput { queries, revision }))
 }
 
 #[utoipa::path(

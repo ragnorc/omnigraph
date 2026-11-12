@@ -439,6 +439,7 @@ impl ServerHost {
                             branch: args.branch,
                             snapshot: args.snapshot,
                             expect_mutation: Some(false),
+                            expected_catalog_revision: args.catalog_revision,
                         })
                         .map_err(|_| ApiError::bad_request("invalid query parameters"))?;
                         let output = handlers::server_invoke_query(
@@ -700,6 +701,7 @@ impl ServerHost {
                             branch: args.branch,
                             snapshot: None,
                             expect_mutation: Some(true),
+                            expected_catalog_revision: args.catalog_revision,
                         })
                         .map_err(|_| ApiError::bad_request("invalid mutation parameters"))?;
                         let path = ApiPath(QueryNamePath { query_name: name });

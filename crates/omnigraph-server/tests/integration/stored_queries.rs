@@ -1377,3 +1377,85 @@ graphs:
     assert_eq!(body["row_count"], 1, "body: {body}");
     assert_eq!(body["rows"][0]["conj"], 0, "body: {body}");
 }
+
+/// Issue 654: a client that discovered a stored query must be able to tell
+/// that the name now means something else. Redefining `find_person` under the
+/// same name and parameters (returning `name` instead of `age`) must change
+/// what `GET /queries` returns, so discovery can be bound to what is invoked.
+#[tokio::test(flavor = "multi_thread")]
+async fn catalog_changes_when_a_stored_query_is_redefined_issue_654() {
+    let redefined = "query find_person($name: String) { match { $p: Person { name: $name } } return { $p.name } }";
+    let mut catalogs = Vec::new();
+    for source in [FIND_PERSON_GQ, redefined] {
+        let (_temp, app) = app_with_stored_queries(
+            &[("find_person", source, true)],
+            &[("act-invoke", "t-invoke")],
+            INVOKE_POLICY_YAML,
+        )
+        .await;
+        let (status, body) = json_response(&app, get_request(&g("/queries"), "t-invoke")).await;
+        assert_eq!(status, StatusCode::OK, "body: {body}");
+        catalogs.push(body);
+    }
+    assert_ne!(catalogs[0], catalogs[1]);
+}
+
+/// Issue 654 prototype (option B): one catalog revision binds every
+/// invocation, so an edit to an unrelated query also refuses an unchanged one.
+#[tokio::test(flavor = "multi_thread")]
+async fn invocation_bound_to_a_stale_catalog_revision_is_refused_issue_654() {
+    let other_v1 = "query other() { match { $p: Person } return { $p.name } }";
+    let other_v2 = "query other() { match { $p: Person } return { $p.age } }";
+    let catalog_revision = |app: axum::Router| async move {
+        let (_, body) = json_response(&app, get_request(&g("/queries"), "t-full")).await;
+        body["revision"].as_str().unwrap().to_string()
+    };
+    let (_t1, app_v1) = app_with_stored_queries(
+        &[
+            ("find_person", FIND_PERSON_GQ, true),
+            ("other", other_v1, true),
+        ],
+        &[("act-full", "t-full")],
+        INVOKE_POLICY_YAML,
+    )
+    .await;
+    let (_t2, app_v2) = app_with_stored_queries(
+        &[
+            ("find_person", FIND_PERSON_GQ, true),
+            ("other", other_v2, true),
+        ],
+        &[("act-full", "t-full")],
+        INVOKE_POLICY_YAML,
+    )
+    .await;
+    let discovered = catalog_revision(app_v1).await;
+    let current = catalog_revision(app_v2.clone()).await;
+    assert_ne!(discovered, current);
+
+    // `find_person` itself did not change, but the catalog did.
+    let (status, body) = json_response(
+        &app_v2,
+        invoke_request(
+            "find_person",
+            "t-full",
+            json!({ "params": { "name": "Alice" }, "expected_catalog_revision": discovered }),
+        ),
+    )
+    .await;
+    assert_eq!(status, StatusCode::PRECONDITION_FAILED, "body: {body}");
+    assert_eq!(
+        body["precondition_failure"]["actual"], current,
+        "body: {body}"
+    );
+
+    let (status, body) = json_response(
+        &app_v2,
+        invoke_request(
+            "find_person",
+            "t-full",
+            json!({ "params": { "name": "Alice" }, "expected_catalog_revision": current }),
+        ),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "body: {body}");
+}

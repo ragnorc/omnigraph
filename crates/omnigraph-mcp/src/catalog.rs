@@ -368,6 +368,7 @@ pub(super) fn query_schema() -> Value {
             "params": {"type": "object", "description": "Values keyed by the query's declared parameter names, without `$`."},
             "branch": text_schema("Branch to read. Defaults to `main`. Not with `snapshot`."),
             "snapshot": text_schema("Graph commit id to read instead of a branch head."),
+            "catalog_revision": text_schema("With `name`, the `revision` of the catalog `queries` returned: if any stored query changed since, the call fails with 412."),
         }),
         &[],
     )
@@ -492,6 +493,7 @@ pub(super) fn mutate_schema() -> Value {
             "params": {"type": "object", "description": "Values keyed by the mutation's declared parameter names, without `$`."},
             "branch": text_schema("Branch to write. Defaults to `main`."),
             "if_graph_commit": text_schema("Write only while the branch head is still this `graph_commit_id`."),
+            "catalog_revision": text_schema("With `name`, the `revision` of the catalog `queries` returned: if any stored query changed since, the call fails with 412 and nothing is written."),
         }),
         &[],
     )

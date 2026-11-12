@@ -386,6 +386,7 @@ mod tests {
                     params: vec![param("count", ParamKind::BigInt, None, None, false)],
                 },
             ],
+            revision: Some("c1".into()),
         };
         let mut human = Vec::new();
         write_queries_catalog(&catalog, false, &mut human).unwrap();
@@ -412,8 +413,15 @@ mod tests {
             assert!(write_queries_catalog(&catalog, json, &mut full).is_err());
         }
         let mut empty = Vec::new();
-        write_queries_catalog(&QueriesCatalogOutput { queries: vec![] }, false, &mut empty)
-            .unwrap();
+        write_queries_catalog(
+            &QueriesCatalogOutput {
+                queries: vec![],
+                revision: None,
+            },
+            false,
+            &mut empty,
+        )
+        .unwrap();
         assert_eq!(empty, b"(no stored queries registered)\n");
     }
 
