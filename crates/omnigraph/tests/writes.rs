@@ -4700,6 +4700,44 @@ async fn mutate_expected_head_precondition_issue_365() {
     assert_ne!(feature_head, inherited_head);
 }
 
+/// GitHub #1397: a write bound to the commit its rows were read at should
+/// hold while later commits change nothing the write touches. Here the only
+/// commit after the read inserts a `Company`; the bound update of `Person`
+/// touches neither that row nor that table. The only binding the engine
+/// offers, `expected_head` (`Omnigraph-If-Graph-Commit`), compares the whole
+/// branch head, so it refuses this write with `PreconditionFailed`.
+#[tokio::test]
+async fn bound_update_survives_a_commit_to_another_type_issue_1397() {
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap().to_string();
+    let db = init_and_load(&dir).await;
+    let read_at = head_commit_id(&uri).await;
+
+    // Another writer commits to an unrelated type after the read.
+    db.mutate(
+        "main",
+        "query add_company($name: String) { insert Company { name: $name } }",
+        "add_company",
+        &params(&[("$name", "Acme")]),
+    )
+    .await
+    .unwrap();
+    assert_ne!(head_commit_id(&uri).await, read_at);
+
+    let receipt = db
+        .mutate_as_with_expected_head_receipt(
+            "main",
+            MUTATION_QUERIES,
+            "set_age",
+            &mixed_params(&[("$name", "Alice")], &[("$age", 31)]),
+            None,
+            Some(&read_at),
+        )
+        .await
+        .expect("a commit to another type must not refuse a write bound to the read commit");
+    assert_eq!(receipt.result.affected_nodes, 1);
+}
+
 /// A warm handle may refresh its manifest after another handle publishes.
 /// The read token and the following write capture must both prefer the exact
 /// graph-head row from that refreshed manifest over the handle's older derived
