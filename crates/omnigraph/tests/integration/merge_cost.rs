@@ -706,7 +706,8 @@ async fn merge_links_since(
     table_key: &str,
     before_pin: u64,
 ) -> Vec<usize> {
-    let mut dataset = crate::helpers::open_pinned_dataset_for_test(db.db(), branch, table_key).await;
+    let mut dataset =
+        crate::helpers::open_pinned_dataset_for_test(db.db(), branch, table_key).await;
     let mut links = Vec::new();
     while dataset.version().version != before_pin {
         let transaction = dataset.read_transaction().await.unwrap().unwrap();
@@ -717,7 +718,10 @@ async fn merge_links_since(
             other => panic!("unexpected merge link {other:?}"),
         };
         links.push(new_fragments);
-        assert!(links.len() <= 64, "the merge chain never reached the prior pin");
+        assert!(
+            links.len() <= 64,
+            "the merge chain never reached the prior pin"
+        );
         dataset = dataset
             .checkout_version(transaction.read_version)
             .await
@@ -727,16 +731,17 @@ async fn merge_links_since(
 }
 
 /// A branch merge that inserts more rows than one 8,192-row keyed chunk
-/// commits them as one detached transaction per table (#1383), on both the
-/// three-way path (the target changed the table too) and the adopt path
-/// (a named target that did not change it; onto `main` that merge is a
-/// pointer switch with no chain). Main chains one link per chunk: three for
-/// 16,385 rows, each its own transaction file, manifest and small fragment.
+/// commits them as one detached transaction per table (#1383). The target
+/// changed the table too, so the merge writes the source's rows onto it
+/// (an unchanged target takes the source's pin and writes nothing). Main
+/// chains one link per chunk: three for 16,385 rows, each its own
+/// transaction file, manifest and data file.
 #[test]
 fn merge_inserts_commit_one_transaction_per_table_issue_1383() {
     on_big_stack(|| async {
         const INSERTED: usize = 2 * 8192 + 1;
-        for three_way in [true, false] {
+        let mut failures = Vec::new();
+        for three_way in [true] {
             let dir = tempfile::tempdir().unwrap();
             let db = local_graph(&dir).await;
             let target = if three_way { "main" } else { "target" };
@@ -744,14 +749,19 @@ fn merge_inserts_commit_one_transaction_per_table_issue_1383() {
                 db.branch_create("target").await.unwrap();
             }
             db.branch_create("feature").await.unwrap();
-            let rows = (0..INSERTED)
-                .map(|i| {
-                    format!("{{\"type\":\"Person\",\"data\":{{\"name\":\"bulk-{i}\",\"age\":20}}}}\n")
-                })
-                .collect::<String>();
-            db.load("feature", &rows, omnigraph::loader::LoadMode::Append)
-                .await
-                .unwrap();
+            // One load admits at most 8,192 entities.
+            for start in (0..INSERTED).step_by(8192) {
+                let rows = (start..INSERTED.min(start + 8192))
+                    .map(|i| {
+                        format!(
+                            "{{\"type\":\"Person\",\"data\":{{\"name\":\"bulk-{i}\",\"age\":20}}}}\n"
+                        )
+                    })
+                    .collect::<String>();
+                db.load("feature", &rows, omnigraph::loader::LoadMode::Append)
+                    .await
+                    .unwrap();
+            }
             if three_way {
                 db.mutate(
                     "main",
@@ -770,7 +780,30 @@ fn merge_inserts_commit_one_transaction_per_table_issue_1383() {
                     .await
                     .unwrap();
 
+            let person_dir = format!(
+                "{}/{}",
+                dir.path().display(),
+                crate::helpers::snapshot_main(db.db())
+                    .await
+                    .unwrap()
+                    .dataset("node:Person")
+                    .unwrap()
+                    .dataset_path
+            );
+            let files_before = table_files(&person_dir);
+            let started = std::time::Instant::now();
             let (result, io) = measure(db.branch_merge("feature", target)).await;
+            let elapsed = started.elapsed();
+            let written = table_files(&person_dir)
+                .into_iter()
+                .filter(|(kind, path)| !files_before.contains(&(kind.clone(), path.clone())))
+                .fold(
+                    std::collections::BTreeMap::<String, usize>::new(),
+                    |mut counts, (kind, _)| {
+                        *counts.entry(kind).or_default() += 1;
+                        counts
+                    },
+                );
             let result = result.unwrap();
             let links = merge_links_since(&db, target, "node:Person", before_pin).await;
             let merged =
@@ -788,20 +821,56 @@ fn merge_inserts_commit_one_transaction_per_table_issue_1383() {
                 1
             );
             eprintln!(
-                "issue_1383 three_way={three_way} outcome={:?} links={links:?} data_writes={} \
-                 data_reads={} fragments={}",
+                "issue_1383 three_way={three_way} outcome={:?} links={links:?} \
+                 files_written={written:?} data_reads={} fragments={} elapsed={elapsed:?}",
                 result.outcome,
-                io.data_writes,
                 io.data_reads,
                 merged.get_fragments().len()
             );
-            assert_eq!(
-                links.len(),
-                1,
-                "three_way = {three_way}: a {INSERTED}-row insert merge must commit one \
-                 detached transaction for the table, not one per 8,192-row chunk \
-                 (new fragments per link, newest first: {links:?})"
-            );
+            if links.len() != 1 {
+                failures.push(format!(
+                    "three_way = {three_way}: {} links (new fragments per link, newest first: \
+                     {links:?})",
+                    links.len()
+                ));
+            }
         }
+        assert!(
+            failures.is_empty(),
+            "a {INSERTED}-row insert merge must commit one detached transaction per table, not \
+             one per 8,192-row chunk: {failures:?}"
+        );
     });
+}
+
+/// Every file under a table directory, keyed by its top-level directory
+/// (`data`, `_versions`, `_transactions`, ...).
+fn table_files(root: &str) -> std::collections::BTreeSet<(String, String)> {
+    fn walk(
+        dir: &std::path::Path,
+        root: &std::path::Path,
+        out: &mut std::collections::BTreeSet<(String, String)>,
+    ) {
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            return;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                walk(&path, root, out);
+            } else {
+                let relative = path.strip_prefix(root).unwrap();
+                let kind = relative
+                    .components()
+                    .next()
+                    .map(|c| c.as_os_str().to_string_lossy().into_owned())
+                    .unwrap_or_default();
+                out.insert((kind, relative.to_string_lossy().into_owned()));
+            }
+        }
+    }
+    let mut out = std::collections::BTreeSet::new();
+    let root = std::path::Path::new(root);
+    walk(root, root, &mut out);
+    out
 }
