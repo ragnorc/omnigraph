@@ -1075,6 +1075,41 @@ impl Session {
         .await
     }
 
+    /// #1397 prototype (table scope): run the mutation only if no commit
+    /// after `since` changed a table it touches. Pins of every table the write
+    /// stages, and of each statement's target table, must equal their pins at
+    /// `since`; commits to other tables do not refuse it. A mismatch is the
+    /// same terminal `PreconditionFailed` as the graph-head form.
+    pub async fn mutate_as_unchanged_since_receipt(
+        &self,
+        branch: &str,
+        query_source: &str,
+        query_name: &str,
+        params: &ParamMap,
+        actor_id: Option<&str>,
+        since: &str,
+    ) -> Result<crate::MutationReceipt> {
+        let decl = omnigraph_compiler::find_named_query(query_source, query_name)
+            .map_err(query_lookup_error)?;
+        let (route, branch) = self
+            .resolve_write_route(&decl.write_mode, Some(branch), params, actor_id)
+            .await?;
+        let settings = self.effective(query_source)?;
+        self.mutate_with_current_actor(
+            &branch,
+            query_source,
+            query_name,
+            params,
+            actor_id,
+            Some(CallerPrecondition::UnchangedSince(since)),
+            settings.stage_write_concurrency(),
+            HistoryReleaseBytes(settings.history_release_bytes()),
+            WriteBudget::from_settings(&settings),
+            &route,
+        )
+        .await
+    }
+
     /// Executes a mutation with an optional branch selection. An omitted branch
     /// inherits an unattached child's recorded target and otherwise selects main.
     /// A supplied branch, including main, must match a child's recorded target.
@@ -1099,7 +1134,7 @@ impl Session {
             query_name,
             params,
             actor_id,
-            expected_head,
+            expected_head.map(CallerPrecondition::GraphHead),
             settings.stage_write_concurrency(),
             HistoryReleaseBytes(settings.history_release_bytes()),
             WriteBudget::from_settings(&settings),
@@ -1178,6 +1213,15 @@ impl Session {
             actor_id,
         )
     }
+}
+
+/// A caller's precondition on one mutation.
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum CallerPrecondition<'a> {
+    /// `Omnigraph-If-Graph-Commit`: the branch head is still this commit.
+    GraphHead(&'a str),
+    /// #1397 prototype: no commit after this one changed what the write touches.
+    UnchangedSince(&'a str),
 }
 
 impl Omnigraph {
@@ -1287,7 +1331,7 @@ impl Omnigraph {
         query_name: &str,
         params: &ParamMap,
         actor_id: Option<&str>,
-        expected_head: Option<&str>,
+        precondition: Option<CallerPrecondition<'_>>,
         stage_write_concurrency: usize,
         history_release_bytes: HistoryReleaseBytes,
         write_budget: WriteBudget,
@@ -1306,7 +1350,7 @@ impl Omnigraph {
                 query_name,
                 &resolved_params,
                 actor_id,
-                expected_head,
+                precondition,
                 stage_write_concurrency,
                 history_release_bytes,
                 first_attempt,
@@ -1324,6 +1368,71 @@ impl Omnigraph {
         }
     }
 
+    /// The tables a mutation attempt touches: every table it staged, and the
+    /// target table of each statement (a no-op stages nothing but still read
+    /// its target).
+    fn touched_tables(
+        ir: &omnigraph_compiler::ir::MutationIR,
+        staging: &MutationStaging,
+    ) -> std::collections::BTreeSet<String> {
+        let mut touched: std::collections::BTreeSet<String> =
+            staging.paths.keys().cloned().collect();
+        for op in &ir.ops {
+            let target = match op {
+                MutationOpIR::Insert { target, .. }
+                | MutationOpIR::Update { target, .. }
+                | MutationOpIR::Delete { target, .. } => target,
+            };
+            touched.insert(match target {
+                omnigraph_compiler::query::typecheck::MutationTarget::Node { type_name } => {
+                    format!("node:{type_name}")
+                }
+                omnigraph_compiler::query::typecheck::MutationTarget::Edge { type_name } => {
+                    format!("edge:{type_name}")
+                }
+            });
+        }
+        touched
+    }
+
+    async fn check_unchanged_since(
+        &self,
+        txn: &crate::db::WriteTxn,
+        ir: &omnigraph_compiler::ir::MutationIR,
+        staging: &MutationStaging,
+        since: &str,
+    ) -> Result<()> {
+        let branch = txn.branch.as_deref().unwrap_or("main");
+        let refused =
+            || OmniError::precondition_failed(branch, since, txn.effective_graph_head.clone());
+        if txn.effective_graph_head.as_deref() == Some(since) {
+            return Ok(());
+        }
+        let then = self
+            .snapshot_of(crate::db::ReadTarget::Snapshot(crate::db::SnapshotId::new(
+                since,
+            )))
+            .await?;
+        for key in Self::touched_tables(ir, staging) {
+            let same = match (txn.base.dataset(&key), then.dataset(&key)) {
+                (Some(now), Some(before)) => {
+                    now.identity == before.identity
+                        && now.dataset_path == before.dataset_path
+                        && now.native_dataset_branch == before.native_dataset_branch
+                        && now.published_dataset_version == before.published_dataset_version
+                        && now.version_metadata.staged_version()
+                            == before.version_metadata.staged_version()
+                }
+                (None, None) => true,
+                _ => false,
+            };
+            if !same {
+                return Err(refused());
+            }
+        }
+        Ok(())
+    }
+
     async fn mutate_one_attempt(
         &self,
         branch: &str,
@@ -1331,7 +1440,7 @@ impl Omnigraph {
         query_name: &str,
         params: &ParamMap,
         actor_id: Option<&str>,
-        expected_head: Option<&str>,
+        precondition: Option<CallerPrecondition<'_>>,
         stage_write_concurrency: usize,
         history_release_bytes: HistoryReleaseBytes,
         first_attempt: bool,
@@ -1366,7 +1475,7 @@ impl Omnigraph {
         // Caller CAS gate against the pinned view this attempt executes with —
         // a separate head lookup would reopen the race. Re-checked per
         // reprepare; not `ReadSetChanged`, so the retry loop never replays it.
-        if let Some(expected) = expected_head {
+        if let Some(CallerPrecondition::GraphHead(expected)) = precondition {
             let actual = txn.effective_graph_head.as_deref();
             if actual != Some(expected) {
                 return Err(OmniError::precondition_failed(
@@ -1420,6 +1529,17 @@ impl Omnigraph {
                 &txn,
             )
             .await;
+        // #1397 prototype: judge the scoped precondition against the pinned
+        // base this attempt executed on. A commit landing after this check
+        // moves the head, so `commit_all`'s revalidation prepares a fresh
+        // attempt, which judges it again.
+        let exec_result = match (exec_result, precondition) {
+            (Ok(total), Some(CallerPrecondition::UnchangedSince(since))) => self
+                .check_unchanged_since(&txn, &ir, &staging, since)
+                .await
+                .map(|()| total),
+            (result, _) => result,
+        };
 
         match exec_result {
             Err(e) => Err(e),

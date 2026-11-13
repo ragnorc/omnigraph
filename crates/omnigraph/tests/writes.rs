@@ -4738,6 +4738,191 @@ async fn bound_update_survives_a_commit_to_another_type_issue_1397() {
     assert_eq!(receipt.result.affected_nodes, 1);
 }
 
+/// #1397 prototype (table scope): `mutate_as_unchanged_since_receipt` refuses
+/// only when a commit after the read changed a table the write touches.
+#[tokio::test]
+async fn unchanged_since_is_scoped_to_touched_tables_issue_1397() {
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap().to_string();
+    let db = init_and_load(&dir).await;
+    let bound_set_age = |name: &'static str, age: i64, since: String| {
+        let db = &db;
+        async move {
+            db.mutate_as_unchanged_since_receipt(
+                "main",
+                MUTATION_QUERIES,
+                "set_age",
+                &mixed_params(&[("$name", name)], &[("$age", age)]),
+                None,
+                &since,
+            )
+            .await
+        }
+    };
+    let set_age = |name: &'static str, age: i64| {
+        let db = &db;
+        async move {
+            db.mutate(
+                "main",
+                MUTATION_QUERIES,
+                "set_age",
+                &mixed_params(&[("$name", name)], &[("$age", age)]),
+            )
+            .await
+            .unwrap();
+        }
+    };
+
+    // Bound to the current head: holds.
+    let head = head_commit_id(&uri).await;
+    bound_set_age("Alice", 31, head).await.unwrap();
+
+    // A commit to another type: holds.
+    let read_at = head_commit_id(&uri).await;
+    db.mutate(
+        "main",
+        "query add_company($name: String) { insert Company { name: $name } }",
+        "add_company",
+        &params(&[("$name", "Acme")]),
+    )
+    .await
+    .unwrap();
+    let receipt = bound_set_age("Alice", 32, read_at).await.unwrap();
+    assert_eq!(receipt.result.affected_nodes, 1);
+
+    // A commit to another row of the same type: the table changed, refused.
+    let read_at = head_commit_id(&uri).await;
+    set_age("Bob", 26).await;
+    let head_before = head_commit_id(&uri).await;
+    let err = bound_set_age("Alice", 33, read_at.clone())
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(&err, OmniError::PreconditionFailed { expected, .. } if *expected == read_at),
+        "{err}"
+    );
+    assert_eq!(
+        head_commit_id(&uri).await,
+        head_before,
+        "a refusal has no effect"
+    );
+
+    // A commit to the same row: refused.
+    let read_at = head_commit_id(&uri).await;
+    set_age("Alice", 40).await;
+    assert!(matches!(
+        bound_set_age("Alice", 34, read_at).await.unwrap_err(),
+        OmniError::PreconditionFailed { .. }
+    ));
+
+    // A no-op bound to a read its target table changed after: refused.
+    let read_at = head_commit_id(&uri).await;
+    set_age("Bob", 27).await;
+    assert!(matches!(
+        bound_set_age("Nobody", 1, read_at).await.unwrap_err(),
+        OmniError::PreconditionFailed { .. }
+    ));
+}
+
+/// #1397 prototype instrument: object-store reads of one `set_age` by binding
+/// form, each after one commit to another type (and, last, to another row of
+/// `Person`) since the read.
+#[tokio::test]
+#[ignore = "instrument: #1397 prototype, reads of a bound write by binding form"]
+async fn unchanged_since_read_cost_instrument_issue_1397() {
+    use helpers::cost::measure;
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap().to_string();
+    let db = init_and_load(&dir).await;
+    let mut n = 0;
+    let mut company = || {
+        n += 1;
+        format!("Co{n}")
+    };
+    for form in [
+        "unbound",
+        "graph_head",
+        "unchanged_since",
+        "unchanged_since_same_type",
+    ] {
+        for _ in 0..2 {
+            let read_at = head_commit_id(&uri).await;
+            if form == "unchanged_since_same_type" {
+                db.mutate(
+                    "main",
+                    MUTATION_QUERIES,
+                    "set_age",
+                    &mixed_params(&[("$name", "Bob")], &[("$age", 50)]),
+                )
+                .await
+                .unwrap();
+            } else {
+                db.mutate(
+                    "main",
+                    "query add_company($name: String) { insert Company { name: $name } }",
+                    "add_company",
+                    &params(&[("$name", &company())]),
+                )
+                .await
+                .unwrap();
+            }
+            let head = head_commit_id(&uri).await;
+            let p = mixed_params(&[("$name", "Alice")], &[("$age", 31)]);
+            let (result, counts) = measure(async {
+                let fresh = helpers::session(Omnigraph::open(&uri).await.unwrap());
+                match form {
+                    "unbound" => {
+                        fresh
+                            .mutate_as_with_expected_head_receipt(
+                                "main",
+                                MUTATION_QUERIES,
+                                "set_age",
+                                &p,
+                                None,
+                                None,
+                            )
+                            .await
+                    }
+                    "graph_head" => {
+                        fresh
+                            .mutate_as_with_expected_head_receipt(
+                                "main",
+                                MUTATION_QUERIES,
+                                "set_age",
+                                &p,
+                                None,
+                                Some(&head),
+                            )
+                            .await
+                    }
+                    _ => {
+                        fresh
+                            .mutate_as_unchanged_since_receipt(
+                                "main",
+                                MUTATION_QUERIES,
+                                "set_age",
+                                &p,
+                                None,
+                                &read_at,
+                            )
+                            .await
+                    }
+                }
+            })
+            .await;
+            eprintln!(
+                "issue_1397 form={form} ok={} total_reads={} manifest_reads={} data_reads={} data_opens={} manifest_scans={}",
+                result.is_ok(),
+                counts.total_reads(),
+                counts.manifest_reads,
+                counts.data_reads,
+                counts.data_open_count,
+                counts.manifest_scan_count,
+            );
+        }
+    }
+}
+
 /// A warm handle may refresh its manifest after another handle publishes.
 /// The read token and the following write capture must both prefer the exact
 /// graph-head row from that refreshed manifest over the handle's older derived
