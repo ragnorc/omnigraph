@@ -459,6 +459,18 @@ impl Refusal {
 /// apache/datafusion#25804).
 const SORT_MERGE_CONSUMER: &str = "ExternalSorterMerge[";
 
+const SORT_BUFFER_CONSUMER: &str = "ExternalSorter[";
+
+/// The partition a sort's buffer (`ExternalSorter[n]`) or merge
+/// (`ExternalSorterMerge[n]`) reservation belongs to. One sort's two
+/// reservations share one half-budget cap, so the merge memory the sort holds
+/// from its first input batch comes out of the buffer's half and the graph
+/// work producing the sort's input keeps the other half (#1370).
+fn sort_partition(name: &str) -> Option<&str> {
+    name.strip_prefix(SORT_MERGE_CONSUMER)
+        .or_else(|| name.strip_prefix(SORT_BUFFER_CONSUMER))
+}
+
 /// Whether a reservation is capped like a spilling one: a consumer that can
 /// spill, or a sort's merge. A refused merge growth narrows the next pass only
 /// above the two-file minimum; refused below it, or while the merge builds an
@@ -581,6 +593,25 @@ impl MemoryPool for SpillHeadroomPool {
                     reservation.consumer().name(),
                 )),
             );
+        }
+        if let Some(partition) = sort_partition(reservation.consumer().name()) {
+            let sort: usize = self
+                .inner
+                .metrics()
+                .iter()
+                .filter(|consumer| sort_partition(&consumer.name) == Some(partition))
+                .map(|consumer| consumer.reserved)
+                .sum();
+            if additional > spill_limit.saturating_sub(sort) {
+                return self.refused(
+                    refusal,
+                    DataFusionError::ResourcesExhausted(format!(
+                        "{} cannot reserve {additional} bytes: its sort holds {sort} bytes, \
+                         spilling threshold is {spill_limit} bytes",
+                        reservation.consumer().name(),
+                    )),
+                );
+            }
         }
         match self.inner.try_grow(reservation, additional) {
             Ok(()) => Ok(()),
