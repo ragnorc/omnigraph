@@ -4875,7 +4875,42 @@ async fn commit_keyed_stream_chunks(
             | KeyedChunkStage::ProvenStrictInsert
     );
     let mut pending_inserts = Vec::new();
-    for (chunk_index, expected_rows) in chunk_rows.iter().copied().enumerate() {
+    // PROTOTYPE (#1383 option B): one Lance insert writer for every chunk.
+    if combine_inserts {
+        let stage_timing = crate::instrumentation::start_merge_timing(
+            crate::instrumentation::MergeTimingPhase::KeyedStage,
+        );
+        let chunks = futures::stream::unfold(
+            (&mut stream, &mut carry, chunk_rows.iter().copied()),
+            move |(stream, carry, mut sizes)| async move {
+                let expected = sizes.next()?;
+                let chunk =
+                    next_exact_staged_chunk(stream, carry, schema, expected, write_budget).await;
+                Some((chunk, (stream, carry, sizes)))
+            },
+        )
+        .boxed();
+        let staged = target_db
+            .storage()
+            .stage_strict_insert_stream(
+                current.clone(),
+                table_key,
+                chunks,
+                matches!(stage_kind, KeyedChunkStage::ProvenStrictInsert),
+                system_columns,
+                write_budget,
+            )
+            .await?;
+        stage_timing.finish();
+        observed_rows = chunk_rows.iter().map(|rows| *rows as u64).sum();
+        pending_inserts.push(staged);
+    }
+    for (chunk_index, expected_rows) in chunk_rows
+        .iter()
+        .copied()
+        .enumerate()
+        .filter(|_| !combine_inserts)
+    {
         let batch =
             next_exact_staged_chunk(&mut stream, &mut carry, schema, expected_rows, write_budget)
                 .await?;

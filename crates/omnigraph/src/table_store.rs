@@ -4074,6 +4074,175 @@ impl TableStore {
         .await
     }
 
+    /// PROTOTYPE (#1383 option B): stage every exact chunk of a branch
+    /// merge's strict insert through ONE Lance insert writer against one
+    /// pinned parent. Each chunk keeps its own checks (id validation, the
+    /// target preflight unless `proven`, Blob preparation, the materialized
+    /// Blob check), its ids go into one key filter, and the writer cuts files
+    /// by `max_rows_per_file` / `max_bytes_per_file` instead of one fragment
+    /// per chunk. One chunk is in flight at a time (channel capacity one).
+    pub async fn stage_strict_insert_stream(
+        &self,
+        ds: Dataset,
+        table_key: &str,
+        mut chunks: futures::stream::BoxStream<'_, Result<RecordBatch>>,
+        proven: bool,
+        system_columns: SystemColumns,
+        write_budget: WriteBudget,
+    ) -> Result<StagedWrite> {
+        use futures::{SinkExt, StreamExt};
+        const CONTEXT: &str = "stage_strict_insert_stream";
+        if proven && !ds.manifest.uses_stable_row_ids() {
+            return Err(OmniError::manifest_internal(format!(
+                "{CONTEXT} requires stable target row ids for {table_key}"
+            )));
+        }
+        let id_field_id = exact_id_primary_key_field_id(&ds, system_columns, CONTEXT)?;
+        let fields_for_preserving_frag_bitmap = schema_preorder_field_ids(&ds, CONTEXT)?;
+        let expected_read_version = ds.version().version;
+        let ds = Arc::new(ds);
+        let mut filter_builder = KeyExistenceFilterBuilder::new(vec![id_field_id]);
+        let mut rows = 0_u64;
+
+        // One prepared chunk, checked exactly as the per-chunk adapter checks it.
+        let mut prepare = async |batch: RecordBatch,
+                                 filter_builder: &mut KeyExistenceFilterBuilder,
+                                 rows: &mut u64|
+               -> Result<RecordBatch> {
+            let usage = write_batch_bytes(&batch)?;
+            write_budget.check(MATERIALIZED_BLOB_PAYLOAD_BYTES, usage.payload)?;
+            if batch.num_rows() == 0
+                || batch.num_rows() > KEYED_WRITE_MAX_ROWS
+                || usage.rows > write_budget.bytes()
+            {
+                return Err(OmniError::manifest_internal(format!(
+                    "{CONTEXT}: chunk outside its bound for {table_key}"
+                )));
+            }
+            let source_ids =
+                validate_keyed_write_batch_ids(&batch, system_columns, table_key, CONTEXT)?;
+            if !proven {
+                Self::preflight_strict_insert_ids(&ds, table_key, &source_ids, system_columns)
+                    .await?;
+            }
+            let batch = self
+                .prepare_keyed_write_batch(table_key, batch, system_columns, write_budget)
+                .await?;
+            ensure_proven_insert_blobs_are_materialized(&batch, table_key)?;
+            for id in source_ids {
+                filter_builder
+                    .insert(KeyValue::String(id))
+                    .map_err(OmniError::lance_internal)?;
+            }
+            *rows += batch.num_rows() as u64;
+            Ok(batch)
+        };
+
+        let first = chunks.next().await.ok_or_else(|| {
+            OmniError::manifest_internal(format!("{CONTEXT} called with no chunks"))
+        })??;
+        let first = prepare(first, &mut filter_builder, &mut rows).await?;
+        let schema = first.schema();
+        let (mut sender, receiver) =
+            futures::channel::mpsc::channel::<datafusion::error::Result<RecordBatch>>(1);
+        let source = Box::pin(
+            datafusion::physical_plan::stream::RecordBatchStreamAdapter::new(
+                schema.clone(),
+                receiver,
+            ),
+        ) as datafusion::physical_plan::SendableRecordBatchStream;
+        let params = WriteParams {
+            mode: WriteMode::Append,
+            file_writer_options: Some(budgeted_file_writer_options(write_budget)),
+            allow_external_blob_outside_bases: false,
+            auto_cleanup: None,
+            skip_auto_cleanup: true,
+            ..Default::default()
+        };
+        let writer = {
+            let ds = ds.clone();
+            async move {
+                InsertBuilder::new(ds)
+                    .with_params(&params)
+                    .execute_uncommitted_stream(source)
+                    .await
+                    .map_err(|error| OmniError::storage(error).unpublished())
+            }
+        };
+        let producer = async {
+            sender
+                .send(Ok(first))
+                .await
+                .map_err(|_| OmniError::manifest_internal(format!("{CONTEXT}: writer stopped")))?;
+            while let Some(chunk) = chunks.next().await {
+                let batch = prepare(chunk?, &mut filter_builder, &mut rows).await?;
+                sender.send(Ok(batch)).await.map_err(|_| {
+                    OmniError::manifest_internal(format!("{CONTEXT}: writer stopped"))
+                })?;
+            }
+            sender.close_channel();
+            Ok::<_, OmniError>(())
+        };
+        let (mut transaction, ()) = futures::try_join!(writer, producer)?;
+        if transaction.read_version != expected_read_version {
+            return Err(OmniError::manifest_internal(format!(
+                "{CONTEXT} wrote against version {}, expected {expected_read_version}",
+                transaction.read_version
+            )));
+        }
+        let transaction_fragments = match &transaction.operation {
+            Operation::Append { fragments } => fragments.clone(),
+            _ => {
+                return Err(OmniError::manifest_internal(format!(
+                    "{CONTEXT}: expected Lance Append staging operation"
+                )));
+            }
+        };
+        let physical_rows = transaction_fragments
+            .iter()
+            .map(|fragment| fragment.physical_rows.unwrap_or(0) as u64)
+            .sum::<u64>();
+        if physical_rows != rows || filter_builder.len() as u64 != rows {
+            return Err(OmniError::manifest_internal(format!(
+                "{CONTEXT}: wrote {physical_rows} rows for {rows} chunk rows"
+            )));
+        }
+        transaction.operation = Operation::Update {
+            removed_fragment_ids: Vec::new(),
+            updated_fragments: Vec::new(),
+            new_fragments: transaction_fragments.clone(),
+            fields_modified: Vec::new(),
+            compacted_sstables: Vec::new(),
+            fields_for_preserving_frag_bitmap,
+            update_mode: Some(UpdateMode::RewriteRows),
+            inserted_rows_filter: Some(filter_builder.build()),
+            updated_fragment_offsets: None,
+        };
+        validate_transaction_exact_id_filter(&transaction, id_field_id, CONTEXT)?;
+        // The per-chunk certificate rebuilds the filter from every id; the
+        // prototype trusts the one builder instead of retaining every id.
+        let properties = transaction
+            .transaction_properties
+            .get_or_insert_with(|| Arc::new(HashMap::new()));
+        Arc::make_mut(properties).insert(
+            INSERT_ABSENCE_PROPERTY.to_string(),
+            INSERT_ABSENCE_V1.to_string(),
+        );
+        let mut visible_fragments = transaction_fragments;
+        let next_id_base = ds.manifest.max_fragment_id.unwrap_or(0) as u64 + 1;
+        assign_fragment_ids(&mut visible_fragments, next_id_base);
+        if ds.manifest.uses_stable_row_ids() {
+            assign_row_id_meta(&mut visible_fragments, ds.manifest.next_row_id)?;
+        }
+        crate::instrumentation::record_stage_fenced_insert(rows);
+        Ok(StagedWrite::with_commit_metadata(
+            transaction,
+            StagedCommitMetadata::affected_rows(Some(RowAddrTreeMap::new())),
+            visible_fragments,
+            Vec::new(),
+        ))
+    }
+
     /// Stage one strict insertion whose caller has already proved every source
     /// id absent from this exact pinned parent.
     ///

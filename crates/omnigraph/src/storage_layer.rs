@@ -819,6 +819,18 @@ pub trait TableStorage: sealed::Sealed + Send + Sync + Debug {
         write_budget: WriteBudget,
     ) -> Result<StagedHandle>;
 
+    /// PROTOTYPE (#1383 option B): every exact strict-insert chunk through
+    /// one Lance insert writer, staged as one filter-bearing `Update`.
+    async fn stage_strict_insert_stream(
+        &self,
+        snapshot: SnapshotHandle,
+        table_key: &str,
+        chunks: futures::stream::BoxStream<'_, Result<RecordBatch>>,
+        proven: bool,
+        system_columns: SystemColumns,
+        write_budget: WriteBudget,
+    ) -> Result<StagedHandle>;
+
     /// Blob-aware full-row stream with an explicit batch ceiling. Branch
     /// adoption uses this to turn a large all-new delta into an exact chain of
     /// bounded fenced writes instead of one delta-wide hash join.
@@ -1460,6 +1472,29 @@ impl TableStorage for TableStore {
         TableStore::stage_proven_strict_insert(self, ds, chunk, system_columns, write_budget)
             .await
             .map(StagedHandle::new)
+    }
+
+    async fn stage_strict_insert_stream(
+        &self,
+        snapshot: SnapshotHandle,
+        table_key: &str,
+        chunks: futures::stream::BoxStream<'_, Result<RecordBatch>>,
+        proven: bool,
+        system_columns: SystemColumns,
+        write_budget: WriteBudget,
+    ) -> Result<StagedHandle> {
+        let ds = Arc::try_unwrap(snapshot.into_arc()).unwrap_or_else(|arc| (*arc).clone());
+        TableStore::stage_strict_insert_stream(
+            self,
+            ds,
+            table_key,
+            chunks,
+            proven,
+            system_columns,
+            write_budget,
+        )
+        .await
+        .map(StagedHandle::new)
     }
 
     async fn scan_stream_for_rewrite_bounded(
