@@ -380,18 +380,20 @@ concurrent BTREE builds stay bounded.
 
 ## Filed issues
 
+Filed on ModernRelay/omnigraph on 2026-11-13 (UTC). Code links in the issues point at the audited commit.
+
 | Finding ID | Entry | Action | Link |
 |---|---|---|---|
-| L-merge-source-stats | 1 | filed | pending |
-| L-manifest-open-at-version | 2 | filed | pending |
-| L-manifest-scan-store | 3 | filed | pending |
-| L-ref-reads-one-get | 4 | filed | pending |
-| L-merge-chain-one-commit | 5 | filed | pending |
-| L-compaction-task-concurrency | 6 | filed | pending |
-| L-index-build-concurrency | 7 | filed | pending |
-| L-detached-affected-rows, L-source-bytes-serial, L-fork-absent-listing, O-bound-scoped-read-retry, doc mismatch | 8 | filed (one issue) | pending |
-| L-publisher-load-probe | 9 | commented | #837 |
-| O-delete-stream-bulk | 9 | commented | #1252 |
+| L-merge-source-stats | 1 | filed | [#1379](https://github.com/ModernRelay/omnigraph/issues/1379) |
+| L-manifest-open-at-version | 2 | filed | [#1380](https://github.com/ModernRelay/omnigraph/issues/1380) |
+| L-manifest-scan-store | 3 | filed | [#1381](https://github.com/ModernRelay/omnigraph/issues/1381) |
+| L-ref-reads-one-get | 4 | filed | [#1382](https://github.com/ModernRelay/omnigraph/issues/1382) |
+| L-merge-chain-one-commit | 5 | filed | [#1383](https://github.com/ModernRelay/omnigraph/issues/1383) |
+| L-compaction-task-concurrency | 6 | filed | [#1384](https://github.com/ModernRelay/omnigraph/issues/1384) |
+| L-index-build-concurrency | 7 | filed | [#1385](https://github.com/ModernRelay/omnigraph/issues/1385) |
+| L-detached-affected-rows, L-source-bytes-serial, L-fork-absent-listing, O-bound-scoped-read-retry, doc mismatch | 8 | filed (one issue) | [#1386](https://github.com/ModernRelay/omnigraph/issues/1386) |
+| L-publisher-load-probe | 9 | commented | [#837](https://github.com/ModernRelay/omnigraph/issues/837#issuecomment-6851617875) |
+| O-delete-stream-bulk | 9 | commented | [#1252](https://github.com/ModernRelay/omnigraph/issues/1252#issuecomment-6851618372) |
 
 Already reported and skipped: L1 (#1250), L4 (#1252), L7 (#1095), L9 (#1256), L11 and L12
 (#1262), L14 (#1258), L2 (#1248), L13 (#1264). The collector's per-version table opens stay
