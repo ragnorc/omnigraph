@@ -1215,6 +1215,34 @@ impl Session {
     }
 }
 
+/// Every `(table key, id)` an attempt's staging writes or deletes.
+fn affected_ids(
+    staging: &MutationStaging,
+    id_column: &str,
+) -> Result<std::collections::HashSet<(String, String)>> {
+    use arrow_array::Array;
+    let mut ids = std::collections::HashSet::new();
+    for (key, pending) in &staging.pending {
+        for batch in &pending.batches {
+            let column = batch
+                .column_by_name(id_column)
+                .and_then(|column| column.as_any().downcast_ref::<arrow_array::StringArray>())
+                .ok_or_else(|| {
+                    OmniError::manifest_internal(format!("pending batch of {key} has no id"))
+                })?;
+            for row in 0..column.len() {
+                if column.is_valid(row) {
+                    ids.insert((key.clone(), column.value(row).to_string()));
+                }
+            }
+        }
+    }
+    for (key, deleted) in &staging.deleted_ids {
+        ids.extend(deleted.iter().map(|id| (key.clone(), id.clone())));
+    }
+    Ok(ids)
+}
+
 /// A caller's precondition on one mutation.
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum CallerPrecondition<'a> {
@@ -1395,11 +1423,15 @@ impl Omnigraph {
         touched
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn check_unchanged_since(
         &self,
         txn: &crate::db::WriteTxn,
         ir: &omnigraph_compiler::ir::MutationIR,
+        params: &ParamMap,
+        branch_name: Option<&str>,
         staging: &MutationStaging,
+        write_budget: WriteBudget,
         since: &str,
     ) -> Result<()> {
         let branch = txn.branch.as_deref().unwrap_or("main");
@@ -1413,6 +1445,10 @@ impl Omnigraph {
                 since,
             )))
             .await?;
+        if then.schema_contract() != txn.base.schema_contract() {
+            return Err(refused());
+        }
+        let mut moved = Vec::new();
         for key in Self::touched_tables(ir, staging) {
             let same = match (txn.base.dataset(&key), then.dataset(&key)) {
                 (Some(now), Some(before)) => {
@@ -1427,8 +1463,69 @@ impl Omnigraph {
                 _ => false,
             };
             if !same {
-                return Err(refused());
+                if txn.base.dataset(&key).is_none() || then.dataset(&key).is_none() {
+                    return Err(refused());
+                }
+                moved.push(key);
             }
+        }
+        if moved.is_empty() {
+            return Ok(());
+        }
+        // #1397 prototype (row scope): a moved table refuses only when a row
+        // it changed after `since` is one the write touches now, or would
+        // have touched at `since`.
+        let Some(to) = txn.effective_graph_head.clone() else {
+            return Err(refused());
+        };
+        let type_names: Vec<String> = moved
+            .iter()
+            .filter_map(|key| key.split_once(':').map(|(_, name)| name.to_string()))
+            .collect();
+        let mut changed: std::collections::HashSet<(String, String)> = Default::default();
+        let mut page_token = None;
+        loop {
+            let page = self
+                .diff_page(&crate::changes::GraphDiffRequest {
+                    sides: crate::changes::GraphDiffSides::Between {
+                        from: since.to_string(),
+                        to: to.clone(),
+                    },
+                    scope: crate::changes::ChangeFeedScope {
+                        kinds: None,
+                        type_names: Some(type_names.clone()),
+                        ops: None,
+                    },
+                    page_token: page_token.take(),
+                    max_changes: None,
+                    max_bytes: None,
+                })
+                .await?;
+            for change in page.changes {
+                let prefix = match change.kind {
+                    crate::changes::ChangeEntityKind::Node => "node",
+                    crate::changes::ChangeEntityKind::Edge => "edge",
+                };
+                changed.insert((format!("{prefix}:{}", change.entity_type.name), change.id));
+            }
+            match page.next_page_token {
+                Some(token) => page_token = Some(token),
+                None => break,
+            }
+        }
+        if changed.is_empty() {
+            return Ok(());
+        }
+        let id_column = txn.catalog.system_columns.id;
+        let mut touched = affected_ids(staging, id_column)?;
+        let mut then_txn = txn.clone();
+        then_txn.base = then;
+        let mut then_staging = MutationStaging::new(write_budget);
+        self.execute_named_mutation(ir, params, branch_name, &mut then_staging, &then_txn)
+            .await?;
+        touched.extend(affected_ids(&then_staging, id_column)?);
+        if touched.iter().any(|row| changed.contains(row)) {
+            return Err(refused());
         }
         Ok(())
     }
@@ -1535,7 +1632,15 @@ impl Omnigraph {
         // attempt, which judges it again.
         let exec_result = match (exec_result, precondition) {
             (Ok(total), Some(CallerPrecondition::UnchangedSince(since))) => self
-                .check_unchanged_since(&txn, &ir, &staging, since)
+                .check_unchanged_since(
+                    &txn,
+                    &ir,
+                    &resolved_params,
+                    requested.as_deref(),
+                    &staging,
+                    write_budget,
+                    since,
+                )
                 .await
                 .map(|()| total),
             (result, _) => result,

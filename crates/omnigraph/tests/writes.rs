@@ -4738,10 +4738,11 @@ async fn bound_update_survives_a_commit_to_another_type_issue_1397() {
     assert_eq!(receipt.result.affected_nodes, 1);
 }
 
-/// #1397 prototype (table scope): `mutate_as_unchanged_since_receipt` refuses
-/// only when a commit after the read changed a table the write touches.
+/// #1397 prototype (row scope): `mutate_as_unchanged_since_receipt` refuses
+/// only when a commit after the read changed a row the write touches now or
+/// would have touched at the read.
 #[tokio::test]
-async fn unchanged_since_is_scoped_to_touched_tables_issue_1397() {
+async fn unchanged_since_is_scoped_to_touched_rows_issue_1397() {
     let dir = tempfile::tempdir().unwrap();
     let uri = dir.path().to_str().unwrap().to_string();
     let db = init_and_load(&dir).await;
@@ -4790,11 +4791,23 @@ async fn unchanged_since_is_scoped_to_touched_tables_issue_1397() {
     let receipt = bound_set_age("Alice", 32, read_at).await.unwrap();
     assert_eq!(receipt.result.affected_nodes, 1);
 
-    // A commit to another row of the same type: the table changed, refused.
+    // A commit to another row of the same type: row scope holds.
     let read_at = head_commit_id(&uri).await;
     set_age("Bob", 26).await;
+    bound_set_age("Alice", 33, read_at).await.unwrap();
+
+    // A row inserted after the read that the predicate now matches: refused.
+    let read_at = head_commit_id(&uri).await;
+    db.mutate(
+        "main",
+        MUTATION_QUERIES,
+        "insert_person",
+        &mixed_params(&[("$name", "Dana")], &[("$age", 20)]),
+    )
+    .await
+    .unwrap();
     let head_before = head_commit_id(&uri).await;
-    let err = bound_set_age("Alice", 33, read_at.clone())
+    let err = bound_set_age("Dana", 21, read_at.clone())
         .await
         .unwrap_err();
     assert!(
@@ -4807,6 +4820,22 @@ async fn unchanged_since_is_scoped_to_touched_tables_issue_1397() {
         "a refusal has no effect"
     );
 
+    // A row deleted after the read that the write matched then: refused,
+    // though the write matches nothing now.
+    let read_at = head_commit_id(&uri).await;
+    db.mutate(
+        "main",
+        MUTATION_QUERIES,
+        "remove_person",
+        &params(&[("$name", "Dana")]),
+    )
+    .await
+    .unwrap();
+    assert!(matches!(
+        bound_set_age("Dana", 22, read_at).await.unwrap_err(),
+        OmniError::PreconditionFailed { .. }
+    ));
+
     // A commit to the same row: refused.
     let read_at = head_commit_id(&uri).await;
     set_age("Alice", 40).await;
@@ -4815,13 +4844,11 @@ async fn unchanged_since_is_scoped_to_touched_tables_issue_1397() {
         OmniError::PreconditionFailed { .. }
     ));
 
-    // A no-op bound to a read its target table changed after: refused.
+    // A no-op whose rows nobody changed: row scope holds.
     let read_at = head_commit_id(&uri).await;
     set_age("Bob", 27).await;
-    assert!(matches!(
-        bound_set_age("Nobody", 1, read_at).await.unwrap_err(),
-        OmniError::PreconditionFailed { .. }
-    ));
+    let receipt = bound_set_age("Nobody", 1, read_at).await.unwrap();
+    assert_eq!(receipt.result.affected_nodes, 0);
 }
 
 /// #1397 prototype instrument: object-store reads of one `set_age` by binding
