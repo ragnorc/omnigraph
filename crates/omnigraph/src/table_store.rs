@@ -194,9 +194,14 @@ pub(crate) fn cap_sort_inputs_and_merge_partitions(
     })
 }
 
-/// DataFusion's sort spill reservation under a pool of `memory_limit` bytes.
+/// DataFusion's sort spill reservation under a pool of `memory_limit` bytes:
+/// the merge memory a sort holds from its first input batch. With the sort's
+/// buffer capped at half the pool, an eighth leaves three eighths for the
+/// graph work producing the sort's input, so whether that producer fits does
+/// not depend on how far it has run ahead of the sort (#1370). The merge
+/// still grows past it, up to half the pool, once the buffer has spilled.
 pub(crate) fn sort_spill_reservation_bytes(memory_limit: u64) -> usize {
-    (memory_limit / 3).min(40 * 1024 * 1024) as usize
+    (memory_limit / 8).min(40 * 1024 * 1024) as usize
 }
 
 /// The codec of every spill file the engine writes, in a query's session and
