@@ -1337,6 +1337,106 @@ async fn full_text_columns_without_segment(
 // accessors complete the staged-effect vocabulary.
 #[allow(dead_code)]
 impl StagedWrite {
+    /// PROTOTYPE (#1383): join certified strict-insert stages, each staged
+    /// against the same pinned parent, into one filter-bearing insertion-only
+    /// `Update`. Lance's split-block bloom filters with one configuration
+    /// union by OR-ing their bitmaps, which equals inserting every chunk's
+    /// ids into one builder, so no chunk's ids need to be retained.
+    pub(crate) fn combine_strict_inserts(stages: Vec<StagedWrite>) -> Result<StagedWrite> {
+        use lance::dataset::write::merge_insert::inserted_rows::FilterType;
+        let mut stages = stages.into_iter();
+        let first = stages.next().ok_or_else(|| {
+            OmniError::manifest_internal("combine_strict_inserts called with no stages")
+        })?;
+        let StagedWrite {
+            mut transaction,
+            commit_metadata,
+            new_fragments: mut visible,
+            removed_fragment_ids,
+            deleted_rows,
+        } = first;
+        if !has_insert_absence_certificate(&transaction) {
+            return Err(OmniError::manifest_internal(
+                "combine_strict_inserts: first stage is not a certified strict insert",
+            ));
+        }
+        let read_version = transaction.read_version;
+        let Operation::Update {
+            new_fragments,
+            inserted_rows_filter: Some(filter),
+            ..
+        } = &mut transaction.operation
+        else {
+            return Err(OmniError::manifest_internal(
+                "combine_strict_inserts: first stage is not a filter-bearing Update",
+            ));
+        };
+        for later in stages {
+            if later.transaction.read_version != read_version
+                || !has_insert_absence_certificate(&later.transaction)
+            {
+                return Err(OmniError::manifest_internal(
+                    "combine_strict_inserts: stages do not share one certified parent",
+                ));
+            }
+            let Operation::Update {
+                new_fragments: more,
+                inserted_rows_filter: Some(other),
+                ..
+            } = later.transaction.operation
+            else {
+                return Err(OmniError::manifest_internal(
+                    "combine_strict_inserts: later stage is not a filter-bearing Update",
+                ));
+            };
+            match (&mut filter.filter, &other.filter) {
+                (
+                    FilterType::Bloom {
+                        bitmap,
+                        num_bits,
+                        number_of_items,
+                        probability,
+                    },
+                    FilterType::Bloom {
+                        bitmap: other_bitmap,
+                        num_bits: other_bits,
+                        number_of_items: other_items,
+                        probability: other_probability,
+                    },
+                ) if filter.field_ids == other.field_ids
+                    && num_bits == other_bits
+                    && number_of_items == other_items
+                    && probability == other_probability
+                    && bitmap.len() == other_bitmap.len() =>
+                {
+                    bitmap
+                        .iter_mut()
+                        .zip(other_bitmap)
+                        .for_each(|(bits, other_bits)| *bits |= other_bits);
+                }
+                _ => {
+                    return Err(OmniError::manifest_internal(
+                        "combine_strict_inserts: stage filters do not share one bloom configuration",
+                    ));
+                }
+            }
+            new_fragments.extend(more);
+            visible.extend(later.new_fragments);
+        }
+        // Read-your-writes copies were numbered from the same parent; renumber
+        // them as one run. The committed transaction keeps Lance's ids.
+        if let Some(start) = visible.first().map(|fragment| fragment.id) {
+            assign_fragment_ids(&mut visible, start);
+        }
+        Ok(StagedWrite {
+            transaction,
+            commit_metadata,
+            new_fragments: visible,
+            removed_fragment_ids,
+            deleted_rows,
+        })
+    }
+
     fn new(
         transaction: Transaction,
         new_fragments: Vec<Fragment>,

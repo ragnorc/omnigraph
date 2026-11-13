@@ -439,6 +439,13 @@ impl StagedHandle {
         self.inner
     }
 
+    /// PROTOTYPE (#1383): join strict-insert stages staged against one parent
+    /// into one transaction; see `StagedWrite::combine_strict_inserts`.
+    pub(crate) fn combine_strict_inserts(handles: Vec<StagedHandle>) -> Result<StagedHandle> {
+        StagedWrite::combine_strict_inserts(handles.into_iter().map(|h| h.inner).collect())
+            .map(StagedHandle::new)
+    }
+
     /// Lance transaction identity captured when this effect was staged.
     pub fn transaction_identity(&self) -> StagedTransactionIdentity {
         self.inner.transaction_identity()

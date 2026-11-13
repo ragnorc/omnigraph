@@ -4867,6 +4867,14 @@ async fn commit_keyed_stream_chunks(
 ) -> Result<SnapshotHandle> {
     let mut carry = None;
     let mut observed_rows = 0_u64;
+    // PROTOTYPE (#1383): strict inserts stage every chunk against one pinned
+    // parent and commit them as one detached transaction after the loop.
+    let combine_inserts = matches!(
+        stage_kind,
+        KeyedChunkStage::General(KeyedWriteSemantics::StrictInsert)
+            | KeyedChunkStage::ProvenStrictInsert
+    );
+    let mut pending_inserts = Vec::new();
     for (chunk_index, expected_rows) in chunk_rows.iter().copied().enumerate() {
         let batch =
             next_exact_staged_chunk(&mut stream, &mut carry, schema, expected_rows, write_budget)
@@ -4910,11 +4918,15 @@ async fn commit_keyed_stream_chunks(
             }
         };
         stage_timing.finish();
-        let commit_timing = crate::instrumentation::start_merge_timing(
-            crate::instrumentation::MergeTimingPhase::KeyedCommit,
-        );
-        current = commit_detached_merge_stage(target_db, current, staged, chain).await?;
-        commit_timing.finish();
+        if combine_inserts {
+            pending_inserts.push(staged);
+        } else {
+            let commit_timing = crate::instrumentation::start_merge_timing(
+                crate::instrumentation::MergeTimingPhase::KeyedCommit,
+            );
+            current = commit_detached_merge_stage(target_db, current, staged, chain).await?;
+            commit_timing.finish();
+        }
         if chunk_index + 1 < chunk_rows.len()
             && let Some(failpoint) = between_chunk_failpoint
         {
@@ -4938,6 +4950,14 @@ async fn commit_keyed_stream_chunks(
             "branch merge table '{table_key}' streamed {observed_rows} keyed entities against a plan for {}",
             expected_row_count
         )));
+    }
+    if !pending_inserts.is_empty() {
+        let staged = crate::storage_layer::StagedHandle::combine_strict_inserts(pending_inserts)?;
+        let commit_timing = crate::instrumentation::start_merge_timing(
+            crate::instrumentation::MergeTimingPhase::KeyedCommit,
+        );
+        current = commit_detached_merge_stage(target_db, current, staged, chain).await?;
+        commit_timing.finish();
     }
     Ok(current)
 }
