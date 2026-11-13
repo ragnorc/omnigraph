@@ -744,14 +744,19 @@ fn merge_inserts_commit_one_transaction_per_table_issue_1383() {
                 db.branch_create("target").await.unwrap();
             }
             db.branch_create("feature").await.unwrap();
-            let rows = (0..INSERTED)
-                .map(|i| {
-                    format!("{{\"type\":\"Person\",\"data\":{{\"name\":\"bulk-{i}\",\"age\":20}}}}\n")
-                })
-                .collect::<String>();
-            db.load("feature", &rows, omnigraph::loader::LoadMode::Append)
-                .await
-                .unwrap();
+            // One load admits at most 8,192 entities.
+            for start in (0..INSERTED).step_by(8192) {
+                let rows = (start..INSERTED.min(start + 8192))
+                    .map(|i| {
+                        format!(
+                            "{{\"type\":\"Person\",\"data\":{{\"name\":\"bulk-{i}\",\"age\":20}}}}\n"
+                        )
+                    })
+                    .collect::<String>();
+                db.load("feature", &rows, omnigraph::loader::LoadMode::Append)
+                    .await
+                    .unwrap();
+            }
             if three_way {
                 db.mutate(
                     "main",
