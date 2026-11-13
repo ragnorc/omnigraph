@@ -702,10 +702,11 @@ fn merge_delete_selects_rows_by_rowid_issue_1295() {
 /// table held before the merge. Each entry is the link's new-fragment count.
 async fn merge_links_since(
     db: &omnigraph::Session,
+    branch: &str,
     table_key: &str,
     before_pin: u64,
 ) -> Vec<usize> {
-    let mut dataset = crate::helpers::open_pinned_dataset_for_test(db.db(), "main", table_key).await;
+    let mut dataset = crate::helpers::open_pinned_dataset_for_test(db.db(), branch, table_key).await;
     let mut links = Vec::new();
     while dataset.version().version != before_pin {
         let transaction = dataset.read_transaction().await.unwrap().unwrap();
@@ -728,7 +729,8 @@ async fn merge_links_since(
 /// A branch merge that inserts more rows than one 8,192-row keyed chunk
 /// commits them as one detached transaction per table (#1383), on both the
 /// three-way path (the target changed the table too) and the adopt path
-/// (only the source changed it). Main chains one link per chunk: three for
+/// (a named target that did not change it; onto `main` that merge is a
+/// pointer switch with no chain). Main chains one link per chunk: three for
 /// 16,385 rows, each its own transaction file, manifest and small fragment.
 #[test]
 fn merge_inserts_commit_one_transaction_per_table_issue_1383() {
@@ -737,6 +739,10 @@ fn merge_inserts_commit_one_transaction_per_table_issue_1383() {
         for three_way in [true, false] {
             let dir = tempfile::tempdir().unwrap();
             let db = local_graph(&dir).await;
+            let target = if three_way { "main" } else { "target" };
+            if !three_way {
+                db.branch_create("target").await.unwrap();
+            }
             db.branch_create("feature").await.unwrap();
             let rows = (0..INSERTED)
                 .map(|i| {
@@ -756,19 +762,19 @@ fn merge_inserts_commit_one_transaction_per_table_issue_1383() {
                 .await
                 .unwrap();
             }
-            let before_pin = crate::helpers::pinned_version(db.db(), "main", "node:Person").await;
+            let before_pin = crate::helpers::pinned_version(db.db(), target, "node:Person").await;
             let before_rows =
-                crate::helpers::open_pinned_dataset_for_test(db.db(), "main", "node:Person")
+                crate::helpers::open_pinned_dataset_for_test(db.db(), target, "node:Person")
                     .await
                     .count_rows(None)
                     .await
                     .unwrap();
 
-            let (result, io) = measure(db.branch_merge("feature", "main")).await;
+            let (result, io) = measure(db.branch_merge("feature", target)).await;
             let result = result.unwrap();
-            let links = merge_links_since(&db, "node:Person", before_pin).await;
+            let links = merge_links_since(&db, target, "node:Person", before_pin).await;
             let merged =
-                crate::helpers::open_pinned_dataset_for_test(db.db(), "main", "node:Person").await;
+                crate::helpers::open_pinned_dataset_for_test(db.db(), target, "node:Person").await;
             assert_eq!(
                 merged.count_rows(None).await.unwrap(),
                 before_rows + INSERTED,
@@ -782,8 +788,12 @@ fn merge_inserts_commit_one_transaction_per_table_issue_1383() {
                 1
             );
             eprintln!(
-                "issue_1383 three_way={three_way} outcome={:?} links={links:?} data_writes={}",
-                result.outcome, io.data_writes
+                "issue_1383 three_way={three_way} outcome={:?} links={links:?} data_writes={} \
+                 data_reads={} fragments={}",
+                result.outcome,
+                io.data_writes,
+                io.data_reads,
+                merged.get_fragments().len()
             );
             assert_eq!(
                 links.len(),
