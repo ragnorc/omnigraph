@@ -2195,6 +2195,25 @@ async fn bound_expand_returns_list_edge_properties_under_a_fixed_pool_issue_1251
 #[tokio::test]
 #[serial]
 async fn a_query_that_fits_a_budget_fits_every_larger_budget_issue_1361() {
+    assert_every_larger_budget_fits(&bound_edge_sort_outcomes().await);
+}
+
+/// #1370: the #1361 fixture with the bound-edge pair producer ahead of the
+/// sort that consumes it. The producer runs on a blocking thread, so how full
+/// its queue is when the sort's buffer nears its cap is a race; slowing the
+/// consumer by 1 ms at each wait settles the race the way CI sometimes did,
+/// where 5 MiB was refused although 4 MiB fit.
+#[cfg(feature = "failpoints")]
+#[tokio::test]
+#[serial]
+async fn a_bound_edge_sort_fits_every_larger_budget_with_its_producer_ahead_issue_1370() {
+    let _slow_consumer = omnigraph::seams::catalog::PRODUCED_STREAM_PRE_RECV
+        .observe(|| std::thread::sleep(std::time::Duration::from_millis(1)));
+    assert_every_larger_budget_fits(&bound_edge_sort_outcomes().await);
+}
+
+/// The #1361 fixture's outcome under each budget from 1 to 16 MiB.
+async fn bound_edge_sort_outcomes() -> Vec<(u64, Result<usize, String>)> {
     const EDGES: usize = 4096;
     const PAYLOAD: usize = 1024;
     let dir = tempfile::tempdir().unwrap();
@@ -2258,6 +2277,10 @@ query pairs() {
                 .map_err(|error| format!("{error:?}")),
         ));
     }
+    outcomes
+}
+
+fn assert_every_larger_budget_fits(outcomes: &[(u64, Result<usize, String>)]) {
     let first_fit = outcomes
         .iter()
         .position(|(_, outcome)| outcome.is_ok())

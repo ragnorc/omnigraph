@@ -12,6 +12,7 @@
 use std::sync::Arc;
 
 use self::memory::WorkMemory;
+pub use self::shape::PRODUCED_STREAM_PRE_RECV;
 use self::shape::{DRAINED, POLLS};
 use arrow_array::RecordBatch;
 use arrow_schema::{Field, Schema, SchemaRef};

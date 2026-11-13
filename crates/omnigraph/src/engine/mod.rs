@@ -73,6 +73,7 @@ pub(crate) use context::{LoadCharge, LoadMemory, LoadReuseReservation};
 pub(crate) use explain::{explain_document, explain_load_rows, explain_rows};
 pub(crate) use graph::{EmbeddingResolver, GraphIndexHandle};
 use lower::Lowering;
+pub use operators::PRODUCED_STREAM_PRE_RECV;
 use plan_source::{ExplainedQuery, QuerySource, accept_query, explain_query};
 pub(crate) use plan_source::{
     accept_replay, engine_bounds, replay_refused, replayed_coverage_holds,

@@ -34,6 +34,15 @@ use tracing::Instrument;
 
 use super::memory::WorkMemory;
 use crate::instrumentation::{with_query_io_probes, with_query_memory_probes};
+use crate::seams::decide_seam;
+
+decide_seam! {
+    /// A produced stream's consumer is about to wait for the producer's next
+    /// batch. The producer runs on a blocking thread, so how far it runs ahead
+    /// of its consumer is a race; tests observe this crossing to slow the
+    /// consumer and make the producer's queue full (#1370).
+    pub static PRODUCED_STREAM_PRE_RECV = ("produced_stream.pre_recv", Unreachable, [Fail]);
+}
 
 /// The `polls` counter: one per `poll_next` of any stream the operator handed
 /// out, so a zero says no consumer ever asked the operator for a batch.
@@ -655,6 +664,7 @@ where
             let counts = counts.clone();
             async move {
                 drop(held);
+                let _ = PRODUCED_STREAM_PRE_RECV.crossed();
                 match batches.next().await {
                     Some(Ok(batch)) => {
                         let lease = leases.recv().await.ok_or_else(|| {
