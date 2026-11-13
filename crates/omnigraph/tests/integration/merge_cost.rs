@@ -696,3 +696,102 @@ fn merge_delete_selects_rows_by_rowid_issue_1295() {
         }
     });
 }
+
+/// The detached links a merge added to `table_key` on `main`, oldest last:
+/// walk the merged pin's transactions by `read_version` back to the pin the
+/// table held before the merge. Each entry is the link's new-fragment count.
+async fn merge_links_since(
+    db: &omnigraph::Session,
+    table_key: &str,
+    before_pin: u64,
+) -> Vec<usize> {
+    let mut dataset = crate::helpers::open_pinned_dataset_for_test(db.db(), "main", table_key).await;
+    let mut links = Vec::new();
+    while dataset.version().version != before_pin {
+        let transaction = dataset.read_transaction().await.unwrap().unwrap();
+        let new_fragments = match &transaction.operation {
+            lance::dataset::transaction::Operation::Update { new_fragments, .. } => {
+                new_fragments.len()
+            }
+            other => panic!("unexpected merge link {other:?}"),
+        };
+        links.push(new_fragments);
+        assert!(links.len() <= 64, "the merge chain never reached the prior pin");
+        dataset = dataset
+            .checkout_version(transaction.read_version)
+            .await
+            .unwrap();
+    }
+    links
+}
+
+/// A branch merge that inserts more rows than one 8,192-row keyed chunk
+/// commits them as one detached transaction per table (#1383), on both the
+/// three-way path (the target changed the table too) and the adopt path
+/// (only the source changed it). Main chains one link per chunk: three for
+/// 16,385 rows, each its own transaction file, manifest and small fragment.
+#[test]
+fn merge_inserts_commit_one_transaction_per_table_issue_1383() {
+    on_big_stack(|| async {
+        const INSERTED: usize = 2 * 8192 + 1;
+        for three_way in [true, false] {
+            let dir = tempfile::tempdir().unwrap();
+            let db = local_graph(&dir).await;
+            db.branch_create("feature").await.unwrap();
+            let rows = (0..INSERTED)
+                .map(|i| {
+                    format!("{{\"type\":\"Person\",\"data\":{{\"name\":\"bulk-{i}\",\"age\":20}}}}\n")
+                })
+                .collect::<String>();
+            db.load("feature", &rows, omnigraph::loader::LoadMode::Append)
+                .await
+                .unwrap();
+            if three_way {
+                db.mutate(
+                    "main",
+                    MUTATION_QUERIES,
+                    "insert_person",
+                    &mixed_params(&[("$name", "target-only")], &[("$age", 42)]),
+                )
+                .await
+                .unwrap();
+            }
+            let before_pin = crate::helpers::pinned_version(db.db(), "main", "node:Person").await;
+            let before_rows =
+                crate::helpers::open_pinned_dataset_for_test(db.db(), "main", "node:Person")
+                    .await
+                    .count_rows(None)
+                    .await
+                    .unwrap();
+
+            let (result, io) = measure(db.branch_merge("feature", "main")).await;
+            let result = result.unwrap();
+            let links = merge_links_since(&db, "node:Person", before_pin).await;
+            let merged =
+                crate::helpers::open_pinned_dataset_for_test(db.db(), "main", "node:Person").await;
+            assert_eq!(
+                merged.count_rows(None).await.unwrap(),
+                before_rows + INSERTED,
+                "three_way = {three_way}"
+            );
+            assert_eq!(
+                merged
+                    .count_rows(Some("name = 'bulk-16384'".to_string()))
+                    .await
+                    .unwrap(),
+                1
+            );
+            eprintln!(
+                "issue_1383 three_way={three_way} outcome={:?} links={links:?} data_writes={}",
+                result.outcome, io.data_writes
+            );
+            assert_eq!(
+                links.len(),
+                1,
+                "three_way = {three_way}: a {INSERTED}-row insert merge must commit one \
+                 detached transaction for the table, not one per 8,192-row chunk \
+                 (new fragments per link, newest first: {links:?})"
+            );
+        }
+    });
+}
