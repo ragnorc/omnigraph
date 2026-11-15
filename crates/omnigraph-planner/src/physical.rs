@@ -143,6 +143,11 @@ pub struct Assumptions {
     /// refused by a binary whose catalogue fingerprints differ.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub catalogue: BTreeMap<String, String>,
+    /// The storage profile the cost model priced requests with, chosen from
+    /// the snapshot root's storage kind (or a harness pin) when the query was
+    /// planned. Absent means local.
+    #[serde(default, skip_serializing_if = "crate::cost::StorageProfile::is_local")]
+    pub storage_profile: crate::cost::StorageProfile,
 }
 
 impl Assumptions {
@@ -1463,6 +1468,7 @@ impl PhysicalPlan {
                 "edge_binding": edge_binding,
                 "mode": mode,
                 "alternatives": policy.alternatives(*mode),
+                "cost_inputs": policy.cost(),
                 "frontier_estimate": frontier_estimate,
                 "versions": versions,
             }),

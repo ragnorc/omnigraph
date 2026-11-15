@@ -779,6 +779,70 @@ async fn a_hash_join_traversal_replays_with_its_switches() {
     );
 }
 
+/// A plan priced under the object-store profile records it: the plan's
+/// assumptions and every costed `Expand`'s inputs carry it, and a replay in
+/// a session without the pin runs the recorded plan with the same rows and
+/// trace.
+#[tokio::test]
+async fn a_plan_priced_under_the_object_store_profile_replays_in_a_local_session() {
+    use omnigraph::settings::StorageProfilePin;
+    let dir = tempfile::tempdir().unwrap();
+    let db = people(&dir).await;
+    let pinned = Session::from_defaults(
+        std::sync::Arc::clone(db.db()),
+        db.settings()
+            .clone()
+            .with_storage_profile(StorageProfilePin::ObjectStore {
+                latency_units: Some(50_000),
+            }),
+    );
+    let run = pinned
+        .query_inspected(
+            ReadTarget::branch("main"),
+            PEOPLE_QUERIES,
+            "liked",
+            &ParamMap::new(),
+        )
+        .await
+        .unwrap();
+    let profile = omnigraph_planner::StorageProfile::object_store(Some(50_000));
+    assert_eq!(run.plan.plan.assumptions().storage_profile, profile);
+    let costed: Vec<_> = run
+        .plan
+        .plan
+        .live()
+        .filter_map(|(_, node)| match node {
+            PhysicalNode::Expand { policy, .. } => policy.cost().map(|inputs| inputs.profile),
+            _ => None,
+        })
+        .collect();
+    assert!(
+        !costed.is_empty() && costed.iter().all(|p| *p == profile),
+        "{costed:?}"
+    );
+    let envelope = run.replay_envelope(PEOPLE_QUERIES, "liked");
+    let rows = report_rows(&run.report);
+    for _ in 0..2 {
+        let replay = db
+            .replay_bound_plan(ReadTarget::branch("main"), &envelope)
+            .await
+            .unwrap();
+        assert_eq!(rows_of(&replay.result), rows_of(&run.result));
+        assert_eq!(replay.plan.plan.assumptions().storage_profile, profile);
+        assert_same_trace(&rows, &report_rows(&replay.report));
+    }
+    let local = db
+        .query_inspected(
+            ReadTarget::branch("main"),
+            PEOPLE_QUERIES,
+            "liked",
+            &ParamMap::new(),
+        )
+        .await
+        .unwrap();
+    assert!(local.plan.plan.assumptions().storage_profile.is_local());
+}
+
 /// Replay must correct assumed coverage even when the old plan chose indexed scans.
 #[tokio::test]
 async fn legacy_two_hop_plan_corrects_assumed_coverage_before_execution() {

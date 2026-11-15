@@ -258,6 +258,24 @@ pub trait PlanSource {
         Traversal::Auto
     }
 
+    /// The storage profile the cost model prices requests with: the snapshot
+    /// root's storage kind, or the session's harness pin. The plan records it.
+    fn storage_profile(&self) -> crate::cost::StorageProfile {
+        crate::cost::StorageProfile::local()
+    }
+
+    /// The fragments of the table `type_key` names at the pinned version;
+    /// `None` when the source holds no such number.
+    fn table_fragments(&self, _type_key: &str) -> Option<u64> {
+        None
+    }
+
+    /// The data-file bytes of the table `type_key` names, destination or not;
+    /// `None` when the source holds no such number.
+    fn table_file_bytes(&self, _type_key: &str) -> Option<u64> {
+        None
+    }
+
     /// The finite query-wide traversal allowance; present only for statements
     /// using edge selections, including selections inside correlated blocks.
     fn traversal_work_limit(&self) -> Option<u64> {

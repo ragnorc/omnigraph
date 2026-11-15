@@ -664,6 +664,14 @@ selection to the cost model. Without a traversal header or another index
 requirement, a fixture does not build indexes. `indexed` and `csr` prepare
 indexes and force their respective paths.
 
+The optional `# storage_profile: <local|object_store>` header pins the
+storage profile the planner prices requests with, in place of the one the
+graph root's storage kind selects (`local` for local and DST roots), so a
+local or DST case plans as an object-store graph would;
+`object_store latency_units=<n>` also sets the profile's wave latency in row
+units. The profile is recorded in the plan's assumptions and on every costed
+`Expand`. An in-process pin: a server target refuses it.
+
 The optional `# csv_slice_bytes: <n>` header sets the source bytes one
 `load csv` parse partition owns and the slice it reads at once, 8 MiB without
 the header, so a case of a few KiB cuts two or three partitions and pins what

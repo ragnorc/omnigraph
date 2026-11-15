@@ -317,6 +317,18 @@ pub enum Traversal {
     Csr,
 }
 
+/// A harness pin of the storage profile the cost model prices requests
+/// with, in place of the one the snapshot root's storage kind selects. No
+/// definition row names it: see [`SessionSettings::with_storage_profile`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StorageProfilePin {
+    Local,
+    /// The object-store profile, with its wave latency in row units when given.
+    ObjectStore {
+        latency_units: Option<u64>,
+    },
+}
+
 /// `engine`: the route a read query runs on. `V2`, the plan runner, is the
 /// only value; a later engine version is a new variant.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -416,6 +428,7 @@ pub const STORED_QUERY_CARRIES_NO_SETTINGS: &str =
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SessionSettings {
     traversal: Traversal,
+    storage_profile: Option<StorageProfilePin>,
     engine: Engine,
     rrf_plan: RrfPlan,
     merge_lineage: MergeLineage,
@@ -436,6 +449,7 @@ impl Default for SessionSettings {
     fn default() -> Self {
         let mut settings = SessionSettings {
             traversal: Traversal::Auto,
+            storage_profile: None,
             engine: Engine::V2,
             rrf_plan: RrfPlan::Auto,
             merge_lineage: MergeLineage::On,
@@ -607,6 +621,19 @@ impl SessionSettings {
 
     pub fn traversal(&self) -> Traversal {
         self.traversal
+    }
+
+    /// A harness knob, not a definition row, like [`Self::with_traversal`]:
+    /// the GQT `# storage-profile:` header pins the profile the planner
+    /// prices requests with, so a local or DST case plans as an object-store
+    /// graph would.
+    pub fn with_storage_profile(mut self, pin: StorageProfilePin) -> Self {
+        self.storage_profile = Some(pin);
+        self
+    }
+
+    pub fn storage_profile(&self) -> Option<StorageProfilePin> {
+        self.storage_profile
     }
 
     pub fn engine(&self) -> Engine {

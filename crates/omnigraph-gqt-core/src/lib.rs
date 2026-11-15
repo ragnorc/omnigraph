@@ -26,7 +26,9 @@ use omnigraph_compiler::query::typecheck::{
 };
 use omnigraph_compiler::schema::ast::{Annotation, PropDecl, SchemaDecl};
 use omnigraph_compiler::schema::parser::parse_schema;
-use omnigraph_compiler::settings::{Engine, SessionSettings, SettingId, SettingRow, Traversal};
+use omnigraph_compiler::settings::{
+    Engine, SessionSettings, SettingId, SettingRow, StorageProfilePin, Traversal,
+};
 use omnigraph_compiler::{
     JsonParamMode, PropType, QueryResult, ScalarType, json_params_to_param_map,
 };
@@ -86,6 +88,9 @@ pub struct Case {
     /// The harness-only traversal setting; any header requests index preparation.
     /// `auto` retains cost selection, while `indexed` and `csr` check the forced path.
     traversal: Option<&'static str>,
+    /// The `# storage_profile:` pin: the storage profile the planner prices
+    /// requests with, so a local or DST case plans as an object-store graph.
+    storage_profile: Option<StorageProfilePin>,
     /// The `# csv_slice_bytes:` pin: the bytes one `load csv` parse partition
     /// owns and the slice it reads at once, so a small source cuts partitions.
     csv_slice_bytes: Option<usize>,
@@ -615,6 +620,7 @@ struct BodySpan {
 struct Header {
     issue: IssueRef,
     traversal: Option<&'static str>,
+    storage_profile: Option<StorageProfilePin>,
     csv_slice_bytes: Option<usize>,
     overwrite_chunk_rows: Option<usize>,
     writer_held: bool,
@@ -626,12 +632,13 @@ enum IssueRef {
     Num(u64),
 }
 
-/// The seven header keys, in the spelling the canonical form requires.
-const HEADER_KEYS: [&str; 7] = [
+/// The eight header keys, in the spelling the canonical form requires.
+const HEADER_KEYS: [&str; 8] = [
     "issue",
     "red_on",
     "notes",
     "traversal",
+    "storage_profile",
     "csv_slice_bytes",
     "overwrite_chunk_rows",
     "writer",
@@ -692,6 +699,7 @@ fn parse_header(lines: &[&str]) -> Result<Header, (Option<IssueRef>, Vec<CaseErr
     let mut issue_seen = false;
     let mut red_on = false;
     let mut traversal: Option<&'static str> = None;
+    let mut storage_profile: Option<StorageProfilePin> = None;
     let mut csv_slice_bytes: Option<usize> = None;
     let mut overwrite_chunk_rows: Option<usize> = None;
     let mut writer_held = false;
@@ -725,6 +733,7 @@ fn parse_header(lines: &[&str]) -> Result<Header, (Option<IssueRef>, Vec<CaseErr
             "issue" => issue.is_some(),
             "red_on" => red_on,
             "traversal" => traversal.is_some(),
+            "storage_profile" => storage_profile.is_some(),
             "csv_slice_bytes" => csv_slice_bytes.is_some(),
             "overwrite_chunk_rows" => overwrite_chunk_rows.is_some(),
             "writer" => writer_held,
@@ -787,6 +796,29 @@ fn parse_header(lines: &[&str]) -> Result<Header, (Option<IssueRef>, Vec<CaseErr
                         continue;
                     }
                 });
+            }
+            "storage_profile" => {
+                let mut words = value.split_whitespace();
+                let pin = match (words.next(), words.next(), words.next()) {
+                    (Some("local"), None, None) => Some(StorageProfilePin::Local),
+                    (Some("object_store"), None, None) => Some(StorageProfilePin::ObjectStore {
+                        latency_units: None,
+                    }),
+                    (Some("object_store"), Some(latency), None) => latency
+                        .strip_prefix("latency_units=")
+                        .and_then(|units| units.parse::<u64>().ok())
+                        .map(|units| StorageProfilePin::ObjectStore {
+                            latency_units: Some(units),
+                        }),
+                    _ => None,
+                };
+                let Some(pin) = pin else {
+                    errors.push(value_error(format!(
+                        "`# storage_profile:` takes `local`, `object_store` or `object_store latency_units=<n>`, got `{value}`"
+                    )));
+                    continue;
+                };
+                storage_profile = Some(pin);
             }
             "csv_slice_bytes" => {
                 let Some(bytes) = value
@@ -858,6 +890,7 @@ fn parse_header(lines: &[&str]) -> Result<Header, (Option<IssueRef>, Vec<CaseErr
         (Some(issue), true) => Ok(Header {
             issue,
             traversal,
+            storage_profile,
             csv_slice_bytes,
             overwrite_chunk_rows,
             writer_held,
@@ -3646,6 +3679,7 @@ pub fn parse_case(stem: &str, text: &str) -> Result<Case, CaseErrors> {
         source_lines,
         fixture,
         traversal: header.traversal,
+        storage_profile: header.storage_profile,
         csv_slice_bytes: header.csv_slice_bytes,
         overwrite_chunk_rows: header.overwrite_chunk_rows,
         writer_held: header.writer_held,
@@ -5131,6 +5165,9 @@ pub fn case_session(db: Omnigraph, case: &Case, engine: Engine) -> Result<Sessio
             format!("`# traversal: {mode}` refused: expected one of auto, indexed, csr")
         })?;
         settings = settings.with_traversal(pinned);
+    }
+    if let Some(pin) = case.storage_profile {
+        settings = settings.with_storage_profile(pin);
     }
     Ok(Session::from_defaults(Arc::new(db), settings))
 }

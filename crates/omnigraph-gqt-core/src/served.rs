@@ -67,6 +67,9 @@ pub fn admit_served(case: &Case) -> Result<(), String> {
     if case.traversal.is_some() {
         refused.push("the `# traversal:` pin".to_string());
     }
+    if case.storage_profile.is_some() {
+        refused.push("the `# storage_profile:` pin".to_string());
+    }
     if case.csv_slice_bytes.is_some() {
         refused.push("the `# csv_slice_bytes:` pin".to_string());
     }

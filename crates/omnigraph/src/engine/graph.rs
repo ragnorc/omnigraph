@@ -2003,6 +2003,9 @@ mod coverage_tests {
                 coverage_provenance: CoverageProvenance::PinnedIndexFacts,
                 csr_cached: false,
                 probe_factor: 1.0,
+                profile: omnigraph_planner::StorageProfile::local(),
+                edge_fragments: 0,
+                edge_bytes: 0,
             };
             assert!(
                 ModeOrigin::Costed(inputs.clone())

@@ -1,12 +1,12 @@
 gqt format 1
-header keys: issue, red_on, notes, traversal, csv_slice_bytes, overwrite_chunk_rows, writer
+header keys: issue, red_on, notes, traversal, storage_profile, csv_slice_bytes, overwrite_chunk_rows, writer
 sections: runner, schema, seed, csv, load, query, mutate, concurrent, params, expect, bind, restart, loop, foreach, endloop, seam
 expect modes: ok, unordered, ordered, error:, affected:, outcome:, shape, plan, same as v1
 corpus timeout_ms: at most 10000
 rules:
   line_endings: a case file is UTF-8 with `\n` line endings
   header_shape: every line before the first section is a header `# <key>: <value>`
-  unknown_header_key: a header key is one of issue, red_on, notes, traversal, csv_slice_bytes, overwrite_chunk_rows, writer
+  unknown_header_key: a header key is one of issue, red_on, notes, traversal, storage_profile, csv_slice_bytes, overwrite_chunk_rows, writer
   duplicate_header: a header key appears at most once
   missing_issue: every case carries `# issue: <N>` or `# issue: none` as a header
   missing_red_on: a case whose `# issue:` names a number carries `# red_on:` naming where the red showed

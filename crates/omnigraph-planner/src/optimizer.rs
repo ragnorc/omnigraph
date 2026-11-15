@@ -1626,6 +1626,17 @@ pub(crate) fn physical_plan_with(
         }
     }
     let mut statistics = decisions;
+    let profile = source.storage_profile();
+    if !profile.is_local() {
+        statistics.insert(
+            0,
+            StatisticSource {
+                statistic: "storage_profile".to_string(),
+                value: profile.describe(),
+                origin: "the snapshot root's storage kind or the session's harness pin".to_string(),
+            },
+        );
+    }
     statistics.extend(derive_properties(&mut physical, source, bounds)?);
     let after = physical
         .properties(physical.root())
@@ -3993,6 +4004,15 @@ impl Lowering<'_> {
                 coverage_provenance: CoverageProvenance::PinnedIndexFacts,
                 csr_cached: self.csr_cached,
                 probe_factor: direction_probe_factor(direction),
+                profile: self.source.storage_profile(),
+                edge_fragments: self
+                    .source
+                    .table_fragments(&format!("edge:{edge_type}"))
+                    .unwrap_or(0),
+                edge_bytes: self
+                    .source
+                    .table_file_bytes(&format!("edge:{edge_type}"))
+                    .unwrap_or(0),
             });
         let frontier_estimate = cost.as_ref().and(input_rows);
         let (mode, policy) = match (forced, cost) {

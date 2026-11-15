@@ -58,6 +58,7 @@ impl<'s> Recorded<'s> {
         let mut assumptions = self.read.borrow().clone();
         assumptions.gate_policy = self.source.gate_policy();
         assumptions.memory_limit = bounds.query_memory_pool_bytes;
+        assumptions.storage_profile = self.source.storage_profile();
         assumptions
     }
 
@@ -191,6 +192,18 @@ impl PlanSource for Recorded<'_> {
             .settings
             .insert("traversal".to_string(), traversal.as_str().to_string());
         traversal
+    }
+
+    fn storage_profile(&self) -> crate::cost::StorageProfile {
+        self.source.storage_profile()
+    }
+
+    fn table_fragments(&self, type_key: &str) -> Option<u64> {
+        self.source.table_fragments(type_key)
+    }
+
+    fn table_file_bytes(&self, type_key: &str) -> Option<u64> {
+        self.source.table_file_bytes(type_key)
     }
 
     fn traversal_work_limit(&self) -> Option<u64> {

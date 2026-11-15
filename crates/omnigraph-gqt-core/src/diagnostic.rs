@@ -121,7 +121,7 @@ impl CaseErrorCode {
                 "every line before the first section is a header `# <key>: <value>`"
             }
             CaseErrorCode::UnknownHeaderKey => {
-                "a header key is one of issue, red_on, notes, traversal, csv_slice_bytes, overwrite_chunk_rows, writer"
+                "a header key is one of issue, red_on, notes, traversal, storage_profile, csv_slice_bytes, overwrite_chunk_rows, writer"
             }
             CaseErrorCode::DuplicateHeader => "a header key appears at most once",
             CaseErrorCode::MissingIssue => {

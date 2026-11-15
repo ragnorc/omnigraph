@@ -16,14 +16,14 @@ use omnigraph_compiler::CheckedRead;
 use omnigraph_compiler::catalog::Catalog;
 use omnigraph_compiler::ir::{IRExpr, IROp, ParamMap, QueryIR};
 use omnigraph_compiler::query::ast::Literal;
-use omnigraph_compiler::settings::{RrfPlan, SessionSettings, Traversal};
+use omnigraph_compiler::settings::{RrfPlan, SessionSettings, StorageProfilePin, Traversal};
 use omnigraph_compiler::types::Direction;
 use omnigraph_planner::{
     AcceptInput, AcceptedBoundPlan, AcceptedPlan, AdjacencyProof, Bounds, DatasetPin,
     EXPAND_INDEXED_MAX_FRONTIER_ENV, EXPAND_INDEXED_MAX_HOPS_ENV, ExpandStatistics, Explain,
     FragmentStat, FullTextCoverage, GatePolicy, IndexFact, KeyIds, NodeTypeSpec, Operation,
-    PlanError, PlanSource, PrefilterMode, ReplayEnvelope, ReplayRefusal, SideId, TableRef,
-    Unrouted, ValidationLimits,
+    PlanError, PlanSource, PrefilterMode, ReplayEnvelope, ReplayRefusal, SideId, StorageProfile,
+    TableRef, Unrouted, ValidationLimits,
 };
 
 use super::ResolvedParams;
@@ -84,6 +84,26 @@ impl ExpandCaps {
     }
 }
 
+/// The storage profile the cost model prices requests with: the session's
+/// harness pin, else the snapshot root's storage kind (`Local`, which DST's
+/// in-memory roots classify as, prices rows only; S3 and Azure price waves).
+/// A catalogue-only read touches no storage and is local.
+fn storage_profile(settings: &SessionSettings, snapshot: Option<&Snapshot>) -> StorageProfile {
+    match settings.storage_profile() {
+        Some(StorageProfilePin::Local) => return StorageProfile::local(),
+        Some(StorageProfilePin::ObjectStore { latency_units }) => {
+            return StorageProfile::object_store(latency_units);
+        }
+        None => {}
+    }
+    match snapshot.map(|snapshot| omnigraph_storage::storage_kind_for_uri(snapshot.root_uri())) {
+        Some(Ok(omnigraph_storage::StorageKind::S3 | omnigraph_storage::StorageKind::Azure)) => {
+            StorageProfile::object_store(None)
+        }
+        _ => StorageProfile::local(),
+    }
+}
+
 /// The prefilter gates' policy as this process and session set it: the
 /// `rrf_plan` setting and the two admission thresholds, read once here and
 /// carried on the plan.
@@ -126,6 +146,7 @@ pub(crate) struct QuerySource<'a> {
     memory_limit: u64,
     gate_policy: GatePolicy,
     expand_caps: ExpandCaps,
+    storage_profile: StorageProfile,
     table_stats: HashMap<String, TableStatistics>,
     /// The error the source met answering the planner's last lookup, handed
     /// back to the caller in place of the planner's wrapper.
@@ -134,6 +155,9 @@ pub(crate) struct QuerySource<'a> {
 
 struct TableStatistics {
     file_bytes: Option<u64>,
+    /// The data-file bytes of every table, destination or not: the request
+    /// model's transfer term reads them.
+    total_bytes: Option<u64>,
     column_bytes: HashMap<String, u64>,
     index_facts: Vec<IndexFact>,
     /// The pinned version's current fragments: one with none holds no row a
@@ -169,6 +193,7 @@ impl<'a> QuerySource<'a> {
                 .unwrap_or_else(|| settings.query_memory_bytes()),
             gate_policy: gate_policy(settings),
             expand_caps: ExpandCaps::from_env(),
+            storage_profile: storage_profile(settings, snapshot),
             table_stats,
             source_failure: std::sync::Mutex::new(None),
         };
@@ -371,6 +396,20 @@ impl PlanSource for QuerySource<'_> {
 
     fn table_data_bytes(&self, type_key: &str) -> Option<u64> {
         self.table_stats.get(type_key)?.file_bytes
+    }
+
+    fn table_file_bytes(&self, type_key: &str) -> Option<u64> {
+        self.table_stats.get(type_key)?.total_bytes
+    }
+
+    fn table_fragments(&self, type_key: &str) -> Option<u64> {
+        self.table_stats
+            .get(type_key)
+            .map(|stats| stats.fragments as u64)
+    }
+
+    fn storage_profile(&self) -> StorageProfile {
+        self.storage_profile
     }
 
     fn column_data_bytes(&self, type_key: &str, column: &str) -> Option<u64> {
@@ -833,6 +872,7 @@ async fn query_table_statistics(
             type_key,
             TableStatistics {
                 file_bytes: destination.then_some(size).flatten(),
+                total_bytes: size,
                 column_bytes: HashMap::new(),
                 index_facts: indexes::gather(&dataset).await?,
                 fragments: dataset.get_fragments().len(),

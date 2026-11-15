@@ -136,6 +136,37 @@ fn sides(report: &impl serde::Serialize) -> Vec<String> {
         .collect()
 }
 
+/// A session setting no case may carry into a replay: a plan gathered under
+/// the local profile replays under it in a session pinned to the object-store
+/// profile, with the same rows, sides and profile.
+#[tokio::test]
+async fn the_replay_prices_with_the_recorded_profile_not_the_sessions_pin() {
+    use omnigraph::settings::StorageProfilePin;
+    let dir = tempfile::tempdir().unwrap();
+    let db = graph(&dir).await;
+    let run = db
+        .query_inspected(ReadTarget::branch("main"), QUERY, "liked", &ParamMap::new())
+        .await
+        .unwrap();
+    assert!(run.plan.plan.assumptions().storage_profile.is_local());
+    let envelope = run.replay_envelope(QUERY, "liked");
+    let pinned = omnigraph::Session::from_defaults(
+        std::sync::Arc::clone(db.db()),
+        db.settings()
+            .clone()
+            .with_storage_profile(StorageProfilePin::ObjectStore {
+                latency_units: Some(u64::MAX / 4),
+            }),
+    );
+    let replay = pinned
+        .replay_bound_plan(ReadTarget::branch("main"), &envelope)
+        .await
+        .unwrap();
+    assert!(replay.plan.plan.assumptions().storage_profile.is_local());
+    assert_eq!(rows_of(&replay.result), rows_of(&run.result));
+    assert_eq!(sides(&replay.report), sides(&run.report));
+}
+
 /// Process environment: the replay under a tiny ambient task-local limit
 /// runs under the limit the plan captured. No case can change the ambient
 /// limit between gathering and replaying.

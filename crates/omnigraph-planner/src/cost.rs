@@ -171,6 +171,109 @@ pub enum CoverageProvenance {
     PinnedIndexFacts,
 }
 
+/// Where a plan's tables live, as the cost model prices their requests.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StorageKindProfile {
+    /// A local filesystem, and DST's in-memory store: a request costs about
+    /// what a row does, so only rows are priced.
+    #[default]
+    Local,
+    /// An S3-compatible or Azure store: a request waits a round trip.
+    ObjectStore,
+}
+
+impl StorageKindProfile {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Local => "local",
+            Self::ObjectStore => "object_store",
+        }
+    }
+}
+
+/// What one request wave costs in the planner's row unit (one indexed-probe
+/// row): the storage kind's latency, transfer and parallelism. Chosen when
+/// the query is planned and recorded in the plan's assumptions, so a replay
+/// prices with the profile it was planned under. The local profile prices
+/// waves and bytes at nothing, which leaves every decision on rows alone.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct StorageProfile {
+    pub kind: StorageKindProfile,
+    /// One request wave's latency, in row units.
+    pub latency_units: u64,
+    /// The bytes one row unit of transfer moves; 0 prices bytes at nothing.
+    pub bytes_per_unit: u64,
+    /// Requests the store serves at once, so `R` requests of one wave take
+    /// `ceil(R / parallelism)` round trips.
+    pub parallelism: u64,
+}
+
+/// The object-store profile's wave latency in row units: 20 ms over the
+/// measured cost of one indexed-probe row on the reference host.
+pub const OBJECT_STORE_LATENCY_UNITS: u64 = 0;
+
+/// Bytes per row unit on the object-store profile: 0 prices bytes at nothing.
+pub const OBJECT_STORE_BYTES_PER_UNIT: u64 = 0;
+
+/// Lance's I/O parallelism for a cloud store (`ObjectStore::io_parallelism`).
+pub const OBJECT_STORE_PARALLELISM: u64 = 64;
+
+/// Lance's I/O parallelism for a local store.
+pub const LOCAL_PARALLELISM: u64 = 8;
+
+impl Default for StorageProfile {
+    fn default() -> Self {
+        Self::local()
+    }
+}
+
+impl StorageProfile {
+    /// The local profile: rows alone decide.
+    pub const fn local() -> Self {
+        Self {
+            kind: StorageKindProfile::Local,
+            latency_units: 0,
+            bytes_per_unit: 0,
+            parallelism: LOCAL_PARALLELISM,
+        }
+    }
+
+    /// The object-store profile, with its wave latency overridden when
+    /// `latency_units` is given (a harness pin, or a recorded override).
+    pub fn object_store(latency_units: Option<u64>) -> Self {
+        Self {
+            kind: StorageKindProfile::ObjectStore,
+            latency_units: latency_units.unwrap_or(OBJECT_STORE_LATENCY_UNITS),
+            bytes_per_unit: OBJECT_STORE_BYTES_PER_UNIT,
+            parallelism: OBJECT_STORE_PARALLELISM,
+        }
+    }
+
+    /// The default profile: plans recorded before profiles existed carry
+    /// none and read as local.
+    pub fn is_local(&self) -> bool {
+        *self == Self::local()
+    }
+
+    /// Whether requests cost anything under this profile; when they do not,
+    /// every decision is the rows-only decision.
+    pub fn prices_requests(&self) -> bool {
+        self.latency_units > 0 || self.bytes_per_unit > 0
+    }
+
+    /// The explain spelling: kind and constants.
+    pub fn describe(&self) -> String {
+        format!(
+            "{} latency_units={} bytes_per_unit={} parallelism={}",
+            self.kind.as_str(),
+            self.latency_units,
+            self.bytes_per_unit,
+            self.parallelism
+        )
+    }
+}
+
 /// Building the in-memory CSR costs more than a bare edge scan: it scans every
 /// edge AND allocates + groups the adjacency. This factor expresses that
 /// overhead so a one-off degraded single-hop scan can still edge out a full CSR
@@ -207,6 +310,20 @@ pub struct ExpandCostInputs {
     /// traversal, 2 for undirected (`Direction::Both` scans BOTH the src-keyed
     /// and dst-keyed orientations).
     pub probe_factor: f64,
+    /// The storage profile the plan was priced under; local prices rows only.
+    #[serde(default, skip_serializing_if = "StorageProfile::is_local")]
+    pub profile: StorageProfile,
+    /// The edge table's fragments at the pinned version, which the request
+    /// model counts; 0 when unknown.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub edge_fragments: u64,
+    /// The edge table's data-file bytes at the pinned version; 0 when unknown.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub edge_bytes: u64,
+}
+
+fn is_zero(value: &u64) -> bool {
+    *value == 0
 }
 
 /// Pure cost-based traversal-mode chooser. Compares an estimate of the indexed
@@ -800,6 +917,9 @@ mod tests {
             coverage_provenance: CoverageProvenance::PinnedIndexFacts,
             csr_cached: false,
             probe_factor: 1.0,
+            profile: StorageProfile::local(),
+            edge_fragments: 0,
+            edge_bytes: 0,
         }
     }
 
