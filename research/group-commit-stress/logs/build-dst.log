@@ -1,0 +1,13 @@
+   Compiling omnigraph-compiler v0.15.1 (/src/omnigraph/crates/omnigraph-compiler)
+   Compiling omnigraph-core v0.15.1 (/src/omnigraph/crates/omnigraph-core)
+   Compiling omnigraph-planner v0.15.1 (/src/omnigraph/crates/omnigraph-planner)
+   Compiling omnigraph-catalog v0.15.1 (/src/omnigraph/crates/omnigraph-catalog)
+   Compiling omnigraph-engine v0.15.1 (/src/omnigraph/crates/omnigraph)
+   Compiling omnigraph-cluster v0.15.1 (/src/omnigraph/crates/omnigraph-cluster)
+   Compiling omnigraph-dst v0.15.1 (/src/omnigraph/crates/omnigraph-dst)
+    Finished `test` profile [unoptimized] target(s) in 1m 42s
+  Executable unittests src/lib.rs (/src/omnigraph/target/debug/deps/omnigraph_dst-9ba8faf40b1d2b14)
+  Executable unittests src/bin/dst_child.rs (/src/omnigraph/target/debug/deps/dst_child-3307bfa189ceab79)
+  Executable tests/integration/main.rs (/src/omnigraph/target/debug/deps/integration-c16239125c19d831)
+  Executable tests/scenarios.rs (/src/omnigraph/target/debug/deps/scenarios-4f03b50ac1817219)
+EXIT=0

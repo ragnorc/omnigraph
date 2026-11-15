@@ -1,0 +1,37 @@
+{"kind": "driver_start", "cmd": ["run", "--base", "http://127.0.0.1:18080", "--graph", "stress", "--hot", "64", "--people", "24", "--out", "/src/omnigraph/research/group-commit-stress/served/r02-s3-faults/history.jsonl", "--server-pid", "6765", "--writers", "32", "--secs", "90", "--actors", "2", "--seed", "21", "--metrics-secs", "15", "--mix", "fresh=80,hot=8,update=4,delete=4,person=2,knows=2"], "root": "s3://omnigraph-stress/r02-s3-faults-1794734407", "t": 1794734426.473}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "upstream", "toxicity": 1.0, "type": "latency", "attributes": {"latency": 69, "jitter": 32}}, "status": 200, "t": 1794734427.763}
+{"kind": "toxic_off", "toxic_kind": "jitter", "t": 1794734429.767}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.3, "type": "limit_data", "attributes": {"bytes": 205}}, "status": 200, "t": 1794734430.215}
+{"kind": "toxic_off", "toxic_kind": "truncate", "t": 1794734432.218}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 1.0, "type": "latency", "attributes": {"latency": 136, "jitter": 209}}, "status": 200, "t": 1794734437.355}
+{"kind": "toxic_off", "toxic_kind": "jitter", "t": 1794734439.358}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.3, "type": "limit_data", "attributes": {"bytes": 45}}, "status": 200, "t": 1794734442.775}
+{"kind": "toxic_off", "toxic_kind": "truncate", "t": 1794734444.779}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.3, "type": "reset_peer", "attributes": {"timeout": 33}}, "status": 200, "t": 1794734448.1}
+{"kind": "toxic_off", "toxic_kind": "reset", "t": 1794734450.102}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "upstream", "toxicity": 1.0, "type": "latency", "attributes": {"latency": 189, "jitter": 142}}, "status": 200, "t": 1794734452.724}
+{"kind": "toxic_off", "toxic_kind": "jitter", "t": 1794734454.727}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.3, "type": "reset_peer", "attributes": {"timeout": 39}}, "status": 200, "t": 1794734455.24}
+{"kind": "toxic_off", "toxic_kind": "reset", "t": 1794734457.242}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "upstream", "toxicity": 0.3, "type": "reset_peer", "attributes": {"timeout": 21}}, "status": 200, "t": 1794734466.09}
+{"kind": "toxic_off", "toxic_kind": "reset", "t": 1794734468.093}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.3, "type": "reset_peer", "attributes": {"timeout": 41}}, "status": 200, "t": 1794734469.431}
+{"kind": "toxic_off", "toxic_kind": "reset", "t": 1794734471.461}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.3, "type": "limit_data", "attributes": {"bytes": 310}}, "status": 200, "t": 1794734475.1}
+{"kind": "toxic_off", "toxic_kind": "truncate", "t": 1794734477.103}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.3, "type": "reset_peer", "attributes": {"timeout": 44}}, "status": 200, "t": 1794734477.438}
+{"kind": "toxic_off", "toxic_kind": "reset", "t": 1794734479.44}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 1.0, "type": "latency", "attributes": {"latency": 93, "jitter": 295}}, "status": 200, "t": 1794734480.519}
+{"kind": "toxic_off", "toxic_kind": "jitter", "t": 1794734482.521}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "upstream", "toxicity": 1.0, "type": "latency", "attributes": {"latency": 60, "jitter": 59}}, "status": 200, "t": 1794734484.729}
+{"kind": "toxic_off", "toxic_kind": "jitter", "t": 1794734486.731}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.3, "type": "timeout", "attributes": {"timeout": 2737}}, "status": 200, "t": 1794734490.527}
+{"kind": "toxic_off", "toxic_kind": "timeout", "t": 1794734492.531}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.3, "type": "limit_data", "attributes": {"bytes": 76}}, "status": 200, "t": 1794734501.807}
+{"kind": "toxic_off", "toxic_kind": "truncate", "t": 1794734503.809}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "upstream", "toxicity": 0.3, "type": "timeout", "attributes": {"timeout": 2178}}, "status": 200, "t": 1794734506.009}
+{"kind": "toxic_off", "toxic_kind": "timeout", "t": 1794734508.013}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.3, "type": "limit_data", "attributes": {"bytes": 124}}, "status": 200, "t": 1794734520.228}
+{"kind": "toxic_off", "toxic_kind": "truncate", "t": 1794734522.229}
+{"kind": "driver_done", "code": 0, "t": 1794734532.769}
+{"kind": "check_done", "code": 0, "root": "s3://omnigraph-stress/r02-s3-faults-1794734407", "t": 1794734533.89}

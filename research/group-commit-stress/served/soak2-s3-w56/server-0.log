@@ -1,0 +1,5 @@
+OMNIGRAPH_LISTEN_ADDR=127.0.0.1:18080
+[gc-stats] {"unix":1794735623,"branch":"main","batches":1,"entries":1,"refused":0,"failed_batches":0,"max_batch":1,"queue":0,"log":0,"known_key_files":0,"known_key_ids":0}
+[gc-stats] {"unix":1794735683,"branch":"main","batches":244,"entries":5634,"refused":0,"failed_batches":0,"max_batch":55,"queue":34,"log":128,"known_key_files":5625,"known_key_ids":5625}
+[gc-stats] {"unix":1794735745,"branch":"main","batches":69,"entries":1792,"refused":112,"failed_batches":0,"max_batch":34,"queue":7,"log":7,"known_key_files":7566,"known_key_ids":7566}
+[gc-stats] {"unix":1794735806,"branch":"main","batches":4,"entries":0,"refused":64,"failed_batches":0,"max_batch":0,"queue":38,"log":38,"known_key_files":7756,"known_key_ids":7756}

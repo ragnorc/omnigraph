@@ -1,0 +1,7 @@
+
+running 1 test
+[gs-summary] {"ops":335,"ok":178,"refused":0,"in_doubt":157,"errors":{"__dst 'p15' not found in Person [Manifest(ManifestError { kind: BadRequest, message: \"__ds":1,"__dst 'p18' not found in Person [Manifest(ManifestError { kind: BadRequest, message: \"__ds":1,"__src 'p16' not found in Person [Manifest(ManifestError { kind: BadRequest, message: \"__sr":1,"__src 'p17' not found in Person [Manifest(ManifestError { kind: BadRequest, message: \"__sr":1,"__src 'p19' not found in Person [Manifest(ManifestError { kind: BadRequest, message: \"__sr":1,"__src 'p23' not found in Person [Manifest(ManifestError { kind: BadRequest, message: \"__sr":1,"writer fenced on branch 'main': the branch is at writer epoch 1 and this process held no e":151}}
+test gc_stress_harness ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 31.41s
+

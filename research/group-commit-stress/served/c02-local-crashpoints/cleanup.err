@@ -1,0 +1,2 @@
+target /srv/stress/roots/c02-local-crashpoints-1794737127 (inline): direct root /srv/stress/roots/c02-local-crashpoints-1794737127; requested=/srv/stress/roots/c02-local-crashpoints-1794737127; provider=Local; graph=stress
+cluster admission retained: root=file:///srv/stress/roots/c02-local-crashpoints-1794737127 lock_id=01M7FAV1EMDZFAV52HJ3MNV85E. After stopping the owner and establishing graph/control I/O quiescence, use exact-ID cluster force-unlock; command completion alone does not release this lock.

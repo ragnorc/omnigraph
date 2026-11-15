@@ -1,0 +1,2 @@
+target /srv/stress/roots/c02-local-crashpoints-1794737127 (inline): direct root /srv/stress/roots/c02-local-crashpoints-1794737127; requested=/srv/stress/roots/c02-local-crashpoints-1794737127; provider=Local; graph=stress
+cleanup is destructive — rerun with --confirm. Policy for /srv/stress/roots/c02-local-crashpoints-1794737127/graphs/stress.omni: keep 1 versions

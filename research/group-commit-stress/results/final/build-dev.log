@@ -1,0 +1,74 @@
+   Compiling omnigraph-engine v0.15.1 (/src/omnigraph/crates/omnigraph)
+   Compiling omnigraph-api-types v0.15.1 (/src/omnigraph/crates/omnigraph-api-types)
+   Compiling omnigraph-cluster v0.15.1 (/src/omnigraph/crates/omnigraph-cluster)
+   Compiling omnigraph-bench v0.15.1 (/src/omnigraph/crates/omnigraph-bench)
+warning: field `head` is never read
+   --> crates/omnigraph/tests/group_commit_stress/harness.rs:342:9
+    |
+340 | pub struct Observation {
+    |            ----------- field in this struct
+341 |     pub version: u64,
+342 |     pub head: Option<String>,
+    |         ^^^^
+    |
+    = note: `Observation` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `omnigraph-engine` (test "group_commit_stress") generated 1 warning
+   Compiling omnigraph-server v0.15.1 (/src/omnigraph/crates/omnigraph-server)
+   Compiling omnigraph-gqt-core v0.15.1 (/src/omnigraph/crates/omnigraph-gqt-core)
+   Compiling omnigraph-cli v0.15.1 (/src/omnigraph/crates/omnigraph-cli)
+    Finished `test` profile [unoptimized] target(s) in 52.46s
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph_api_types-5aaf52501a065cf3)
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph_azure_admission-708886b33cd04ea0)
+  Executable unittests src/main.rs (target/debug/deps/omnigraph_azure_admission-0b6cfd29c3e0ba04)
+  Executable tests/supervisor.rs (target/debug/deps/supervisor-33261743bba5825c)
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph_bench-f50ce3ae73066aed)
+  Executable unittests src/bin/omnigraph-bench.rs (target/debug/deps/omnigraph_bench-a4b2f4796cba40bc)
+  Executable tests/integration/main.rs (target/debug/deps/integration-e00e286b65d27587)
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph_catalog-0b833f6613252564)
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph_cli-6bcc5629365103e9)
+  Executable unittests src/main.rs (target/debug/deps/omnigraph-8f75bb750e9bd0c5)
+  Executable tests/integration/main.rs (target/debug/deps/integration-74e3992fe0c466f0)
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph_cluster-862644831beb4296)
+  Executable tests/failpoints.rs (target/debug/deps/failpoints-8a7a36f37792b21e)
+  Executable tests/identity_recovery.rs (target/debug/deps/identity_recovery-ad8a77cdd57fecc1)
+  Executable tests/s3_cluster.rs (target/debug/deps/s3_cluster-16e4411f3c6e836c)
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph_compiler-f6b5d2298e9579aa)
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph_core-9d6a50c0a317ca81)
+  Executable tests/captured_provider.rs (target/debug/deps/captured_provider-6deda64a2569c530)
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph-aba75c11b0a9da41)
+  Executable tests/bound_storage.rs (target/debug/deps/bound_storage-c5e62d748f567a90)
+  Executable tests/detached_commit_matrix.rs (target/debug/deps/detached_commit_matrix-0e8a498b4a411637)
+  Executable tests/engine_v2_scrubbed_replay.rs (target/debug/deps/engine_v2_scrubbed_replay-8457937348465c2b)
+  Executable tests/failpoints.rs (target/debug/deps/failpoints-aaf057a4cc8424fd)
+  Executable tests/forbidden_apis.rs (target/debug/deps/forbidden_apis-20a879bd8bc1169f)
+  Executable tests/group_commit_stress.rs (target/debug/deps/group_commit_stress-0a85c46411ab5183)
+  Executable tests/integration/main.rs (target/debug/deps/integration-4c33eb5d61fe9e22)
+  Executable tests/lance_surface_guards.rs (target/debug/deps/lance_surface_guards-2034cfb6b597330f)
+  Executable tests/policy_engine_chassis.rs (target/debug/deps/policy_engine_chassis-1b5484b8b2f40c51)
+  Executable tests/schema_apply.rs (target/debug/deps/schema_apply-2b75c1b777fc3907)
+  Executable tests/search.rs (target/debug/deps/search-28807196b77102c6)
+  Executable tests/system_column_upgrade.rs (target/debug/deps/system_column_upgrade-0337849cc2ea64eb)
+  Executable tests/writes.rs (target/debug/deps/writes-be8366c162ccd559)
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph_gqt_core-451d886fc8c4b410)
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph_mcp-f6394e3430d546a3)
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph_planner-dddf43774c7b604a)
+  Executable tests/explain_dump.rs (target/debug/deps/explain_dump-0d84537b268febbb)
+  Executable tests/integration/main.rs (target/debug/deps/integration-a8fc7b2349b85649)
+  Executable tests/physical_node_matches.rs (target/debug/deps/physical_node_matches-311e44839fc1e9a4)
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph_policy-a6cf4dfa14dcba35)
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph_reference_engine-d854d006ef104e09)
+  Executable tests/frozen.rs (target/debug/deps/frozen-87ed579c7b933b81)
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph_seams-123084bdc6de21f0)
+  Executable tests/failpoint_names_guard.rs (target/debug/deps/failpoint_names_guard-92ef4e3d59248ed0)
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph_server-4532b14b2546d4f0)
+  Executable unittests src/main.rs (target/debug/deps/omnigraph_server-6f1a88517f62fc86)
+  Executable tests/boot_settings.rs (target/debug/deps/boot_settings-9759ea9629d3c8b6)
+  Executable tests/integration/main.rs (target/debug/deps/integration-a6564d1bc64538f1)
+  Executable tests/multi_graph.rs (target/debug/deps/multi_graph-76b26d00fa95aaea)
+  Executable tests/operation_routes.rs (target/debug/deps/operation_routes-630d12e80f9565d1)
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph_skill-3b45854b695d3181)
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph_storage-46cfba4c4e37e551)
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph_vocabulary_guard-4cdcfe57f65c7acc)
+  Executable unittests src/main.rs (target/debug/deps/omnigraph_vocabulary_guard-b4adef20fb490cc6)

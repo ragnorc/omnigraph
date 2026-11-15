@@ -1,0 +1,1 @@
+CARGO_TARGET_DIR=/srv/target-rel CARGO_PROFILE_RELEASE_STRIP=none = nice -n 5  5187.52s user 604.98s system 1307% cpu 7:23.10 total

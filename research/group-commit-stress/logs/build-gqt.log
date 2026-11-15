@@ -1,0 +1,20 @@
+   Compiling omnigraph-compiler v0.15.1 (/src/omnigraph/crates/omnigraph-compiler)
+   Compiling lance-index v13.0.0
+   Compiling globset v0.4.19
+   Compiling omnigraph-gqt v0.15.1 (/src/omnigraph/crates/omnigraph-gqt)
+   Compiling omnigraph-planner v0.15.1 (/src/omnigraph/crates/omnigraph-planner)
+   Compiling lance v13.0.0
+   Compiling omnigraph-core v0.15.1 (/src/omnigraph/crates/omnigraph-core)
+   Compiling omnigraph-catalog v0.15.1 (/src/omnigraph/crates/omnigraph-catalog)
+   Compiling omnigraph-engine v0.15.1 (/src/omnigraph/crates/omnigraph)
+   Compiling omnigraph-reference-engine v0.15.1 (/src/omnigraph/crates/omnigraph-reference-engine)
+   Compiling omnigraph-api-types v0.15.1 (/src/omnigraph/crates/omnigraph-api-types)
+   Compiling omnigraph-dst v0.15.1 (/src/omnigraph/crates/omnigraph-dst)
+   Compiling omnigraph-gqt-core v0.15.1 (/src/omnigraph/crates/omnigraph-gqt-core)
+    Finished `test` profile [unoptimized] target(s) in 3m 18s
+  Executable unittests src/lib.rs (target/debug/deps/omnigraph_gqt-3597bb9e0d24ed29)
+  Executable unittests src/main.rs (target/debug/deps/omnigraph_gqt-c9a0fab9ab09194a)
+  Executable tests/gq_logic_tests.rs (target/debug/deps/gq_logic_tests-7980964f97d6e67b)
+  Executable tests/integration/main.rs (target/debug/deps/integration-8a8bc845c829a5eb)
+  Executable tests/runner_dispatch.rs (target/debug/deps/runner_dispatch-d5b2836ab946bad3)
+EXIT=0

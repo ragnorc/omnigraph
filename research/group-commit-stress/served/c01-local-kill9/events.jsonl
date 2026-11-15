@@ -1,0 +1,15 @@
+{"kind": "driver_start", "cmd": ["run", "--base", "http://127.0.0.1:18082", "--graph", "stress", "--hot", "64", "--people", "24", "--out", "/src/omnigraph/research/group-commit-stress/served/c01-local-kill9/history.jsonl", "--server-pid", "33728", "--writers", "32", "--secs", "90", "--actors", "2", "--seed", "41", "--metrics-secs", "15", "--mix", "fresh=60,hot=15,pair=5,update=5,delete=5,person=4,knows=6"], "root": "/srv/stress/roots/c01-local-kill9-1794736258", "t": 1794736259.643}
+{"kind": "kill9", "pid": 33728, "t": 1794736271.35}
+{"kind": "unlock", "lock": "01M7F9VZ9KB2P6PGQVWT25RAXE", "t": 1794736271.401}
+{"kind": "restarted", "pid": 33891, "t": 1794736271.704}
+{"kind": "kill9", "pid": 33891, "t": 1794736287.952}
+{"kind": "unlock", "lock": "01M7F9WC1PG989RTX0ZDWMZRZS", "t": 1794736287.999}
+{"kind": "restarted", "pid": 34132, "t": 1794736288.302}
+{"kind": "kill9", "pid": 34132, "t": 1794736307.331}
+{"kind": "unlock", "lock": "01M7F9WW8DHBV9DWTY0XB0K53X", "t": 1794736307.379}
+{"kind": "restarted", "pid": 34325, "t": 1794736307.683}
+{"kind": "kill9", "pid": 34325, "t": 1794736341.945}
+{"kind": "unlock", "lock": "01M7F9XF62VQWQJQM3DAS4BVN3", "t": 1794736341.996}
+{"kind": "restarted", "pid": 34595, "t": 1794736342.299}
+{"kind": "driver_done", "code": 0, "t": 1794736353.016}
+{"kind": "check_done", "code": 0, "root": "/srv/stress/roots/c01-local-kill9-1794736258", "t": 1794736353.661}

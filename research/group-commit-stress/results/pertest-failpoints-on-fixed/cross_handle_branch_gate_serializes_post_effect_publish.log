@@ -1,0 +1,21 @@
+
+running 1 test
+test cross_handle_branch_gate_serializes_post_effect_publish ... FAILED
+
+failures:
+
+---- cross_handle_branch_gate_serializes_post_effect_publish stdout ----
+
+thread 'cross_handle_branch_gate_serializes_post_effect_publish' (44558) panicked at crates/omnigraph/tests/helpers/failpoint.rs:55:9:
+rendezvous: seam 'mutation.post_finalize_pre_publisher' was never reached
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'tokio-rt-worker' (44562) panicked at /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lance-13.0.0/src/io/exec/filtered_read.rs:667:56:
+called `Result::unwrap()` on an `Err` value: JoinError::Cancelled(Id(804))
+
+
+failures:
+    cross_handle_branch_gate_serializes_post_effect_publish
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 181 filtered out; finished in 14.98s
+

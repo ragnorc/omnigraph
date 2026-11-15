@@ -1,0 +1,47 @@
+{
+  "uri": "/srv/stress/roots/c02-local-crashpoints-1794737127/graphs/stress.omni",
+  "keep_versions": 1,
+  "older_than_secs": null,
+  "datasets": [
+    {
+      "type_key": "node:Tag",
+      "bytes_removed": 0,
+      "old_versions_removed": 0,
+      "error": null,
+      "manifests_removed": 0,
+      "unpublished_manifests": 0,
+      "unpublished_bytes": 0,
+      "foreign_versions": []
+    },
+    {
+      "type_key": "edge:Knows",
+      "bytes_removed": 2346005,
+      "old_versions_removed": 34,
+      "error": null,
+      "manifests_removed": 34,
+      "unpublished_manifests": 0,
+      "unpublished_bytes": 0,
+      "foreign_versions": []
+    },
+    {
+      "type_key": "node:Person",
+      "bytes_removed": 4113821,
+      "old_versions_removed": 62,
+      "error": null,
+      "manifests_removed": 62,
+      "unpublished_manifests": 0,
+      "unpublished_bytes": 0,
+      "foreign_versions": []
+    },
+    {
+      "type_key": "node:Item",
+      "bytes_removed": 231992942,
+      "old_versions_removed": 1477,
+      "error": null,
+      "manifests_removed": 1477,
+      "unpublished_manifests": 8,
+      "unpublished_bytes": 1015954,
+      "foreign_versions": []
+    }
+  ]
+}

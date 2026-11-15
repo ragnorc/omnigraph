@@ -1,0 +1,20 @@
+
+running 1 test
+test insert_overlapping_an_optimize_publication_does_not_reprepare_issue_1331 ... FAILED
+
+failures:
+
+---- insert_overlapping_an_optimize_publication_does_not_reprepare_issue_1331 stdout ----
+
+thread 'insert_overlapping_an_optimize_publication_does_not_reprepare_issue_1331' (45102) panicked at crates/omnigraph/tests/failpoints.rs:1645:5:
+assertion `left == right` failed: an optimize publication that compacted only another table made the insert prepare again
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    insert_overlapping_an_optimize_publication_does_not_reprepare_issue_1331
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 181 filtered out; finished in 0.16s
+

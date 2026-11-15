@@ -1,0 +1,1 @@
+{"ops": 10217, "ok": 10217, "refused": 0, "in_doubt": 0, "commits_with_writes": 706, "writes_per_commit": 14.47, "max_batch": 47, "observations": 0, "p50_ms": 170.052, "p99_ms": 550.76, "errors": [], "violations": 0}

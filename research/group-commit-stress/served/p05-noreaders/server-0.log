@@ -1,0 +1,1184 @@
+OMNIGRAPH_LISTEN_ADDR=127.0.0.1:18083
+[group-timing]   detached commits 4.4 ms
+[group-timing] entries 1 gates 0.0 capture 0.2 commit+publish 10.7 ms (own view true)
+[group-timing]   detached commits 1.0 ms
+[group-timing] entries 1 gates 0.0 capture 0.1 commit+publish 4.1 ms (own view true)
+[group-timing]   detached commits 1.0 ms
+[group-timing] entries 1 gates 0.0 capture 0.1 commit+publish 4.1 ms (own view true)
+[group-timing]   detached commits 1.1 ms
+[group-timing] entries 1 gates 0.0 capture 0.1 commit+publish 3.8 ms (own view true)
+[group-timing]   detached commits 1.3 ms
+[group-timing] entries 1 gates 0.0 capture 0.2 commit+publish 4.6 ms (own view true)
+[group-timing]   detached commits 1.0 ms
+[group-timing] entries 1 gates 0.0 capture 0.2 commit+publish 3.4 ms (own view true)
+[group-timing]   detached commits 0.9 ms
+[group-timing] entries 1 gates 0.0 capture 0.2 commit+publish 4.0 ms (own view true)
+[group-timing]   detached commits 1.0 ms
+[group-timing] entries 1 gates 0.0 capture 0.2 commit+publish 4.4 ms (own view true)
+[group-timing]   detached commits 1.1 ms
+[group-timing] entries 1 gates 0.0 capture 0.2 commit+publish 4.5 ms (own view true)
+[group-timing]   detached commits 1.1 ms
+[group-timing] entries 1 gates 0.0 capture 0.2 commit+publish 4.7 ms (own view true)
+[group-timing]   detached commits 1.1 ms
+[group-timing] entries 1 gates 0.0 capture 0.3 commit+publish 4.1 ms (own view true)
+[group-timing]   detached commits 1.0 ms
+[group-timing] entries 1 gates 0.0 capture 0.3 commit+publish 4.3 ms (own view true)
+[group-timing]   detached commits 1.1 ms
+[group-timing] entries 1 gates 0.0 capture 0.3 commit+publish 4.1 ms (own view true)
+[group-timing]   detached commits 1.1 ms
+[group-timing] entries 1 gates 0.0 capture 0.4 commit+publish 4.8 ms (own view true)
+[group-timing]   detached commits 1.0 ms
+[group-timing] entries 1 gates 0.0 capture 0.2 commit+publish 4.0 ms (own view true)
+[group-timing]   detached commits 1.0 ms
+[group-timing] entries 1 gates 0.0 capture 0.3 commit+publish 4.0 ms (own view true)
+[group-timing]   detached commits 1.0 ms
+[group-timing] entries 1 gates 0.0 capture 0.4 commit+publish 4.1 ms (own view true)
+[group-timing]   detached commits 1.0 ms
+[group-timing] entries 1 gates 0.0 capture 0.4 commit+publish 3.9 ms (own view true)
+[group-timing]   detached commits 1.1 ms
+[group-timing] entries 1 gates 0.0 capture 0.4 commit+publish 4.4 ms (own view true)
+[group-timing]   detached commits 1.0 ms
+[group-timing] entries 1 gates 0.0 capture 0.4 commit+publish 3.4 ms (own view true)
+[group-timing]   detached commits 0.9 ms
+[group-timing] entries 1 gates 0.0 capture 0.4 commit+publish 4.1 ms (own view true)
+[group-timing]   detached commits 1.2 ms
+[group-timing] entries 1 gates 0.0 capture 0.4 commit+publish 4.3 ms (own view true)
+[group-timing]   detached commits 1.0 ms
+[group-timing] entries 1 gates 0.0 capture 0.1 commit+publish 4.4 ms (own view true)
+[group-timing]   detached commits 1.2 ms
+[group-timing] entries 1 gates 0.0 capture 0.1 commit+publish 4.6 ms (own view true)
+[group-timing]   detached commits 1.9 ms
+[group-timing] entries 1 gates 0.0 capture 0.9 commit+publish 5.8 ms (own view true)
+[group-timing]   detached commits 1.0 ms
+[group-timing] entries 1 gates 0.0 capture 0.1 commit+publish 4.8 ms (own view true)
+[group-timing]   detached commits 1.2 ms
+[group-timing] entries 1 gates 0.0 capture 0.6 commit+publish 4.5 ms (own view true)
+[group-timing]   detached commits 1.4 ms
+[group-timing] entries 1 gates 0.0 capture 0.2 commit+publish 4.6 ms (own view true)
+[group-timing]   detached commits 1.1 ms
+[group-timing] entries 1 gates 0.0 capture 0.8 commit+publish 4.8 ms (own view true)
+[group-timing]   detached commits 1.1 ms
+[group-timing] entries 1 gates 0.0 capture 0.6 commit+publish 4.3 ms (own view true)
+[group-timing]   detached commits 1.0 ms
+[group-timing] entries 1 gates 0.0 capture 0.6 commit+publish 4.6 ms (own view true)
+[group-timing]   detached commits 1.2 ms
+[group-timing] entries 1 gates 0.0 capture 0.6 commit+publish 4.9 ms (own view true)
+[group-timing]   detached commits 3.1 ms
+[group-timing] entries 1 gates 0.0 capture 0.6 commit+publish 6.9 ms (own view true)
+[group-timing]   detached commits 0.9 ms
+[group-timing] entries 1 gates 0.0 capture 0.8 commit+publish 4.1 ms (own view true)
+[group-timing]   detached commits 0.7 ms
+[group-timing] entries 1 gates 0.0 capture 0.1 commit+publish 3.8 ms (own view true)
+[group-timing]   detached commits 0.9 ms
+[group-timing] entries 1 gates 0.0 capture 0.2 commit+publish 4.8 ms (own view true)
+[group-timing]   detached commits 0.9 ms
+[group-timing] entries 1 gates 0.0 capture 0.1 commit+publish 4.9 ms (own view true)
+[group-timing]   detached commits 0.8 ms
+[group-timing] entries 1 gates 0.0 capture 0.7 commit+publish 4.1 ms (own view true)
+[group-timing]   detached commits 0.8 ms
+[group-timing] entries 1 gates 0.0 capture 0.3 commit+publish 4.3 ms (own view true)
+[group-timing]   detached commits 0.9 ms
+[group-timing] entries 1 gates 0.0 capture 0.4 commit+publish 4.3 ms (own view true)
+[group-timing]   detached commits 0.9 ms
+[group-timing] entries 1 gates 0.0 capture 0.3 commit+publish 4.7 ms (own view true)
+[group-timing]   detached commits 1.3 ms
+[group-timing] entries 1 gates 0.0 capture 0.7 commit+publish 5.3 ms (own view true)
+[group-timing]   detached commits 1.0 ms
+[group-timing] entries 1 gates 0.0 capture 0.2 commit+publish 4.3 ms (own view true)
+[group-timing]   detached commits 0.6 ms
+[group-timing] entries 1 gates 0.0 capture 0.3 commit+publish 3.7 ms (own view true)
+[group-timing]   detached commits 20.3 ms
+[group-timing] entries 1 gates 0.0 capture 0.5 commit+publish 24.0 ms (own view true)
+[group-timing]   detached commits 1.4 ms
+[group-timing] entries 47 gates 0.0 capture 0.7 commit+publish 5.9 ms (own view true)
+[group-timing]   detached commits 1.5 ms
+[group-timing] entries 1 gates 0.0 capture 0.5 commit+publish 9.2 ms (own view true)
+[group-timing]   detached commits 2.1 ms
+[group-timing] entries 11 gates 0.0 capture 0.7 commit+publish 14.3 ms (own view true)
+[group-timing]   detached commits 7.9 ms
+[group-timing] entries 27 gates 0.0 capture 0.3 commit+publish 12.2 ms (own view true)
+[group-timing]   detached commits 1.7 ms
+[group-timing] entries 21 gates 0.0 capture 0.7 commit+publish 6.9 ms (own view true)
+[group-timing]   detached commits 1.2 ms
+[group-timing] entries 20 gates 0.0 capture 0.5 commit+publish 6.5 ms (own view true)
+[group-timing]   detached commits 1.4 ms
+[group-timing] entries 24 gates 0.0 capture 0.2 commit+publish 8.0 ms (own view true)
+[group-timing]   detached commits 1.6 ms
+[group-timing] entries 24 gates 0.0 capture 0.9 commit+publish 8.4 ms (own view true)
+[group-timing]   detached commits 2.0 ms
+[group-timing] entries 20 gates 0.0 capture 1.4 commit+publish 7.9 ms (own view true)
+[group-timing]   detached commits 1.7 ms
+[group-timing] entries 28 gates 0.0 capture 1.8 commit+publish 7.5 ms (own view true)
+[group-timing]   detached commits 3.5 ms
+[group-timing] entries 20 gates 0.0 capture 1.0 commit+publish 9.0 ms (own view true)
+[group-timing]   detached commits 2.2 ms
+[group-timing] entries 28 gates 0.0 capture 1.3 commit+publish 7.4 ms (own view true)
+[group-timing]   detached commits 1.8 ms
+[group-timing] entries 20 gates 0.0 capture 1.1 commit+publish 10.4 ms (own view true)
+[group-timing]   detached commits 7.9 ms
+[group-timing] entries 21 gates 0.0 capture 0.7 commit+publish 19.3 ms (own view true)
+[group-timing]   detached commits 2.2 ms
+[group-timing] entries 24 gates 0.0 capture 0.4 commit+publish 8.0 ms (own view true)
+[group-timing]   detached commits 2.1 ms
+[group-timing] entries 23 gates 0.0 capture 1.3 commit+publish 7.3 ms (own view true)
+[group-timing]   detached commits 2.6 ms
+[group-timing] entries 23 gates 0.0 capture 0.3 commit+publish 9.8 ms (own view true)
+[group-timing]   detached commits 2.7 ms
+[group-timing] entries 25 gates 0.0 capture 0.3 commit+publish 7.2 ms (own view true)
+[group-timing]   detached commits 4.2 ms
+[group-timing] entries 19 gates 0.0 capture 0.5 commit+publish 14.6 ms (own view true)
+[group-timing]   detached commits 16.3 ms
+[group-timing] entries 18 gates 0.0 capture 1.5 commit+publish 21.0 ms (own view true)
+[group-timing]   detached commits 2.3 ms
+[group-timing] entries 30 gates 0.0 capture 0.4 commit+publish 7.8 ms (own view true)
+[group-timing]   detached commits 2.5 ms
+[group-timing] entries 15 gates 0.0 capture 0.9 commit+publish 9.6 ms (own view true)
+[group-timing]   detached commits 19.2 ms
+[group-timing] entries 14 gates 0.0 capture 0.7 commit+publish 27.5 ms (own view true)
+[group-timing]   detached commits 2.4 ms
+[group-timing] entries 33 gates 0.0 capture 0.4 commit+publish 8.4 ms (own view true)
+[group-timing]   detached commits 2.6 ms
+[group-timing] entries 15 gates 0.0 capture 0.4 commit+publish 7.2 ms (own view true)
+[group-timing]   detached commits 2.4 ms
+[group-timing] entries 15 gates 0.0 capture 1.2 commit+publish 7.6 ms (own view true)
+[group-timing]   detached commits 11.4 ms
+[group-timing] entries 24 gates 0.0 capture 0.3 commit+publish 18.1 ms (own view true)
+[group-timing]   detached commits 4.0 ms
+[group-timing] entries 24 gates 0.0 capture 1.0 commit+publish 10.9 ms (own view true)
+[group-timing]   detached commits 3.6 ms
+[group-timing] entries 1 gates 0.0 capture 0.3 commit+publish 9.4 ms (own view true)
+[group-timing]   detached commits 2.9 ms
+[group-timing] entries 13 gates 0.0 capture 0.5 commit+publish 7.9 ms (own view true)
+[group-timing]   detached commits 2.8 ms
+[group-timing] entries 34 gates 0.0 capture 2.0 commit+publish 8.2 ms (own view true)
+[group-timing]   detached commits 2.7 ms
+[group-timing] entries 14 gates 0.0 capture 1.7 commit+publish 7.6 ms (own view true)
+[group-timing]   detached commits 3.5 ms
+[group-timing] entries 9 gates 0.0 capture 0.5 commit+publish 7.5 ms (own view true)
+[group-timing]   detached commits 3.4 ms
+[group-timing] entries 13 gates 0.0 capture 2.6 commit+publish 8.6 ms (own view true)
+[group-timing]   detached commits 2.8 ms
+[group-timing] entries 31 gates 0.0 capture 0.6 commit+publish 7.9 ms (own view true)
+[group-timing]   detached commits 3.4 ms
+[group-timing] entries 17 gates 0.0 capture 0.4 commit+publish 8.4 ms (own view true)
+[group-timing]   detached commits 3.9 ms
+[group-timing] entries 6 gates 0.0 capture 3.2 commit+publish 9.6 ms (own view true)
+[group-timing]   detached commits 3.4 ms
+[group-timing] entries 12 gates 0.0 capture 3.3 commit+publish 8.3 ms (own view true)
+[group-timing]   detached commits 3.6 ms
+[group-timing] entries 35 gates 0.0 capture 2.2 commit+publish 9.0 ms (own view true)
+[group-timing]   detached commits 3.6 ms
+[group-timing] entries 13 gates 0.0 capture 1.0 commit+publish 9.8 ms (own view true)
+[group-timing]   detached commits 5.0 ms
+[group-timing] entries 6 gates 0.0 capture 4.2 commit+publish 10.7 ms (own view true)
+[group-timing]   detached commits 4.4 ms
+[group-timing] entries 18 gates 0.0 capture 2.4 commit+publish 10.5 ms (own view true)
+[group-timing]   detached commits 4.1 ms
+[group-timing] entries 30 gates 0.0 capture 0.5 commit+publish 10.3 ms (own view true)
+[group-timing]   detached commits 3.9 ms
+[group-timing] entries 3 gates 0.0 capture 1.2 commit+publish 8.8 ms (own view true)
+[group-timing]   detached commits 3.6 ms
+[group-timing] entries 22 gates 0.0 capture 0.8 commit+publish 8.8 ms (own view true)
+[group-timing]   detached commits 8.9 ms
+[group-timing] entries 12 gates 0.0 capture 0.7 commit+publish 27.0 ms (own view true)
+[group-timing]   detached commits 4.1 ms
+[group-timing] entries 35 gates 0.0 capture 0.5 commit+publish 9.6 ms (own view true)
+[group-timing]   detached commits 3.8 ms
+[group-timing] entries 11 gates 0.0 capture 0.4 commit+publish 11.6 ms (own view true)
+[group-timing]   detached commits 4.9 ms
+[group-timing] entries 8 gates 0.0 capture 0.5 commit+publish 11.9 ms (own view true)
+[group-timing]   detached commits 5.7 ms
+[group-timing] entries 9 gates 0.0 capture 0.9 commit+publish 11.8 ms (own view true)
+[group-timing]   detached commits 3.5 ms
+[group-timing] entries 33 gates 0.0 capture 0.7 commit+publish 9.0 ms (own view true)
+[group-timing]   detached commits 5.3 ms
+[group-timing] entries 15 gates 0.0 capture 2.2 commit+publish 18.3 ms (own view true)
+[group-timing]   detached commits 19.1 ms
+[group-timing] entries 27 gates 0.0 capture 1.5 commit+publish 25.1 ms (own view true)
+[group-timing]   detached commits 3.8 ms
+[group-timing] entries 21 gates 0.0 capture 0.8 commit+publish 11.1 ms (own view true)
+[group-timing]   detached commits 4.2 ms
+[group-timing] entries 3 gates 0.0 capture 0.8 commit+publish 13.4 ms (own view true)
+[group-timing]   detached commits 4.6 ms
+[group-timing] entries 6 gates 0.0 capture 0.6 commit+publish 12.9 ms (own view true)
+[group-timing]   detached commits 4.5 ms
+[group-timing] entries 31 gates 0.0 capture 2.6 commit+publish 9.7 ms (own view true)
+[group-timing]   detached commits 5.0 ms
+[group-timing] entries 17 gates 0.0 capture 1.6 commit+publish 17.2 ms (own view true)
+[group-timing]   detached commits 26.8 ms
+[group-timing] entries 18 gates 0.0 capture 0.6 commit+publish 32.1 ms (own view true)
+[group-timing]   detached commits 3.8 ms
+[group-timing] entries 30 gates 0.0 capture 1.5 commit+publish 12.3 ms (own view true)
+[group-timing]   detached commits 12.1 ms
+[group-timing] entries 13 gates 0.0 capture 0.6 commit+publish 36.8 ms (own view true)
+[group-timing]   detached commits 5.2 ms
+[group-timing] entries 34 gates 0.0 capture 2.0 commit+publish 12.4 ms (own view true)
+[group-timing]   detached commits 4.7 ms
+[group-timing] entries 14 gates 0.0 capture 0.8 commit+publish 19.1 ms (own view true)
+[group-timing]   detached commits 36.4 ms
+[group-timing] entries 15 gates 0.0 capture 0.6 commit+publish 41.3 ms (own view true)
+[group-timing]   detached commits 5.2 ms
+[group-timing] entries 33 gates 0.0 capture 2.0 commit+publish 11.8 ms (own view true)
+[group-timing]   detached commits 4.7 ms
+[group-timing] entries 5 gates 0.0 capture 0.6 commit+publish 17.8 ms (own view true)
+[group-timing]   detached commits 33.9 ms
+[group-timing] entries 21 gates 0.0 capture 2.0 commit+publish 39.7 ms (own view true)
+[group-timing]   detached commits 9.4 ms
+[group-timing] entries 27 gates 0.0 capture 0.7 commit+publish 26.0 ms (own view true)
+[group-timing]   detached commits 27.8 ms
+[group-timing] entries 15 gates 0.0 capture 0.6 commit+publish 43.9 ms (own view true)
+[group-timing]   detached commits 5.6 ms
+[group-timing] entries 32 gates 0.0 capture 0.6 commit+publish 10.5 ms (own view true)
+[group-timing]   detached commits 18.0 ms
+[group-timing] entries 4 gates 0.0 capture 0.4 commit+publish 45.0 ms (own view true)
+[group-timing]   detached commits 5.4 ms
+[group-timing] entries 42 gates 0.0 capture 1.8 commit+publish 11.9 ms (own view true)
+[group-timing]   detached commits 5.6 ms
+[group-timing] entries 6 gates 0.0 capture 0.6 commit+publish 17.9 ms (own view true)
+[group-timing]   detached commits 39.9 ms
+[group-timing] entries 12 gates 0.0 capture 0.7 commit+publish 45.2 ms (own view true)
+[group-timing]   detached commits 5.2 ms
+[group-timing] entries 36 gates 0.0 capture 0.6 commit+publish 9.9 ms (own view true)
+[group-timing]   detached commits 5.2 ms
+[group-timing] entries 3 gates 0.0 capture 0.8 commit+publish 10.2 ms (own view true)
+[group-timing]   detached commits 4.4 ms
+[group-timing] entries 11 gates 0.0 capture 0.5 commit+publish 10.2 ms (own view true)
+[group-timing]   detached commits 8.2 ms
+[group-timing] entries 2 gates 0.0 capture 0.4 commit+publish 21.7 ms (own view true)
+[group-timing]   detached commits 16.2 ms
+[group-timing] entries 32 gates 0.0 capture 0.6 commit+publish 22.5 ms (own view true)
+[group-timing]   detached commits 12.8 ms
+[group-timing] entries 16 gates 0.0 capture 0.7 commit+publish 45.0 ms (own view true)
+[group-timing]   detached commits 5.8 ms
+[group-timing] entries 31 gates 0.0 capture 1.2 commit+publish 13.1 ms (own view true)
+[group-timing]   detached commits 11.3 ms
+[group-timing] entries 15 gates 0.0 capture 0.5 commit+publish 27.9 ms (own view true)
+[group-timing]   detached commits 22.6 ms
+[group-timing] entries 25 gates 0.0 capture 0.7 commit+publish 27.5 ms (own view true)
+[group-timing]   detached commits 5.1 ms
+[group-timing] entries 23 gates 0.0 capture 1.1 commit+publish 30.3 ms (own view true)
+[group-timing]   detached commits 5.5 ms
+[group-timing] entries 21 gates 0.0 capture 0.5 commit+publish 25.5 ms (own view true)
+[group-timing]   detached commits 5.6 ms
+[group-timing] entries 21 gates 0.0 capture 0.8 commit+publish 24.7 ms (own view true)
+[group-timing]   detached commits 5.5 ms
+[group-timing] entries 25 gates 0.0 capture 0.8 commit+publish 11.3 ms (own view true)
+[group-timing]   detached commits 5.3 ms
+[group-timing] entries 4 gates 0.0 capture 0.6 commit+publish 17.9 ms (own view true)
+[group-timing]   detached commits 5.5 ms
+[group-timing] entries 7 gates 0.0 capture 0.5 commit+publish 10.6 ms (own view true)
+[group-timing]   detached commits 8.2 ms
+[group-timing] entries 13 gates 0.0 capture 0.7 commit+publish 13.8 ms (own view true)
+[group-timing]   detached commits 5.6 ms
+[group-timing] entries 11 gates 0.0 capture 0.6 commit+publish 10.5 ms (own view true)
+[group-timing]   detached commits 21.4 ms
+[group-timing] entries 12 gates 0.0 capture 0.6 commit+publish 36.1 ms (own view true)
+[group-timing]   detached commits 8.6 ms
+[group-timing] entries 34 gates 0.0 capture 1.8 commit+publish 15.3 ms (own view true)
+[group-timing]   detached commits 6.0 ms
+[group-timing] entries 5 gates 0.0 capture 1.4 commit+publish 28.2 ms (own view true)
+[group-timing]   detached commits 28.1 ms
+[group-timing] entries 25 gates 0.0 capture 0.7 commit+publish 33.5 ms (own view true)
+[group-timing]   detached commits 10.3 ms
+[group-timing] entries 23 gates 0.0 capture 0.8 commit+publish 15.5 ms (own view true)
+[group-timing]   detached commits 5.9 ms
+[group-timing] entries 2 gates 0.0 capture 0.8 commit+publish 31.1 ms (own view true)
+[group-timing]   detached commits 5.8 ms
+[group-timing] entries 21 gates 0.0 capture 0.5 commit+publish 11.6 ms (own view true)
+[group-timing]   detached commits 6.6 ms
+[group-timing] entries 12 gates 0.0 capture 0.7 commit+publish 12.1 ms (own view true)
+[group-timing]   detached commits 13.7 ms
+[group-timing] entries 13 gates 0.0 capture 0.7 commit+publish 30.1 ms (own view true)
+[group-timing]   detached commits 7.2 ms
+[group-timing] entries 19 gates 0.0 capture 0.8 commit+publish 12.5 ms (own view true)
+[group-timing]   detached commits 5.9 ms
+[group-timing] entries 16 gates 0.0 capture 0.6 commit+publish 12.2 ms (own view true)
+[group-timing]   detached commits 6.0 ms
+[group-timing] entries 7 gates 0.0 capture 0.9 commit+publish 34.3 ms (own view true)
+[group-timing]   detached commits 6.4 ms
+[group-timing] entries 18 gates 0.0 capture 0.6 commit+publish 12.8 ms (own view true)
+[group-timing]   detached commits 6.2 ms
+[group-timing] entries 18 gates 0.0 capture 0.8 commit+publish 18.5 ms (own view true)
+[group-timing]   detached commits 6.0 ms
+[group-timing] entries 12 gates 0.0 capture 0.7 commit+publish 21.6 ms (own view true)
+[group-timing]   detached commits 6.6 ms
+[group-timing] entries 12 gates 0.0 capture 0.7 commit+publish 16.6 ms (own view true)
+[group-timing]   detached commits 7.0 ms
+[group-timing] entries 8 gates 0.0 capture 0.7 commit+publish 16.9 ms (own view true)
+[group-timing]   detached commits 23.4 ms
+[group-timing] entries 17 gates 0.0 capture 0.6 commit+publish 33.7 ms (own view true)
+[group-timing]   detached commits 6.9 ms
+[group-timing] entries 30 gates 0.0 capture 0.7 commit+publish 14.3 ms (own view true)
+[group-timing]   detached commits 6.6 ms
+[group-timing] entries 2 gates 0.0 capture 0.6 commit+publish 49.4 ms (own view true)
+[group-timing]   detached commits 16.4 ms
+[group-timing] entries 38 gates 0.0 capture 0.7 commit+publish 24.5 ms (own view true)
+[group-timing]   detached commits 8.2 ms
+[group-timing] entries 10 gates 0.0 capture 0.9 commit+publish 40.2 ms (own view true)
+[group-timing]   detached commits 43.6 ms
+[group-timing] entries 21 gates 0.0 capture 0.7 commit+publish 52.7 ms (own view true)
+[group-timing]   detached commits 7.0 ms
+[group-timing] entries 27 gates 0.0 capture 0.7 commit+publish 16.2 ms (own view true)
+[group-timing]   detached commits 6.9 ms
+[group-timing] entries 1 gates 0.0 capture 0.9 commit+publish 47.8 ms (own view true)
+[group-timing]   detached commits 20.1 ms
+[group-timing] entries 31 gates 0.0 capture 0.7 commit+publish 28.7 ms (own view true)
+[group-timing]   detached commits 6.6 ms
+[group-timing] entries 17 gates 0.0 capture 0.8 commit+publish 49.4 ms (own view true)
+[group-timing]   detached commits 8.1 ms
+[group-timing] entries 29 gates 0.0 capture 0.6 commit+publish 15.8 ms (own view true)
+[group-timing]   detached commits 7.3 ms
+[group-timing] entries 3 gates 0.0 capture 0.6 commit+publish 18.7 ms (own view true)
+[group-timing]   detached commits 7.2 ms
+[group-timing] entries 6 gates 0.0 capture 0.5 commit+publish 49.7 ms (own view true)
+[group-timing]   detached commits 7.2 ms
+[group-timing] entries 40 gates 0.0 capture 0.7 commit+publish 18.1 ms (own view true)
+[group-timing]   detached commits 14.7 ms
+[group-timing] entries 8 gates 0.0 capture 0.6 commit+publish 63.6 ms (own view true)
+[group-timing]   detached commits 19.2 ms
+[group-timing] entries 35 gates 0.0 capture 0.7 commit+publish 27.4 ms (own view true)
+[group-timing]   detached commits 8.1 ms
+[group-timing] entries 13 gates 0.0 capture 0.6 commit+publish 50.1 ms (own view true)
+[group-timing]   detached commits 36.8 ms
+[group-timing] entries 25 gates 0.0 capture 0.6 commit+publish 43.9 ms (own view true)
+[group-timing]   detached commits 8.2 ms
+[group-timing] entries 23 gates 0.0 capture 0.6 commit+publish 16.1 ms (own view true)
+[group-timing]   detached commits 23.7 ms
+[group-timing] entries 2 gates 0.0 capture 0.7 commit+publish 42.7 ms (own view true)
+[group-timing]   detached commits 7.2 ms
+[group-timing] entries 9 gates 0.0 capture 1.3 commit+publish 18.1 ms (own view true)
+[group-timing]   detached commits 7.7 ms
+[group-timing] entries 19 gates 0.0 capture 0.7 commit+publish 15.5 ms (own view true)
+[group-timing]   detached commits 7.8 ms
+[group-timing] entries 9 gates 0.0 capture 0.5 commit+publish 15.6 ms (own view true)
+[group-timing]   detached commits 13.6 ms
+[group-timing] entries 11 gates 0.0 capture 0.7 commit+publish 23.0 ms (own view true)
+[group-timing]   detached commits 10.7 ms
+[group-timing] entries 8 gates 0.0 capture 0.7 commit+publish 20.2 ms (own view true)
+[group-timing]   detached commits 7.4 ms
+[group-timing] entries 17 gates 0.0 capture 0.7 commit+publish 16.6 ms (own view true)
+[group-timing]   detached commits 9.1 ms
+[group-timing] entries 4 gates 0.0 capture 0.6 commit+publish 37.3 ms (own view true)
+[group-timing]   detached commits 7.7 ms
+[group-timing] entries 17 gates 0.0 capture 0.8 commit+publish 18.8 ms (own view true)
+[group-timing]   detached commits 8.2 ms
+[group-timing] entries 13 gates 0.0 capture 0.9 commit+publish 16.1 ms (own view true)
+[group-timing]   detached commits 6.9 ms
+[group-timing] entries 17 gates 0.0 capture 0.7 commit+publish 17.0 ms (own view true)
+[group-timing]   detached commits 42.7 ms
+[group-timing] entries 1 gates 0.0 capture 1.1 commit+publish 62.7 ms (own view true)
+[group-timing]   detached commits 8.3 ms
+[group-timing] entries 45 gates 0.0 capture 0.6 commit+publish 15.8 ms (own view true)
+[group-timing]   detached commits 7.1 ms
+[group-timing] entries 3 gates 0.0 capture 0.7 commit+publish 24.8 ms (own view true)
+[group-timing]   detached commits 70.0 ms
+[group-timing] entries 10 gates 0.0 capture 0.6 commit+publish 77.3 ms (own view true)
+[group-timing]   detached commits 8.3 ms
+[group-timing] entries 38 gates 0.0 capture 0.7 commit+publish 16.3 ms (own view true)
+[group-timing]   detached commits 9.2 ms
+[group-timing] entries 1 gates 0.0 capture 0.6 commit+publish 68.9 ms (own view true)
+[group-timing]   detached commits 11.0 ms
+[group-timing] entries 34 gates 0.0 capture 0.8 commit+publish 21.6 ms (own view true)
+[group-timing]   detached commits 9.1 ms
+[group-timing] entries 14 gates 0.0 capture 0.7 commit+publish 67.1 ms (own view true)
+[group-timing]   detached commits 8.7 ms
+[group-timing] entries 32 gates 0.0 capture 0.7 commit+publish 17.0 ms (own view true)
+[group-timing]   detached commits 16.6 ms
+[group-timing] entries 4 gates 0.0 capture 0.7 commit+publish 66.0 ms (own view true)
+[group-timing]   detached commits 8.7 ms
+[group-timing] entries 14 gates 0.0 capture 0.6 commit+publish 17.0 ms (own view true)
+[group-timing]   detached commits 14.8 ms
+[group-timing] entries 34 gates 0.0 capture 0.7 commit+publish 31.1 ms (own view true)
+[group-timing]   detached commits 9.0 ms
+[group-timing] entries 12 gates 0.0 capture 0.7 commit+publish 67.8 ms (own view true)
+[group-timing]   detached commits 16.1 ms
+[group-timing] entries 35 gates 0.0 capture 0.8 commit+publish 25.1 ms (own view true)
+[group-timing]   detached commits 8.3 ms
+[group-timing] entries 12 gates 0.0 capture 0.7 commit+publish 58.0 ms (own view true)
+[group-timing]   detached commits 41.5 ms
+[group-timing] entries 25 gates 0.0 capture 0.7 commit+publish 49.4 ms (own view true)
+[group-timing]   detached commits 10.3 ms
+[group-timing] entries 23 gates 0.0 capture 0.7 commit+publish 18.3 ms (own view true)
+[group-timing]   detached commits 33.2 ms
+[group-timing] entries 1 gates 0.0 capture 0.6 commit+publish 44.3 ms (own view true)
+[group-timing]   detached commits 7.4 ms
+[group-timing] entries 22 gates 0.0 capture 0.7 commit+publish 15.4 ms (own view true)
+[group-timing]   detached commits 9.6 ms
+[group-timing] entries 1 gates 0.0 capture 0.8 commit+publish 30.2 ms (own view true)
+[group-timing]   detached commits 10.6 ms
+[group-timing] entries 9 gates 0.0 capture 0.6 commit+publish 18.4 ms (own view true)
+[group-timing]   detached commits 25.0 ms
+[group-timing] entries 16 gates 0.0 capture 0.7 commit+publish 33.8 ms (own view true)
+[group-timing]   detached commits 9.4 ms
+[group-timing] entries 31 gates 0.0 capture 0.6 commit+publish 16.8 ms (own view true)
+[group-timing]   detached commits 24.1 ms
+[group-timing] entries 2 gates 0.0 capture 0.6 commit+publish 75.5 ms (own view true)
+[group-timing]   detached commits 8.7 ms
+[group-timing] entries 42 gates 0.0 capture 0.8 commit+publish 16.8 ms (own view true)
+[group-timing]   detached commits 39.0 ms
+[group-timing] entries 6 gates 0.0 capture 0.7 commit+publish 90.4 ms (own view true)
+[group-timing]   detached commits 8.1 ms
+[group-timing] entries 40 gates 0.0 capture 0.6 commit+publish 18.4 ms (own view true)
+[group-timing]   detached commits 11.6 ms
+[group-timing] entries 8 gates 0.0 capture 0.7 commit+publish 86.9 ms (own view true)
+[group-timing]   detached commits 7.9 ms
+[group-timing] entries 38 gates 0.0 capture 0.8 commit+publish 16.6 ms (own view true)
+[group-timing]   detached commits 9.5 ms
+[group-timing] entries 3 gates 0.0 capture 0.8 commit+publish 79.1 ms (own view true)
+[group-timing]   detached commits 11.0 ms
+[group-timing] entries 17 gates 0.0 capture 0.7 commit+publish 19.3 ms (own view true)
+[group-timing]   detached commits 13.8 ms
+[group-timing] entries 26 gates 0.0 capture 0.7 commit+publish 36.6 ms (own view true)
+[group-timing]   detached commits 9.7 ms
+[group-timing] entries 20 gates 0.0 capture 0.5 commit+publish 18.1 ms (own view true)
+[group-timing]   detached commits 39.4 ms
+[group-timing] entries 3 gates 0.0 capture 0.6 commit+publish 49.8 ms (own view true)
+[group-timing]   detached commits 8.8 ms
+[group-timing] entries 21 gates 0.0 capture 0.6 commit+publish 16.9 ms (own view true)
+[group-timing]   detached commits 8.4 ms
+[group-timing] entries 9 gates 0.0 capture 0.8 commit+publish 66.7 ms (own view true)
+[group-timing]   detached commits 23.9 ms
+[group-timing] entries 31 gates 0.0 capture 0.9 commit+publish 33.0 ms (own view true)
+[group-timing]   detached commits 9.4 ms
+[group-timing] entries 17 gates 0.0 capture 0.6 commit+publish 17.9 ms (own view true)
+[group-timing]   detached commits 37.6 ms
+[group-timing] entries 1 gates 0.0 capture 0.9 commit+publish 46.1 ms (own view true)
+[group-timing]   detached commits 10.3 ms
+[group-timing] entries 47 gates 0.0 capture 0.7 commit+publish 18.4 ms (own view true)
+[group-timing]   detached commits 10.0 ms
+[group-timing] entries 1 gates 0.0 capture 0.6 commit+publish 58.0 ms (own view true)
+[group-timing]   detached commits 53.8 ms
+[group-timing] entries 13 gates 0.0 capture 0.7 commit+publish 61.2 ms (own view true)
+[group-timing]   detached commits 8.6 ms
+[group-timing] entries 35 gates 0.0 capture 0.8 commit+publish 16.8 ms (own view true)
+[group-timing]   detached commits 77.1 ms
+[group-timing] entries 1 gates 0.0 capture 0.6 commit+publish 98.7 ms (own view true)
+[group-timing]   detached commits 9.1 ms
+[group-timing] entries 45 gates 0.0 capture 0.6 commit+publish 18.3 ms (own view true)
+[group-timing]   detached commits 10.5 ms
+[group-timing] entries 3 gates 0.0 capture 1.5 commit+publish 115.9 ms (own view true)
+[group-timing]   detached commits 9.2 ms
+[group-timing] entries 43 gates 0.0 capture 0.8 commit+publish 17.7 ms (own view true)
+[group-timing]   detached commits 25.6 ms
+[group-timing] entries 5 gates 0.0 capture 0.6 commit+publish 99.1 ms (own view true)
+[group-timing]   detached commits 8.9 ms
+[group-timing] entries 41 gates 0.0 capture 0.7 commit+publish 17.6 ms (own view true)
+[group-timing]   detached commits 10.5 ms
+[group-timing] entries 5 gates 0.0 capture 0.7 commit+publish 87.8 ms (own view true)
+[group-timing]   detached commits 10.6 ms
+[group-timing] entries 30 gates 0.0 capture 0.7 commit+publish 19.6 ms (own view true)
+[group-timing]   detached commits 11.0 ms
+[group-timing] entries 10 gates 0.0 capture 0.8 commit+publish 21.3 ms (own view true)
+[group-timing]   detached commits 56.4 ms
+[group-timing] entries 9 gates 0.0 capture 0.8 commit+publish 65.8 ms (own view true)
+[group-timing]   detached commits 9.2 ms
+[group-timing] entries 28 gates 0.0 capture 0.7 commit+publish 17.3 ms (own view true)
+[group-timing]   detached commits 51.2 ms
+[group-timing] entries 4 gates 0.0 capture 0.6 commit+publish 88.8 ms (own view true)
+[group-timing]   detached commits 11.4 ms
+[group-timing] entries 42 gates 0.0 capture 0.8 commit+publish 20.1 ms (own view true)
+[group-timing]   detached commits 10.5 ms
+[group-timing] entries 6 gates 0.0 capture 0.5 commit+publish 92.5 ms (own view true)
+[group-timing]   detached commits 33.1 ms
+[group-timing] entries 28 gates 0.0 capture 0.8 commit+publish 42.2 ms (own view true)
+[group-timing]   detached commits 28.0 ms
+[group-timing] entries 20 gates 0.0 capture 0.7 commit+publish 75.5 ms (own view true)
+[group-timing]   detached commits 15.6 ms
+[group-timing] entries 26 gates 0.0 capture 0.7 commit+publish 61.4 ms (own view true)
+[group-timing]   detached commits 10.5 ms
+[group-timing] entries 21 gates 0.0 capture 0.6 commit+publish 18.4 ms (own view true)
+[group-timing]   detached commits 88.1 ms
+[group-timing] entries 2 gates 0.0 capture 0.6 commit+publish 115.1 ms (own view true)
+[group-timing]   detached commits 10.3 ms
+[group-timing] entries 44 gates 0.0 capture 0.7 commit+publish 20.0 ms (own view true)
+[group-timing]   detached commits 10.9 ms
+[group-timing] entries 4 gates 0.0 capture 0.8 commit+publish 99.1 ms (own view true)
+[group-timing]   detached commits 41.8 ms
+[group-timing] entries 24 gates 0.0 capture 0.7 commit+publish 51.7 ms (own view true)
+[group-timing]   detached commits 32.8 ms
+[group-timing] entries 24 gates 0.0 capture 0.7 commit+publish 79.0 ms (own view true)
+[group-timing]   detached commits 58.4 ms
+[group-timing] entries 22 gates 0.0 capture 0.8 commit+publish 76.9 ms (own view true)
+[group-timing]   detached commits 11.5 ms
+[group-timing] entries 25 gates 0.0 capture 0.7 commit+publish 20.9 ms (own view true)
+[group-timing]   detached commits 86.6 ms
+[group-timing] entries 2 gates 0.0 capture 0.7 commit+publish 138.3 ms (own view true)
+[group-timing]   detached commits 12.1 ms
+[group-timing] entries 44 gates 0.0 capture 0.7 commit+publish 21.6 ms (own view true)
+[group-timing]   detached commits 27.2 ms
+[group-timing] entries 4 gates 0.0 capture 0.9 commit+publish 127.4 ms (own view true)
+[group-timing]   detached commits 10.4 ms
+[group-timing] entries 43 gates 0.0 capture 0.7 commit+publish 19.8 ms (own view true)
+[group-timing]   detached commits 63.4 ms
+[group-timing] entries 4 gates 0.0 capture 0.8 commit+publish 126.6 ms (own view true)
+[group-timing]   detached commits 9.6 ms
+[group-timing] entries 43 gates 0.0 capture 0.8 commit+publish 19.2 ms (own view true)
+[group-timing]   detached commits 19.0 ms
+[group-timing] entries 2 gates 0.0 capture 0.8 commit+publish 132.6 ms (own view true)
+[group-timing]   detached commits 12.4 ms
+[group-timing] entries 44 gates 0.0 capture 0.7 commit+publish 21.8 ms (own view true)
+[group-timing]   detached commits 11.6 ms
+[group-timing] entries 4 gates 0.0 capture 0.8 commit+publish 104.4 ms (own view true)
+[group-timing]   detached commits 49.1 ms
+[group-timing] entries 27 gates 0.0 capture 0.7 commit+publish 58.1 ms (own view true)
+[group-timing]   detached commits 11.7 ms
+[group-timing] entries 21 gates 0.0 capture 0.7 commit+publish 21.0 ms (own view true)
+[group-timing]   detached commits 58.3 ms
+[group-timing] entries 1 gates 0.0 capture 1.0 commit+publish 67.2 ms (own view true)
+[group-timing]   detached commits 12.6 ms
+[group-timing] entries 47 gates 0.0 capture 0.7 commit+publish 23.1 ms (own view true)
+[group-timing]   detached commits 36.1 ms
+[group-timing] entries 1 gates 0.0 capture 0.7 commit+publish 127.4 ms (own view true)
+[group-timing]   detached commits 11.4 ms
+[group-timing] entries 45 gates 0.0 capture 0.6 commit+publish 20.3 ms (own view true)
+[group-timing]   detached commits 13.0 ms
+[group-timing] entries 3 gates 0.0 capture 0.7 commit+publish 115.3 ms (own view true)
+[group-timing]   detached commits 10.9 ms
+[group-timing] entries 9 gates 0.0 capture 1.1 commit+publish 23.7 ms (own view true)
+[group-timing]   detached commits 9.9 ms
+[group-timing] entries 26 gates 0.0 capture 0.7 commit+publish 23.3 ms (own view true)
+[group-timing]   detached commits 62.7 ms
+[group-timing] entries 5 gates 0.0 capture 0.5 commit+publish 114.3 ms (own view true)
+[group-timing]   detached commits 10.7 ms
+[group-timing] entries 41 gates 0.0 capture 0.7 commit+publish 20.4 ms (own view true)
+[group-timing]   detached commits 15.2 ms
+[group-timing] entries 2 gates 0.0 capture 0.8 commit+publish 112.7 ms (own view true)
+[group-timing]   detached commits 12.0 ms
+[group-timing] entries 29 gates 0.0 capture 0.6 commit+publish 25.0 ms (own view true)
+[group-timing]   detached commits 29.5 ms
+[group-timing] entries 14 gates 0.0 capture 0.6 commit+publish 88.6 ms (own view true)
+[group-timing]   detached commits 12.0 ms
+[group-timing] entries 32 gates 0.0 capture 0.7 commit+publish 24.4 ms (own view true)
+[group-timing]   detached commits 42.6 ms
+[group-timing] entries 2 gates 0.0 capture 0.6 commit+publish 81.0 ms (own view true)
+[group-timing]   detached commits 16.9 ms
+[group-timing] entries 9 gates 0.0 capture 0.5 commit+publish 37.7 ms (own view true)
+[group-timing]   detached commits 16.2 ms
+[group-timing] entries 7 gates 0.0 capture 0.7 commit+publish 25.0 ms (own view true)
+[group-timing]   detached commits 13.8 ms
+[group-timing] entries 20 gates 0.0 capture 0.7 commit+publish 23.5 ms (own view true)
+[group-timing]   detached commits 38.5 ms
+[group-timing] entries 6 gates 0.0 capture 0.7 commit+publish 79.1 ms (own view true)
+[group-timing]   detached commits 16.7 ms
+[group-timing] entries 14 gates 0.0 capture 0.8 commit+publish 26.4 ms (own view true)
+[group-timing]   detached commits 12.9 ms
+[group-timing] entries 7 gates 0.0 capture 0.7 commit+publish 27.3 ms (own view true)
+[group-timing]   detached commits 39.1 ms
+[group-timing] entries 6 gates 0.0 capture 0.6 commit+publish 48.9 ms (own view true)
+[group-timing]   detached commits 20.2 ms
+[group-timing] entries 11 gates 0.0 capture 0.9 commit+publish 30.3 ms (own view true)
+[group-timing]   detached commits 12.9 ms
+[group-timing] entries 8 gates 0.0 capture 0.7 commit+publish 25.9 ms (own view true)
+[group-timing]   detached commits 13.4 ms
+[group-timing] entries 12 gates 0.0 capture 0.6 commit+publish 23.0 ms (own view true)
+[group-timing]   detached commits 15.6 ms
+[group-timing] entries 6 gates 0.0 capture 0.7 commit+publish 46.7 ms (own view true)
+[group-timing]   detached commits 28.6 ms
+[group-timing] entries 2 gates 0.0 capture 0.8 commit+publish 39.7 ms (own view true)
+[group-timing]   detached commits 12.7 ms
+[group-timing] entries 16 gates 0.0 capture 1.0 commit+publish 21.9 ms (own view true)
+[group-timing]   detached commits 15.3 ms
+[group-timing] entries 12 gates 0.0 capture 0.5 commit+publish 25.5 ms (own view true)
+[group-timing]   detached commits 20.5 ms
+[group-timing] entries 6 gates 0.0 capture 0.6 commit+publish 61.5 ms (own view true)
+[group-timing]   detached commits 13.6 ms
+[group-timing] entries 10 gates 0.0 capture 0.6 commit+publish 30.7 ms (own view true)
+[group-timing]   detached commits 67.6 ms
+[group-timing] entries 14 gates 0.0 capture 0.7 commit+publish 89.5 ms (own view true)
+[group-timing]   detached commits 12.1 ms
+[group-timing] entries 30 gates 0.0 capture 0.6 commit+publish 22.6 ms (own view true)
+[group-timing]   detached commits 56.8 ms
+[group-timing] entries 4 gates 0.0 capture 0.7 commit+publish 77.2 ms (own view true)
+[group-timing]   detached commits 32.9 ms
+[group-timing] entries 11 gates 0.0 capture 0.7 commit+publish 45.5 ms (own view true)
+[group-timing]   detached commits 11.9 ms
+[group-timing] entries 19 gates 0.0 capture 0.7 commit+publish 21.9 ms (own view true)
+[group-timing]   detached commits 26.2 ms
+[group-timing] entries 3 gates 0.0 capture 0.7 commit+publish 121.1 ms (own view true)
+[group-timing]   detached commits 12.8 ms
+[group-timing] entries 33 gates 0.0 capture 0.9 commit+publish 24.6 ms (own view true)
+[group-timing]   detached commits 95.6 ms
+[group-timing] entries 15 gates 0.0 capture 0.7 commit+publish 121.4 ms (own view true)
+[group-timing]   detached commits 51.5 ms
+[group-timing] entries 19 gates 0.0 capture 0.6 commit+publish 64.9 ms (own view true)
+[group-timing]   detached commits 11.7 ms
+[group-timing] entries 28 gates 0.0 capture 0.7 commit+publish 23.7 ms (own view true)
+[group-timing]   detached commits 81.8 ms
+[group-timing] entries 1 gates 0.0 capture 0.7 commit+publish 104.3 ms (own view true)
+[group-timing]   detached commits 14.0 ms
+[group-timing] entries 19 gates 0.0 capture 0.6 commit+publish 24.0 ms (own view true)
+[group-timing]   detached commits 49.0 ms
+[group-timing] entries 14 gates 0.0 capture 0.7 commit+publish 59.9 ms (own view true)
+[group-timing]   detached commits 12.1 ms
+[group-timing] entries 11 gates 0.0 capture 0.6 commit+publish 59.1 ms (own view true)
+[group-timing]   detached commits 15.7 ms
+[group-timing] entries 9 gates 0.0 capture 0.7 commit+publish 27.0 ms (own view true)
+[group-timing]   detached commits 29.2 ms
+[group-timing] entries 12 gates 0.0 capture 0.7 commit+publish 41.7 ms (own view true)
+[group-timing]   detached commits 34.4 ms
+[group-timing] entries 12 gates 0.0 capture 0.8 commit+publish 44.8 ms (own view true)
+[group-timing]   detached commits 14.6 ms
+[group-timing] entries 7 gates 0.0 capture 0.6 commit+publish 28.6 ms (own view true)
+[group-timing]   detached commits 22.9 ms
+[group-timing] entries 11 gates 0.0 capture 0.7 commit+publish 49.2 ms (own view true)
+[group-timing]   detached commits 15.3 ms
+[group-timing] entries 7 gates 0.0 capture 0.7 commit+publish 25.6 ms (own view true)
+[group-timing]   detached commits 14.5 ms
+[group-timing] entries 10 gates 0.0 capture 0.6 commit+publish 32.9 ms (own view true)
+[group-timing]   detached commits 17.8 ms
+[group-timing] entries 10 gates 0.0 capture 0.7 commit+publish 27.9 ms (own view true)
+[group-timing]   detached commits 12.4 ms
+[group-timing] entries 6 gates 0.0 capture 0.6 commit+publish 40.0 ms (own view true)
+[group-timing]   detached commits 21.4 ms
+[group-timing] entries 6 gates 0.0 capture 1.1 commit+publish 34.3 ms (own view true)
+[group-timing]   detached commits 79.6 ms
+[group-timing] entries 14 gates 0.0 capture 0.7 commit+publish 91.3 ms (own view true)
+[group-timing]   detached commits 14.8 ms
+[group-timing] entries 34 gates 0.0 capture 0.7 commit+publish 25.2 ms (own view true)
+[group-timing]   detached commits 124.2 ms
+[group-timing] entries 1 gates 0.0 capture 0.5 commit+publish 133.9 ms (own view true)
+[group-timing]   detached commits 13.2 ms
+[group-timing] entries 47 gates 0.0 capture 0.7 commit+publish 22.6 ms (own view true)
+[group-timing]   detached commits 103.7 ms
+[group-timing] entries 1 gates 0.0 capture 0.7 commit+publish 116.5 ms (own view true)
+[group-timing]   detached commits 13.2 ms
+[group-timing] entries 19 gates 0.0 capture 0.6 commit+publish 22.3 ms (own view true)
+[group-timing]   detached commits 95.9 ms
+[group-timing] entries 13 gates 0.0 capture 0.6 commit+publish 112.3 ms (own view true)
+[group-timing]   detached commits 13.9 ms
+[group-timing] entries 29 gates 0.0 capture 0.7 commit+publish 25.2 ms (own view true)
+[group-timing]   detached commits 69.9 ms
+[group-timing] entries 6 gates 0.0 capture 0.7 commit+publish 83.5 ms (own view true)
+[group-timing]   detached commits 48.8 ms
+[group-timing] entries 11 gates 0.0 capture 0.6 commit+publish 61.9 ms (own view true)
+[group-timing]   detached commits 13.0 ms
+[group-timing] entries 20 gates 0.0 capture 0.6 commit+publish 22.9 ms (own view true)
+[group-timing]   detached commits 17.1 ms
+[group-timing] entries 1 gates 0.0 capture 0.6 commit+publish 40.4 ms (own view true)
+[group-timing]   detached commits 16.1 ms
+[group-timing] entries 8 gates 0.0 capture 0.7 commit+publish 41.3 ms (own view true)
+[group-timing]   detached commits 17.1 ms
+[group-timing] entries 8 gates 0.0 capture 0.7 commit+publish 41.8 ms (own view true)
+[group-timing]   detached commits 15.5 ms
+[group-timing] entries 9 gates 0.0 capture 0.7 commit+publish 27.4 ms (own view true)
+[group-timing]   detached commits 22.2 ms
+[group-timing] entries 14 gates 0.0 capture 0.7 commit+publish 37.8 ms (own view true)
+[group-timing]   detached commits 14.7 ms
+[group-timing] entries 3 gates 0.0 capture 0.7 commit+publish 49.4 ms (own view true)
+[group-timing]   detached commits 16.1 ms
+[group-timing] entries 2 gates 0.0 capture 0.6 commit+publish 26.5 ms (own view true)
+[group-timing]   detached commits 15.1 ms
+[group-timing] entries 17 gates 0.0 capture 0.7 commit+publish 26.5 ms (own view true)
+[group-timing]   detached commits 80.2 ms
+[group-timing] entries 10 gates 0.0 capture 0.9 commit+publish 114.5 ms (own view true)
+[group-timing]   detached commits 15.9 ms
+[group-timing] entries 37 gates 0.0 capture 0.8 commit+publish 26.8 ms (own view true)
+[group-timing]   detached commits 33.0 ms
+[group-timing] entries 1 gates 0.0 capture 0.6 commit+publish 53.3 ms (own view true)
+[group-timing]   detached commits 14.8 ms
+[group-timing] entries 1 gates 0.0 capture 0.6 commit+publish 85.2 ms (own view true)
+[group-timing]   detached commits 15.1 ms
+[group-timing] entries 19 gates 0.0 capture 0.6 commit+publish 27.4 ms (own view true)
+[group-timing]   detached commits 57.5 ms
+[group-timing] entries 18 gates 0.0 capture 0.7 commit+publish 93.6 ms (own view true)
+[group-timing]   detached commits 14.7 ms
+[group-timing] entries 28 gates 0.0 capture 0.6 commit+publish 25.6 ms (own view true)
+[group-timing]   detached commits 51.4 ms
+[group-timing] entries 2 gates 0.0 capture 0.7 commit+publish 96.7 ms (own view true)
+[group-timing]   detached commits 16.7 ms
+[group-timing] entries 7 gates 0.0 capture 0.7 commit+publish 29.2 ms (own view true)
+[group-timing]   detached commits 37.1 ms
+[group-timing] entries 11 gates 0.0 capture 0.6 commit+publish 47.9 ms (own view true)
+[group-timing]   detached commits 18.9 ms
+[group-timing] entries 14 gates 0.0 capture 0.6 commit+publish 28.5 ms (own view true)
+[group-timing]   detached commits 15.6 ms
+[group-timing] entries 3 gates 0.0 capture 0.6 commit+publish 38.3 ms (own view true)
+[group-timing]   detached commits 22.7 ms
+[group-timing] entries 11 gates 0.0 capture 0.7 commit+publish 37.5 ms (own view true)
+[group-timing]   detached commits 24.5 ms
+[group-timing] entries 6 gates 0.0 capture 0.9 commit+publish 42.8 ms (own view true)
+[group-timing]   detached commits 14.3 ms
+[group-timing] entries 11 gates 0.0 capture 0.6 commit+publish 39.3 ms (own view true)
+[group-timing]   detached commits 22.6 ms
+[group-timing] entries 7 gates 0.0 capture 0.8 commit+publish 43.0 ms (own view true)
+[group-timing]   detached commits 24.3 ms
+[group-timing] entries 8 gates 0.0 capture 0.6 commit+publish 54.3 ms (own view true)
+[group-timing]   detached commits 18.0 ms
+[group-timing] entries 7 gates 0.0 capture 0.7 commit+publish 28.2 ms (own view true)
+[group-timing]   detached commits 14.9 ms
+[group-timing] entries 12 gates 0.0 capture 0.7 commit+publish 25.2 ms (own view true)
+[group-timing]   detached commits 90.9 ms
+[group-timing] entries 9 gates 0.0 capture 0.6 commit+publish 118.3 ms (own view true)
+[group-timing]   detached commits 14.6 ms
+[group-timing] entries 37 gates 0.0 capture 0.7 commit+publish 26.7 ms (own view true)
+[group-timing]   detached commits 21.7 ms
+[group-timing] entries 2 gates 0.0 capture 0.7 commit+publish 53.7 ms (own view true)
+[group-timing]   detached commits 17.5 ms
+[group-timing] entries 6 gates 0.0 capture 0.6 commit+publish 88.7 ms (own view true)
+[group-timing]   detached commits 16.3 ms
+[group-timing] entries 8 gates 0.0 capture 0.7 commit+publish 27.5 ms (own view true)
+[group-timing]   detached commits 14.7 ms
+[group-timing] entries 19 gates 0.0 capture 0.6 commit+publish 25.5 ms (own view true)
+[group-timing]   detached commits 41.9 ms
+[group-timing] entries 5 gates 0.0 capture 0.8 commit+publish 139.2 ms (own view true)
+[group-timing]   detached commits 29.6 ms
+[group-timing] entries 33 gates 0.0 capture 0.7 commit+publish 41.0 ms (own view true)
+[group-timing]   detached commits 125.4 ms
+[group-timing] entries 15 gates 0.0 capture 0.6 commit+publish 137.0 ms (own view true)
+[group-timing]   detached commits 36.7 ms
+[group-timing] entries 1 gates 0.0 capture 0.5 commit+publish 73.9 ms (own view true)
+[group-timing]   detached commits 13.4 ms
+[group-timing] entries 45 gates 0.0 capture 0.6 commit+publish 24.6 ms (own view true)
+[group-timing]   detached commits 198.3 ms
+[group-timing] entries 3 gates 0.0 capture 0.8 commit+publish 214.3 ms (own view true)
+[group-timing]   detached commits 15.8 ms
+[group-timing] entries 44 gates 0.0 capture 0.7 commit+publish 28.5 ms (own view true)
+[group-timing]   detached commits 145.6 ms
+[group-timing] entries 4 gates 0.0 capture 0.7 commit+publish 198.6 ms (own view true)
+[group-timing]   detached commits 18.8 ms
+[group-timing] entries 29 gates 0.0 capture 0.6 commit+publish 32.6 ms (own view true)
+[group-timing]   detached commits 71.7 ms
+[group-timing] entries 19 gates 0.0 capture 0.7 commit+publish 140.9 ms (own view true)
+[group-timing]   detached commits 58.1 ms
+[group-timing] entries 27 gates 0.0 capture 0.7 commit+publish 88.1 ms (own view true)
+[group-timing]   detached commits 17.5 ms
+[group-timing] entries 18 gates 0.0 capture 0.6 commit+publish 28.9 ms (own view true)
+[group-timing]   detached commits 108.8 ms
+[group-timing] entries 3 gates 0.0 capture 1.0 commit+publish 123.4 ms (own view true)
+[group-timing]   detached commits 16.0 ms
+[group-timing] entries 27 gates 0.0 capture 0.6 commit+publish 29.0 ms (own view true)
+[group-timing]   detached commits 136.2 ms
+[group-timing] entries 4 gates 0.0 capture 0.7 commit+publish 171.0 ms (own view true)
+[group-timing]   detached commits 15.2 ms
+[group-timing] entries 42 gates 0.0 capture 0.7 commit+publish 27.2 ms (own view true)
+[group-timing]   detached commits 84.3 ms
+[group-timing] entries 3 gates 0.0 capture 0.7 commit+publish 156.3 ms (own view true)
+[group-timing]   detached commits 17.9 ms
+[group-timing] entries 20 gates 0.0 capture 1.1 commit+publish 33.1 ms (own view true)
+[group-timing]   detached commits 17.1 ms
+[group-timing] entries 13 gates 0.0 capture 0.7 commit+publish 27.1 ms (own view true)
+[group-timing]   detached commits 18.0 ms
+[group-timing] entries 9 gates 0.0 capture 0.5 commit+publish 125.2 ms (own view true)
+[group-timing]   detached commits 33.0 ms
+[group-timing] entries 11 gates 0.0 capture 1.6 commit+publish 52.1 ms (own view true)
+[group-timing]   detached commits 16.3 ms
+[group-timing] entries 25 gates 0.0 capture 0.5 commit+publish 27.4 ms (own view true)
+[group-timing]   detached commits 31.1 ms
+[group-timing] entries 7 gates 0.0 capture 0.7 commit+publish 98.2 ms (own view true)
+[group-timing]   detached commits 54.0 ms
+[group-timing] entries 4 gates 0.0 capture 0.7 commit+publish 80.3 ms (own view true)
+[group-timing]   detached commits 62.6 ms
+[group-timing] entries 17 gates 0.0 capture 1.4 commit+publish 82.4 ms (own view true)
+[group-timing]   detached commits 33.0 ms
+[group-timing] entries 29 gates 0.0 capture 0.8 commit+publish 80.4 ms (own view true)
+[group-timing]   detached commits 34.3 ms
+[group-timing] entries 17 gates 0.0 capture 0.7 commit+publish 118.9 ms (own view true)
+[group-timing]   detached commits 17.7 ms
+[group-timing] entries 29 gates 0.0 capture 0.8 commit+publish 28.9 ms (own view true)
+[group-timing]   detached commits 103.8 ms
+[group-timing] entries 2 gates 0.0 capture 0.6 commit+publish 132.7 ms (own view true)
+[group-timing]   detached commits 15.4 ms
+[group-timing] entries 16 gates 0.0 capture 0.6 commit+publish 34.3 ms (own view true)
+[group-timing]   detached commits 76.2 ms
+[group-timing] entries 12 gates 0.0 capture 0.9 commit+publish 121.5 ms (own view true)
+[group-timing]   detached commits 15.3 ms
+[group-timing] entries 34 gates 0.0 capture 0.7 commit+publish 18.6 ms (own view true)
+[group-timing]   detached commits 13.9 ms
+[group-timing] entries 2 gates 0.0 capture 0.8 commit+publish 130.4 ms (own view true)
+[group-timing]   detached commits 56.0 ms
+[group-timing] entries 18 gates 0.0 capture 0.7 commit+publish 58.8 ms (own view true)
+[group-timing]   detached commits 16.2 ms
+[group-timing] entries 30 gates 0.0 capture 0.7 commit+publish 19.3 ms (own view true)
+[group-timing]   detached commits 24.9 ms
+[group-timing] entries 1 gates 0.0 capture 0.5 commit+publish 27.6 ms (own view true)
+[group-timing]   detached commits 17.3 ms
+[group-timing] entries 31 gates 0.0 capture 0.6 commit+publish 20.5 ms (own view true)
+[group-timing]   detached commits 27.4 ms
+[group-timing] entries 1 gates 0.0 capture 0.6 commit+publish 63.9 ms (own view true)
+[group-timing]   detached commits 14.8 ms
+[group-timing] entries 12 gates 0.0 capture 0.6 commit+publish 55.7 ms (own view true)
+[group-timing]   detached commits 18.4 ms
+[group-timing] entries 4 gates 0.0 capture 0.7 commit+publish 23.1 ms (own view true)
+[group-timing]   detached commits 15.7 ms
+[group-timing] entries 15 gates 0.0 capture 0.7 commit+publish 18.7 ms (own view true)
+[group-timing]   detached commits 23.8 ms
+[group-timing] entries 7 gates 0.0 capture 0.7 commit+publish 141.1 ms (own view true)
+[group-timing]   detached commits 21.1 ms
+[group-timing] entries 30 gates 0.0 capture 1.3 commit+publish 24.8 ms (own view true)
+[group-timing]   detached commits 55.3 ms
+[group-timing] entries 9 gates 0.0 capture 0.7 commit+publish 78.5 ms (own view true)
+[group-timing]   detached commits 78.3 ms
+[group-timing] entries 8 gates 0.0 capture 0.6 commit+publish 81.8 ms (own view true)
+[group-timing]   detached commits 77.6 ms
+[group-timing] entries 13 gates 0.0 capture 0.9 commit+publish 86.5 ms (own view true)
+[group-timing]   detached commits 19.4 ms
+[group-timing] entries 30 gates 0.0 capture 0.7 commit+publish 22.8 ms (own view true)
+[group-timing]   detached commits 58.3 ms
+[group-timing] entries 5 gates 0.0 capture 0.7 commit+publish 119.6 ms (own view true)
+[group-timing]   detached commits 19.0 ms
+[group-timing] entries 4 gates 0.0 capture 0.5 commit+publish 30.0 ms (own view true)
+[group-timing]   detached commits 42.6 ms
+[group-timing] entries 10 gates 0.0 capture 0.8 commit+publish 49.6 ms (own view true)
+[group-timing]   detached commits 15.8 ms
+[group-timing] entries 18 gates 0.0 capture 0.9 commit+publish 20.2 ms (own view true)
+[group-timing]   detached commits 17.7 ms
+[group-timing] entries 6 gates 0.0 capture 0.7 commit+publish 37.7 ms (own view true)
+[group-timing]   detached commits 606.8 ms
+[group-timing] entries 3 gates 0.0 capture 0.5 commit+publish 699.7 ms (own view true)
+[group-timing]   detached commits 23.4 ms
+[group-timing] entries 7 gates 0.0 capture 1.9 commit+publish 26.7 ms (own view true)
+[group-timing]   detached commits 17.2 ms
+[group-timing] entries 23 gates 0.0 capture 0.7 commit+publish 86.9 ms (own view true)
+[group-timing]   detached commits 17.7 ms
+[group-timing] entries 19 gates 0.0 capture 0.8 commit+publish 21.2 ms (own view true)
+[group-timing]   detached commits 145.3 ms
+[group-timing] entries 5 gates 0.0 capture 0.6 commit+publish 167.7 ms (own view true)
+[group-timing]   detached commits 30.1 ms
+[group-timing] entries 3 gates 0.0 capture 0.7 commit+publish 54.7 ms (own view true)
+[group-timing]   detached commits 26.7 ms
+[group-timing] entries 15 gates 0.0 capture 1.0 commit+publish 35.1 ms (own view true)
+[group-timing]   detached commits 23.8 ms
+[group-timing] entries 24 gates 0.0 capture 0.8 commit+publish 30.4 ms (own view true)
+[group-timing]   detached commits 99.0 ms
+[group-timing] entries 5 gates 0.0 capture 0.7 commit+publish 204.3 ms (own view true)
+[group-timing]   detached commits 18.0 ms
+[group-timing] entries 41 gates 0.0 capture 0.8 commit+publish 22.6 ms (own view true)
+[group-timing]   detached commits 126.9 ms
+[group-timing] entries 2 gates 0.0 capture 3.0 commit+publish 236.9 ms (own view true)
+[group-timing]   detached commits 19.3 ms
+[group-timing] entries 44 gates 0.0 capture 0.7 commit+publish 24.1 ms (own view true)
+[group-timing]   detached commits 145.7 ms
+[group-timing] entries 2 gates 0.0 capture 1.0 commit+publish 277.2 ms (own view true)
+[group-timing]   detached commits 22.2 ms
+[group-timing] entries 45 gates 0.0 capture 0.9 commit+publish 28.7 ms (own view true)
+[group-timing]   detached commits 214.4 ms
+[group-timing] entries 2 gates 0.0 capture 1.0 commit+publish 248.5 ms (own view true)
+[group-timing]   detached commits 35.2 ms
+[group-timing] entries 17 gates 0.0 capture 0.6 commit+publish 39.7 ms (own view true)
+[group-timing]   detached commits 20.4 ms
+[group-timing] entries 31 gates 0.0 capture 0.7 commit+publish 24.3 ms (own view true)
+[group-timing]   detached commits 31.8 ms
+[group-timing] entries 1 gates 0.0 capture 1.0 commit+publish 36.5 ms (own view true)
+[group-timing]   detached commits 24.4 ms
+[group-timing] entries 25 gates 0.0 capture 1.0 commit+publish 29.4 ms (own view true)
+[group-timing]   detached commits 71.2 ms
+[group-timing] entries 7 gates 0.0 capture 1.0 commit+publish 92.9 ms (own view true)
+[group-timing]   detached commits 33.3 ms
+[group-timing] entries 9 gates 0.0 capture 1.0 commit+publish 100.2 ms (own view true)
+[group-timing]   detached commits 22.8 ms
+[group-timing] entries 10 gates 0.0 capture 1.0 commit+publish 28.0 ms (own view true)
+[group-timing]   detached commits 38.8 ms
+[group-timing] entries 11 gates 0.0 capture 0.7 commit+publish 44.2 ms (own view true)
+[group-timing]   detached commits 22.2 ms
+[group-timing] entries 10 gates 0.0 capture 0.7 commit+publish 181.1 ms (own view true)
+[group-timing]   detached commits 23.2 ms
+[group-timing] entries 24 gates 0.0 capture 0.6 commit+publish 32.0 ms (own view true)
+[group-timing]   detached commits 138.3 ms
+[group-timing] entries 11 gates 0.0 capture 0.8 commit+publish 171.9 ms (own view true)
+[group-timing]   detached commits 20.3 ms
+[group-timing] entries 34 gates 0.0 capture 0.6 commit+publish 26.3 ms (own view true)
+[group-timing]   detached commits 134.4 ms
+[group-timing] entries 3 gates 0.0 capture 0.7 commit+publish 142.0 ms (own view true)
+[group-timing]   detached commits 24.0 ms
+[group-timing] entries 8 gates 0.0 capture 0.7 commit+publish 28.6 ms (own view true)
+[group-timing]   detached commits 21.0 ms
+[group-timing] entries 16 gates 0.0 capture 0.8 commit+publish 26.1 ms (own view true)
+[group-timing]   detached commits 92.5 ms
+[group-timing] entries 8 gates 0.0 capture 0.8 commit+publish 118.5 ms (own view true)
+[group-timing]   detached commits 22.5 ms
+[group-timing] entries 4 gates 0.0 capture 0.7 commit+publish 48.5 ms (own view true)
+[group-timing]   detached commits 21.1 ms
+[group-timing] entries 13 gates 0.0 capture 1.2 commit+publish 28.7 ms (own view true)
+[group-timing]   detached commits 130.8 ms
+[group-timing] entries 10 gates 0.0 capture 1.4 commit+publish 164.0 ms (own view true)
+[group-timing]   detached commits 19.8 ms
+[group-timing] entries 35 gates 0.0 capture 0.7 commit+publish 25.1 ms (own view true)
+[group-timing]   detached commits 88.4 ms
+[group-timing] entries 2 gates 0.0 capture 1.0 commit+publish 230.4 ms (own view true)
+[group-timing]   detached commits 23.2 ms
+[group-timing] entries 44 gates 0.0 capture 0.8 commit+publish 28.6 ms (own view true)
+[group-timing]   detached commits 207.7 ms
+[group-timing] entries 3 gates 0.0 capture 0.6 commit+publish 348.7 ms (own view true)
+[group-timing]   detached commits 35.7 ms
+[group-timing] entries 43 gates 0.0 capture 1.0 commit+publish 45.9 ms (own view true)
+[group-timing]   detached commits 209.6 ms
+[group-timing] entries 3 gates 0.0 capture 1.0 commit+publish 293.9 ms (own view true)
+[group-timing]   detached commits 18.2 ms
+[group-timing] entries 43 gates 0.0 capture 0.6 commit+publish 23.2 ms (own view true)
+[group-timing]   detached commits 60.7 ms
+[group-timing] entries 2 gates 0.0 capture 0.6 commit+publish 212.5 ms (own view true)
+[group-timing]   detached commits 23.1 ms
+[group-timing] entries 44 gates 0.0 capture 0.5 commit+publish 28.2 ms (own view true)
+[group-timing]   detached commits 217.1 ms
+[group-timing] entries 4 gates 0.0 capture 0.7 commit+publish 347.9 ms (own view true)
+[group-timing]   detached commits 32.9 ms
+[group-timing] entries 41 gates 0.0 capture 1.4 commit+publish 39.7 ms (own view true)
+[group-timing]   detached commits 189.2 ms
+[group-timing] entries 4 gates 0.0 capture 0.7 commit+publish 270.7 ms (own view true)
+[group-timing]   detached commits 26.3 ms
+[group-timing] entries 42 gates 0.0 capture 0.7 commit+publish 33.7 ms (own view true)
+[group-timing]   detached commits 78.6 ms
+[group-timing] entries 3 gates 0.0 capture 0.8 commit+publish 275.5 ms (own view true)
+[group-timing]   detached commits 28.2 ms
+[group-timing] entries 43 gates 0.0 capture 1.2 commit+publish 36.3 ms (own view true)
+[group-timing]   detached commits 166.7 ms
+[group-timing] entries 2 gates 0.0 capture 1.7 commit+publish 248.4 ms (own view true)
+[group-timing]   detached commits 39.0 ms
+[group-timing] entries 12 gates 0.0 capture 0.8 commit+publish 58.4 ms (own view true)
+[group-timing]   detached commits 22.2 ms
+[group-timing] entries 23 gates 0.0 capture 1.1 commit+publish 27.9 ms (own view true)
+[group-timing]   detached commits 27.5 ms
+[group-timing] entries 2 gates 0.0 capture 0.7 commit+publish 183.2 ms (own view true)
+[group-timing]   detached commits 22.9 ms
+[group-timing] entries 2 gates 0.0 capture 0.6 commit+publish 27.9 ms (own view true)
+[group-timing]   detached commits 20.7 ms
+[group-timing] entries 22 gates 0.0 capture 0.7 commit+publish 25.5 ms (own view true)
+[group-timing]   detached commits 20.2 ms
+[group-timing] entries 16 gates 0.0 capture 0.6 commit+publish 25.0 ms (own view true)
+[group-timing]   detached commits 82.5 ms
+[group-timing] entries 2 gates 0.0 capture 0.7 commit+publish 135.9 ms (own view true)
+[group-timing]   detached commits 23.9 ms
+[group-timing] entries 7 gates 0.0 capture 0.6 commit+publish 29.5 ms (own view true)
+[group-timing]   detached commits 20.0 ms
+[group-timing] entries 24 gates 0.0 capture 0.9 commit+publish 24.4 ms (own view true)
+[group-timing]   detached commits 17.6 ms
+[group-timing] entries 1 gates 0.0 capture 0.6 commit+publish 24.5 ms (own view true)
+[group-timing]   detached commits 20.7 ms
+[group-timing] entries 15 gates 0.0 capture 0.7 commit+publish 26.6 ms (own view true)
+[group-timing]   detached commits 22.2 ms
+[group-timing] entries 9 gates 0.0 capture 0.8 commit+publish 27.4 ms (own view true)
+[group-timing]   detached commits 62.7 ms
+[group-timing] entries 9 gates 0.0 capture 0.8 commit+publish 124.6 ms (own view true)
+[group-timing]   detached commits 35.8 ms
+[group-timing] entries 9 gates 0.0 capture 0.6 commit+publish 40.6 ms (own view true)
+[group-timing]   detached commits 20.4 ms
+[group-timing] entries 10 gates 0.0 capture 0.9 commit+publish 26.0 ms (own view true)
+[group-timing]   detached commits 25.5 ms
+[group-timing] entries 7 gates 0.0 capture 0.8 commit+publish 82.3 ms (own view true)
+[group-timing]   detached commits 53.5 ms
+[group-timing] entries 6 gates 0.0 capture 0.5 commit+publish 61.0 ms (own view true)
+[group-timing]   detached commits 19.2 ms
+[group-timing] entries 12 gates 0.0 capture 0.7 commit+publish 23.9 ms (own view true)
+[group-timing]   detached commits 49.7 ms
+[group-timing] entries 8 gates 0.0 capture 0.6 commit+publish 54.2 ms (own view true)
+[group-timing]   detached commits 57.5 ms
+[group-timing] entries 12 gates 0.0 capture 0.6 commit+publish 74.6 ms (own view true)
+[group-timing]   detached commits 60.5 ms
+[group-timing] entries 1 gates 0.0 capture 0.7 commit+publish 67.1 ms (own view true)
+[group-timing]   detached commits 20.4 ms
+[group-timing] entries 11 gates 0.0 capture 0.5 commit+publish 24.9 ms (own view true)
+[group-timing]   detached commits 48.2 ms
+[group-timing] entries 7 gates 0.0 capture 0.7 commit+publish 55.4 ms (own view true)
+[group-timing]   detached commits 45.9 ms
+[group-timing] entries 11 gates 0.0 capture 0.9 commit+publish 73.2 ms (own view true)
+[group-timing]   detached commits 17.4 ms
+[group-timing] entries 6 gates 0.0 capture 0.6 commit+publish 53.2 ms (own view true)
+[group-timing]   detached commits 21.4 ms
+[group-timing] entries 9 gates 0.0 capture 0.7 commit+publish 26.3 ms (own view true)
+[group-timing]   detached commits 20.6 ms
+[group-timing] entries 8 gates 0.0 capture 0.6 commit+publish 51.2 ms (own view true)
+[group-timing]   detached commits 108.9 ms
+[group-timing] entries 11 gates 0.0 capture 0.7 commit+publish 115.8 ms (own view true)
+[group-timing]   detached commits 25.9 ms
+[group-timing] entries 7 gates 0.0 capture 0.6 commit+publish 31.5 ms (own view true)
+[group-timing]   detached commits 21.3 ms
+[group-timing] entries 12 gates 0.0 capture 0.7 commit+publish 30.8 ms (own view true)
+[group-timing]   detached commits 22.0 ms
+[group-timing] entries 3 gates 0.0 capture 0.7 commit+publish 40.2 ms (own view true)
+[group-timing]   detached commits 66.5 ms
+[group-timing] entries 6 gates 0.0 capture 0.6 commit+publish 74.2 ms (own view true)
+[group-timing]   detached commits 21.0 ms
+[group-timing] entries 18 gates 0.0 capture 0.8 commit+publish 26.4 ms (own view true)
+[group-timing]   detached commits 26.3 ms
+[group-timing] entries 6 gates 0.0 capture 0.6 commit+publish 39.3 ms (own view true)
+[group-timing]   detached commits 73.9 ms
+[group-timing] entries 11 gates 0.0 capture 0.5 commit+publish 127.3 ms (own view true)
+[group-timing]   detached commits 19.6 ms
+[group-timing] entries 8 gates 0.0 capture 0.6 commit+publish 43.5 ms (own view true)
+[group-timing]   detached commits 22.5 ms
+[group-timing] entries 10 gates 0.0 capture 0.6 commit+publish 27.0 ms (own view true)
+[group-timing]   detached commits 118.4 ms
+[group-timing] entries 12 gates 0.0 capture 0.6 commit+publish 158.3 ms (own view true)
+[group-timing]   detached commits 24.1 ms
+[group-timing] entries 34 gates 0.0 capture 0.7 commit+publish 28.5 ms (own view true)
+[group-timing]   detached commits 694.9 ms
+[group-timing] entries 2 gates 0.0 capture 0.6 commit+publish 746.8 ms (own view true)
+[group-timing]   detached commits 25.2 ms
+[group-timing] entries 44 gates 0.0 capture 0.7 commit+publish 31.4 ms (own view true)
+[group-timing]   detached commits 189.5 ms
+[group-timing] entries 4 gates 0.0 capture 0.6 commit+publish 205.0 ms (own view true)
+[group-timing]   detached commits 30.9 ms
+[group-timing] entries 10 gates 0.0 capture 0.7 commit+publish 36.8 ms (own view true)
+[group-timing]   detached commits 19.9 ms
+[group-timing] entries 22 gates 0.0 capture 0.6 commit+publish 26.1 ms (own view true)
+[group-timing]   detached commits 45.1 ms
+[group-timing] entries 2 gates 0.0 capture 0.7 commit+publish 112.6 ms (own view true)
+[group-timing]   detached commits 22.8 ms
+[group-timing] entries 1 gates 0.0 capture 0.5 commit+publish 30.1 ms (own view true)
+[group-timing]   detached commits 26.6 ms
+[group-timing] entries 11 gates 0.0 capture 0.6 commit+publish 32.5 ms (own view true)
+[group-timing]   detached commits 20.3 ms
+[group-timing] entries 20 gates 0.0 capture 0.6 commit+publish 26.7 ms (own view true)
+[group-timing]   detached commits 73.9 ms
+[group-timing] entries 5 gates 0.0 capture 0.6 commit+publish 180.4 ms (own view true)
+[group-timing]   detached commits 20.7 ms
+[group-timing] entries 4 gates 0.0 capture 0.6 commit+publish 29.1 ms (own view true)
+[group-timing]   detached commits 24.9 ms
+[group-timing] entries 14 gates 0.0 capture 0.7 commit+publish 35.7 ms (own view true)
+[group-timing]   detached commits 18.4 ms
+[group-timing] entries 20 gates 0.0 capture 0.6 commit+publish 24.4 ms (own view true)
+[group-timing]   detached commits 74.2 ms
+[group-timing] entries 4 gates 0.0 capture 0.9 commit+publish 235.5 ms (own view true)
+[group-timing]   detached commits 27.6 ms
+[group-timing] entries 7 gates 0.0 capture 0.8 commit+publish 33.0 ms (own view true)
+[group-timing]   detached commits 25.0 ms
+[group-timing] entries 27 gates 0.0 capture 0.6 commit+publish 31.9 ms (own view true)
+[group-timing]   detached commits 27.1 ms
+[group-timing] entries 5 gates 0.0 capture 0.8 commit+publish 189.0 ms (own view true)
+[group-timing]   detached commits 24.1 ms
+[group-timing] entries 15 gates 0.0 capture 1.1 commit+publish 31.9 ms (own view true)
+[group-timing]   detached commits 22.1 ms
+[group-timing] entries 11 gates 0.0 capture 0.6 commit+publish 27.3 ms (own view true)
+[group-timing]   detached commits 46.2 ms
+[group-timing] entries 8 gates 0.0 capture 0.7 commit+publish 120.3 ms (own view true)
+[group-timing]   detached commits 22.4 ms
+[group-timing] entries 4 gates 0.0 capture 0.6 commit+publish 30.8 ms (own view true)
+[group-timing]   detached commits 26.7 ms
+[group-timing] entries 4 gates 0.0 capture 0.6 commit+publish 35.5 ms (own view true)
+[group-timing]   detached commits 22.9 ms
+[group-timing] entries 10 gates 0.0 capture 0.6 commit+publish 28.7 ms (own view true)
+[group-timing]   detached commits 21.1 ms
+[group-timing] entries 12 gates 0.0 capture 0.8 commit+publish 27.1 ms (own view true)
+[group-timing]   detached commits 100.2 ms
+[group-timing] entries 3 gates 0.0 capture 0.7 commit+publish 108.1 ms (own view true)
+[group-timing]   detached commits 21.3 ms
+[group-timing] entries 10 gates 0.0 capture 0.6 commit+publish 40.5 ms (own view true)
+[group-timing]   detached commits 21.9 ms
+[group-timing] entries 5 gates 0.0 capture 0.7 commit+publish 46.8 ms (own view true)
+[group-timing]   detached commits 42.9 ms
+[group-timing] entries 13 gates 0.0 capture 0.7 commit+publish 49.2 ms (own view true)
+[group-timing]   detached commits 28.1 ms
+[group-timing] entries 4 gates 0.0 capture 0.6 commit+publish 82.8 ms (own view true)
+[group-timing]   detached commits 30.0 ms
+[group-timing] entries 8 gates 0.0 capture 0.8 commit+publish 39.1 ms (own view true)
+[group-timing]   detached commits 32.9 ms
+[group-timing] entries 8 gates 0.0 capture 0.7 commit+publish 47.8 ms (own view true)
+[group-timing]   detached commits 19.0 ms
+[group-timing] entries 9 gates 0.0 capture 0.6 commit+publish 41.9 ms (own view true)
+[group-timing]   detached commits 94.7 ms
+[group-timing] entries 3 gates 0.0 capture 0.5 commit+publish 102.8 ms (own view true)
+[group-timing]   detached commits 25.2 ms
+[group-timing] entries 11 gates 0.0 capture 0.8 commit+publish 33.9 ms (own view true)
+[group-timing]   detached commits 119.1 ms
+[group-timing] entries 7 gates 0.0 capture 0.7 commit+publish 174.8 ms (own view true)
+[group-timing]   detached commits 20.8 ms
+[group-timing] entries 38 gates 0.0 capture 0.7 commit+publish 27.1 ms (own view true)
+[group-timing]   detached commits 116.3 ms
+[group-timing] entries 2 gates 0.0 capture 0.9 commit+publish 188.3 ms (own view true)
+[group-timing]   detached commits 23.5 ms
+[group-timing] entries 9 gates 0.0 capture 0.6 commit+publish 53.2 ms (own view true)
+[group-timing]   detached commits 23.7 ms
+[group-timing] entries 10 gates 0.0 capture 0.8 commit+publish 31.1 ms (own view true)
+[group-timing]   detached commits 130.9 ms
+[group-timing] entries 19 gates 0.0 capture 0.7 commit+publish 150.2 ms (own view true)
+[group-timing]   detached commits 26.6 ms
+[group-timing] entries 13 gates 0.0 capture 0.7 commit+publish 34.6 ms (own view true)
+[group-timing]   detached commits 148.2 ms
+[group-timing] entries 15 gates 0.0 capture 0.7 commit+publish 155.2 ms (own view true)
+[group-timing]   detached commits 24.6 ms
+[group-timing] entries 5 gates 0.0 capture 0.8 commit+publish 38.0 ms (own view true)
+[group-timing]   detached commits 22.7 ms
+[group-timing] entries 14 gates 0.0 capture 0.7 commit+publish 31.7 ms (own view true)
+[group-timing]   detached commits 150.9 ms
+[group-timing] entries 6 gates 0.0 capture 0.7 commit+publish 159.0 ms (own view true)
+[group-timing]   detached commits 23.7 ms
+[group-timing] entries 14 gates 0.0 capture 0.6 commit+publish 32.0 ms (own view true)
+[group-timing]   detached commits 38.4 ms
+[group-timing] entries 7 gates 0.0 capture 0.8 commit+publish 83.3 ms (own view true)
+[group-timing]   detached commits 26.0 ms
+[group-timing] entries 9 gates 0.0 capture 0.9 commit+publish 34.4 ms (own view true)
+[group-timing]   detached commits 83.5 ms
+[group-timing] entries 11 gates 0.0 capture 0.6 commit+publish 108.5 ms (own view true)
+[group-timing]   detached commits 23.4 ms
+[group-timing] entries 6 gates 0.0 capture 0.7 commit+publish 64.2 ms (own view true)
+[group-timing]   detached commits 23.8 ms
+[group-timing] entries 11 gates 0.0 capture 0.7 commit+publish 64.2 ms (own view true)
+[group-timing]   detached commits 61.4 ms
+[group-timing] entries 9 gates 0.0 capture 0.6 commit+publish 69.1 ms (own view true)
+[group-timing]   detached commits 44.6 ms
+[group-timing] entries 9 gates 0.0 capture 0.7 commit+publish 53.6 ms (own view true)
+[group-timing]   detached commits 78.2 ms
+[group-timing] entries 9 gates 0.0 capture 0.6 commit+publish 93.2 ms (own view true)
+[group-timing]   detached commits 28.7 ms
+[group-timing] entries 9 gates 0.0 capture 0.7 commit+publish 45.4 ms (own view true)
+[group-timing]   detached commits 54.9 ms
+[group-timing] entries 11 gates 0.0 capture 0.6 commit+publish 67.0 ms (own view true)
+[group-timing]   detached commits 27.3 ms
+[group-timing] entries 7 gates 0.0 capture 0.5 commit+publish 41.0 ms (own view true)
+[group-timing]   detached commits 108.4 ms
+[group-timing] entries 8 gates 0.0 capture 0.6 commit+publish 123.8 ms (own view true)
+[group-timing]   detached commits 23.6 ms
+[group-timing] entries 11 gates 0.0 capture 1.7 commit+publish 32.3 ms (own view true)
+[group-timing]   detached commits 56.6 ms
+[group-timing] entries 7 gates 0.0 capture 0.6 commit+publish 80.4 ms (own view true)
+[group-timing]   detached commits 23.5 ms
+[group-timing] entries 10 gates 0.0 capture 0.6 commit+publish 85.1 ms (own view true)
+[group-timing]   detached commits 22.1 ms
+[group-timing] entries 5 gates 0.0 capture 0.7 commit+publish 52.4 ms (own view true)
+[group-timing]   detached commits 109.7 ms
+[group-timing] entries 12 gates 0.0 capture 0.9 commit+publish 118.7 ms (own view true)
+[group-timing]   detached commits 36.3 ms
+[group-timing] entries 24 gates 0.0 capture 0.7 commit+publish 78.9 ms (own view true)
+[group-timing]   detached commits 107.7 ms
+[group-timing] entries 21 gates 0.0 capture 0.6 commit+publish 148.1 ms (own view true)
+[group-timing]   detached commits 21.9 ms
+[group-timing] entries 25 gates 0.0 capture 0.6 commit+publish 29.3 ms (own view true)
+[group-timing]   detached commits 149.2 ms
+[group-timing] entries 2 gates 0.0 capture 0.7 commit+publish 250.9 ms (own view true)
+[group-timing]   detached commits 24.1 ms
+[group-timing] entries 44 gates 0.0 capture 0.6 commit+publish 31.5 ms (own view true)
+[group-timing]   detached commits 213.1 ms
+[group-timing] entries 3 gates 0.0 capture 1.0 commit+publish 270.9 ms (own view true)
+[group-timing]   detached commits 32.8 ms
+[group-timing] entries 15 gates 0.0 capture 1.6 commit+publish 41.3 ms (own view true)
+[group-timing]   detached commits 23.6 ms
+[group-timing] entries 32 gates 0.0 capture 0.6 commit+publish 31.7 ms (own view true)
+[group-timing]   detached commits 23.8 ms
+[group-timing] entries 1 gates 0.0 capture 0.7 commit+publish 84.2 ms (own view true)
+[group-timing]   detached commits 47.7 ms
+[group-timing] entries 10 gates 0.0 capture 0.9 commit+publish 65.7 ms (own view true)
+[group-timing]   detached commits 48.1 ms
+[group-timing] entries 3 gates 0.0 capture 0.8 commit+publish 69.8 ms (own view true)
+[group-timing]   detached commits 71.0 ms
+[group-timing] entries 1 gates 0.0 capture 0.8 commit+publish 106.9 ms (own view true)
+[group-timing]   detached commits 67.8 ms
+[group-timing] entries 11 gates 0.0 capture 4.7 commit+publish 101.2 ms (own view true)
+[group-timing]   detached commits 62.5 ms
+[group-timing] entries 20 gates 0.0 capture 0.8 commit+publish 95.0 ms (own view true)
+[group-timing]   detached commits 128.2 ms
+[group-timing] entries 8 gates 0.0 capture 1.0 commit+publish 144.8 ms (own view true)
+[group-timing]   detached commits 36.8 ms
+[group-timing] entries 8 gates 0.0 capture 0.6 commit+publish 50.7 ms (own view true)
+[group-timing]   detached commits 31.2 ms
+[group-timing] entries 1 gates 0.0 capture 0.6 commit+publish 113.0 ms (own view true)
+[group-timing]   detached commits 69.6 ms
+[group-timing] entries 4 gates 0.0 capture 6.9 commit+publish 110.7 ms (own view true)
+[group-timing]   detached commits 54.9 ms
+[group-timing] entries 6 gates 0.0 capture 0.6 commit+publish 73.4 ms (own view true)
+[group-timing]   detached commits 186.1 ms
+[group-timing] entries 4 gates 0.0 capture 1.3 commit+publish 206.0 ms (own view true)
+[group-timing]   detached commits 44.9 ms
+[group-timing] entries 9 gates 0.0 capture 0.6 commit+publish 66.1 ms (own view true)
+[group-timing]   detached commits 197.7 ms
+[group-timing] entries 3 gates 0.0 capture 0.8 commit+publish 236.7 ms (own view true)
+[group-timing]   detached commits 24.8 ms
+[group-timing]   detached commits 25.3 ms
+[group-timing] entries 8 gates 1300.9 capture 1.3 commit+publish 38.5 ms (own view true)
+[group-timing]   detached commits 25.6 ms
+[group-timing] entries 37 gates 0.0 capture 0.6 commit+publish 40.9 ms (own view true)
+[group-timing]   detached commits 22.5 ms
+[group-timing]   detached commits 14.8 ms
+[group-timing]   detached commits 21.4 ms
+[group-timing] entries 1 gates 1494.7 capture 1.2 commit+publish 32.5 ms (own view true)
+[group-timing]   detached commits 16.7 ms
+[group-timing] entries 45 gates 0.0 capture 0.9 commit+publish 26.5 ms (own view true)

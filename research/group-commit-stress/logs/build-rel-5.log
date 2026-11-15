@@ -1,0 +1,7 @@
+   Compiling omnigraph-engine v0.15.1 (/src/omnigraph/crates/omnigraph)
+   Compiling omnigraph-cluster v0.15.1 (/src/omnigraph/crates/omnigraph-cluster)
+   Compiling omnigraph-api-types v0.15.1 (/src/omnigraph/crates/omnigraph-api-types)
+   Compiling omnigraph-server v0.15.1 (/src/omnigraph/crates/omnigraph-server)
+   Compiling omnigraph-cli v0.15.1 (/src/omnigraph/crates/omnigraph-cli)
+    Finished `release` profile [optimized + debuginfo] target(s) in 6m 35s
+EXIT=0

@@ -1,0 +1,7 @@
+
+running 1 test
+[gs-summary] {"ops":178,"ok":173,"refused":1,"in_doubt":4,"errors":{"__dst 'p0' not found in Person [Manifest(ManifestError { kind: BadRequest, message: \"__dst":1,"__src 'p11' not found in Person [Manifest(ManifestError { kind: BadRequest, message: \"__sr":1,"__src 'p17' not found in Person [Manifest(ManifestError { kind: BadRequest, message: \"__sr":1,"__src 'p20' not found in Person [Manifest(ManifestError { kind: BadRequest, message: \"__sr":1,"write authority 'graph_head:main' changed during preparation (expected hb1.01M7F7YC0H56SH8":1}}
+test gc_stress_harness ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 33.04s
+

@@ -1,0 +1,18 @@
+
+running 1 test
+test optimize_cancelled_while_queued_for_the_gates_returns_without_them ... FAILED
+
+failures:
+
+---- optimize_cancelled_while_queued_for_the_gates_returns_without_them stdout ----
+
+thread 'optimize_cancelled_while_queued_for_the_gates_returns_without_them' (45645) panicked at crates/omnigraph/tests/helpers/failpoint.rs:145:9:
+seam 'mutation.post_table_commit' was never crossed a 1th time
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    optimize_cancelled_while_queued_for_the_gates_returns_without_them
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 181 filtered out; finished in 15.03s
+

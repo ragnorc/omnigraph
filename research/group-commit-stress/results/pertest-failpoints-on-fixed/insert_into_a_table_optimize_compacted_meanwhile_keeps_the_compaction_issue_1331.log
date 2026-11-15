@@ -1,0 +1,20 @@
+
+running 1 test
+test insert_into_a_table_optimize_compacted_meanwhile_keeps_the_compaction_issue_1331 ... FAILED
+
+failures:
+
+---- insert_into_a_table_optimize_compacted_meanwhile_keeps_the_compaction_issue_1331 stdout ----
+
+thread 'insert_into_a_table_optimize_compacted_meanwhile_keeps_the_compaction_issue_1331' (45075) panicked at crates/omnigraph/tests/failpoints.rs:1821:5:
+assertion `left == right` failed: the insert prepared again
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    insert_into_a_table_optimize_compacted_meanwhile_keeps_the_compaction_issue_1331
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 181 filtered out; finished in 0.15s
+

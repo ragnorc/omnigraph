@@ -1,0 +1,3 @@
+{"kind": "driver_start", "cmd": ["run", "--base", "http://127.0.0.1:18080", "--graph", "stress", "--hot", "64", "--people", "24", "--out", "/src/omnigraph/research/group-commit-stress/served/s01-local-w64/history.jsonl", "--server-pid", "51444", "--writers", "64", "--secs", "30", "--actors", "1", "--seed", "1"], "root": "/srv/stress/roots/s01-local-w64-1794731093", "t": 1794731094.061}
+{"kind": "driver_done", "code": 0, "t": 1794731124.605}
+{"kind": "check_done", "code": 0, "root": "/srv/stress/roots/s01-local-w64-1794731093", "t": 1794731125.971}

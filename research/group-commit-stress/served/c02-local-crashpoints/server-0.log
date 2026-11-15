@@ -1,0 +1,2 @@
+OMNIGRAPH_LISTEN_ADDR=127.0.0.1:18082
+[stress-crash] aborting at batch_committed

@@ -1,0 +1,1 @@
+cargo dev-build-tests > research/group-commit-stress/logs/build-dev-1.log 2>&  511.82s user 1221.12s system 858% cpu 3:21.82 total

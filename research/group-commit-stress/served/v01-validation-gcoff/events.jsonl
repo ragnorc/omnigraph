@@ -1,0 +1,3 @@
+{"kind": "driver_start", "cmd": ["run", "--base", "http://127.0.0.1:18084", "--graph", "stress", "--hot", "64", "--people", "24", "--out", "/src/omnigraph/research/group-commit-stress/served/v01-validation-gcoff/history.jsonl", "--server-pid", "50912", "--writers", "4", "--secs", "8", "--actors", "1", "--seed", "51", "--metrics-secs", "8", "--mix", "knows=60,tag=40", "--readers", "0"], "root": "/srv/stress/roots/v01-validation-gcoff-1794737487", "t": 1794737489.67}
+{"kind": "driver_done", "code": 0, "t": 1794737497.957}
+{"kind": "check_done", "code": 0, "root": "/srv/stress/roots/v01-validation-gcoff-1794737487", "t": 1794737498.153}

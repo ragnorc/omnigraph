@@ -1,0 +1,19 @@
+{"kind": "driver_start", "cmd": ["run", "--base", "http://127.0.0.1:18082", "--graph", "stress", "--hot", "64", "--people", "24", "--out", "/src/omnigraph/research/group-commit-stress/served/c02-local-crashpoints/history.jsonl", "--server-pid", "48177", "--writers", "32", "--secs", "120", "--actors", "2", "--seed", "42", "--metrics-secs", "20", "--mix", "fresh=70,hot=10,pair=5,update=5,delete=3,person=3,knows=4"], "root": "/srv/stress/roots/c02-local-crashpoints-1794737127", "t": 1794737128.553}
+{"kind": "server_died", "code": -6, "t": 1794737129.154}
+{"kind": "restarted", "pid": 48301, "lock": "01M7FAPFSVBJ4CF3G5JCQWB5P1", "t": 1794737129.497}
+{"kind": "server_died", "code": -6, "t": 1794737138.303}
+{"kind": "restarted", "pid": 48548, "lock": "01M7FAPHQQ5C5GBWC1G279XJ2H", "t": 1794737138.648}
+{"kind": "server_died", "code": -6, "t": 1794737144.251}
+{"kind": "restarted", "pid": 48780, "lock": "01M7FAPTNKJPEKKFDMJEJKGCFT", "t": 1794737144.595}
+{"kind": "server_died", "code": -6, "t": 1794737150.999}
+{"kind": "restarted", "pid": 49011, "lock": "01M7FAQ0FJX0X9SFKNTCSED777", "t": 1794737151.346}
+{"kind": "server_died", "code": -6, "t": 1794737183.373}
+{"kind": "restarted", "pid": 49239, "lock": "01M7FAQ72E5QKX0M867ZPB2E7K", "t": 1794737183.726}
+{"kind": "server_died", "code": -6, "t": 1794737198.791}
+{"kind": "restarted", "pid": 49504, "lock": "01M7FAR6PGH6E2HH7F5QPAZXB0", "t": 1794737199.132}
+{"kind": "server_died", "code": -6, "t": 1794737212.54}
+{"kind": "restarted", "pid": 49712, "lock": "01M7FARNQR5CVD73HKMQBABRYK", "t": 1794737212.884}
+{"kind": "server_died", "code": -6, "t": 1794737216.686}
+{"kind": "restarted", "pid": 49909, "lock": "01M7FAS35GJTB03X1810K6HCQ5", "t": 1794737217.028}
+{"kind": "driver_done", "code": 0, "t": 1794737251.737}
+{"kind": "check_done", "code": 0, "root": "/srv/stress/roots/c02-local-crashpoints-1794737127", "t": 1794737252.516}

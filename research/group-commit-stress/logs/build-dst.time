@@ -1,0 +1,1 @@
+cargo test --locked --no-run >  2>&1  126.63s user 164.67s system 283% cpu 1:42.58 total
