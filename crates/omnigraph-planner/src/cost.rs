@@ -337,11 +337,14 @@ pub struct StorageProfile {
 }
 
 /// The object-store profile's wave latency in row units: 20 ms over the
-/// measured cost of one indexed-probe row on the reference host.
-pub const OBJECT_STORE_LATENCY_UNITS: u64 = 0;
+/// measured cost of one indexed-probe row on the reference host (1.63 µs,
+/// release build, `examples/request_cost_calibrate.rs`; the record is
+/// `experiments/request-cost/CALIBRATION.md`).
+pub const OBJECT_STORE_LATENCY_UNITS: u64 = 12_000;
 
-/// Bytes per row unit on the object-store profile: 0 prices bytes at nothing.
-pub const OBJECT_STORE_BYTES_PER_UNIT: u64 = 0;
+/// Bytes per row unit on the object-store profile: 64 requests in flight at
+/// 50 MiB/s each move about 5,000 bytes in one row unit's 1.63 µs.
+pub const OBJECT_STORE_BYTES_PER_UNIT: u64 = 5_000;
 
 /// Lance's I/O parallelism for a cloud store (`ObjectStore::io_parallelism`).
 pub const OBJECT_STORE_PARALLELISM: u64 = 64;
@@ -1150,6 +1153,15 @@ mod request_cost_tests {
         }
     }
 
+    /// The object-store profile at `latency` with bytes unpriced, so the
+    /// flips below are the wave term's alone.
+    fn latency_only(latency: u64) -> StorageProfile {
+        StorageProfile {
+            bytes_per_unit: 0,
+            ..StorageProfile::object_store(Some(latency))
+        }
+    }
+
     /// The measured shapes under the object-store profile: the 200,000-row
     /// Person table in 50 fragments, one column read. A destination of 10,000
     /// ids (40 slices) flips to the hash join at the calibrated latency; one
@@ -1160,7 +1172,7 @@ mod request_cost_tests {
     fn the_object_store_profile_flips_at_the_measured_shapes() {
         let path = |frontier: u64, latency: u64| {
             let request = AccessRequestInputs {
-                profile: StorageProfile::object_store(Some(latency)),
+                profile: latency_only(latency),
                 table_fragments: 50,
                 projected_columns: 1,
             };
@@ -1203,7 +1215,7 @@ mod request_cost_tests {
             (298_000, ExpandMode::IndexedScan),
             (300_000, ExpandMode::Csr),
         ] {
-            expand.profile = StorageProfile::object_store(Some(latency));
+            expand.profile = latency_only(latency);
             assert_eq!(choose_expand_mode(&expand), mode, "latency {latency}");
         }
     }
