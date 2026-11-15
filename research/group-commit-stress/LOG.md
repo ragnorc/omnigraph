@@ -366,3 +366,34 @@ batching is on.
 **Unindexed-tail decay without maintenance.** Local served, 48 writers, pure
 inserts, no maintenance (p02): 695 → 292 → 235 → 198 → 159 writes/s at 5 s
 intervals; batch time grows with the fragment count (one fragment per write).
+
+## 2026-11-15 — improvement 1: exact footprints for publications outside the group
+
+Hypothesis: the mixed-workload collapse comes from logging every write outside
+the group as `changed` for its whole table. A keyed update or delete touches
+exactly the ids its staging folded (pending batches' id column) or deleted
+(`MutationStaging::deleted_ids`); an insert-only entry read only the absence
+of its own ids and the existence of its edges' endpoints. So it is refused
+only when an upserted id is one it inserts, or when a delete hit a table it
+reads without writing. Updates and deletes of other ids explain nothing away
+because they change nothing the entry read.
+
+Prototype (`OMNIGRAPH_GROUP_COMMIT_EXACT_TOUCHED=1`): `StagedMutation.touched`
+computed in `stage_all_with_concurrency`, carried to the publisher call in a
+task-local (`group_commit::EXACT_TOUCHED`), recorded as `upserted`/`deleted`
+per table in the log record; `admit_inner` checks overlap. Tables whose ids
+were not read (loads, merges) stay `changed`.
+
+Same harness, same seed (local, dev build, 32 writers, default mixed mix,
+gated retry, 20 s):
+
+| | writes/s | writes/commit | p50 | p99 | violations |
+|---|---:|---:|---:|---:|---|
+| exact off (f10-mixed-exact0) | 24.4 | 1.05 | 1,372 ms | 3,660 ms | 0 |
+| exact on (f10-mixed-exact1) | **35.2** | **1.96** | **768 ms** | 2,861 ms | 0 |
+| reference: ungated retries, no bound (f01-mixed-ungated32) | 34.5 | 2.08 | 624 ms | 3,837 ms | 0 |
+
+All 7 repros pass with it on. Verdict: keep; it recovers the batching the
+gated retry lost while keeping the two-attempt bound. RFC change: classify
+publications outside the group by exact touched ids where the writer knows
+them, not `changed` per table.
