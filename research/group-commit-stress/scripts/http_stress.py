@@ -344,6 +344,7 @@ def check(args):
         if c.get("actor_id") != op["actor"]:
             violations.append(f"op {op['id']}: actor {op['actor']} commit actor {c.get('actor_id')}")
     uncertain_items, uncertain_people = set(), set()
+    excluded = tuple(args.exclude_prefix or ())
     for op in ops:
         if op["outcome"] == "in_doubt":
             uncertain_items.update(op["items"])
@@ -367,7 +368,7 @@ def check(args):
         diffs = []
         m_items, m_people, m_edges = model
         for key in set(m_items) | set(items_seen):
-            if key in uncertain_items or key.startswith("seed") or key not in args_key_filter(key):
+            if key in uncertain_items or key.startswith("seed") or (excluded and key.startswith(excluded)):
                 continue
             want = m_items.get(key)
             got = items_seen.get(key)
@@ -376,14 +377,15 @@ def check(args):
                 diffs.append(f"{key}: model {want} got {got}")
         if people_seen is not None:
             for person in set(m_people) | set(people_seen):
-                if person in uncertain_people:
+                if person in uncertain_people or (excluded and person.startswith(excluded)):
                     continue
                 if (person in m_people) != (person in people_seen):
                     diffs.append(f"person {person}: model {person in m_people} got {person in people_seen}")
         if edges_seen is not None:
             got_edges = Counter(edges_seen)
             for pair in set(m_edges) | set(got_edges):
-                if pair[0] in uncertain_people or pair[1] in uncertain_people:
+                if pair[0] in uncertain_people or pair[1] in uncertain_people or (
+                        excluded and (pair[0].startswith(excluded) or pair[1].startswith(excluded))):
                     continue
                 if m_edges.get(pair, 0) != got_edges.get(pair, 0):
                     diffs.append(f"edge {pair}: model {m_edges.get(pair, 0)} got {got_edges.get(pair, 0)}")
@@ -485,6 +487,8 @@ def main():
     c.add_argument("--export", required=True)
     c.add_argument("--seed-export")
     c.add_argument("--commits", required=True)
+    c.add_argument("--exclude-prefix", action="append", default=[],
+                   help="keys and people with this prefix are not compared (a killed writer's)")
     args = parser.parse_args()
     if args.cmd == "run":
         asyncio.run(run(args))

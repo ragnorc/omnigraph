@@ -234,6 +234,13 @@ pub struct Config {
     pub branch_secs: u64,
     pub schema_at_secs: u64,
     pub out: Option<String>,
+    /// Multi-process mode: write to this existing root (no init, no seed,
+    /// no in-process check; histories are checked together offline).
+    pub uri: Option<String>,
+    /// Prefix of this process's fresh keys, unique per process.
+    pub tag: String,
+    /// Claim `main`'s writer epoch at this second (0 = never).
+    pub claim_at_secs: u64,
 }
 
 impl Config {
@@ -258,6 +265,9 @@ impl Config {
             branch_secs: env_num("OG_GS_BRANCH_SECS", 0),
             schema_at_secs: env_num("OG_GS_SCHEMA_AT_SECS", 0),
             out: std::env::var("OG_GS_OUT").ok(),
+            uri: std::env::var("OG_GS_URI").ok(),
+            tag: env_or("OG_GS_TAG", ""),
+            claim_at_secs: env_num("OG_GS_CLAIM_AT_SECS", 0),
         }
     }
 }
@@ -436,7 +446,7 @@ async fn run_writer(shared: Arc<Shared>, sessions: Arc<Vec<Session>>, writer: us
         seq += 1;
         let kind = cfg.mix.pick(&mut rng);
         let n = (writer as i64) * 1_000_000 + seq as i64;
-        let fresh = format!("f{writer}-{seq}");
+        let fresh = format!("f{}{writer}-{seq}", cfg.tag);
         let hot = format!("h{}", rng.below(cfg.hot));
         let person_a = format!("p{}", rng.below(cfg.people));
         let person_b = format!("p{}", rng.below(cfg.people));
@@ -502,7 +512,7 @@ async fn run_writer(shared: Arc<Shared>, sessions: Arc<Vec<Session>>, writer: us
             }
             OpKind::Tag => {
                 let label = format!("l{}", rng.below(cfg.hot));
-                let slug = format!("t{writer}-{seq}");
+                let slug = format!("t{}{writer}-{seq}", cfg.tag);
                 op.tag = Some((slug.clone(), label.clone()));
                 ("tag", params(&[("$slug", &slug), ("$label", &label)]))
             }
@@ -591,6 +601,7 @@ async fn run_maintenance(shared: Arc<Shared>, session: Session) {
     let mut next_branch = cfg.branch_secs;
     let mut schema_done = cfg.schema_at_secs == 0;
     let mut branch_seq = 0u64;
+    let mut claimed = false;
     while !shared.stop.load(Ordering::Acquire) {
         tokio::time::sleep(Duration::from_millis(200)).await;
         let t = shared.start.elapsed().as_secs();
@@ -654,6 +665,14 @@ async fn run_maintenance(shared: Arc<Shared>, session: Session) {
             match outcome {
                 Ok(version) => log(format!("branch churn {side} ok in {:?}, merged at {version:?}", started.elapsed())),
                 Err(error) => log(format!("branch churn {side} failed in {:?}: {error}", started.elapsed())),
+            }
+        }
+        if cfg.claim_at_secs > 0 && t >= cfg.claim_at_secs && !claimed {
+            claimed = true;
+            let started = Instant::now();
+            match session.claim_branch_writer("main").await {
+                Ok(epoch) => log(format!("claimed main at epoch {epoch} in {:?}", started.elapsed())),
+                Err(error) => log(format!("claim failed in {:?}: {error}", started.elapsed())),
             }
         }
         if !schema_done && t >= cfg.schema_at_secs {
@@ -1043,12 +1062,22 @@ pub async fn run(cfg: Config) -> Report {
             .as_nanos();
         format!("{}/gs-{}-{nanos}", cfg.target.trim_end_matches('/'), cfg.seed)
     };
-    let base = Omnigraph::init(&uri, SCHEMA).await.expect("init");
-    let base = Session::from_defaults(Arc::new(base), SessionSettings::default());
-    base.load_jsonl(&seed_jsonl(&cfg), omnigraph::loader::LoadMode::Overwrite)
-        .await
-        .expect("seed load");
-    base.ensure_indices_as(None).await.expect("indices");
+    let multi = cfg.uri.is_some();
+    let uri = cfg.uri.clone().unwrap_or(uri);
+    let base = if multi {
+        Session::from_defaults(
+            Arc::new(Omnigraph::open(&uri).await.expect("open existing root")),
+            SessionSettings::default(),
+        )
+    } else {
+        let base = Omnigraph::init(&uri, SCHEMA).await.expect("init");
+        let base = Session::from_defaults(Arc::new(base), SessionSettings::default());
+        base.load_jsonl(&seed_jsonl(&cfg), omnigraph::loader::LoadMode::Overwrite)
+            .await
+            .expect("seed load");
+        base.ensure_indices_as(None).await.expect("indices");
+        base
+    };
     // The seed is part of the model's starting state.
     let seed_obs = observe(&base, ReadTarget::branch("main")).await.expect("seed observation");
     let mut sessions = vec![base];
@@ -1138,6 +1167,16 @@ pub async fn run(cfg: Config) -> Report {
     if tokio::time::timeout(Duration::from_secs(120), drain).await.is_err() {
         hung = true;
     }
+    if multi {
+        // Histories are checked together offline; write this one out.
+        let mut report = write_history_only(&shared).await;
+        if hung {
+            report
+                .violations
+                .push("liveness: writers did not finish within 120 s of the stop".to_string());
+        }
+        return report;
+    }
     let mut report = check(&shared, &uri).await;
     if hung {
         report
@@ -1145,4 +1184,43 @@ pub async fn run(cfg: Config) -> Report {
             .push("liveness: writers did not finish within 120 s of the stop".to_string());
     }
     report
+}
+
+
+/// Multi-process mode: the history without the in-process model check.
+pub async fn write_history_only(shared: &Shared) -> Report {
+    use std::io::Write as _;
+    let ops = shared.ops.lock().unwrap().clone();
+    let ok = ops.iter().filter(|op| op.outcome == Outcome::Ok).count();
+    let mut errors: BTreeMap<String, usize> = BTreeMap::new();
+    for op in &ops {
+        if let Outcome::Refused(text) | Outcome::InDoubt(text) = &op.outcome {
+            *errors.entry(text.chars().take(90).collect()).or_default() += 1;
+        }
+    }
+    let summary = serde_json::json!({
+        "ops": ops.len(), "ok": ok,
+        "refused": ops.iter().filter(|op| matches!(op.outcome, Outcome::Refused(_))).count(),
+        "in_doubt": ops.iter().filter(|op| matches!(op.outcome, Outcome::InDoubt(_))).count(),
+        "errors": errors,
+    });
+    if let Some(path) = &shared.cfg.out {
+        let mut file = std::fs::OpenOptions::new().create(true).append(true).open(path).expect("open OUT");
+        for op in ops.iter().filter(|op| op.writer != usize::MAX) {
+            let line = serde_json::json!({
+                "type": "op", "id": format!("{}:{}", shared.cfg.tag, op.id), "writer": op.writer, "actor": op.actor,
+                "kind": op.kind.name(), "items": op.items, "person": op.person, "edge": op.edge,
+                "tag": op.tag, "n": op.n, "invoked_us": op.invoked_us, "completed_us": op.completed_us,
+                "outcome": op.outcome.label(),
+                "error": match &op.outcome { Outcome::Ok => None, Outcome::Refused(t) | Outcome::InDoubt(t) => Some(t.clone()) },
+                "version": op.version, "commit": op.commit, "commit_actor": op.commit_actor,
+            });
+            writeln!(file, "{line}").unwrap();
+        }
+        for line in shared.maintenance.lock().unwrap().iter() {
+            writeln!(file, "{}", serde_json::json!({"type": "maintenance", "line": line})).unwrap();
+        }
+        writeln!(file, "{}", serde_json::json!({"type": "summary", "summary": summary})).unwrap();
+    }
+    Report { violations: Vec::new(), summary }
 }

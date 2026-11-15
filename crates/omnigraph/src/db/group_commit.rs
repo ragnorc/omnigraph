@@ -696,6 +696,34 @@ impl Omnigraph {
             .iter()
             .filter(|(_, result)| result.is_ok())
             .count();
+        if let Some(every) = stats::every() {
+            let refused = outcome
+                .replies
+                .iter()
+                .filter(|(_, result)| result.as_ref().is_err_and(|error| error.is_read_set_changed()))
+                .count();
+            let failed = admitted == 0 && outcome.replies.len() > refused;
+            stats::record(admitted as u64, refused as u64, failed);
+            if stats::due(every) {
+                let (batches, entries, refused, failed, max_batch) = stats::take();
+                let (queue, log) = {
+                    let groups = self.group_commits().groups.lock().unwrap();
+                    groups
+                        .get(key)
+                        .map(|group| (group.queue.len(), group.log.len()))
+                        .unwrap_or((0, 0))
+                };
+                let (kk_files, kk_ids) = crate::table_store::known_keys::stats();
+                eprintln!(
+                    "[gc-stats] {{\"unix\":{},\"branch\":\"{}\",\"batches\":{batches},\"entries\":{entries},\"refused\":{refused},\"failed_batches\":{failed},\"max_batch\":{max_batch},\"queue\":{queue},\"log\":{log},\"known_key_files\":{kk_files},\"known_key_ids\":{kk_ids}}}",
+                    std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map(|elapsed| elapsed.as_secs())
+                        .unwrap_or(0),
+                    key,
+                );
+            }
+        }
         for (reply, result) in outcome.replies {
             let _ = reply.send(Signal::Done(result));
         }
@@ -1733,5 +1761,61 @@ impl Omnigraph {
             Err(_) => group.log.clear(),
         }
         published
+    }
+}
+
+
+/// Research (stress soak): counters a leader prints at most every
+/// `OMNIGRAPH_GROUP_COMMIT_STATS_SECS` seconds as one `[gc-stats]` JSON line.
+mod stats {
+    use std::sync::Mutex;
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    pub(super) static BATCHES: AtomicU64 = AtomicU64::new(0);
+    pub(super) static ENTRIES: AtomicU64 = AtomicU64::new(0);
+    pub(super) static REFUSED: AtomicU64 = AtomicU64::new(0);
+    pub(super) static FAILED: AtomicU64 = AtomicU64::new(0);
+    pub(super) static MAX_BATCH: AtomicU64 = AtomicU64::new(0);
+    static LAST: Mutex<Option<std::time::Instant>> = Mutex::new(None);
+
+    pub(super) fn every() -> Option<std::time::Duration> {
+        std::env::var("OMNIGRAPH_GROUP_COMMIT_STATS_SECS")
+            .ok()
+            .and_then(|value| value.parse::<u64>().ok())
+            .filter(|secs| *secs > 0)
+            .map(std::time::Duration::from_secs)
+    }
+
+    pub(super) fn record(admitted: u64, refused: u64, failed: bool) {
+        BATCHES.fetch_add(1, Ordering::Relaxed);
+        ENTRIES.fetch_add(admitted, Ordering::Relaxed);
+        REFUSED.fetch_add(refused, Ordering::Relaxed);
+        if failed {
+            FAILED.fetch_add(1, Ordering::Relaxed);
+        }
+        MAX_BATCH.fetch_max(admitted, Ordering::Relaxed);
+    }
+
+    /// Whether the interval passed; resets the clock when it did.
+    pub(super) fn due(every: std::time::Duration) -> bool {
+        let mut last = LAST.lock().unwrap();
+        let now = std::time::Instant::now();
+        match *last {
+            Some(at) if now.duration_since(at) < every => false,
+            _ => {
+                *last = Some(now);
+                true
+            }
+        }
+    }
+
+    pub(super) fn take() -> (u64, u64, u64, u64, u64) {
+        (
+            BATCHES.swap(0, Ordering::Relaxed),
+            ENTRIES.swap(0, Ordering::Relaxed),
+            REFUSED.swap(0, Ordering::Relaxed),
+            FAILED.swap(0, Ordering::Relaxed),
+            MAX_BATCH.swap(0, Ordering::Relaxed),
+        )
     }
 }

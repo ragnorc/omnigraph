@@ -1445,6 +1445,12 @@ pub(crate) mod known_keys {
     pub(crate) fn get(path: &str) -> Option<Arc<HashSet<String>>> {
         CACHE.lock().unwrap().files.get(path).cloned()
     }
+
+    /// Research (stress stats): files and ids the map holds.
+    pub(crate) fn stats() -> (usize, usize) {
+        let cache = CACHE.lock().unwrap();
+        (cache.files.len(), cache.ids)
+    }
 }
 
 /// The members of `source_ids` in the fragments the id index does not cover,

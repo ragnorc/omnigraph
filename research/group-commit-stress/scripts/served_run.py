@@ -224,6 +224,11 @@ def main():
     p.add_argument("--optimize-secs", type=float, default=0)
     p.add_argument("--chaos-kill-secs", type=float, default=0, help="mean seconds between kill -9")
     p.add_argument("--chaos-seed", type=int, default=7)
+    p.add_argument("--toxics", default="", help="comma list of reset,timeout,truncate,jitter,bandwidth")
+    p.add_argument("--toxic-every", type=float, default=6.0, help="mean seconds between toxic windows")
+    p.add_argument("--toxic-window", type=float, default=2.0, help="seconds a toxic stays on")
+    p.add_argument("--toxic-toxicity", type=float, default=0.3)
+    p.add_argument("--latency-ms", type=int, default=15)
     argv = sys.argv[1:]
     driver_args = []
     if "--" in argv:
@@ -282,7 +287,47 @@ def main():
                 server.start()
                 event(kind="restarted", pid=server.proc.pid)
 
+    def toxi(method, path, body=None):
+        data = None if body is None else json.dumps(body).encode()
+        req = urllib.request.Request(f"http://127.0.0.1:8474{path}", data=data, method=method)
+        try:
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                return resp.status
+        except urllib.error.HTTPError as error:
+            return error.code
+        except Exception:  # noqa: BLE001
+            return None
+
+    def toxics():
+        rng = random.Random(args.chaos_seed + 1)
+        kinds = [kind for kind in args.toxics.split(",") if kind]
+        while not stop.wait(rng.expovariate(1.0 / args.toxic_every)):
+            kind = rng.choice(kinds)
+            stream = rng.choice(["upstream", "downstream"])
+            toxic = {"name": "chaos", "stream": stream, "toxicity": args.toxic_toxicity}
+            if kind == "reset":
+                toxic.update(type="reset_peer", attributes={"timeout": rng.randint(0, 50)})
+            elif kind == "timeout":
+                toxic.update(type="timeout", attributes={"timeout": rng.randint(100, 3000)})
+            elif kind == "truncate":
+                # Responses cut short: the store applied the request, the
+                # client never sees its answer (a lost acknowledgement).
+                toxic.update(type="limit_data", stream="downstream",
+                             attributes={"bytes": rng.randint(0, 400)})
+            elif kind == "jitter":
+                toxic.update(type="latency", toxicity=1.0,
+                             attributes={"latency": rng.randint(20, 200), "jitter": rng.randint(10, 300)})
+            elif kind == "bandwidth":
+                toxic.update(type="bandwidth", toxicity=1.0, attributes={"rate": rng.randint(50, 500)})
+            status = toxi("POST", "/proxies/rustfs/toxics", toxic)
+            event(kind="toxic_on", toxic=toxic, status=status)
+            stop.wait(args.toxic_window)
+            toxi("DELETE", "/proxies/rustfs/toxics/chaos")
+            event(kind="toxic_off", toxic_kind=kind)
+
     threads = []
+    if args.toxics and args.backend == "s3":
+        threads.append(threading.Thread(target=toxics, daemon=True))
     if args.optimize_secs > 0:
         threads.append(threading.Thread(target=maintenance, daemon=True))
     if args.chaos_kill_secs > 0:
