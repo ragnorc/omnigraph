@@ -1453,6 +1453,30 @@ pub(crate) mod known_keys {
     }
 }
 
+/// Research: whether the known keys answer every fragment the id index does
+/// not cover (each has exactly one known data file, no deletion file, no
+/// overlay); `false` with no id index or an empty tail.
+async fn known_keys_cover_tail(ds: &Dataset, system_columns: SystemColumns) -> Result<bool> {
+    let Some(uncovered) =
+        crate::dataset_index::key_column_uncovered_fragments(ds, system_columns.id).await?
+    else {
+        return Ok(false);
+    };
+    if uncovered.is_empty() {
+        return Ok(false);
+    }
+    Ok(ds
+        .fragments()
+        .iter()
+        .filter(|fragment| uncovered.contains(&fragment.id))
+        .all(|fragment| {
+            fragment.deletion_file.is_none()
+                && fragment.files.len() == 1
+                && fragment.overlays.is_empty()
+                && known_keys::get(&fragment.files[0].path).is_some()
+        }))
+}
+
 /// The members of `source_ids` in the fragments the id index does not cover,
 /// answered from [`known_keys`] when every such fragment is known; `None`
 /// when one is not (the caller then scans as before).
@@ -4223,12 +4247,23 @@ impl TableStore {
         // read every id. Lance plans the probe's IN list once per uncovered
         // fragment, so the probe runs only while those copies hold no more
         // ids than one keyed batch (#1225).
+        // Research (stress improvement 2, `OMNIGRAPH_KNOWN_KEYS_LIFT_CAP`,
+        // on by default): when the known keys answer every uncovered fragment,
+        // the probe scans only the indexed fragments (`fast_search`), so the
+        // per-uncovered-fragment IN-list copies the cap guards against are
+        // never planned; past the cap a keyed insert otherwise falls back to
+        // the full-table merge join, a scan of every fragment per write.
+        let known_tail = matches!(semantics, KeyedWriteSemantics::Upsert)
+            && known_keys::enabled()
+            && std::env::var("OMNIGRAPH_KNOWN_KEYS_LIFT_CAP").map_or(true, |value| value != "0")
+            && known_keys_cover_tail(&ds, system_columns).await?;
         let tail = match semantics {
             KeyedWriteSemantics::Upsert => {
                 crate::dataset_index::key_column_uncovered_tail(&ds, system_columns.id)
                     .await?
                     .filter(|tail| {
-                        tail.fragments.saturating_mul(source_ids.len()) <= KEYED_WRITE_MAX_ROWS
+                        known_tail
+                            || tail.fragments.saturating_mul(source_ids.len()) <= KEYED_WRITE_MAX_ROWS
                     })
             }
             _ => None,
