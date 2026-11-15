@@ -1,0 +1,1 @@
+OMNIGRAPH_GROUP_COMMIT=0 RUST_MIN_STACK=16777216 timeout 3300 cargo test   >   134.24s user 10.71s system 105% cpu 2:16.85 total

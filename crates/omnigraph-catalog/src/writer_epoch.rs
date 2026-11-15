@@ -69,6 +69,24 @@ impl WriterEpochHolders {
     /// The epoch held for `key` on the chain whose native ref is `native`. An
     /// entry a claim on another native ref set is dropped: a branch recreated
     /// under its name starts with nothing held.
+    /// Stress fix (publisher trust): whether `native` is the chain an entry
+    /// for `key` was claimed on, or no entry exists; never changes the
+    /// registry, so a check of an unverified image cannot drop a live entry.
+    pub(crate) fn native_matches(&self, key: &HolderKey, native: Option<&str>) -> bool {
+        self.lock()
+            .get(key)
+            .is_none_or(|entry| entry.native.as_deref() == native)
+    }
+
+    /// Stress fix (publisher trust): the epoch `held` would answer, without
+    /// dropping or clearing anything.
+    pub(crate) fn peek(&self, key: &HolderKey, native: Option<&str>) -> Option<u64> {
+        self.lock()
+            .get(key)
+            .filter(|entry| entry.native.as_deref() == native)
+            .map(|entry| entry.epoch)
+    }
+
     pub(crate) fn held(&self, key: &HolderKey, native: Option<&str>) -> Option<u64> {
         let mut held = self.lock();
         let entry = held.get(key)?;

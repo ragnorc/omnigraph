@@ -1,0 +1,10 @@
+[suites] writes: /src/omnigraph/target/debug/deps/writes-be8366c162ccd559
+[suites] writes exit=0 test result: ok. 67 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 2.48s
+[suites] integration: /src/omnigraph/target/debug/deps/integration-4c33eb5d61fe9e22
+[suites] integration: /srv/bins/suites-unfixed/integration-4c33eb5d61fe9e22
+[suites] integration exit=0 test result: ok. 704 passed; 0 failed; 9 ignored; 0 measured; 0 filtered out; finished in 34.92s
+[suites] detached_commit_matrix: /srv/bins/suites-unfixed/detached_commit_matrix-0e8a498b4a411637
+[suites] detached_commit_matrix exit=101 test result: FAILED. 24 passed; 7 failed; 1 ignored; 0 measured; 0 filtered out; finished in 24.54s
+[suites] failpoints: /srv/bins/suites-unfixed/failpoints-aaf057a4cc8424fd
+Terminated
+[suites] failpoints exit=143 

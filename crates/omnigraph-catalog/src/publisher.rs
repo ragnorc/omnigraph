@@ -1799,6 +1799,29 @@ impl GraphNamespacePublisher {
                 .into_iter()
                 .map(|table| (table.registration.identity, table))
                 .collect();
+            // Stress fix: a trusted image of another incarnation of this
+            // branch (it matched by logical name) must not reach the epoch
+            // assertion, which drops a live holder entry whose native ref
+            // differs from the loaded chain's; open the branch fresh instead.
+            // A trusted image whose epoch is not the one this process holds
+            // (an image from before a claim, or of another incarnation) is
+            // stale: the assertion would clear the live holder entry, so the
+            // attempt opens the branch fresh instead of asserting on it.
+            if trusted && attempt < PUBLISHER_RETRY_BUDGET && !self.holders.holds_nothing() {
+                let image_epoch =
+                    WriterEpochRow::resolved(writer_epoch.as_ref(), native_branch.as_deref());
+                let stale = match self.holder_key() {
+                    Ok(key) => {
+                        !self.holders.native_matches(key, native_branch.as_deref())
+                            || self.holders.peek(key, native_branch.as_deref()).unwrap_or(0)
+                                != image_epoch
+                    }
+                    Err(_) => true,
+                };
+                if stale {
+                    continue;
+                }
+            }
             let checked = async {
                 self.assert_writer_epoch(
                     WriterEpochRow::resolved(writer_epoch.as_ref(), native_branch.as_deref()),

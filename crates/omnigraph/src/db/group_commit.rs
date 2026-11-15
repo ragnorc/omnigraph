@@ -227,6 +227,27 @@ fn follower_error(error: &OmniError, txn: &WriteTxn) -> OmniError {
     if error.is_read_set_changed() {
         return moved(txn, &None);
     }
+    // Stress fix (H11): a manifest failure (writer fenced, a precondition,
+    // an injected or storage refusal with its kind and details) reaches every
+    // member, the leader's own entry included, with its type intact.
+    let mut inner = error;
+    while let OmniError::Completion { source, .. } = inner {
+        inner = source;
+    }
+    let typed = match inner {
+        OmniError::Manifest(detail) => Some(OmniError::Manifest(detail.clone())),
+        OmniError::KeyConflict { type_key, entity_id } => Some(OmniError::KeyConflict {
+            type_key: type_key.clone(),
+            entity_id: entity_id.clone(),
+        }),
+        _ => None,
+    };
+    if let Some(typed) = typed {
+        return match error.completion_evidence() {
+            Some(evidence) => typed.with_completion_evidence(evidence),
+            None => typed,
+        };
+    }
     // Keep what the failure established about the publication, so a server
     // classifies every member of the batch as it would the batch's own
     // failure (`Unpublished` stays definite; anything else stays uncertain).

@@ -1,0 +1,180 @@
+
+running 32 tests
+test rfc0067_matrix_child_process ... ignored, subprocess helper; exercised by the rfc_0067_failure_window_matrix_* points
+test every_writer_window_is_a_matrix_point ... ok
+test cleanup_retains_live_branch_staging_until_owner_recreation ... ok
+test rfc_0067_failure_window_matrix_blob_clear_post_detached_1 ... ok
+test rfc_0067_failure_window_matrix_blob_clear_pre_publish ... ok
+test rfc_0067_failure_window_matrix_blob_put_pre_publish ... ok
+test rfc_0067_failure_window_matrix_multi_table_pre_publish ... FAILED
+test rfc_0067_failure_window_matrix_carried_insert_post_detached_1_issue_1331 ... FAILED
+test rfc_0067_failure_window_matrix_blob_put_post_detached_1 ... ok
+test rfc_0067_failure_window_matrix_prepared_schema_apply_post_detached_1 ... ok
+test rfc_0067_failure_window_matrix_optimize_pre_publish ... ok
+test rfc_0067_failure_window_matrix_carried_insert_pre_publish_issue_1331 ... FAILED
+test rfc_0067_failure_window_matrix_multi_table_post_detached_1 ... FAILED
+test rfc_0067_failure_window_matrix_prepared_schema_apply_pre_publish ... ok
+test rfc_0067_failure_window_matrix_schema_apply_pre_publish ... ok
+test rfc_0067_failure_window_matrix_system_column_upgrade_post_detached_1 ... ok
+test rfc_0067_failure_window_matrix_multi_table_post_detached_2 ... FAILED
+test rfc_0067_failure_window_matrix_prepared_schema_apply_post_detached_2 ... ok
+test rfc_0067_failure_window_matrix_system_column_upgrade_post_detached_2 ... ok
+test rfc_0067_failure_window_matrix_system_column_upgrade_pre_publish ... ok
+test rfc_0067_failure_window_matrix_schema_apply_post_detached_1 ... ok
+test rfc_0067_failure_window_matrix_fts_rebuild_post_detached_1 ... ok
+test rfc_0067_failure_window_matrix_optimize_post_detached_1 ... ok
+test rfc_0067_failure_window_matrix_ensure_indices_pre_publish ... ok
+test rfc_0067_failure_window_matrix_ensure_indices_post_detached_1 ... ok
+test rfc_0067_failure_window_matrix_insert_pre_publish ... FAILED
+test rfc_0067_failure_window_matrix_insert_post_detached_1 ... FAILED
+test rfc_0067_failure_window_matrix_fts_rebuild_pre_publish ... ok
+test rfc_0067_failure_window_matrix_load_pre_publish ... ok
+test rfc_0067_failure_window_matrix_merge_pre_publish ... ok
+test rfc_0067_failure_window_matrix_load_post_detached_1 ... ok
+test rfc_0067_failure_window_matrix_schema_apply_post_detached_2 ... ok
+
+failures:
+
+---- rfc_0067_failure_window_matrix_multi_table_pre_publish stdout ----
+MATRIX cell 1: MultiTable PrePublish Return FreshHandle: ack=true visible=true person pin 13079913003183300694 head 1, knows pin 12895361227677567148 head 1 
+MATRIX cell 2: MultiTable PrePublish Return ReadOnly: ack=true visible=true person pin 13522161111585102282 head 1, knows pin 16007960969442401013 head 1 
+MATRIX cell 3: MultiTable PrePublish Return SameHandle: ack=true visible=true person pin 14444142339385941496 head 1, knows pin 14181656053596698030 head 1 
+
+thread '<unnamed>' (60671) panicked at crates/omnigraph/tests/detached_commit_matrix.rs:904:21:
+cell 4: MultiTable PrePublish Kill FreshHandle: child finished (exit status: 0) before reaching the window
+stdout:
+
+running 1 test
+CHILD_OK
+test rfc0067_matrix_child_process ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 31 filtered out; finished in 0.03s
+
+
+stderr:
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+thread 'rfc_0067_failure_window_matrix_multi_table_pre_publish' (60625) panicked at crates/omnigraph/tests/detached_commit_matrix.rs:1200:10:
+called `Result::unwrap()` on an `Err` value: Any { .. }
+
+---- rfc_0067_failure_window_matrix_carried_insert_post_detached_1_issue_1331 stdout ----
+
+thread '<unnamed>' (60692) panicked at crates/omnigraph/tests/detached_commit_matrix.rs:848:17:
+assertion `left == right` failed: cell 1: CarriedInsert PostDetached(1) Return FreshHandle: the insert must be carried over the optimize publication
+  left: 0
+ right: 1
+
+thread 'rfc_0067_failure_window_matrix_carried_insert_post_detached_1_issue_1331' (60494) panicked at crates/omnigraph/tests/detached_commit_matrix.rs:1200:10:
+called `Result::unwrap()` on an `Err` value: Any { .. }
+
+---- rfc_0067_failure_window_matrix_carried_insert_pre_publish_issue_1331 stdout ----
+
+thread '<unnamed>' (60846) panicked at crates/omnigraph/tests/detached_commit_matrix.rs:848:17:
+assertion `left == right` failed: cell 1: CarriedInsert PrePublish Return FreshHandle: the insert must be carried over the optimize publication
+  left: 0
+ right: 1
+
+thread 'rfc_0067_failure_window_matrix_carried_insert_pre_publish_issue_1331' (60495) panicked at crates/omnigraph/tests/detached_commit_matrix.rs:1200:10:
+called `Result::unwrap()` on an `Err` value: Any { .. }
+
+---- rfc_0067_failure_window_matrix_multi_table_post_detached_1 stdout ----
+MATRIX cell 1: MultiTable PostDetached(1) Return FreshHandle: ack=true visible=true person pin 10734384794019406335 head 1, knows pin 10139661201856997465 head 1 
+MATRIX cell 2: MultiTable PostDetached(1) Return ReadOnly: ack=true visible=true person pin 14092829738137402570 head 1, knows pin 14105766477452098909 head 1 
+MATRIX cell 3: MultiTable PostDetached(1) Return SameHandle: ack=true visible=true person pin 13170516942211038030 head 1, knows pin 18296634819929280162 head 1 
+
+thread '<unnamed>' (60860) panicked at crates/omnigraph/tests/detached_commit_matrix.rs:904:21:
+cell 4: MultiTable PostDetached(1) Kill FreshHandle: child finished (exit status: 0) before reaching the window
+stdout:
+
+running 1 test
+CHILD_OK
+test rfc0067_matrix_child_process ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 31 filtered out; finished in 0.03s
+
+
+stderr:
+
+
+thread 'rfc_0067_failure_window_matrix_multi_table_post_detached_1' (60525) panicked at crates/omnigraph/tests/detached_commit_matrix.rs:1200:10:
+called `Result::unwrap()` on an `Err` value: Any { .. }
+
+---- rfc_0067_failure_window_matrix_multi_table_post_detached_2 stdout ----
+MATRIX cell 1: MultiTable PostDetached(2) Return FreshHandle: ack=true visible=true person pin 18324061933171412837 head 1, knows pin 11803715753525608207 head 1 
+MATRIX cell 2: MultiTable PostDetached(2) Return ReadOnly: ack=true visible=true person pin 10010725010559593378 head 1, knows pin 12305533336489106613 head 1 
+MATRIX cell 3: MultiTable PostDetached(2) Return SameHandle: ack=true visible=true person pin 15342005738488593870 head 1, knows pin 13267152903895521826 head 1 
+
+thread '<unnamed>' (60977) panicked at crates/omnigraph/tests/detached_commit_matrix.rs:904:21:
+cell 4: MultiTable PostDetached(2) Kill FreshHandle: child finished (exit status: 0) before reaching the window
+stdout:
+
+running 1 test
+CHILD_OK
+test rfc0067_matrix_child_process ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 31 filtered out; finished in 0.03s
+
+
+stderr:
+
+
+thread 'rfc_0067_failure_window_matrix_multi_table_post_detached_2' (60575) panicked at crates/omnigraph/tests/detached_commit_matrix.rs:1200:10:
+called `Result::unwrap()` on an `Err` value: Any { .. }
+
+---- rfc_0067_failure_window_matrix_insert_pre_publish stdout ----
+MATRIX cell 1: Insert PrePublish Return FreshHandle: ack=true visible=true person pin 11687254548234176987 head 1, knows pin 14361761485263693009 head 1 
+MATRIX cell 2: Insert PrePublish Return ReadOnly: ack=true visible=true person pin 17164365980224898552 head 1, knows pin 11526652312794689781 head 1 
+MATRIX cell 3: Insert PrePublish Return SameHandle: ack=true visible=true person pin 9334406032534660848 head 1, knows pin 10182774245928485477 head 1 
+
+thread '<unnamed>' (61274) panicked at crates/omnigraph/tests/detached_commit_matrix.rs:904:21:
+cell 4: Insert PrePublish Kill FreshHandle: child finished (exit status: 0) before reaching the window
+stdout:
+
+running 1 test
+CHILD_OK
+test rfc0067_matrix_child_process ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 31 filtered out; finished in 0.03s
+
+
+stderr:
+
+
+thread 'rfc_0067_failure_window_matrix_insert_pre_publish' (60501) panicked at crates/omnigraph/tests/detached_commit_matrix.rs:1200:10:
+called `Result::unwrap()` on an `Err` value: Any { .. }
+
+---- rfc_0067_failure_window_matrix_insert_post_detached_1 stdout ----
+MATRIX cell 1: Insert PostDetached(1) Return FreshHandle: ack=true visible=true person pin 14444602643707937824 head 1, knows pin 14110186661857679280 head 1 
+MATRIX cell 2: Insert PostDetached(1) Return ReadOnly: ack=true visible=true person pin 11417192357096597833 head 1, knows pin 10526476901395810531 head 1 
+MATRIX cell 3: Insert PostDetached(1) Return SameHandle: ack=true visible=true person pin 15586170216972443104 head 1, knows pin 15840187425071436654 head 1 
+
+thread '<unnamed>' (61291) panicked at crates/omnigraph/tests/detached_commit_matrix.rs:904:21:
+cell 4: Insert PostDetached(1) Kill FreshHandle: child finished (exit status: 0) before reaching the window
+stdout:
+
+running 1 test
+CHILD_OK
+test rfc0067_matrix_child_process ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 31 filtered out; finished in 0.03s
+
+
+stderr:
+
+
+thread 'rfc_0067_failure_window_matrix_insert_post_detached_1' (60500) panicked at crates/omnigraph/tests/detached_commit_matrix.rs:1200:10:
+called `Result::unwrap()` on an `Err` value: Any { .. }
+
+
+failures:
+    rfc_0067_failure_window_matrix_carried_insert_post_detached_1_issue_1331
+    rfc_0067_failure_window_matrix_carried_insert_pre_publish_issue_1331
+    rfc_0067_failure_window_matrix_insert_post_detached_1
+    rfc_0067_failure_window_matrix_insert_pre_publish
+    rfc_0067_failure_window_matrix_multi_table_post_detached_1
+    rfc_0067_failure_window_matrix_multi_table_post_detached_2
+    rfc_0067_failure_window_matrix_multi_table_pre_publish
+
+test result: FAILED. 24 passed; 7 failed; 1 ignored; 0 measured; 0 filtered out; finished in 24.54s
+

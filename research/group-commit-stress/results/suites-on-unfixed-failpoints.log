@@ -1,0 +1,25 @@
+
+running 182 tests
+test a_write_after_publication_cannot_change_a_blob_put_receipt ... ok
+test a_write_another_handles_optimize_sent_back_holds_off_the_next_run_issue_1331 ... FAILED
+test a_write_on_a_held_branch_is_carried_over_any_handles_optimize_issue_1331 ... FAILED
+test abandoned_merge_input_tags_expire_after_target_advances ... ok
+test append_load_revalidates_unique_after_pre_effect_authority_change ... ok
+test azure_collector_retry_converges_after_every_sweep_window ... ok
+test azure_optimize_detached_pin_survives_next_write ... ok
+test azure_schema_apply_post_commit_failure_leaves_readable_contract ... ok
+test azure_write_detached_pin_survives_next_write ... ok
+test blob_live_branch_read_keeps_the_captured_pin_across_delete_recreate_aba ... ok
+test blob_put_and_clear_publish_once_through_a_lost_acknowledgement ... ok
+test blob_put_fails_closed_when_schema_or_branch_incarnation_changes_between_attempts ... ok
+test blob_put_reevaluates_its_precondition_and_recarries_the_row_after_a_competing_write ... ok
+test branch_claim_does_not_refuse_deleting_the_branch ... ok
+test branch_claim_ends_when_its_process_deletes_the_branch ... ok
+test branch_claim_fences_a_publish_parked_before_its_put ... FAILED
+test branch_claim_in_doubt_is_settled_by_the_next_claim ... FAILED
+test branch_claim_in_doubt_withdraws_the_version_a_replaced_owner_held ... ok
+test branch_claim_is_required_of_every_writer_once_a_branch_is_claimed ... FAILED
+test branch_claim_lands_above_a_late_write_and_fences_the_next ... ok
+test branch_claim_of_a_deleted_branch_does_not_count_on_its_successor ... FAILED
+test branch_claim_owner_deletes_a_row_whose_write_future_was_dropped ... ok
+test branch_claim_owner_reads_a_write_whose_future_was_dropped_after_its_commit ... 

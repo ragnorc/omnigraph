@@ -1,0 +1,1 @@
+OMNIGRAPH_GROUP_COMMIT=1 RUST_MIN_STACK=16777216 timeout 3000  >  2>&1  347.87s user 70.21s system 1576% cpu 26.521 total
