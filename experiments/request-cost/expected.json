@@ -1,0 +1,38 @@
+{
+  "hub_200k": {
+    "a_count_c_first": "{\"n\":50789}",
+    "a_count_c_last": "{\"n\":50789}",
+    "b_columns_c_first": "{\"first\":\"Person000208\",\"n\":50789,\"total\":1498562}",
+    "b_columns_c_last": "{\"first\":\"Person000208\",\"n\":50789,\"total\":1498562}"
+  },
+  "small_control": {
+    "a_count_c_first": "{\"n\":9}",
+    "a_count_c_last": "{\"n\":9}",
+    "b_columns_c_first": "{\"first\":\"Person000009\",\"n\":9,\"total\":206}",
+    "b_columns_c_last": "{\"first\":\"Person000009\",\"n\":9,\"total\":206}",
+    "c_chain_city_first": "{\"n\":47}",
+    "c_chain_city_last": "{\"n\":47}",
+    "d_company_without_young": "{\"n\":16}",
+    "d_not_works_at": "{\"n\":191}"
+  },
+  "two_hop_200k": {
+    "a_count_c_first": "{\"n\":1095}",
+    "a_count_c_last": "{\"n\":1095}",
+    "b_columns_c_first": "{\"first\":\"Person000009\",\"n\":1095,\"total\":31944}",
+    "b_columns_c_last": "{\"first\":\"Person000009\",\"n\":1095,\"total\":31944}",
+    "c_chain_city_first": "{\"n\":10104}",
+    "c_chain_city_last": "{\"n\":10104}",
+    "d_company_without_young": "{\"n\":0}",
+    "d_not_works_at": "{\"n\":198905}"
+  },
+  "two_hop_20k": {
+    "a_count_c_first": "{\"n\":119}",
+    "a_count_c_last": "{\"n\":119}",
+    "b_columns_c_first": "{\"first\":\"Person000009\",\"n\":119,\"total\":3344}",
+    "b_columns_c_last": "{\"first\":\"Person000009\",\"n\":119,\"total\":3344}",
+    "c_chain_city_first": "{\"n\":972}",
+    "c_chain_city_last": "{\"n\":972}",
+    "d_company_without_young": "{\"n\":37}",
+    "d_not_works_at": "{\"n\":19881}"
+  }
+}

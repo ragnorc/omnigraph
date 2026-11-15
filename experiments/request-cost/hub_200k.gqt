@@ -1,0 +1,256 @@
+# issue: none
+# notes: Person 200,000 in 50 fragments; WorksAt: 150,000 uniform over 200 companies plus 50,000 to the hub c-000.
+# traversal: auto
+
+--- runner
+timeout_ms: 600000
+environments:
+  - target: omnigraph-engine-dst
+    storage: in-memory-object-store
+    seeds: [0]
+
+--- schema
+node City {
+    slug: String @key
+    name: String
+}
+node Company {
+    slug: String @key
+    name: String
+}
+node Person {
+    slug: String @key
+    name: String
+    age: I32
+}
+edge WorksAt: Person -> Company
+edge LocatedIn: Company -> City
+
+--- seed generate: v1 seed: 0
+tables:
+  - kind: node
+    name: City
+    rows: 20
+    commits: 1
+    columns:
+      slug: {kind: key, prefix: city-, width: 2}
+      name: {kind: key, prefix: City , width: 2}
+  - kind: node
+    name: Company
+    rows: 200
+    commits: 1
+    columns:
+      slug: {kind: key, prefix: c-, width: 3}
+      name: {kind: key, prefix: Company , width: 3}
+  - kind: node
+    name: Person
+    rows: 200000
+    commits: 50
+    columns:
+      slug: {kind: key, prefix: p-, width: 6}
+      name: {kind: key, prefix: Person , width: 6}
+      age: {kind: modulo, modulus: 60}
+  - kind: edge
+    name: LocatedIn
+    rows: 200
+    commits: 1
+    from: {kind: key, prefix: c-, width: 3}
+    to: {kind: endpoint, prefix: city-, width: 2, population: 20, distribution: {kind: ordinal}}
+    columns: {}
+  - kind: edge
+    name: WorksAt
+    rows: 150000
+    commits: 50
+    from: {kind: key, prefix: p-, width: 6}
+    to: {kind: endpoint, prefix: c-, width: 3, population: 200, distribution: {kind: uniform}}
+    columns: {}
+  - kind: edge
+    name: WorksAt
+    rows: 50000
+    start: 150000
+    commits: 13
+    from: {kind: key, prefix: p-, width: 6}
+    to: {kind: literal, value: "c-000"}
+    columns: {}
+
+--- query
+query a_count_c_last() {
+    match {
+        $p: Person
+        $p worksAt $c
+        $c: Company { slug: "c-000" }
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":50789}
+--- expect shape
+n: I64
+
+--- query
+query a_count_c_first() {
+    match {
+        $c: Company { slug: "c-000" }
+        $p worksAt $c
+        $p: Person
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":50789}
+--- expect shape
+n: I64
+
+--- query
+query b_columns_c_last() {
+    match {
+        $p: Person
+        $p worksAt $c
+        $c: Company { slug: "c-000" }
+    }
+    return { count($p) as n, sum($p.age) as total, min($p.name) as first }
+}
+--- expect unordered
+{"first":"Person000208","n":50789,"total":1498562}
+--- expect shape
+n: I64
+total: F64
+first: String
+
+--- query
+query b_columns_c_first() {
+    match {
+        $c: Company { slug: "c-000" }
+        $p worksAt $c
+        $p: Person
+    }
+    return { count($p) as n, sum($p.age) as total, min($p.name) as first }
+}
+--- expect unordered
+{"first":"Person000208","n":50789,"total":1498562}
+--- expect shape
+n: I64
+total: F64
+first: String
+
+--- restart
+
+--- query
+query a_count_c_last() {
+    match {
+        $p: Person
+        $p worksAt $c
+        $c: Company { slug: "c-000" }
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":50789}
+--- expect shape
+n: I64
+
+--- query
+query a_count_c_first() {
+    match {
+        $c: Company { slug: "c-000" }
+        $p worksAt $c
+        $p: Person
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":50789}
+--- expect shape
+n: I64
+
+--- query
+query b_columns_c_last() {
+    match {
+        $p: Person
+        $p worksAt $c
+        $c: Company { slug: "c-000" }
+    }
+    return { count($p) as n, sum($p.age) as total, min($p.name) as first }
+}
+--- expect unordered
+{"first":"Person000208","n":50789,"total":1498562}
+--- expect shape
+n: I64
+total: F64
+first: String
+
+--- query
+query b_columns_c_first() {
+    match {
+        $c: Company { slug: "c-000" }
+        $p worksAt $c
+        $p: Person
+    }
+    return { count($p) as n, sum($p.age) as total, min($p.name) as first }
+}
+--- expect unordered
+{"first":"Person000208","n":50789,"total":1498562}
+--- expect shape
+n: I64
+total: F64
+first: String
+
+--- query
+query a_count_c_last() {
+    match {
+        $p: Person
+        $p worksAt $c
+        $c: Company { slug: "c-000" }
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":50789}
+--- expect shape
+n: I64
+
+--- query
+query a_count_c_first() {
+    match {
+        $c: Company { slug: "c-000" }
+        $p worksAt $c
+        $p: Person
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":50789}
+--- expect shape
+n: I64
+
+--- query
+query b_columns_c_last() {
+    match {
+        $p: Person
+        $p worksAt $c
+        $c: Company { slug: "c-000" }
+    }
+    return { count($p) as n, sum($p.age) as total, min($p.name) as first }
+}
+--- expect unordered
+{"first":"Person000208","n":50789,"total":1498562}
+--- expect shape
+n: I64
+total: F64
+first: String
+
+--- query
+query b_columns_c_first() {
+    match {
+        $c: Company { slug: "c-000" }
+        $p worksAt $c
+        $p: Person
+    }
+    return { count($p) as n, sum($p.age) as total, min($p.name) as first }
+}
+--- expect unordered
+{"first":"Person000208","n":50789,"total":1498562}
+--- expect shape
+n: I64
+total: F64
+first: String

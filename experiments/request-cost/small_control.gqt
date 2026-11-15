@@ -1,0 +1,434 @@
+# issue: none
+# notes: Control: Person 200 in 1 fragment, Company 20, City 4; every plan is cheap.
+# traversal: auto
+
+--- runner
+timeout_ms: 600000
+environments:
+  - target: omnigraph-engine-dst
+    storage: in-memory-object-store
+    seeds: [0]
+
+--- schema
+node City {
+    slug: String @key
+    name: String
+}
+node Company {
+    slug: String @key
+    name: String
+}
+node Person {
+    slug: String @key
+    name: String
+    age: I32
+}
+edge WorksAt: Person -> Company
+edge LocatedIn: Company -> City
+
+--- seed generate: v1 seed: 0
+tables:
+  - kind: node
+    name: City
+    rows: 4
+    commits: 1
+    columns:
+      slug: {kind: key, prefix: city-, width: 2}
+      name: {kind: key, prefix: City , width: 2}
+  - kind: node
+    name: Company
+    rows: 20
+    commits: 1
+    columns:
+      slug: {kind: key, prefix: c-, width: 3}
+      name: {kind: key, prefix: Company , width: 3}
+  - kind: node
+    name: Person
+    rows: 200
+    commits: 1
+    columns:
+      slug: {kind: key, prefix: p-, width: 6}
+      name: {kind: key, prefix: Person , width: 6}
+      age: {kind: modulo, modulus: 60}
+  - kind: edge
+    name: LocatedIn
+    rows: 20
+    commits: 1
+    from: {kind: key, prefix: c-, width: 3}
+    to: {kind: endpoint, prefix: city-, width: 2, population: 4, distribution: {kind: ordinal}}
+    columns: {}
+  - kind: edge
+    name: WorksAt
+    rows: 200
+    commits: 1
+    from: {kind: key, prefix: p-, width: 6}
+    to: {kind: endpoint, prefix: c-, width: 3, population: 20, distribution: {kind: uniform}}
+    columns: {}
+
+--- query
+query a_count_c_last() {
+    match {
+        $p: Person
+        $p worksAt $c
+        $c: Company { slug: "c-007" }
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":9}
+--- expect shape
+n: I64
+
+--- query
+query a_count_c_first() {
+    match {
+        $c: Company { slug: "c-007" }
+        $p worksAt $c
+        $p: Person
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":9}
+--- expect shape
+n: I64
+
+--- query
+query b_columns_c_last() {
+    match {
+        $p: Person
+        $p worksAt $c
+        $c: Company { slug: "c-007" }
+    }
+    return { count($p) as n, sum($p.age) as total, min($p.name) as first }
+}
+--- expect unordered
+{"first":"Person000009","n":9,"total":206}
+--- expect shape
+n: I64
+total: F64
+first: String
+
+--- query
+query b_columns_c_first() {
+    match {
+        $c: Company { slug: "c-007" }
+        $p worksAt $c
+        $p: Person
+    }
+    return { count($p) as n, sum($p.age) as total, min($p.name) as first }
+}
+--- expect unordered
+{"first":"Person000009","n":9,"total":206}
+--- expect shape
+n: I64
+total: F64
+first: String
+
+--- query
+query c_chain_city_last() {
+    match {
+        $p: Person
+        $p worksAt $c
+        $c locatedIn $t
+        $t: City { slug: "city-03" }
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":47}
+--- expect shape
+n: I64
+
+--- query
+query c_chain_city_first() {
+    match {
+        $t: City { slug: "city-03" }
+        $c locatedIn $t
+        $p worksAt $c
+        $p: Person
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":47}
+--- expect shape
+n: I64
+
+--- query
+query d_not_works_at() {
+    match {
+        $p: Person
+        not {
+            $p worksAt $c
+            $c: Company { slug: "c-007" }
+        }
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":191}
+--- expect shape
+n: I64
+
+--- query
+query d_company_without_young() {
+    match {
+        $c: Company
+        not {
+            $p worksAt $c
+            $p: Person { age: 0 }
+        }
+    }
+    return { count($c) as n }
+}
+--- expect unordered
+{"n":16}
+--- expect shape
+n: I64
+
+--- restart
+
+--- query
+query a_count_c_last() {
+    match {
+        $p: Person
+        $p worksAt $c
+        $c: Company { slug: "c-007" }
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":9}
+--- expect shape
+n: I64
+
+--- query
+query a_count_c_first() {
+    match {
+        $c: Company { slug: "c-007" }
+        $p worksAt $c
+        $p: Person
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":9}
+--- expect shape
+n: I64
+
+--- query
+query b_columns_c_last() {
+    match {
+        $p: Person
+        $p worksAt $c
+        $c: Company { slug: "c-007" }
+    }
+    return { count($p) as n, sum($p.age) as total, min($p.name) as first }
+}
+--- expect unordered
+{"first":"Person000009","n":9,"total":206}
+--- expect shape
+n: I64
+total: F64
+first: String
+
+--- query
+query b_columns_c_first() {
+    match {
+        $c: Company { slug: "c-007" }
+        $p worksAt $c
+        $p: Person
+    }
+    return { count($p) as n, sum($p.age) as total, min($p.name) as first }
+}
+--- expect unordered
+{"first":"Person000009","n":9,"total":206}
+--- expect shape
+n: I64
+total: F64
+first: String
+
+--- query
+query c_chain_city_last() {
+    match {
+        $p: Person
+        $p worksAt $c
+        $c locatedIn $t
+        $t: City { slug: "city-03" }
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":47}
+--- expect shape
+n: I64
+
+--- query
+query c_chain_city_first() {
+    match {
+        $t: City { slug: "city-03" }
+        $c locatedIn $t
+        $p worksAt $c
+        $p: Person
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":47}
+--- expect shape
+n: I64
+
+--- query
+query d_not_works_at() {
+    match {
+        $p: Person
+        not {
+            $p worksAt $c
+            $c: Company { slug: "c-007" }
+        }
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":191}
+--- expect shape
+n: I64
+
+--- query
+query d_company_without_young() {
+    match {
+        $c: Company
+        not {
+            $p worksAt $c
+            $p: Person { age: 0 }
+        }
+    }
+    return { count($c) as n }
+}
+--- expect unordered
+{"n":16}
+--- expect shape
+n: I64
+
+--- query
+query a_count_c_last() {
+    match {
+        $p: Person
+        $p worksAt $c
+        $c: Company { slug: "c-007" }
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":9}
+--- expect shape
+n: I64
+
+--- query
+query a_count_c_first() {
+    match {
+        $c: Company { slug: "c-007" }
+        $p worksAt $c
+        $p: Person
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":9}
+--- expect shape
+n: I64
+
+--- query
+query b_columns_c_last() {
+    match {
+        $p: Person
+        $p worksAt $c
+        $c: Company { slug: "c-007" }
+    }
+    return { count($p) as n, sum($p.age) as total, min($p.name) as first }
+}
+--- expect unordered
+{"first":"Person000009","n":9,"total":206}
+--- expect shape
+n: I64
+total: F64
+first: String
+
+--- query
+query b_columns_c_first() {
+    match {
+        $c: Company { slug: "c-007" }
+        $p worksAt $c
+        $p: Person
+    }
+    return { count($p) as n, sum($p.age) as total, min($p.name) as first }
+}
+--- expect unordered
+{"first":"Person000009","n":9,"total":206}
+--- expect shape
+n: I64
+total: F64
+first: String
+
+--- query
+query c_chain_city_last() {
+    match {
+        $p: Person
+        $p worksAt $c
+        $c locatedIn $t
+        $t: City { slug: "city-03" }
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":47}
+--- expect shape
+n: I64
+
+--- query
+query c_chain_city_first() {
+    match {
+        $t: City { slug: "city-03" }
+        $c locatedIn $t
+        $p worksAt $c
+        $p: Person
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":47}
+--- expect shape
+n: I64
+
+--- query
+query d_not_works_at() {
+    match {
+        $p: Person
+        not {
+            $p worksAt $c
+            $c: Company { slug: "c-007" }
+        }
+    }
+    return { count($p) as n }
+}
+--- expect unordered
+{"n":191}
+--- expect shape
+n: I64
+
+--- query
+query d_company_without_young() {
+    match {
+        $c: Company
+        not {
+            $p worksAt $c
+            $p: Person { age: 0 }
+        }
+    }
+    return { count($c) as n }
+}
+--- expect unordered
+{"n":16}
+--- expect shape
+n: I64

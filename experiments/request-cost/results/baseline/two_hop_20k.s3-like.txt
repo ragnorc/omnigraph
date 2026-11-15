@@ -1,0 +1,155 @@
+DST environment={"target":"omnigraph-engine-dst","storage":"in-memory-object-store","seeds":[0]} seed=Some(0) replay matched
+GQT measure: store requests (DST environments, first run of each seed), model s3-like
+step = one executing section of the case (a mutate, query, control or restart), numbered in file order; setup = the store, schema and seed before step 1; runner, after N = from step N's end to the next step's start (the runner's own checks)
+requests = the work; repeats = reads of an object and range already read in the step; makespan = ticks the schedule took (one tick = 1 ms of virtual time); waves = the serial depth, the most requests that ran one after another; KB read = bytes the step read; span = its critical path with the tables of each phase side by side; waiting = makespan - span, then each engine gate a block session waited at with its ticks (every gate a session crossed is a wait.<gate> row in the TSV, 0 when no request moved the clock while it waited); parallelism = requests per tick, achieved (makespan) / available (span); sim ms = virtual time under the model; u$ = microdollars at S3 list prices
+
+{"target":"omnigraph-engine-dst","storage":"in-memory-object-store","seeds":[0]} seed=0
++----------------------------+--------------------------------------------+----------+---------+-------+---------+----------+-------+-------------+--------+-------------+---------------+---------+--------+
+| step                       | phase                                      | requests | repeats | waves | KB read | makespan | span  | waiting     | tables | parallelism | after the CAS | sim ms  | u$     |
++----------------------------+--------------------------------------------+----------+---------+-------+---------+----------+-------+-------------+--------+-------------+---------------+---------+--------+
+| setup, before step 1       | all                                        |    12321 |   10515 |  2016 | 46166.0 |    35715 | 23580 | 12135 (33%) |        | 0.3 / 0.5   |             0 | 35714.1 | 8653.6 |
+|                            | start                                      |        2 |         |       |         |       34 |    34 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | storage.local_create_if_absent_probe       |        9 |         |       |         |      156 |   154 | 2 (1%)      |      1 | 0.1 / 0.1   |               |         |        |
+|                            | init.table_create_post_native              |       22 |         |       |         |      386 |   154 | 232 (60%)   |      5 | 0.1 / 0.1   |               |         |        |
+|                            | init.post_manifest_create                  |        9 |         |       |         |      141 |   137 | 4 (2%)      |      1 | 0.1 / 0.1   |               |         |        |
+|                            | mutation.post_stage_pre_effect_gate        |      206 |         |       |         |    33521 |  1751 | 31770 (94%) |      0 | 0.0 / 0.1   |               |         |        |
+|                            | fork.before_classify                       |      218 |         |       |         |    33540 |  1836 | 31704 (94%) |      5 | 0.0 / 0.1   |               |         |        |
+|                            | publish.load_state                         |      108 |         |       |         |    34818 |  1837 | 32981 (94%) |      0 | 0.0 / 0.1   |               |         |        |
+|                            | publish.pre_merge                          |      312 |         |       |         |    34784 |  5405 | 29379 (84%) |      0 | 0.0 / 0.1   |               |         |        |
+|                            | graph_publish.after_manifest_commit        |    10981 |         |       |         |    33540 | 11984 | 21556 (64%) |      5 | 0.3 / 0.9   |               |         |        |
+|                            | ensure_indices.post_stage_pre_commit_btree |      446 |         |       |         |      974 |   253 | 721 (74%)   |      5 | 0.5 / 1.8   |               |         |        |
+|                            | ensure_indices.post_table_effect           |        8 |         |       |         |      144 |    35 | 109 (75%)   |      4 | 0.1 / 0.2   |               |         |        |
+| step 1 (line 68, query)    | all                                        |      170 |       2 |    21 |   954.5 |      371 |   189 | 182 (49%)   |        | 0.5 / 0.9   |               |   370.1 |   68.0 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_index_facts.pre_load                 |       14 |         |       |         |      247 |   103 | 144 (58%)   |      3 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      154 |         |       |         |      107 |    69 | 38 (35%)    |      3 | 1.4 / 2.2   |               |         |        |
+| runner, after step 1       | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 2 (line 82, query)    | all                                        |      144 |       0 |    13 |   906.8 |      236 |   124 | 112 (47%)   |        | 0.6 / 1.2   |               |   235.1 |   57.6 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      142 |         |       |         |      219 |   107 | 112 (51%)   |      3 | 0.6 / 1.3   |               |         |        |
+| runner, after step 2       | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 3 (line 96, query)    | all                                        |      103 |       0 |     4 |   911.2 |       71 |    52 | 19 (26%)    |        | 1.5 / 2.0   |               |    70.1 |   41.2 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      101 |         |       |         |       54 |    35 | 19 (35%)    |      2 | 1.9 / 2.9   |               |         |        |
+| runner, after step 3       | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 4 (line 112, query)   | all                                        |      103 |       0 |     4 |  1016.2 |       71 |    35 | 36 (50%)    |        | 1.5 / 2.9   |               |    70.3 |   41.2 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      101 |         |       |         |       54 |    18 | 36 (66%)    |      3 | 1.9 / 5.6   |               |         |        |
+| runner, after step 4       | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 5 (line 128, query)   | all                                        |      162 |       0 |    13 |   926.4 |      230 |   121 | 109 (47%)   |        | 0.7 / 1.3   |               |   229.0 |   64.8 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_index_facts.pre_load                 |        4 |         |       |         |       70 |    35 | 35 (50%)    |      2 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      156 |         |       |         |      143 |    69 | 74 (51%)    |      5 | 1.1 / 2.3   |               |         |        |
+| runner, after step 5       | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 6 (line 143, query)   | all                                        |      447 |     232 |    16 |  2223.5 |      287 |   154 | 133 (46%)   |        | 1.6 / 2.9   |               |   286.1 |  178.8 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      445 |         |       |         |      270 |   137 | 133 (49%)   |      5 | 1.6 / 3.2   |               |         |        |
+| runner, after step 6       | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 7 (line 158, query)   | all                                        |      147 |       0 |     5 |   847.2 |       89 |    52 | 37 (41%)    |        | 1.7 / 2.8   |               |    88.2 |   58.8 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      145 |         |       |         |       72 |    35 | 37 (51%)    |      3 | 2.0 / 4.1   |               |         |        |
+| runner, after step 7       | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 8 (line 174, query)   | all                                        |     4264 |    4008 |   160 | 23072.5 |     2879 |  2700 | 179 (6%)    |        | 1.5 / 1.6   |               |  2878.1 | 1705.6 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_index_facts.pre_load                 |     4262 |         |       |         |     2862 |  2683 | 179 (6%)    |      3 | 1.5 / 1.6   |               |         |        |
+| runner, after step 8       | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 9 (line 190, restart) | all                                        |        8 |       1 |     8 |    86.8 |      140 |   138 | 2 (1%)      |        | 0.1 / 0.1   |               |   140.0 |   21.2 |
+|                            | start                                      |        5 |         |       |         |       89 |    87 | 2 (2%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | storage.local_create_if_absent_probe       |        3 |         |       |         |       51 |    51 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+| runner, after step 9       | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 10 (line 192, query)  | all                                        |      473 |       2 |    29 |  1369.6 |      511 |   224 | 287 (56%)   |        | 0.9 / 2.1   |               |   510.1 |  189.2 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_index_facts.pre_load                 |       14 |         |       |         |      247 |   103 | 144 (58%)   |      3 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      457 |         |       |         |      247 |   104 | 143 (57%)   |      3 | 1.9 / 4.4   |               |         |        |
+| runner, after step 10      | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 11 (line 206, query)  | all                                        |      144 |       0 |    13 |   906.8 |      236 |   124 | 112 (47%)   |        | 0.6 / 1.2   |               |   235.1 |   57.6 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      142 |         |       |         |      219 |   107 | 112 (51%)   |      3 | 0.6 / 1.3   |               |         |        |
+| runner, after step 11      | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 12 (line 220, query)  | all                                        |      103 |       0 |     4 |   911.2 |       71 |    52 | 19 (26%)    |        | 1.5 / 2.0   |               |    70.1 |   41.2 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      101 |         |       |         |       54 |    35 | 19 (35%)    |      2 | 1.9 / 2.9   |               |         |        |
+| runner, after step 12      | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 13 (line 236, query)  | all                                        |      103 |       0 |     4 |  1016.2 |       71 |    35 | 36 (50%)    |        | 1.5 / 2.9   |               |    70.3 |   41.2 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      101 |         |       |         |       54 |    18 | 36 (66%)    |      3 | 1.9 / 5.6   |               |         |        |
+| runner, after step 13      | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 14 (line 252, query)  | all                                        |      164 |       0 |    15 |   933.3 |      266 |   121 | 145 (54%)   |        | 0.6 / 1.4   |               |   265.0 |   65.6 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_index_facts.pre_load                 |        4 |         |       |         |       70 |    35 | 35 (50%)    |      2 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      158 |         |       |         |      179 |    69 | 110 (61%)   |      5 | 0.9 / 2.3   |               |         |        |
+| runner, after step 14      | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 15 (line 267, query)  | all                                        |      447 |     232 |    16 |  2223.5 |      287 |   154 | 133 (46%)   |        | 1.6 / 2.9   |               |   286.1 |  178.8 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      445 |         |       |         |      270 |   137 | 133 (49%)   |      5 | 1.6 / 3.2   |               |         |        |
+| runner, after step 15      | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 16 (line 282, query)  | all                                        |      147 |       0 |     5 |   847.2 |       89 |    52 | 37 (41%)    |        | 1.7 / 2.8   |               |    88.2 |   58.8 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      145 |         |       |         |       72 |    35 | 37 (51%)    |      3 | 2.0 / 4.1   |               |         |        |
+| runner, after step 16      | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 17 (line 298, query)  | all                                        |     4264 |    4008 |   160 | 23072.5 |     2879 |  2700 | 179 (6%)    |        | 1.5 / 1.6   |               |  2878.1 | 1705.6 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_index_facts.pre_load                 |     4262 |         |       |         |     2862 |  2683 | 179 (6%)    |      3 | 1.5 / 1.6   |               |         |        |
+| runner, after step 17      | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 18 (line 314, query)  | all                                        |      103 |       0 |     3 |   489.8 |       53 |    52 | 1 (1%)      |        | 1.9 / 2.0   |               |    52.1 |   41.2 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      101 |         |       |         |       36 |    35 | 1 (2%)      |      2 | 2.8 / 2.9   |               |         |        |
+| runner, after step 18      | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 19 (line 328, query)  | all                                        |      135 |       0 |     5 |   685.9 |       89 |    52 | 37 (41%)    |        | 1.5 / 2.6   |               |    88.1 |   54.0 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      133 |         |       |         |       72 |    35 | 37 (51%)    |      3 | 1.8 / 3.8   |               |         |        |
+| runner, after step 19      | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 20 (line 342, query)  | all                                        |       53 |       0 |     3 |   865.8 |       53 |    35 | 18 (33%)    |        | 1.0 / 1.5   |               |    52.1 |   21.2 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |       51 |         |       |         |       36 |    18 | 18 (50%)    |      2 | 1.4 / 2.8   |               |         |        |
+| runner, after step 20      | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 21 (line 358, query)  | all                                        |      103 |       0 |     4 |  1016.2 |       71 |    35 | 36 (50%)    |        | 1.5 / 2.9   |               |    70.3 |   41.2 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      101 |         |       |         |       54 |    18 | 36 (66%)    |      3 | 1.9 / 5.6   |               |         |        |
+| runner, after step 21      | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 22 (line 374, query)  | all                                        |      104 |       0 |     4 |   491.4 |       71 |    52 | 19 (26%)    |        | 1.5 / 2.0   |               |    70.0 |   41.6 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      102 |         |       |         |       54 |    35 | 19 (35%)    |      3 | 1.9 / 2.9   |               |         |        |
+| runner, after step 22      | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 23 (line 389, query)  | all                                        |      443 |     232 |    13 |  2188.9 |      233 |   154 | 79 (33%)    |        | 1.9 / 2.9   |               |   232.1 |  177.2 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      441 |         |       |         |      216 |   137 | 79 (36%)    |      5 | 2.0 / 3.2   |               |         |        |
+| runner, after step 23      | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 24 (line 404, query)  | all                                        |      147 |       0 |     5 |   847.2 |       89 |    52 | 37 (41%)    |        | 1.7 / 2.8   |               |    88.2 |   58.8 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_scan_access.pre_table_open           |      145 |         |       |         |       72 |    35 | 37 (51%)    |      3 | 2.0 / 4.1   |               |         |        |
+| runner, after step 24      | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
+| step 25 (line 420, query)  | all                                        |     4264 |    4008 |   160 | 23072.5 |     2879 |  2700 | 179 (6%)    |        | 1.5 / 1.6   |               |  2878.1 | 1705.6 |
+|                            | start                                      |        2 |         |       |         |       17 |    17 | 0 (0%)      |      0 | 0.1 / 0.1   |               |         |        |
+|                            | query_index_facts.pre_load                 |     4262 |         |       |         |     2862 |  2683 | 179 (6%)    |      3 | 1.5 / 1.6   |               |         |        |
+| runner, after step 25      | all                                        |        2 |       0 |     1 |     0.0 |       17 |       |             |        |             |               |    17.0 |    0.8 |
++----------------------------+--------------------------------------------+----------+---------+-------+---------+----------+-------+-------------+--------+-------------+---------------+---------+--------+
+plan choices per step:
+  step 1: expand $p WorksAt $c: csr ran csr; hash join $c ran hash_join; scan $p: sequential; scan $c: index_probe
+  step 2: expand $c WorksAt $p: indexed_scan ran indexed_scan; scan $p: id_lookup; scan $c: index_probe
+  step 3: expand $p WorksAt $c: csr ran csr; hash join $c ran hash_join; scan $p: sequential; scan $c: index_probe
+  step 4: expand $c WorksAt $p: indexed_scan ran indexed_scan; scan $p: id_lookup; scan $c: index_probe
+  step 5: expand $c LocatedIn $t: csr ran csr; expand $p WorksAt $c: csr ran csr; hash join $t ran hash_join; hash join $c ran hash_join; scan $p: sequential; scan $c: sequential; scan $t: index_probe
+  step 6: expand $c WorksAt $p: indexed_scan ran indexed_scan; expand $t LocatedIn $c: indexed_scan ran indexed_scan; scan $p: id_lookup; scan $c: id_lookup; scan $t: index_probe
+  step 7: expand $c WorksAt $p: indexed_scan ran indexed_scan; scan $p: sequential; scan $c: index_probe; anti join $p: key_set
+  step 8: expand $c WorksAt $p: csr ran indexed_scan; scan $c: sequential; scan $p: id_lookup; anti join $c: correlated
+  step 10: expand $p WorksAt $c: csr ran csr; hash join $c ran hash_join; scan $p: sequential; scan $c: index_probe
+  step 11: expand $c WorksAt $p: indexed_scan ran indexed_scan; scan $p: id_lookup; scan $c: index_probe
+  step 12: expand $p WorksAt $c: csr ran csr; hash join $c ran hash_join; scan $p: sequential; scan $c: index_probe
+  step 13: expand $c WorksAt $p: indexed_scan ran indexed_scan; scan $p: id_lookup; scan $c: index_probe
+  step 14: expand $c LocatedIn $t: csr ran csr; expand $p WorksAt $c: csr ran csr; hash join $t ran hash_join; hash join $c ran hash_join; scan $p: sequential; scan $c: sequential; scan $t: index_probe
+  step 15: expand $c WorksAt $p: indexed_scan ran indexed_scan; expand $t LocatedIn $c: indexed_scan ran indexed_scan; scan $p: id_lookup; scan $c: id_lookup; scan $t: index_probe
+  step 16: expand $c WorksAt $p: indexed_scan ran indexed_scan; scan $p: sequential; scan $c: index_probe; anti join $p: key_set
+  step 17: expand $c WorksAt $p: csr ran indexed_scan; scan $c: sequential; scan $p: id_lookup; anti join $c: correlated
+  step 18: expand $p WorksAt $c: csr ran csr; hash join $c ran hash_join; scan $p: sequential; scan $c: index_probe
+  step 19: expand $c WorksAt $p: indexed_scan ran indexed_scan; scan $p: id_lookup; scan $c: index_probe
+  step 20: expand $p WorksAt $c: csr ran csr; hash join $c ran hash_join; scan $p: sequential; scan $c: index_probe
+  step 21: expand $c WorksAt $p: indexed_scan ran indexed_scan; scan $p: id_lookup; scan $c: index_probe
+  step 22: expand $c LocatedIn $t: csr ran csr; expand $p WorksAt $c: csr ran csr; hash join $t ran hash_join; hash join $c ran hash_join; scan $p: sequential; scan $c: sequential; scan $t: index_probe
+  step 23: expand $c WorksAt $p: indexed_scan ran indexed_scan; expand $t LocatedIn $c: indexed_scan ran indexed_scan; scan $p: id_lookup; scan $c: id_lookup; scan $t: index_probe
+  step 24: expand $c WorksAt $p: indexed_scan ran indexed_scan; scan $p: sequential; scan $c: index_probe; anti join $p: key_set
+  step 25: expand $c WorksAt $p: csr ran indexed_scan; scan $c: sequential; scan $p: id_lookup; anti join $c: correlated
+GQT measure TSV: /tmp/tmp.rpSjs0lBTy/cost/12698-1794731046776063874-0.tsv
+GQT report: /tmp/tmp.rpSjs0lBTy/invocation-Td0BSP.json
+GQT replay: omnigraph-gqt --replay '/tmp/tmp.rpSjs0lBTy/invocation-Td0BSP.json'
+ok two_hop_20k 24.12s
