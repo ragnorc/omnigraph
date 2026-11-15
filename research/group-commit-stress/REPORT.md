@@ -160,4 +160,64 @@ queue (H8; server admission bounds in-flight writes at 64 per server and 16
 per actor by default, and the embedded queue is bounded by the writers), and
 known keys keyed by relative path (H9; not exercised with copied roots).
 
-<!-- SECTIONS2 -->
+
+## 4. Existing suites with batching forced on
+
+`OMNIGRAPH_GROUP_COMMIT=1`, dev build, `RUST_MIN_STACK=16777216`;
+`failpoints` run one test per process with a 180 s timeout
+(`scripts/per-test.sh`), because the unfixed prototype hung the binary.
+
+| suite | unfixed prototype | fixed prototype |
+|---|---|---|
+| `writes` | 67 pass, 1 ignored | 67 pass, 1 ignored |
+| engine `integration` | 704 pass, 9 ignored | see §4.1 final rerun |
+| `detached_commit_matrix` | 24 pass, 7 fail | 24 pass, 7 fail (same classes) |
+| `failpoints` | hung (H3) after 22 tests: 16 pass, 6 fail | 167 pass, 2 ignored, 13 fail |
+| DST (`crates/omnigraph-dst`) | — | lib 54/55, scenarios 54/57 after H11/H12 (first pass: 6 failures, 2 real bugs) |
+| GQT corpus | — | 477 pass |
+
+Every failure on the fixed build falls into one of three classes; none is a
+wrong outcome.
+
+1. **The batch path has none of the ordinary path's seams** (harness
+   limitation, and an RFC rollout obligation): a test arms
+   `mutation.post_finalize_pre_publisher`, `mutation.post_table_commit` or
+   `fork.before_classify`, the eligible write never crosses it, and the test
+   sees a write that succeeded or a window that never fired.
+   `failpoints`: `cross_branch_writers_overlap_inside_schema_gate`,
+   `cross_handle_branch_gate_serializes_post_effect_publish`,
+   `finalize_publisher_residual_does_not_drift_untouched_tables`,
+   `fork_collision_with_live_concurrent_fork_reprepares`,
+   `interrupted_write_leaves_main_writable_without_recovery_issue_554`,
+   `optimize_cancelled_while_queued_for_the_gates_returns_without_them`,
+   `read_capture_proceeds_while_writer_parked`,
+   `rfc_0067_zero_age_cleanup_keeps_a_fresh_unpublished_detached_manifest`,
+   `collector_keeps_live_staging_and_reclaims_it_once_the_head_moves`,
+   `collector_keeps_pins_published_by_a_late_branch_in_another_process`;
+   `detached_commit_matrix`: the `Insert` and `MultiTable` Kill cells at
+   `PrePublish` and `PostDetached(1|2)` ("child finished before reaching the
+   window"); DST: `collector_oracle_rejects_dead_staging_leak_and_saved_base_loss`,
+   `dst_lever1_crash_during_recovery`, the `mutation.post_table_commit` probe
+   of `dst_v11_fault_injection_atomicity_and_replay`. RFC §Failure checkpoints
+   lists the seams owed (after queueing, after admission, after the composed
+   detached commits and before the CAS, at the lead handoff); this run shows
+   the existing suites cannot cover the batch path until they exist. The
+   research crash points stood in for them (§5.4).
+2. **Old behavior by design: the #1331 carry.** `failpoints`:
+   `a_write_on_a_held_branch_is_carried_over_any_handles_optimize_issue_1331`,
+   `insert_into_a_table_optimize_compacted_meanwhile_keeps_the_compaction_issue_1331`,
+   `insert_overlapping_an_optimize_publication_does_not_reprepare_issue_1331`;
+   `detached_commit_matrix` `CarriedInsert` cells. The insert is refused and
+   prepared again instead of being carried over the row-preserving
+   publication. The outcome is correct; the RFC (rule 2, "explained as
+   row-preserving") wants the carry, and the H13 fix adds it for entries
+   queued in the group, not for these single-write cases.
+3. **The DST storage-cost golden** (`dst_bench_cost_count_golden`) fails with
+   batching off too: the prototype's publisher trust and known keys change
+   request counts, and it asserts the carry. Regenerating it with reasons is
+   rollout work.
+
+Real bugs these suites found: H11 (DST v11 fault universe, DST fault storm,
+three `branch_claim_*` failpoints tests) and H12 (DST writer-claims universe).
+
+<!-- SECTIONS3 -->
