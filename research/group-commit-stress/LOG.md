@@ -298,3 +298,71 @@ re-preparation keeps batching but has no progress bound (h02: `ReadSetChanged`
 to callers). The remedy that keeps both is finer classification: an update
 or delete of keyed rows changes exactly those ids, so it refuses only the
 entries whose inserted ids or edge endpoints it touched (see Improvements).
+
+## 2026-11-15 — RustFS (+30 ms RTT) served comparisons, faults, maintenance
+
+Mixed workload (70% fresh inserts, ~15% updates/deletes/upserts of present
+keys on the same table, persons, edges), 48 writers over 4 actors, optimize
+every 30 s, 60 s window, proxy RTT checked before and after each run
+(32–33 ms; `scripts/proxy-rtt.sh`):
+
+| run | variant | writes/s | writes/commit | p50 / p99 | caller errors |
+|---|---|---:|---:|---|---|
+| r03c | group commit off | 3.0 | 1.00 | 23.0 / 26.3 s | 0 |
+| r03a | fixed, RFC gated retry | 3.2 | 1.06 | 19.6 / 32.3 s | 0 |
+| r03d | unfixed prototype | 5.75 | 2.86 | 2.4 / 39.5 s | 24 × 409 |
+| r03b | fixed, 32 ungated retries | 8.0 | 3.47 | 5.5 / 32.1 s | 0 |
+
+(r01/r01b–d, the same configuration earlier, agree within noise.) Under a
+realistic mix the RFC design gains ~nothing on an object store: every write
+outside the group refuses the queued inserts on its table and each refused
+insert then holds the branch gate for its whole preparation and publication
+(~10 serial requests).
+
+**Faults** (r02: resets, truncated responses, stalls, jitter in 17 windows of
+2 s at 30% toxicity, 32 writers, 2 actors, 90 s): 0 violations. The
+conditional-put re-issue path fired on lost acknowledgements of detached
+table manifests ("manifest request outcome unknown; re-issuing the identical
+conditional request", then "version held after a re-issue"): every write
+still landed once.
+
+**Infrastructure note.** toxiproxy degraded at one point (63 s per request
+through the proxy, 12 ms direct); restarting it restored 32 ms. Soak 1 was
+discarded for it; every later S3 run records the proxy RTT before and after.
+
+**Write observer cap.** `omnigraph-server` admits at most 64 concurrent write
+responses (`DEFAULT_WRITE_OBSERVERS`, hard-coded; the env knobs
+`OMNIGRAPH_PER_ACTOR_INFLIGHT_MAX`, `OMNIGRAPH_GLOBAL_INFLIGHT_MAX`,
+`OMNIGRAPH_INGRESS_INFLIGHT_MAX` do not raise it). An `optimize` submission
+is a write: with 64 writers in flight it is refused 429 every time. The RFC's
+soak (64 writers + maintenance) cannot run on the served path as specified.
+
+**H13 (fixed in `30c2…`): optimize and index-build publications were not in
+the group's log.** Local served run, 64 writers, pure inserts: 505 writes/s
+until the first optimize landed, then every queued entry was refused.
+
+**H14 (fixed): a refusal storm that never recovers.** Even with H13 fixed the
+storm persisted (p03: 1,185 refusals in 25 s, 691 → 67 writes/s after the
+first optimize). Cause: `lead_group` copied the log when it drained the queue,
+before waiting for the branch gate; publications made meanwhile (refused
+writers publishing alone under the gate, the optimize) were missing from the
+copy, so the batch "did not reach the head", refused everything, and its
+zero-admission outcome `LogChange::Clear` wiped the live log, including those
+records. Every later batch repeated it. Soak 2 (S3, 56 writers) showed it on
+real binaries: 122 writes/s in minute 1, 2.35 writes/s (p50 14.7 s) after the
+first optimize at 60 s. Fix: read the log under the gates; a batch that
+admitted nothing keeps the log.
+
+**Maintenance starvation under batches (RFC §Interactions, confirmed).**
+Embedded harness, 48 writers, pure inserts, ~120 writes/s at 17.8
+writes/commit, `optimize` every 6 s and `ensure_indices` every 4 s on the
+direct path: **0 of 10 index builds and 0 of 6 optimize runs landed**, every
+one refused "write authority 'graph_head:main' changed during preparation"
+(captured before its gates). The served optimize captures under the gates
+(`AuthorityCapture::UnderGates`) and lands; index builds have no served route.
+The RFC's maintenance carry (rollout step 4) is required, not optional, once
+batching is on.
+
+**Unindexed-tail decay without maintenance.** Local served, 48 writers, pure
+inserts, no maintenance (p02): 695 → 292 → 235 → 198 → 159 writes/s at 5 s
+intervals; batch time grows with the fragment count (one fragment per write).
