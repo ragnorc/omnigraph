@@ -1181,6 +1181,20 @@ impl Omnigraph {
         // view does on every write path, and its detached commits stay
         // unreachable (invariant 5).
         let key = group_key(branch.as_deref(), batch[0].entry.actor.as_deref());
+        // Stress fix (H14): the log as it is now, under the gates. The copy
+        // taken when the batch was drained misses every publication made
+        // while this leader waited for the gates (a refused writer
+        // publishing alone, an optimize), and judging the batch by it
+        // refused every entry and then cleared the live log.
+        let fresh_log: Vec<BatchEffect> = {
+            let groups = self.group_commits().groups.lock().unwrap();
+            groups
+                .get(&key)
+                .map(|group| group.log.iter().cloned().collect())
+                .unwrap_or_default()
+        };
+        let _ = log;
+        let log = &fresh_log[..];
         let (current, mut publish_coordinator) =
             match self.batch_capture(&key, &branch, log, &batch).await {
                 Ok(captured) => captured,
@@ -1231,13 +1245,12 @@ impl Omnigraph {
             }
         }
         if admitted.is_empty() {
+            // Stress fix (H14): a batch that admitted nothing published
+            // nothing, so it has no reason to forget what the log knows.
+            let _ = log_reaches_head;
             return BatchOutcome {
                 replies,
-                log: if log_reaches_head {
-                    LogChange::Keep
-                } else {
-                    LogChange::Clear
-                },
+                log: LogChange::Keep,
             };
         }
 
