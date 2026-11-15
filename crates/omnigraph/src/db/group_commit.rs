@@ -1714,6 +1714,31 @@ impl Omnigraph {
         );
     }
 
+    /// Stress fix (H13): record a row-preserving publication of this handle
+    /// (compaction, index builds): it explains every entry it overtakes.
+    pub(crate) fn log_row_preserving_publication(
+        &self,
+        branch: Option<&str>,
+        parent: Option<String>,
+        head: &str,
+    ) {
+        if !enabled() {
+            return;
+        }
+        let key = group_key(branch, None);
+        let mut groups = self.group_commits().groups.lock().unwrap();
+        let group = groups.entry(key).or_default();
+        next_log(
+            &mut group.log,
+            BatchEffect {
+                parent,
+                head: head.to_string(),
+                tables: HashMap::new(),
+                changed: HashSet::new(),
+            },
+        );
+    }
+
     /// Stress fix (H5): the gated second attempt of an eligible write
     /// publishes alone, as a batch of one, under the gates its preparation
     /// holds, and its effect is logged with its exact keys, so the entries

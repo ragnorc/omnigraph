@@ -622,6 +622,12 @@ async fn maintain_indices_for_branch(
             None,
         )
         .await?;
+        // Stress fix (H13): an index build is row-preserving.
+        db.log_row_preserving_publication(
+            active_branch.as_deref(),
+            txn.authority.graph_head.clone(),
+            &published.graph_commit_id,
+        );
         Some(published.graph_commit_id)
     };
 

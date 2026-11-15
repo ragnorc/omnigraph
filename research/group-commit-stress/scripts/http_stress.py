@@ -39,6 +39,7 @@ QUERIES = {
     "tag": "query tag($slug: String, $label: String) { insert Tag { slug: $slug, label: $label } }",
 }
 READ_ITEMS = "query all_items() { match { $i: Item } return { $i.slug as slug, $i.n as n } }"
+READ_COUNT = "query cnt() { match { $i: Item } return { count($i) as c } }"
 DEFAULT_MIX = "fresh=40,hot=20,pair=5,update=8,delete=5,person=5,del_person=2,knows=8,multi=4,tag=3"
 HEADERS = {"Omnigraph-Http-Api": "0.14", "Content-Type": "application/json"}
 
@@ -181,18 +182,27 @@ async def reader_loop(session, args, rec, reader, deadline, tokens):
     url = f"{args.base}/graphs/{args.graph}/query"
     token = tokens[f"act-{reader % args.actors}"]
     headers = dict(HEADERS, Authorization=f"Bearer {token}")
-    body = {"query": READ_ITEMS, "name": "all_items"}
+    if args.reader_count:
+        body = {"query": READ_COUNT, "name": "cnt"}
+    else:
+        body = {"query": READ_ITEMS, "name": "all_items"}
     while time.monotonic() < deadline:
         try:
             async with asyncio.timeout(30):
                 async with session.post(url, json=body, headers=headers) as resp:
                     if resp.status == 200:
                         data = await resp.json()
-                        items = defaultdict(list)
-                        for row in data.get("rows", []):
-                            items[row["slug"]].append(row["n"])
-                        rec.write({"type": "obs", "t_us": rec.now_us(), "commit": data.get("graph_commit_id"),
-                                   "items": items})
+                        if args.reader_count:
+                            rows = data.get("rows", [])
+                            count = rows[0]["c"] if rows else 0
+                            rec.write({"type": "obs_count", "t_us": rec.now_us(),
+                                       "commit": data.get("graph_commit_id"), "count": count})
+                        else:
+                            items = defaultdict(list)
+                            for row in data.get("rows", []):
+                                items[row["slug"]].append(row["n"])
+                            rec.write({"type": "obs", "t_us": rec.now_us(), "commit": data.get("graph_commit_id"),
+                                       "items": items})
         except Exception:  # noqa: BLE001 - readers tolerate outages
             await asyncio.sleep(0.5)
         await asyncio.sleep(args.read_interval)
@@ -276,6 +286,8 @@ def load_history(paths):
                 obs.append(d)
             elif d.get("type") == "merge":
                 merges.append(d)
+            elif d.get("type") == "obs_count":
+                obs.append(d)
     return ops, obs, merges
 
 
@@ -411,6 +423,20 @@ def check(args):
         if count > 1:
             violations.append(f"final: @unique Tag label {label} x{count}")
 
+    def check_obs(model, v, o):
+        if "count" in o:
+            # Batch atomicity on counts: the served count must equal the
+            # model's at that version, within the keys in-doubt writes touched.
+            certain = sum(1 for key in model[0] if key not in uncertain_items)
+            slack = sum(1 for key in uncertain_items if not key.startswith("h"))
+            if not (certain <= o["count"] <= certain + slack + len([k for k in model[0] if k in uncertain_items])):
+                violations.append(f"snapshot v{v}: count {o['count']} outside model [{certain}, {certain + slack}]")
+            return
+        for key, values in o["items"].items():
+            if len(values) > 1:
+                violations.append(f"snapshot v{v}: duplicate Item {key} x{len(values)}")
+        compare(model, o["items"], f"snapshot v{v}")
+
     # Model replay with reader observations in version order.
     seed = {}
     if args.seed_export:
@@ -430,15 +456,12 @@ def check(args):
     for version in versions:
         while oi < len(observations) and observations[oi][0] < version:
             v, o = observations[oi]
-            for key, values in o["items"].items():
-                if len(values) > 1:
-                    violations.append(f"snapshot v{v}: duplicate Item {key} x{len(values)}")
-            compare(model, o["items"], f"snapshot v{v}")
+            check_obs(model, v, o)
             oi += 1
         for op in by_ver[version]:
             apply(model, op)
     for v, o in observations[oi:]:
-        compare(model, o["items"], f"snapshot v{v}")
+        check_obs(model, v, o)
     compare(model, items, "final", people, edges)
     lat = sorted((op["completed_us"] - op["invoked_us"]) / 1000.0 for op in ops if op["outcome"] == "ok")
     summary = {
@@ -475,6 +498,7 @@ def main():
     r.add_argument("--people", type=int, default=24)
     r.add_argument("--readers", type=int, default=2)
     r.add_argument("--read-interval", type=float, default=0.25)
+    r.add_argument("--reader-count", type=int, default=0, help="readers read count(Item) instead of every row")
     r.add_argument("--cancel-pct", type=int, default=0)
     r.add_argument("--cancel-ms", type=int, default=1000)
     r.add_argument("--request-timeout", type=float, default=120)

@@ -1062,7 +1062,16 @@ pub async fn optimize_all_datasets(
                 .map(|hook| hook as super::table_ops::BeforePublishHook<'_>),
         )
         .await;
-        graph_commit_id = Some(commit?.graph_commit_id);
+        let commit = commit?;
+        // Stress fix (H13): a compaction and index publication changes no
+        // row, so the group's log records it as row-preserving and the
+        // entries it overtakes stay explained (RFC §Admission rule 2).
+        db.log_row_preserving_publication(
+            None,
+            authority_txn.authority.graph_head.clone(),
+            &commit.graph_commit_id,
+        );
+        graph_commit_id = Some(commit.graph_commit_id);
         db.runtime_cache.invalidate_all().await;
     }
 
