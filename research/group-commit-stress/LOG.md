@@ -506,3 +506,31 @@ root, P harness processes (`OG_GS_URI`, distinct key prefixes), CLI export and
   held or cached manifest (#9915), index paths reading the manifest version
   without summarizing every fragment (#9942), scan plans reusing the fragment
   lookup (#9653), commit retry budget started after catch-up (#9631).
+
+## 2026-11-15 — improvement 3: memoize the known-tail analysis per manifest version
+
+Observation: each keyed insert computes `key_column_uncovered_fragments`
+three times (each builds `BTreeSet`s of every fragment id: O(F log F)),
+`key_column_uncovered_tail` once more, and takes the global known-keys mutex
+once per uncovered fragment, twice; 48 writers probing the same pin repeat
+identical work on an immutable table version.
+
+Change (`OMNIGRAPH_KNOWN_KEYS_TAIL_CACHE`, on): `table_store::known_tail`
+computes, once per manifest file (`ds.uri()` + `manifest_location().path`),
+whether the known keys answer every uncovered fragment and the union of their
+ids; `known_tail_members` answers from the union in O(ids); an all-new upsert
+with a known tail skips the tail's metadata scan. Same answer as before by
+construction (the union is exactly the per-fragment sets the loop consulted;
+a version is immutable; a known-keys entry is a fact about its file).
+
+Embedded harness, 48 writers, pure inserts, no maintenance, 60 s, cap lift on
+for both, writes/s per 10 s (the soak was running beside it on S3):
+
+| | 0–10 | 10–20 | 20–30 | 30–40 | 40–50 | 50–60 | mean | writes/commit |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| memo off (f12-tailmemo0) | 258 | 115 | 91 | 78 | 66 | 59 | 112.1 | 23.1 |
+| memo on (f12-tailmemo1) | 415 | 250 | 199 | 194 | 152 | 134 | **224.7** | 23.9 |
+
+0 violations both. Verdict: keep (2.0× mean, 2.3× in the last window). The
+remaining decay is the per-batch O(fragments) manifest work and the rest of
+§5.3; only maintenance or fewer fragments per write remove it.
