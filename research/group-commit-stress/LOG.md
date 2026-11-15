@@ -337,7 +337,7 @@ responses (`DEFAULT_WRITE_OBSERVERS`, hard-coded; the env knobs
 is a write: with 64 writers in flight it is refused 429 every time. The RFC's
 soak (64 writers + maintenance) cannot run on the served path as specified.
 
-**H13 (fixed in `30c2…`): optimize and index-build publications were not in
+**H13 (fixed in `12184f03`): optimize and index-build publications were not in
 the group's log.** Local served run, 64 writers, pure inserts: 505 writes/s
 until the first optimize landed, then every queued entry was refused.
 
