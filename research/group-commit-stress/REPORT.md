@@ -398,4 +398,59 @@ field).
     fixes; two handles of one process still see each other's batches as
     foreign (h03).
 
-<!-- APPENDIX -->
+
+## Appendix: reproducing
+
+```bash
+# Branch
+git fetch fork && git switch research/group-commit-stress
+
+# Focused repros (7) and the embedded harness
+cargo dev-test --test group_commit_stress --no-run
+cd crates/omnigraph && RUST_MIN_STACK=16777216 \
+  ../../target/debug/deps/group_commit_stress-* --test-threads=1 --nocapture
+# randomized: label, then OG_GS_* knobs (module doc of harness.rs)
+echo "$PWD/../../target/debug/deps/group_commit_stress-<hash>" > /tmp/gs_bin
+research/group-commit-stress/scripts/gs-run.sh h02-actors4 \
+  OG_GS_WRITERS=32 OG_GS_SECS=20 OG_GS_SEED=2 OG_GS_ACTORS=4
+
+# RustFS + toxiproxy (+15 ms each way); proxy health
+research/group-commit-stress/scripts/s3-up.sh
+research/group-commit-stress/scripts/proxy-rtt.sh
+
+# Real binaries (release profile, line tables kept)
+CARGO_TARGET_DIR=/srv/target-rel CARGO_PROFILE_RELEASE_STRIP=none \
+  CARGO_PROFILE_RELEASE_DEBUG=line-tables-only \
+  cargo build --release --locked -p omnigraph-cli -p omnigraph-server
+
+# Served runs (bootstrap, seed, index build, drive, export, check)
+python research/group-commit-stress/scripts/served_run.py r03a-gated --backend s3 \
+  --bins /srv/bins/proto-fixed2 --optimize-secs 30 -- --writers 48 --secs 60 \
+  --actors 4 --seed 11 --mix "fresh=70,hot=10,pair=5,update=4,delete=3,person=3,knows=5"
+#   faults:       --toxics reset,truncate,timeout,jitter --toxic-every 5 --toxic-window 2
+#   kill -9:      --chaos-kill-secs 12
+#   crash points: --watchdog 1 --server-env OMNIGRAPH_STRESS_CRASH=batch_committed:4
+#   soak:         --optimize-secs 60 --server-env OMNIGRAPH_GROUP_COMMIT_STATS_SECS=60 \
+#                 -- --writers 56 --secs 3600 --mix fresh=100 --reader-count 1
+
+# Several processes on one root; a claim mid-load
+python research/group-commit-stress/scripts/mp_run.py mp02-claim --procs 4 --writers 6 \
+  --secs 30 --claim-at 10
+
+# Suites with batching forced on
+research/group-commit-stress/scripts/suites-on.sh <label> 1
+research/group-commit-stress/scripts/per-test.sh <failpoints-binary> <label> 180 OMNIGRAPH_GROUP_COMMIT=1
+(cd crates/omnigraph-dst && OMNIGRAPH_GROUP_COMMIT=1 cargo test --locked --no-fail-fast)
+(cd crates/omnigraph-gqt && OMNIGRAPH_GROUP_COMMIT=1 cargo test --locked)
+```
+
+Switches on this branch (research only): `OMNIGRAPH_GROUP_COMMIT=1`,
+`OMNIGRAPH_GROUP_COMMIT_EXACT_TOUCHED=1`, `OMNIGRAPH_GROUP_COMMIT_UNGATED_RETRIES=N`,
+`OMNIGRAPH_KNOWN_KEYS_LIFT_CAP` (default on), `OMNIGRAPH_KNOWN_KEYS_TAIL_CACHE`
+(default on), `OMNIGRAPH_GROUP_COMMIT_STATS_SECS=N`, `OMNIGRAPH_STRESS_CRASH=point:per_mille,…`,
+plus the prototype's own (`OMNIGRAPH_KNOWN_KEYS`, `OMNIGRAPH_PUBLISH_TRUST_ACKNOWLEDGED`,
+`OMNIGRAPH_GROUP_COMMIT_DEBUG`, `OMNIGRAPH_GROUP_COMMIT_TIMING`, …). Server
+admission knobs used: `OMNIGRAPH_PER_ACTOR_INFLIGHT_MAX`,
+`OMNIGRAPH_GLOBAL_INFLIGHT_MAX`, `OMNIGRAPH_INGRESS_INFLIGHT_MAX`,
+`OMNIGRAPH_OPERATION_ROUTES=true`.
+
