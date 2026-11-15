@@ -486,7 +486,9 @@ field).
    whose staging knows them; refuse an entry only when an upserted id is one
    it inserts or a delete hit a table it reads without writing. Keep
    `changed` for loads, merges and overwrites. Without it the RFC's batching
-   is worth ~1.06× on a realistic mixed workload (R1).
+   is worth ~1.06× on a realistic mixed workload (R1); with it, 2.75× on the
+   same RustFS run and 15.6 instead of 1.0 writes per commit at 1,024
+   writers.
 4. **Maintenance publications in the log** as row-preserving records (H13),
    and make the maintenance carry (rollout step 4) a prerequisite of step 6.
 5. **Known keys** (§Known keys): lift the `KEYED_WRITE_MAX_ROWS` tail cap when
@@ -514,6 +516,15 @@ field).
 11. **Per root, not per handle** (§The write group): unchanged by these
     fixes; two handles of one process still see each other's batches as
     foreign (h03).
+12. **Soak memory gate**: with the engine's default Lance caches (6 GiB
+    index, 1 GiB metadata) RSS rose 2.6 → 3.5 → 5.2 GB at 10, 30 and 60
+    minutes; the 30-versus-10 gate passes (1.32×) while the hour shows no
+    plateau. Either bound the session caches in the soak or compare a later
+    mark, and count known-key entries (one per write, never evicted).
+13. **Crash-window seams before step 6**: the existing `failpoints`,
+    `detached_commit_matrix` and DST cases arm ordinary-path seams the batch
+    path never crosses (§4, class 1); the seams RFC §Failure checkpoints
+    lists are what lets those suites cover batching at all.
 
 
 ## Appendix: reproducing
