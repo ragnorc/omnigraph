@@ -397,3 +397,64 @@ All 7 repros pass with it on. Verdict: keep; it recovers the batching the
 gated retry lost while keeping the two-attempt bound. RFC change: classify
 publications outside the group by exact touched ids where the writer knows
 them, not `changed` per table.
+
+## 2026-11-15 — crashes: kill -9 and crash points
+
+- **c01** (local served, build 6, 32 writers, 2 actors, mixed, 90 s): the
+  server killed -9 four times at random (mean 12 s), admission lock
+  force-unlocked and the server restarted each time (~0.35 s). 1,516
+  acknowledged, 168 in doubt (128 disconnects mid-request). **0 violations**:
+  every acknowledged write present once, in-doubt writes at most once, the
+  graph reopened cleanly each time.
+- **c02** (local served, build 7 with research crash points
+  `OMNIGRAPH_STRESS_CRASH=batch_admitted:4,batch_committed:4,batch_published:4`,
+  `std::process::abort()` at the point, a watchdog restarting the server):
+  8 aborts, all at `batch_committed`, i.e. after the batch's detached table
+  commits and before its `__manifest` compare-and-swap. 1,749 acknowledged,
+  293 in doubt, 209 refused (connection refused while restarting). **0
+  violations.** Afterwards `omnigraph cleanup --keep 1 --confirm` on the root
+  reclaimed exactly **8 unpublished manifests** in `node:Item` (one per
+  abort) plus old versions, reported no foreign versions and no errors, and
+  the graph exported byte-identically before and after (1,407 rows). The
+  collector's existing rule handles batch staging, as RFC §Failure
+  checkpoints argues. (The time-based roll in `crash_point` never selected
+  the other two points in this run: gVisor's coarse `subsec_nanos`; c01's
+  random kills cover them statistically.)
+
+## 2026-11-15 — improvement 2: lift the probe cap when known keys cover the tail
+
+Observation (local served, pure inserts, no maintenance): throughput falls
+off a cliff once a table has more than 8,192 fragments outside the id index
+(one fragment per write): stacks are all Lance `filtered_read::read_fragment`
+tasks. `stage_keyed_write` runs the exact-id absence probe only while
+`tail.fragments × source_ids ≤ KEYED_WRITE_MAX_ROWS` (#1225, Lance plans the
+probe's IN list once per uncovered fragment); past it, every keyed insert is
+Lance's full-table merge join (`use_index(false)`): a scan of every
+fragment's id column per write, staged without exact ids (Bloom-only group
+admission) and recording no known keys, so the tail never becomes known
+again.
+
+Change (`OMNIGRAPH_KNOWN_KEYS_LIFT_CAP`, on): when the known keys answer every
+uncovered fragment, the probe scans only the indexed fragments
+(`fast_search`, which Lance 13 honours for scalar index queries:
+`scanner.rs:3697`, `with_only_indexed_fragments`), so the cap does not apply.
+
+Embedded harness, 48 writers, pure inserts, no maintenance, 90 s, writes/s
+per 10 s:
+
+| | 0–10 | 10–20 | 20–30 | 30–40 | 40–50 | 50–60 | 60–70 | 70–80 | 80–90 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| cap (f11-liftcap0) | 266 | 138 | 100 | 84 | 69 | 62 | 62 | 47 | **0.0** |
+| lifted (f11-liftcap1) | 216 | 111 | 79 | 72 | 68 | 60 | 53 | 54 | **44.5** |
+
+Verdict: keep: it removes the cliff. The steady decay before it remains:
+several per-write and per-batch passes are O(fragments) (uncovered-set
+computation, tail scans of fragment metadata, the detached manifest the
+leader writes and every writer decodes), and every write adds a fragment.
+Only maintenance (or fewer fragments per write) bounds it.
+
+Also seen in the stacks: Lance builds the Blob v2 projection schema once per
+fragment read (`filtered_read.rs:1484` → `public_blob_v2_binary_projection_schema`
+→ `Schema::to_schema`, allocating every field name), a per-fragment cost that
+dominates scans of many small fragments; hoisting it to the plan is an
+upstream ask.
