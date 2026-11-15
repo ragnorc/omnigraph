@@ -1,0 +1,18 @@
+
+running 1 test
+test rfc_0067_zero_age_cleanup_keeps_a_fresh_unpublished_detached_manifest ... FAILED
+
+failures:
+
+---- rfc_0067_zero_age_cleanup_keeps_a_fresh_unpublished_detached_manifest stdout ----
+
+thread 'rfc_0067_zero_age_cleanup_keeps_a_fresh_unpublished_detached_manifest' (28896) panicked at crates/omnigraph/tests/failpoints.rs:10132:9:
+the seam must fail the write before publish
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    rfc_0067_zero_age_cleanup_keeps_a_fresh_unpublished_detached_manifest
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 181 filtered out; finished in 0.10s
+

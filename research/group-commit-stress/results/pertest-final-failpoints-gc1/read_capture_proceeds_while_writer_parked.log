@@ -1,0 +1,18 @@
+
+running 1 test
+test read_capture_proceeds_while_writer_parked ... FAILED
+
+failures:
+
+---- read_capture_proceeds_while_writer_parked stdout ----
+
+thread 'read_capture_proceeds_while_writer_parked' (28485) panicked at crates/omnigraph/tests/helpers/failpoint.rs:55:9:
+rendezvous: seam 'mutation.post_finalize_pre_publisher' was never reached
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    read_capture_proceeds_while_writer_parked
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 181 filtered out; finished in 15.55s
+

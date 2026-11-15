@@ -1,1 +1,8 @@
 [final] writes gc=1: test result: ok. 67 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 2.21s
+[final] integration gc=1: test result: ok. 704 passed; 0 failed; 9 ignored; 0 measured; 0 filtered out; finished in 35.24s
+[final] writes gc=0: test result: ok. 67 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 2.27s
+[final] integration gc=0: test result: ok. 704 passed; 0 failed; 9 ignored; 0 measured; 0 filtered out; finished in 34.72s
+[final] detached_commit_matrix gc=1: test result: FAILED. 24 passed; 7 failed; 1 ignored; 0 measured; 0 filtered out; finished in 20.75s
+[final] failpoints gc=1: done:      13 fail       2 ignored     167 pass 
+[final] dst gc=1: test result: FAILED. 54 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.41s test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s test result: ok. 2 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.83s test result: FAILED. 54 passed; 3 failed; 30 ignored; 0 measured; 0 filtered out; finished in 118.01s test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s 
+[final] gqt gc=1: test result: ok. 477 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 17.23s

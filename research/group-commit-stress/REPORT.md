@@ -194,14 +194,17 @@ known keys keyed by relative path (H9; not exercised with copied roots).
 `failpoints` run one test per process with a 180 s timeout
 (`scripts/per-test.sh`), because the unfixed prototype hung the binary.
 
-| suite | unfixed prototype | fixed prototype |
-|---|---|---|
-| `writes` | 67 pass, 1 ignored | 67 pass, 1 ignored |
-| engine `integration` | 704 pass, 9 ignored | see §4.1 final rerun |
-| `detached_commit_matrix` | 24 pass, 7 fail | 24 pass, 7 fail (same classes) |
-| `failpoints` | hung (H3) after 22 tests: 16 pass, 6 fail | 167 pass, 2 ignored, 13 fail |
-| DST (`crates/omnigraph-dst`) | — | lib 54/55, scenarios 54/57 after H11/H12 (first pass: 6 failures, 2 real bugs) |
-| GQT corpus | — | 477 pass |
+| suite | unfixed prototype | final build, batching on | final build, batching off |
+|---|---|---|---|
+| `writes` | 67 pass, 1 ignored | **67 pass**, 1 ignored | 67 pass, 1 ignored |
+| engine `integration` | 704 pass, 9 ignored | **704 pass**, 9 ignored | 704 pass, 9 ignored |
+| `detached_commit_matrix` | 24 pass, 7 fail | 24 pass, 7 fail (5 seam, 2 carry) | — |
+| `failpoints` | hung (H3) after 22 tests: 16 pass, 6 fail | **167 pass**, 2 ignored, 13 fail (10 seam, 3 old behavior) | — |
+| DST (`crates/omnigraph-dst`) | — (first pass on the fixed build: 6 failures, 2 real bugs H11, H12) | lib 54/55, scenarios 54/57 (3 seam, 1 golden) | writer-claims universe passes after H12 |
+| GQT corpus | — | **477 pass** | — |
+
+Final rerun: `results/final/`, `results/pertest-final-failpoints-gc1.tsv`
+(`scripts/final-suites.sh`).
 
 Every failure on the fixed build falls into one of three classes; none is a
 wrong outcome.
@@ -234,11 +237,17 @@ wrong outcome.
    `a_write_on_a_held_branch_is_carried_over_any_handles_optimize_issue_1331`,
    `insert_into_a_table_optimize_compacted_meanwhile_keeps_the_compaction_issue_1331`,
    `insert_overlapping_an_optimize_publication_does_not_reprepare_issue_1331`;
-   `detached_commit_matrix` `CarriedInsert` cells. The insert is refused and
-   prepared again instead of being carried over the row-preserving
-   publication. The outcome is correct; the RFC (rule 2, "explained as
-   row-preserving") wants the carry, and the H13 fix adds it for entries
-   queued in the group, not for these single-write cases.
+   `insert_still_reprepares_over_a_row_change_after_optimize_issue_1331`;
+   `detached_commit_matrix` `CarriedInsert` cells. These assert the ordinary
+   path's mechanism: a carry counted in `writes_carried_over_row_preserving`,
+   or one re-preparation. With H13 the group path explains the optimize
+   instead, admits the entry and composes it on the compacted pin: zero
+   re-preparations and no carry counted
+   (`insert_into_a_table_optimize_compacted_meanwhile_keeps_the_compaction_issue_1331`
+   fails only on the counter; `insert_overlapping_an_optimize_publication_does_not_reprepare_issue_1331`
+   now passes; `insert_still_reprepares_over_a_row_change_after_optimize_issue_1331`
+   expects a re-preparation the group path rightly skips, since the row
+   change was an insert into another table). Correct outcomes, RFC behavior.
 3. **The DST storage-cost golden** (`dst_bench_cost_count_golden`) fails with
    batching off too: the prototype's publisher trust and known keys change
    request counts, and it asserts the carry. Regenerating it with reasons is

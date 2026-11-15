@@ -1,0 +1,20 @@
+
+running 1 test
+test a_write_on_a_held_branch_is_carried_over_any_handles_optimize_issue_1331 ... FAILED
+
+failures:
+
+---- a_write_on_a_held_branch_is_carried_over_any_handles_optimize_issue_1331 stdout ----
+
+thread 'a_write_on_a_held_branch_is_carried_over_any_handles_optimize_issue_1331' (25013) panicked at crates/omnigraph/tests/failpoints.rs:2257:9:
+assertion `left == right` failed: optimize on the writer's handle
+  left: 0
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    a_write_on_a_held_branch_is_carried_over_any_handles_optimize_issue_1331
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 181 filtered out; finished in 0.15s
+
