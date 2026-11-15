@@ -13,14 +13,17 @@ summaries and logs are under `histories/`, `served/`, `mp/`, `results/`.
 
 ## Summary
 
-**Breaking it.** Fourteen defects in the prototype, five of them able to
-lose correctness or liveness on real binaries under load: admission across a
+**Breaking it.** Eleven defects in the prototype (plus a performance cliff
+inherited from `main`'s keyed-write path and three operational findings),
+five of them able to lose correctness or liveness on real binaries under
+load: admission across a
 hole in the effect log (duplicate keys, dangling edges); a dropped leader
 that hangs its group forever; a refusal storm that never recovers after any
 unexplained publication (S3 soak: 122 → 2.35 writes/s after the first
 `optimize`); maintenance publications left unexplained; and refused entries
 re-preparing outside the gates, so that with two actors or two handles
-6–40% of writes fail to the caller after 32 attempts. One more lives in the
+5–7% of writes (40% of fresh inserts in a hot-key mix) fail to the caller
+after 32 attempts. One more lives in the
 prototype's publisher trim, outside batching: a stale trusted image clears
 the process's writer-epoch holder, after which writes are fenced. All are
 reproduced by a focused test or a seeded run, root-caused and fixed on this
@@ -143,7 +146,7 @@ lost guarantee or a bounded stall; **low** = cosmetic or conservative.
 | H3 | **high** | A leader whose future is dropped hangs its group forever (every later write of that branch and actor waits) | `gc_dropped_leader_hands_the_lead_on`, `gc_leader_dropped_inside_its_publication`; harness h06 (50% cancellation: writers never finish); failpoints run hung at `branch_claim_owner_reads_a_write_whose_future_was_dropped_after_its_commit` | `leading` stayed set; a `Lead` sent to a follower dropped after the send was lost | `LeadGuard` (answers drained members: sent back before the first detached commit, uncertain after; clears the log; hands the lead on) and `Waiter` (passes on a pending `Lead`) (`285922cf`) | Outcomes per member |
 | H14 | **high** | A refusal storm that never recovers after any publication the batch did not see while it waited for the gates | local served p03: 1,185 refusals in 25 s, 691 → 67 writes/s; S3 soak 2: 122 → 2.35 writes/s after the first optimize | `lead_group` copied the log before waiting for the gate; publications made meanwhile were missing, so the batch "did not reach the head", refused everything, and its zero-admission outcome cleared the live log | judge the batch by the log read under the gates; a batch that admitted nothing keeps the log (`76112d60`) | The effect log; Progress |
 | H13 | **high** | `optimize` and index-build publications unexplained: every queued entry refused after each maintenance run | local served k00: 505 → 67 writes/s after the first optimize | Maintenance publishes through `table_ops::commit_updates_on_branch_with_expected` directly; nothing logged it | log them as row-preserving (`12184f03`) | Admission rule 2; Interactions |
-| H5 | **high** | Refused entries re-prepare outside the gates: no progress bound; with ≥2 actors or handles 5–40% of writes fail to the caller with `ReadSetChanged` (HTTP 409) | harness h02 (4 actors, 6%), h03 (2 handles, 5%), h07 (4 actors, hot keys, 40% of fresh inserts); served s02–s05 (11%) | `PreEffectReprepares::prepare_again` skipped the gates for grouped attempts | gated second attempt publishing alone as a batch of one (`publish_alone_under_gates`), logged with its keys; publications outside the group logged with their tables (`285922cf`) | Progress: the #1331 bound |
+| H5 | **high** | Refused entries re-prepare outside the gates: no progress bound; with ≥2 actors or handles 5–7% of writes fail to the caller with `ReadSetChanged` (HTTP 409) | harness h02 (4 actors, 7.2%), h03 (2 handles, 5.2%), h07 (4 actors, hot keys, 5.1% of all, 40% of fresh inserts); served s02–s05 (11%) | `PreEffectReprepares::prepare_again` skipped the gates for grouped attempts | gated second attempt publishing alone as a batch of one (`publish_alone_under_gates`), logged with its keys; publications outside the group logged with their tables (`285922cf`) | Progress: the #1331 bound |
 | H12 | **medium–high** | The prototype's publisher trust (listing-free first attempt) fences the writer-epoch holder: a stale trusted image fails the epoch assertion, which clears the live holder; the fresh retry is `WriterFenced` and not retried | DST `dst_writer_claims_randomized_oracles_hold_and_replay` (seed 6, op 47), fails with batching off too; passes with `OMNIGRAPH_PUBLISH_TRUST_ACKNOWLEDGED=0` | `assert_writer_epoch` on an unverified image runs the refusal side effects (`WriterEpochHolders::clear`, `held()` drops a mismatched native ref) | on a trusted image, compare epoch and native ref without mutating the registry; any mismatch goes to a fresh load (`44008d15`) | Interactions: writer epoch; Measured (the trim the columns include) |
 | H11 | **medium** | Every batch failure re-typed as `manifest_internal("group commit failed: …")` for every member, the leader included: `WriterFenced`, conflicts and injected refusals lose kind, details and HTTP status (409 → 500) | DST `dst_v11_fault_injection_atomicity_and_replay`, `dst_fault_storm_on_one_live_handle_keeps_writing`; failpoints `branch_claim_*` ("not a writer-fenced refusal: None") | `follower_error` rebuilt all errors | clone `ManifestError` and `KeyConflict` with their evidence (`44008d15`) | Outcomes per member |
 | H10 | **medium** | An edge entry's footprint omitted its endpoint node tables | `gc_log_hole_admits_an_edge_across_a_delete_of_its_endpoint` after H5's per-table logging | admission checked only written tables | add each written edge table's endpoint tables (`285922cf`) | Eligibility ("endpoint node tables join the footprint") |
