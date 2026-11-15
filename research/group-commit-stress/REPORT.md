@@ -431,7 +431,7 @@ field).
 | The soak gate (64 writers, optimize every 5 min, index build every minute) | **not runnable on the served path** | O1 (64 write observers), O2 (no served index build) |
 | Blob tables must wait for the guard | **no defect found** | 96 Blob writes in 9 commits read back exactly, before and after optimize |
 | Headline throughput (20–65× on one branch) | **pure inserts only** | soak ~100–124 writes/s at 56 writers on S3 (pure inserts), against the one-publication-per-write ceiling of ~2–3 writes/s on this backend (#1401 §4; 3.0 here with group commit off on the mixed workload); mixed workload with the RFC rules: 1.06× |
-| A batch of one costs no more than today | **not measured here** | GQT (batches of one through the group path) passes; no single-writer timing taken |
+| A batch of one costs no more than today | **supported** | one served writer on RustFS, final build: 3.73 writes/s (p50 268 ms) off, 4.20 (p50 238 ms) on (`served/w1-*`); GQT (batches of one) passes |
 | Lance 14's `CompositeOperation` with `AssertUniqueKeys` | **incorrect for 14.0.2** | §8 |
 | `with_transaction_file_disabled` is `#[cfg(test)]` | `pub(crate)` in 14.0.2; still not public | §8 |
 

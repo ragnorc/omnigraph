@@ -595,3 +595,10 @@ deletes), final build (cap lift and memo on), gated retry.
 |---|---:|---|---:|---:|---|
 | RFC rules (f13-w1024) | 57.3 | 1.0 (1) | 42.4 s | 125.8 s | 0 |
 | exact footprints (f13-w1024-exact) | 89.3 | 15.6 (512, the cap) | 13.7 s | 50.5 s | 0 |
+
+## 2026-11-15 — one writer on RustFS (final build)
+
+`served/w1-gc-off`, `served/w1-gc-on`: 1 writer, pure inserts, 30 s, no
+readers. Off: 3.73 writes/s, p50 268 ms, p99 277 ms. On: 4.20 writes/s, p50
+238 ms, p99 251 ms. 0 violations. A batch of one costs no more (the leader's
+capture from its own last publication and the index warm-up save requests).
