@@ -55,9 +55,11 @@ inserts. Two results contradict it as written:
    writes/s for an hour (§6).
 
 **Improving it.** Best three, each measured on the same instrument:
-exact footprints (+44% writes/s, p50 −44% on a mixed workload with the gated
-retry kept), lifting the probe cap when known keys cover the tail (removes
-the 0 writes/s cliff), and the H14 fix itself (the S3 soak's minute-2 rate
+memoizing the known-tail analysis per table version (2.0× writes/s on pure
+inserts), exact footprints for writes outside the group (+44% writes/s and
+−44% p50 on a mixed workload with the gated retry kept), and lifting the
+probe cap when known keys cover the tail (removes a 0 writes/s cliff). The H14
+fix is a prerequisite rather than an improvement (the S3 soak's minute-2 rate
 from 2.35 to ~114 writes/s, sustained). Lance upstream asks with exact code
 locations are in §8.
 
@@ -281,7 +283,7 @@ branch so both sides run from one binary.
 |---|---|---|---|---|
 | 1 | **Exact footprints** for publications outside the group (`OMNIGRAPH_GROUP_COMMIT_EXACT_TOUCHED`) | An update or delete changes exactly the ids its staging folded or deleted; an insert-only entry only read its own ids' absence and its endpoints' existence | local mixed: 24.4 → **35.2 writes/s (+44%)**, 1.05 → 1.96 writes/commit, p50 1,372 → **768 ms**; S3 mixed: EXACT_S3_SHORT | **keep**; RFC change |
 | 2 | **Lift the 8,192 probe cap** when the known keys answer the whole uncovered tail (`OMNIGRAPH_KNOWN_KEYS_LIFT_CAP`) | The cap guards against per-uncovered-fragment IN lists, which `fast_search` never plans when the tail is answered from memory | 80–90 s window: **0.0 → 44.5 writes/s**; no cliff | **keep**; RFC change (Known keys) |
-| 3 | **Memoize the known-tail analysis per manifest version** (`OMNIGRAPH_KNOWN_KEYS_TAIL_CACHE`) | Every writer probing the same pin rebuilds the same uncovered set three times and takes the global known-keys mutex per fragment | MEMO_RESULT | MEMO_VERDICT |
+| 3 | **Memoize the known-tail analysis per manifest version** (`OMNIGRAPH_KNOWN_KEYS_TAIL_CACHE`) | Every writer probing the same pin rebuilds the same uncovered set three times and takes the global known-keys mutex per fragment | embedded, 48 writers, pure inserts, 60 s: **112.1 → 224.7 writes/s (2.0×)**; last 10 s 59 → 134 | **keep**; RFC change (Known keys) |
 | 4 | H14 fix (log read under the gates) | — | S3 soak minute 2: **2.35 → ~114 writes/s** | required |
 | 5 | Ungated retries before the gated one (`OMNIGRAPH_GROUP_COMMIT_UNGATED_RETRIES`) | Most refused entries would batch on a second ungated try | 1 retry: no change (1.00 writes/commit); 32: 2.08 writes/commit but no bound | **discard**; exact footprints get the same batching with the bound |
 | 6 | Linger, pipelining, rebase-per-write, probe-free writer capture | from #1401 | not re-run | — |
