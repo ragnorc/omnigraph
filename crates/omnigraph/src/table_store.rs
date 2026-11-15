@@ -1453,10 +1453,119 @@ pub(crate) mod known_keys {
     }
 }
 
+/// Research (stress improvement 3, `OMNIGRAPH_KNOWN_KEYS_TAIL_CACHE`, on):
+/// the known-tail analysis of one immutable table version, computed once per
+/// manifest file and shared by every writer that probes that pin. `None` in
+/// `known` when some uncovered fragment is not answerable from the known
+/// keys.
+mod known_tail_memo {
+    use std::collections::{HashMap, HashSet, VecDeque};
+    use std::sync::{Arc, LazyLock, Mutex};
+
+    pub(super) struct KnownTail {
+        /// The union of the ids of every uncovered fragment, when all known.
+        pub(super) known: Option<Arc<HashSet<String>>>,
+    }
+
+    const ENTRIES: usize = 256;
+
+    #[derive(Default)]
+    struct Memo {
+        map: HashMap<String, Arc<KnownTail>>,
+        order: VecDeque<String>,
+    }
+
+    static MEMO: LazyLock<Mutex<Memo>> = LazyLock::new(Mutex::default);
+
+    pub(super) fn enabled() -> bool {
+        std::env::var("OMNIGRAPH_KNOWN_KEYS_TAIL_CACHE").map_or(true, |value| value != "0")
+    }
+
+    pub(super) fn get(key: &str) -> Option<Arc<KnownTail>> {
+        MEMO.lock().unwrap().map.get(key).cloned()
+    }
+
+    pub(super) fn put(key: String, tail: Arc<KnownTail>) {
+        let mut memo = MEMO.lock().unwrap();
+        if memo.map.insert(key.clone(), tail).is_none() {
+            memo.order.push_back(key);
+        }
+        while memo.order.len() > ENTRIES {
+            if let Some(oldest) = memo.order.pop_front() {
+                memo.map.remove(&oldest);
+            }
+        }
+    }
+}
+
+/// The known-tail analysis of `ds`'s pinned version (memoized per manifest
+/// file when enabled): `Ok(None)` when there is no id index or an empty tail,
+/// `Some(KnownTail { known: None })` when a fragment of the tail is not known.
+async fn known_tail(
+    ds: &Dataset,
+    system_columns: SystemColumns,
+) -> Result<Option<std::sync::Arc<known_tail_memo::KnownTail>>> {
+    let key = known_tail_memo::enabled().then(|| {
+        format!(
+            "{}\u{0}{}\u{0}{}",
+            ds.uri(),
+            ds.manifest_location().path,
+            system_columns.id
+        )
+    });
+    if let Some(key) = &key
+        && let Some(hit) = known_tail_memo::get(key)
+    {
+        return Ok(Some(hit));
+    }
+    let Some(uncovered) =
+        crate::dataset_index::key_column_uncovered_fragments(ds, system_columns.id).await?
+    else {
+        return Ok(None);
+    };
+    if uncovered.is_empty() {
+        return Ok(None);
+    }
+    let mut union: HashSet<String> = HashSet::new();
+    let mut all_known = true;
+    for fragment in ds
+        .fragments()
+        .iter()
+        .filter(|fragment| uncovered.contains(&fragment.id))
+    {
+        if fragment.deletion_file.is_some()
+            || fragment.files.len() != 1
+            || !fragment.overlays.is_empty()
+        {
+            all_known = false;
+            break;
+        }
+        match known_keys::get(&fragment.files[0].path) {
+            Some(ids) => union.extend(ids.iter().cloned()),
+            None => {
+                all_known = false;
+                break;
+            }
+        }
+    }
+    let tail = std::sync::Arc::new(known_tail_memo::KnownTail {
+        known: all_known.then(|| std::sync::Arc::new(union)),
+    });
+    if let Some(key) = key {
+        known_tail_memo::put(key, std::sync::Arc::clone(&tail));
+    }
+    Ok(Some(tail))
+}
+
 /// Research: whether the known keys answer every fragment the id index does
 /// not cover (each has exactly one known data file, no deletion file, no
 /// overlay); `false` with no id index or an empty tail.
 async fn known_keys_cover_tail(ds: &Dataset, system_columns: SystemColumns) -> Result<bool> {
+    if known_tail_memo::enabled() {
+        return Ok(known_tail(ds, system_columns)
+            .await?
+            .is_some_and(|tail| tail.known.is_some()));
+    }
     let Some(uncovered) =
         crate::dataset_index::key_column_uncovered_fragments(ds, system_columns.id).await?
     else {
@@ -1487,6 +1596,22 @@ async fn known_tail_members(
 ) -> Result<Option<HashSet<String>>> {
     if !known_keys::enabled() {
         return Ok(None);
+    }
+    if known_tail_memo::enabled() {
+        let Some(tail) = known_tail(ds, system_columns).await? else {
+            return Ok(None);
+        };
+        let Some(known) = tail.known.as_ref() else {
+            return Ok(None);
+        };
+        crate::instrumentation::record_known_tail_probe();
+        return Ok(Some(
+            source_ids
+                .iter()
+                .filter(|id| known.contains(*id))
+                .cloned()
+                .collect(),
+        ));
     }
     let Some(uncovered) =
         crate::dataset_index::key_column_uncovered_fragments(ds, system_columns.id).await?
@@ -4257,6 +4382,26 @@ impl TableStore {
             && known_keys::enabled()
             && std::env::var("OMNIGRAPH_KNOWN_KEYS_LIFT_CAP").map_or(true, |value| value != "0")
             && known_keys_cover_tail(&ds, system_columns).await?;
+        // Research (improvement 3): with the tail known, an all-new upsert
+        // needs nothing but the probe; skip the tail's metadata scan.
+        if known_tail && known_tail_memo::enabled() {
+            let present = Self::existing_id_count(&ds, &source_ids, system_columns).await?;
+            if present == 0 {
+                return self
+                    .stage_absence_proven_strict_insert(
+                        ds,
+                        type_key,
+                        batch,
+                        source_ids,
+                        id_field_id,
+                        &expected_schema_preorder_ids,
+                        "stage_keyed_write",
+                        system_columns,
+                        write_budget,
+                    )
+                    .await;
+            }
+        }
         let tail = match semantics {
             KeyedWriteSemantics::Upsert => {
                 crate::dataset_index::key_column_uncovered_tail(&ds, system_columns.id)
