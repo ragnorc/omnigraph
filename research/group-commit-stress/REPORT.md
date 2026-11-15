@@ -142,6 +142,20 @@ sustained). Lance upstream asks with exact code locations are in §8.
 | Suites with batching forced on: `writes`, engine `integration`, `failpoints`, `detached_commit_matrix`, DST, GQT | dev build | §4 |
 | Soak: 1 hour, S3, 56 writers, optimize every minute | served | §6 |
 
+### RFC admission-matrix cells covered here
+
+| RFC cell (Evidence and tests) | covered by | result |
+|---|---|---|
+| disjoint keys make one commit | harness fresh inserts, soak | batches of 13–28 (soak: 27.9 mean) |
+| same new key twice: later sent back, then an update | harness hot keys (64 and 16 keys), served | no duplicate, model equal |
+| insert beside an update on the same table | harness and served mixed mixes | correct; batching lost without exact footprints (R1) |
+| edge insert beside a delete of its endpoint | `gc_log_hole_admits_an_edge_across_a_delete_of_its_endpoint` | fails on the unfixed prototype (H1, H10); passes fixed |
+| non-key `@unique` stays on today's path | harness `tag` op | `@unique` held in every snapshot |
+| two actors make two commits | harness and served with 2–4 actors | every receipt's commit records the write's actor |
+| optimize, merge or another handle publishing between capture and batch | H13, harness branch churn, `OG_GS_HANDLES=2` | correct; refusals until H13; per-handle groups stay foreign |
+| `group_commit = off` matches today | `writes`, `integration` with it off | 67/67, 704/704 |
+| bounded `@card`, write skew, the `Left`/`Right` counterexample, expected head | not run here | ineligible by construction in the prototype (`selects_rows`, `insert_carry_allowed`, no expected head) |
+
 ## 3. Bugs found
 
 Severity: **critical** = wrong data acknowledged; **high** = liveness or
