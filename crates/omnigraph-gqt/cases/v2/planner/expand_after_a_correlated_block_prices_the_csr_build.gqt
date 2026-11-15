@@ -1,0 +1,95 @@
+# issue: none
+# notes: An Expand lowered after a correlated block is told the CSR is warm
+# notes: (`csr_cached`) only when that block realizes it: the bulk degree
+# notes: check, a row count over an unfiltered single hop from the outer
+# notes: binding. A block's inner hop has no frontier estimate, so the plan
+# notes: records `csr` and the run re-decides on the observed frontier with
+# notes: the recorded flag. In the first step the first block's destination
+# notes: is filtered, so it builds no CSR, and the second block's hop, lowered
+# notes: after it, prices the build and runs indexed from one person. In the
+# notes: second step the first block is the bulk shape, which builds the CSR
+# notes: over every edge type of the plan, so the second block's hop runs on
+# notes: it. Rows are the same under either mode.
+# traversal: auto
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node City {
+    slug: String @key
+    size: String
+}
+node Company {
+    slug: String @key
+    tier: String
+}
+node Person {
+    slug: String @key
+}
+edge WorksAt: Person -> Company
+edge LivesIn: Person -> City
+
+--- seed
+{"type":"City","data":{"slug":"berlin","size":"big"}}
+{"type":"City","data":{"slug":"paris","size":"small"}}
+{"type":"Company","data":{"slug":"acme","tier":"gold"}}
+{"type":"Company","data":{"slug":"bolt","tier":"silver"}}
+{"type":"Person","data":{"slug":"p1"}}
+{"type":"Person","data":{"slug":"p2"}}
+{"type":"Person","data":{"slug":"p3"}}
+{"type":"Person","data":{"slug":"p4"}}
+{"edge":"WorksAt","from":"p1","to":"bolt"}
+{"edge":"WorksAt","from":"p2","to":"acme"}
+{"edge":"WorksAt","from":"p3","to":"bolt"}
+{"edge":"LivesIn","from":"p1","to":"paris"}
+{"edge":"LivesIn","from":"p2","to":"paris"}
+{"edge":"LivesIn","from":"p3","to":"berlin"}
+{"edge":"LivesIn","from":"p4","to":"paris"}
+
+--- query
+query p1_outside_gold_and_big() {
+    match {
+        $p: Person { slug: "p1" }
+        not {
+            $p worksAt $c
+            $c: Company { tier: "gold" }
+        }
+        not {
+            $p livesIn $t
+            $t: City { size: "big" }
+        }
+    }
+    return { $p.slug }
+}
+--- expect unordered
+{"p.slug":"p1"}
+--- expect shape
+p.slug: String
+--- expect plan
+anti join $p: correlated
+expand $p WorksAt $c: mode csr ran indexed_scan
+expand $p LivesIn $t: mode csr ran indexed_scan
+
+--- query
+query p4_unemployed_outside_big() {
+    match {
+        $p: Person { slug: "p4" }
+        not { $p worksAt $c }
+        not {
+            $p livesIn $t
+            $t: City { size: "big" }
+        }
+    }
+    return { $p.slug }
+}
+--- expect unordered
+{"p.slug":"p4"}
+--- expect shape
+p.slug: String
+--- expect plan
+anti join $p: correlated
+expand $p LivesIn $t: mode csr ran csr

@@ -1653,6 +1653,60 @@ pub(crate) fn physical_plan_with(
     })
 }
 
+/// Whether a correlated block's lowered inner tree is the shape the engine
+/// answers with the bulk CSR degree check (`Lowering::bulk_row_count` in the
+/// engine), which realizes the query's CSR: a row-count predicate over an
+/// unfiltered destination (a dependent scan or a hash join with an unfiltered
+/// build) of one unbound, unbudgeted single hop from the outer binding, in
+/// one direction unless the predicate is an existence test. Any other block
+/// realizes the CSR only through an inner `Expand` the cost model put on it,
+/// which records that itself.
+fn bulk_csr_block(
+    physical: &PhysicalPlan,
+    inner: NodeId,
+    outer_var: &str,
+    predicate: &omnigraph_compiler::ir::SubqueryPredicate,
+) -> bool {
+    if !predicate.is_row_count() {
+        return false;
+    }
+    let unfiltered = |id: NodeId| matches!(physical.node(id), Some(PhysicalNode::Scan { spec, .. }) if spec.filter.is_none());
+    let expand = match physical.node(inner) {
+        Some(PhysicalNode::Scan {
+            source: ScanInput::Dependent { input },
+            spec,
+            ..
+        }) if spec.filter.is_none() => *input,
+        Some(PhysicalNode::HashJoin { probe, build, .. }) if unfiltered(*build) => *probe,
+        _ => return false,
+    };
+    match physical.node(expand) {
+        Some(PhysicalNode::Expand {
+            input,
+            src,
+            edges,
+            policy,
+            min_hops,
+            max_hops,
+            edge_binding: None,
+            ..
+        }) => {
+            src == outer_var
+                && *min_hops == 1
+                && max_hops.unwrap_or(1) == 1
+                && !matches!(policy, ExpandPolicy::Budgeted)
+                && matches!(
+                    physical.node(*input),
+                    Some(PhysicalNode::OuterReference { .. })
+                )
+                && edges.named().is_some_and(|member| {
+                    member.direction != Direction::Both || predicate.is_existence_test()
+                })
+        }
+        _ => false,
+    }
+}
+
 /// The key-set tree of every `AntiJoin` whose block qualifies (`key_set.rs`),
 /// built before physical selection, which lowers it in place of the
 /// correlated tree when pass 10 prices it lower.
@@ -3366,7 +3420,9 @@ impl Lowering<'_> {
                     }
                     _ => {
                         let lowered = self.lower(*inner)?;
-                        self.csr_cached = true;
+                        if bulk_csr_block(&self.physical, lowered, outer_var, predicate) {
+                            self.csr_cached = true;
+                        }
                         lowered
                     }
                 };
@@ -4024,7 +4080,16 @@ impl Lowering<'_> {
             }
             (None, None) => (ExpandMode::Csr, ExpandPolicy::Uncosted),
         };
-        if mode == ExpandMode::Csr {
+        // The CSR is realized for the operators after this one only when the
+        // run cannot take the indexed path instead: a pinned or uncosted CSR,
+        // or a costed one over a known frontier estimate. A costed choice with
+        // no estimate (a correlated block's inner hop, the frontier ceiling
+        // over an unknown input) is re-decided on the observed frontier.
+        let realized = match &policy {
+            ExpandPolicy::Costed { inputs } => inputs.frontier_rows != u64::MAX,
+            ExpandPolicy::Pinned | ExpandPolicy::Uncosted | ExpandPolicy::Budgeted => true,
+        };
+        if mode == ExpandMode::Csr && realized {
             self.csr_cached = true;
         }
         Ok((mode, frontier_estimate, policy))
