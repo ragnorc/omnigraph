@@ -241,7 +241,24 @@ impl<'a> PreEffectReprepares<'a> {
         // Stress fix (H5): a write a group refused prepares again under the
         // writer gates, as every sent-back write does (#1349), and publishes
         // alone as a batch of one (`publish_alone_under_gates`), so it still
-        // finishes within two attempts in its process.
+        // finishes within two attempts in its process. Research switch
+        // `OMNIGRAPH_GROUP_COMMIT_UNGATED_RETRIES=N` (default 0, the RFC's
+        // rule) lets a refused grouped attempt re-prepare outside the gates
+        // and rejoin the queue N times first: the bound becomes N + 2.
+        let ungated: usize = std::env::var("OMNIGRAPH_GROUP_COMMIT_UNGATED_RETRIES")
+            .ok()
+            .and_then(|value| value.parse().ok())
+            .unwrap_or(0);
+        if self.current.grouped && self.attempt < ungated {
+            self.attempt += 1;
+            crate::instrumentation::record_mutation_reprepare();
+            let first = self.current.first.take();
+            self.current = WriteAttempt {
+                first,
+                ..WriteAttempt::default()
+            };
+            return self.db.refresh_coordinator_only().await;
+        }
         self.attempt += 1;
         tracing::debug!(
             attempt = self.attempt,
