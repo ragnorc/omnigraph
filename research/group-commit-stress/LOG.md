@@ -173,3 +173,128 @@ commit share a key. `scripts/gs-run.sh <label> OG_GS_...=...`; histories in
 - Validation refusals (`@unique`, missing endpoint) carry no completion
   evidence and are `Manifest(...)` errors; the harness counts them in doubt
   (conservative) until classified.
+
+## 2026-11-15 — served runs on real binaries (unfixed prototype, local disk)
+
+Release binaries (`/srv/bins/proto-unfixed`, built from `0cc5d359`), a
+cluster bundle with the harness schema and 16 actors
+(`cluster/`), `scripts/served_run.py` (bootstrap a fresh root with
+`cluster apply`, force-unlock, start `omnigraph-server`, seed, index build
+through a recorded `optimize` operation, drive, export, check) and
+`scripts/http_stress.py` (async closed-loop writers over HTTP, readers that
+record the exact `graph_commit_id` each read was served from, per-interval
+metrics with server RSS and CPU, and the same model checker in Python).
+
+| run | config | ok/s | writes/commit | caller errors | violations | notes |
+|---|---|---:|---:|---|---|---|
+| s01 | 64 writers, 1 actor | 39 avg, decaying 58→24 | 1.69 | 107k 429s (driver spun) | 0 | per-actor in-flight cap 16 (`OMNIGRAPH_PER_ACTOR_INFLIGHT_MAX`) |
+| s02 | 64 writers, 4 actors | 25.5, decaying 42→12 | 1.70 | 142 × 409 `group_log_does_not_reach_capture` | 0 | RSS 795→1,132 MB in 40 s |
+| s03 | + optimize every 10 s | 23.5, decaying | 1.74 | 178 × 409 | 0 | every optimize refused 429 "server write observer cap 64 exceeded"; server CPU 12→21 cores |
+| s04 | 48 writers, optimize every 10 s | 22.7, decaying | 1.60 | 191 × 409 | 0 | optimize refused 503: recorded-operation routes are off by default |
+| s05 | + `OMNIGRAPH_OPERATION_ROUTES=true` | **41.9 flat** | 1.64 | 340 × 409 | 0 | every optimize landed (0.5–1 s); CPU ~11 cores; RSS +2.2 MB/s |
+
+Findings:
+
+- **The seed never built the id index in s01–s04** (the optimize route was
+  off), so every insert took Lance's full-table merge join instead of the
+  absence-proven writer: no exact ids, Bloom-filter admission, no known
+  keys, and per-write CPU growing with the table. With the index and
+  optimize every 10 s (s05) throughput stays flat for 60 s. The decay was
+  maintenance starvation, not batching.
+- **Maintenance starves at server admission** under write saturation: the
+  global in-flight cap (64, shared with writes) refused every optimize with
+  429 while 64 writers were active (s03). With group commit raising the
+  write rate this matters more; RFC §Interactions talks about maintenance
+  under batches at the gate, but the server admission lane comes first.
+- **H5 is visible to HTTP clients**: 409 `conflict` on 11% of writes at 4
+  actors.
+- Validation refusals (`@unique`, missing endpoint) come back as 400
+  `bad_request` with disposition `effects: unknown` (no completion
+  evidence on the engine error). Checked below whether group commit is the
+  cause.
+
+## 2026-11-15 — suites with batching forced on
+
+`OMNIGRAPH_GROUP_COMMIT=1`, dev build, `RUST_MIN_STACK=16777216`.
+
+| suite | unfixed prototype | fixed prototype | failure classes |
+|---|---|---|---|
+| `writes` | 67 pass, 1 ignored | — | — |
+| engine `integration` | 704 pass, 9 ignored | — | — |
+| `detached_commit_matrix` | 24 pass, **7 fail** | — | (a) Kill cells for `Insert`/`MultiTable` at `PrePublish` and `PostDetached(n)`: "child finished before reaching the window"; the group path crosses neither `mutation.post_finalize_pre_publisher` nor `mutation.post_table_commit`, so no crash window of the batch path is covered (RFC §Failure checkpoints: new seams owed). (b) `CarriedInsert` #1331 cells: "the insert must be carried over the optimize publication" — the prototype refuses and re-prepares instead of explaining a row-preserving publication (RFC rule 2 requires it be explained). Harness limitation and RFC deviation, not wrong outcomes |
+| GQT corpus | — | **477 pass** | batches of one through the group path |
+| DST (`crates/omnigraph-dst`) | — | see below | |
+| `failpoints` | stopped: hung at `branch_claim_owner_reads_a_write_whose_future_was_dropped_after_its_commit` (H3) after 28 min; 16 pass, 6 fail before it | per-test run in progress | |
+
+DST with batching on, first pass on the fixed build: 6 failures.
+
+| test | class | cause |
+|---|---|---|
+| `harness::collector_oracle_tests::collector_oracle_rejects_dead_staging_leak_and_saved_base_loss` | harness limitation | arms `mutation.post_table_commit` to strand staging; the group path does not cross it |
+| `dst_lever1_crash_during_recovery` | harness limitation | crash at `mutation.post_table_commit` never fires |
+| `dst_v11_fault_injection_atomicity_and_replay` | **real bug H11**, then harness limitation | "counted effect fired but an unrelated error escaped: group commit failed: injected failpoint triggered: graph_publish.before_commit_append": the group path re-typed the leader's own error as `manifest_internal`. After the fix, only its `mutation.post_table_commit` probe fails (not crossed) |
+| `dst_fault_storm_on_one_live_handle_keeps_writing` | **real bug H11** | same; passes after the fix |
+| `dst_bench_cost_count_golden` | old behavior by design | expects the #1331 carry and `main`'s request counts; also fails with batching off (publisher trust, known keys change costs) |
+| `dst_writer_claims_randomized_oracles_hold_and_replay` | **real bug H12**, not batching | fails with batching off too; passes with `OMNIGRAPH_PUBLISH_TRUST_ACKNOWLEDGED=0` |
+
+**H12, root cause.** The prototype's publisher trust (the publisher's first
+attempt uses its own last acknowledged `__manifest` image with no listing,
+the #837 trim the RFC's measured columns include) loaded an image from
+before a claim of the branch. `assert_writer_epoch` failed on it (held 1,
+read 0) and, as every refusal does, cleared the process's holder entry
+(`WriterEpochHolders::clear`; `held()` also drops an entry whose native ref
+differs from the loaded chain). The trusted-retry rule then reloaded fresh,
+found the branch at epoch 1 with nothing held, and returned `WriterFenced
+{ held: None, current: 1 }`, which is not retried. Fix: on a trusted image,
+compare the image's epoch and native ref with the held entry without
+mutating the registry (`WriterEpochHolders::peek`, `native_matches`) and go
+straight to a fresh load on any mismatch. DST writer-claims passes with
+batching off and on.
+
+**H11.** `follower_error` rebuilt every non-`ReadSetChanged` batch failure as
+`manifest_internal("group commit failed: …")` for every admitted member,
+the leader's own entry included: the kind, the details (`WriterFenced`,
+`PreconditionFailed`, conflicts) and the HTTP status were lost. Fix: clone
+`ManifestError` (it is `Clone`) and `KeyConflict` with their evidence.
+
+## 2026-11-15 — fixes in the prototype (`285922cf`, `44008d15`)
+
+| bug | fix |
+|---|---|
+| H1 log holes | `next_log` resets the log when a record does not continue it; `admit_inner` walks contiguous links only (`group_log_hole`) |
+| H2 per-actor groups | one group and one log per branch; a batch drains the first open entry's actor, the rest keep their places |
+| H3 dropped leader | `LeadGuard` answers every drained member (sent back before the batch's first detached commit, uncertain after), clears the log, hands the lead on; `Waiter` passes on a `Lead` left in a dropped follower's channel |
+| H4 cancelled follower published | entries whose receiver closed leave the queue at drain and again after the batch's gates |
+| H5 progress bound | a refused grouped attempt prepares again under the writer gates and publishes alone as a batch of one under them (`publish_alone_under_gates`), logged with its exact keys; publications of the handle outside the group are logged with their tables `changed` |
+| H7 typed in-doubt | followers get `manifest_publish_in_doubt(batch commit id, …)` |
+| H10 edge footprint | admission adds each written edge table's endpoint node tables to the entry's footprint |
+| H11 error typing | above |
+| H12 publisher trust vs writer epoch | above |
+
+Repro tests after the fixes (`results/repro-3-fixed.log`): 7 of 7 pass. The
+edge repro surfaced H10 only after H5's per-table logging let entries be
+admitted across a logged publication on another table.
+
+Harness on the fixed build (`results/gs-runs.log`):
+
+| run | config | ok/s | writes/commit (max) | caller errors | p50 / p99 ms | violations |
+|---|---|---:|---|---|---|---|
+| f01 | 32 writers, mixed, 1 actor | 28.4 | 1.04 (20) | 0 | 1,282 / 2,676 | 0 |
+| f02 | + 4 actors | 27.3 | 1.00 (2) | 0 | 1,115 / 3,614 | 0 |
+| f03 | + 2 handles | 26.1 | 1.02 (10) | 0 | 1,324 / 2,969 | 0 |
+| f06 | 50% cancelled ≤0.8 s | 27.5 | 1.00 | 439 cancelled | 923 / 2,226 | 0, no hang |
+| f08 | 32 writers, inserts only | **175.9** | 13.0 (31) | 0 | 134 / 482 | 0 |
+| f01-ungated1 | `UNGATED_RETRIES=1` | 28.2 | 1.00 (1) | 0 | 1,068 / 2,991 | 0 |
+| f01-ungated32 | `UNGATED_RETRIES=32` (prototype's rule) | 34.5 | 2.08 (31) | 0 | 624 / 3,837 | 0 |
+
+**RFC-level finding: under a mixed workload on one table, the gated second
+attempt removes batching.** Every update, delete or upsert of a present key
+is a publication outside the group; logged as `changed` for its table (RFC
+§The effect log: "`changed`, for anything else"), it refuses every queued
+insert into that table; each refused insert then prepares again holding the
+branch gate and publishes alone, serially. Writes per commit fall from 2.08
+to 1.04 and p50 doubles; throughput falls 18%. The prototype's ungated
+re-preparation keeps batching but has no progress bound (h02: `ReadSetChanged`
+to callers). The remedy that keeps both is finer classification: an update
+or delete of keyed rows changes exactly those ids, so it refuses only the
+entries whose inserted ids or edge endpoints it touched (see Improvements).
