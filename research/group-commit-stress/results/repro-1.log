@@ -1,0 +1,45 @@
+
+running 6 tests
+test gc_blob_inserts_compose_and_read_back ... ok
+test gc_dropped_leader_hands_the_lead_on ... FAILED
+test gc_follower_dropped_before_admission_leaves_the_queue ... ok
+test gc_log_hole_admits_an_edge_across_a_delete_of_its_endpoint ... FAILED
+test gc_log_hole_admits_an_entry_across_a_foreign_insert_of_its_key ... FAILED
+test gc_second_actor_batch_is_a_hole_in_the_first_actors_log ... FAILED
+
+failures:
+
+---- gc_dropped_leader_hands_the_lead_on stdout ----
+[gc-repro] dropped leader: follower hung (15 s), later write hung (15 s)
+
+thread 'gc_dropped_leader_hands_the_lead_on' (37611) panicked at crates/omnigraph/tests/group_commit_stress.rs:298:5:
+the follower of a dropped leader never finished
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- gc_log_hole_admits_an_edge_across_a_delete_of_its_endpoint stdout ----
+[gc-repro] edge e ok = true, people ["a", "x", "y"], edge dsts ["b"], dangling ["b"]
+
+thread 'gc_log_hole_admits_an_edge_across_a_delete_of_its_endpoint' (37673) panicked at crates/omnigraph/tests/group_commit_stress.rs:235:5:
+dangling edges to ["b"]
+
+---- gc_log_hole_admits_an_entry_across_a_foreign_insert_of_its_key stdout ----
+[gc-repro] A Some(4) F Some(5) B Some(6) e Ok(Some(7)): rows with slug k = 2
+
+thread 'gc_log_hole_admits_an_entry_across_a_foreign_insert_of_its_key' (37682) panicked at crates/omnigraph/tests/group_commit_stress.rs:134:5:
+duplicate key `k`: 2 rows
+
+---- gc_second_actor_batch_is_a_hole_in_the_first_actors_log stdout ----
+[gc-repro] two actors: e ok = true, rows with slug k = 2
+
+thread 'gc_second_actor_batch_is_a_hole_in_the_first_actors_log' (37694) panicked at crates/omnigraph/tests/group_commit_stress.rs:176:5:
+duplicate key `k`: 2 rows
+
+
+failures:
+    gc_dropped_leader_hands_the_lead_on
+    gc_log_hole_admits_an_edge_across_a_delete_of_its_endpoint
+    gc_log_hole_admits_an_entry_across_a_foreign_insert_of_its_key
+    gc_second_actor_batch_is_a_hole_in_the_first_actors_log
+
+test result: FAILED. 2 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 34.74s
+

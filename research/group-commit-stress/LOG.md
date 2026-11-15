@@ -104,3 +104,72 @@ hypothesis a stress run or a focused repro must confirm or refute.
   resolved location (RFC §Known keys). Random UUID names make a collision
   between different files improbable; to check: a copied or restored root,
   shallow clones, legacy forks sharing files.
+
+## 2026-11-15 — focused reproductions (`crates/omnigraph/tests/group_commit_stress.rs`)
+
+New test binary (feature `failpoints`, `#[serial]`, every test sets
+`OMNIGRAPH_GROUP_COMMIT=1`). Seams park a write at a chosen point:
+`mutation.post_stage_pre_effect_gate` (after staging, before the group),
+`mutation.post_table_commit` (an ordinary write holding the branch gate),
+`publish.pre_merge` (a leader inside its publication).
+
+```bash
+cargo dev-test --test group_commit_stress --no-run
+cd crates/omnigraph && RUST_MIN_STACK=16777216 \
+  ../../target/debug/deps/group_commit_stress-* --test-threads=1 --nocapture
+```
+
+Results on the unfixed prototype (`results/repro-1.log`):
+
+| test | RFC rule | result |
+|---|---|---|
+| `gc_log_hole_admits_an_entry_across_a_foreign_insert_of_its_key` | §Admission rule 2 | **FAIL**: 2 rows with slug `k` (A v4, F v5 ordinary insert of `k`, B v6, e admitted at v7) |
+| `gc_second_actor_batch_is_a_hole_in_the_first_actors_log` | §The write group | **FAIL**: 2 rows with slug `k`; actor y's batch is foreign to actor x's log |
+| `gc_log_hole_admits_an_edge_across_a_delete_of_its_endpoint` | §Admission rule 3 | **FAIL**: edge `a->b` published after `b` was deleted (dangling) |
+| `gc_dropped_leader_hands_the_lead_on` | outcome table, dropped leader | **FAIL**: follower and a later write hang (15 s timeouts) |
+| `gc_leader_dropped_inside_its_publication` | same, after the first effect | **FAIL**: follower and later write hang; neither `l` nor `f` landed |
+| `gc_follower_dropped_before_admission_leaves_the_queue` | outcome table, cancelled before admission | **FAIL**: the cancelled write `f2` was published (first version of the test aborted f2 while a foreign commit refused it anyway; reworked to park the leader in `publish.pre_merge`) |
+| `gc_blob_inserts_compose_and_read_back` | eligibility rule 4 | pass: 96 Blob writes (5 B to 300 KB, inline and dedicated Blob v2) in 9 commits, every byte equal before and after `optimize` |
+
+H1, H2 (as a hole), H3 and H4 are confirmed. H6 (Blob tables eligible) is a
+rule deviation without an observed defect: the composed Blob v2 values read
+back exactly.
+
+## 2026-11-15 — randomized harness (`group_commit_stress/harness.rs`)
+
+`gc_stress_harness` (ignored, `instrument:`), `OG_GS_*` knobs (module doc).
+Writers run a seeded op mix (fresh inserts, hot-key upserts, two-row
+inserts, updates, deletes, Person upserts and deletes with edge cascade,
+`Knows` edge inserts, two-table inserts, `@unique` Tag inserts), readers
+record pinned snapshots every 150 ms, read-your-writes probes after 10% of
+receipts. The checker: no duplicate keys, no dangling edges, `@unique`
+held, receipts match `list_commits` (version, id, actor), lineage is one
+chain, model replay in version order equals the final state and every reader
+snapshot (keys an in-doubt op touched excluded), no two writes of one
+commit share a key. `scripts/gs-run.sh <label> OG_GS_...=...`; histories in
+`histories/<label>.jsonl`, summaries in `results/gs-runs.log`. Dev build
+(workspace crates at opt-level 0), local disk.
+
+| run | config | ok/s | commits | writes/commit (max) | caller-visible errors | violations |
+|---|---|---:|---:|---|---|---|
+| h01 | 32 writers, 1 actor, default mix, seed 1 | 32.5 | 281 | 2.08 (31) | 0 | 0 |
+| h02 | + 4 actors, seed 2 | 26.8 | 288 | 1.63 (7) | **37 `ReadSetChanged`** (`group_log_does_not_reach_capture`) | 0 |
+| h03 | + 2 handles, seed 2 | 28.9 | 269 | 1.89 (15) | **29 `ReadSetChanged`** | 0 |
+| h04 | 10% cancelled, ≤40 ms budgets | 34.8 | 305 | 2.03 (31) | 120 cancelled | 0 |
+| h05 | 15% cancelled, ≤1.5 s budgets | 33.5 | 275 | 2.19 (31) | 73 cancelled | 0 |
+| h06 | 50% cancelled, ≤0.8 s budgets, seed 4 | 6.6 | 51 | 1.51 (27) | 49 cancelled | **liveness: writers hung** |
+
+- **H5 confirmed under load.** With several actors or handles, inserts are
+  refused on every attempt until `MAX_PRE_EFFECT_REPREPARES` runs out and the
+  caller gets `ReadSetChanged`: 6% of writes at 4 actors, 5% at 2 handles. The
+  #1349 promise (a write finishes in two attempts within its process) is
+  gone: each group's batches are foreign to the others, and refused entries
+  re-prepare outside the gates, so they race the next foreign batch again.
+- **H3 reproduced by random cancellation** (h06): a leader cancelled inside
+  its batch leaves `leading` set; every later write of that (branch, actor)
+  group waits forever; ordinary-path writes (updates, deletes, upserts of
+  existing keys) keep going, which is why throughput fell to 6.6/s instead
+  of 0. Budgets of ≤40 ms (h04) only ever cancel during preparation.
+- Validation refusals (`@unique`, missing endpoint) carry no completion
+  evidence and are `Manifest(...)` errors; the harness counts them in doubt
+  (conservative) until classified.
