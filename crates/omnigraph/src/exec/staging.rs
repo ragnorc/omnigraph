@@ -577,6 +577,36 @@ impl MutationStaging {
             stage_inputs.push((table_key, table, path, expected));
         }
 
+        // Research (exact footprints): the ids each table's effect touches.
+        let mut touched: HashMap<String, Option<(Vec<String>, Vec<String>)>> = HashMap::new();
+        for (table_key, table, _, _) in &stage_inputs {
+            let mut ids = Some(Vec::new());
+            for batch in table.batches() {
+                match batch
+                    .column_by_name(db.catalog().system_columns.id)
+                    .and_then(|column| column.as_any().downcast_ref::<arrow_array::StringArray>())
+                {
+                    Some(column) => {
+                        if let Some(ids) = ids.as_mut() {
+                            ids.extend(
+                                (0..column.len())
+                                    .filter(|row| column.is_valid(*row))
+                                    .map(|row| column.value(row).to_string()),
+                            );
+                        }
+                    }
+                    None => ids = None,
+                }
+            }
+            touched.insert(table_key.clone(), ids.map(|ids| (ids, Vec::new())));
+        }
+        for (table_key, ids) in &deleted_ids {
+            match touched.entry(table_key.clone()).or_insert_with(|| Some((Vec::new(), Vec::new()))) {
+                Some((_, deleted)) => deleted.extend(ids.iter().cloned()),
+                None => {}
+            }
+        }
+
         // External sources are a graph-operation input, not a per-table
         // staging detail. Discover every surviving URI after folding, then
         // authorize and probe the complete set before reading any payload or
@@ -740,6 +770,7 @@ impl MutationStaging {
         Ok(StagedMutation {
             staged: staged_entries,
             expected_versions,
+            touched,
         })
     }
 }
@@ -835,6 +866,7 @@ impl MutationStaging {
         Ok(StagedMutation {
             staged: staged_entries,
             expected_versions,
+            touched: HashMap::new(),
         })
     }
 }
@@ -1106,6 +1138,10 @@ pub(crate) struct StagedMutation {
     /// every touched table, including a zero-row delete that produced no
     /// physical staged effect.
     expected_versions: crate::db::manifest::ExpectedTableVersions,
+    /// Research (group-commit stress, exact footprints): per table, the ids
+    /// this mutation upserted or updated and the ids it deleted; `None` for
+    /// a table whose ids were not read (that table counts as changed).
+    pub(crate) touched: HashMap<String, Option<(Vec<String>, Vec<String>)>>,
 }
 
 /// One table's effect of a write that joins a group commit (research
@@ -1145,6 +1181,7 @@ impl StagedMutation {
         let StagedMutation {
             staged,
             expected_versions,
+            ..
         } = self;
         let mut writes = Vec::with_capacity(staged.len());
         for entry in staged {
@@ -1260,6 +1297,7 @@ impl StagedMutation {
         let StagedMutation {
             mut staged,
             mut expected_versions,
+            ..
         } = self;
         // An insert-only write may also be carried over publications that
         // only inserted rows by key, when every effect it staged only inserts

@@ -684,6 +684,8 @@ pub(super) struct CommittedStagedMutation {
     lineage_intent: crate::db::manifest::LineageIntent,
     /// The planner's document per validated table, for the receipt.
     pub(super) plans: Vec<omnigraph_planner::Explain>,
+    /// Research (exact footprints): the ids each table effect touched.
+    touched: std::collections::HashMap<String, Option<(Vec<String>, Vec<String>)>>,
 }
 
 /// Where a declaration's write lands, resolved from the parsed declaration
@@ -1486,7 +1488,7 @@ impl Omnigraph {
                 // taking the gates itself.
                 let requested_branch = txn.branch.as_deref();
                 let plans = self.validate_staged_mutation(&staging, &txn).await?;
-                let staged = staging
+                let mut staged = staging
                     .stage_all_with_concurrency(self, requested_branch, stage_write_concurrency)
                     .await
                     .map_err(OmniError::unpublished)?;
@@ -1527,6 +1529,7 @@ impl Omnigraph {
                     .new_lineage_intent_for_branch(requested_branch, actor_id, history_release_bytes)
                     .await
                     .map_err(OmniError::unpublished)?;
+                let touched = std::mem::take(&mut staged.touched);
                 let committed = staged
                     .commit_all(self, requested_branch, &txn, None, attempt, true)
                     .await
@@ -1535,6 +1538,7 @@ impl Omnigraph {
                     committed,
                     lineage_intent,
                     plans,
+                    touched,
                 };
                 let publication = route.publication(&txn).map_err(OmniError::unpublished)?;
                 let commit = self
@@ -1599,12 +1603,13 @@ impl Omnigraph {
             staging.stage_all_with_concurrency(self, requested, stage_write_concurrency),
             self.early_revalidation(txn),
         );
-        let staged = staged.map_err(OmniError::unpublished)?;
+        let mut staged = staged.map_err(OmniError::unpublished)?;
         fail(&MUTATION_POST_STAGE_PRE_EFFECT_GATE).map_err(OmniError::unpublished)?;
         let lineage_intent = self
             .new_lineage_intent_for_branch(requested, actor_id, history_release_bytes)
             .await
             .map_err(OmniError::unpublished)?;
+        let touched = std::mem::take(&mut staged.touched);
         let committed = staged
             .commit_all(self, requested, txn, early, attempt, insert_only)
             .await
@@ -1613,6 +1618,7 @@ impl Omnigraph {
             committed,
             lineage_intent,
             plans,
+            touched,
         })
     }
 
@@ -1636,6 +1642,7 @@ impl Omnigraph {
                 },
             lineage_intent,
             plans: _,
+            touched,
         } = committed;
         // A write carried over row-preserving publications publishes on the
         // head it was re-anchored on.
@@ -1656,16 +1663,20 @@ impl Omnigraph {
         // publish failure leaves the graph unchanged; the error is returned as
         // is (a moved head is `ReadSetChanged`). The publisher alone decides
         // between a definite loss and an outcome it could not read back.
-        self.commit_updates_on_branch_with_expected(
-            txn.branch.as_deref(),
-            &updates,
-            &expected_versions,
-            actor_id,
-            txn,
-            lineage_intent,
-            publication,
-        )
-        .await
+        crate::db::group_commit::EXACT_TOUCHED
+            .scope(
+                std::cell::RefCell::new(Some(touched)),
+                self.commit_updates_on_branch_with_expected(
+                    txn.branch.as_deref(),
+                    &updates,
+                    &expected_versions,
+                    actor_id,
+                    txn,
+                    lineage_intent,
+                    publication,
+                ),
+            )
+            .await
     }
 
     /// Lower + validate a named mutation query into its IR.

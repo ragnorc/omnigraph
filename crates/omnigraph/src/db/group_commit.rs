@@ -154,6 +154,23 @@ struct BatchEffect {
     /// delete, an upsert of a present key, a load). An entry that touches
     /// one is refused; an entry on other tables is still explained.
     changed: HashSet<String>,
+    /// Research (exact footprints): per table, ids a publication outside the
+    /// group upserted or updated, and ids it deleted.
+    upserted: HashMap<String, HashSet<String>>,
+    deleted: HashMap<String, HashSet<String>>,
+}
+
+tokio::task_local! {
+    /// Research (exact footprints, `OMNIGRAPH_GROUP_COMMIT_EXACT_TOUCHED=1`):
+    /// the ids each table effect of the mutation being published touched,
+    /// set around its publisher call so the group's log records them.
+    pub(crate) static EXACT_TOUCHED: std::cell::RefCell<
+        Option<HashMap<String, Option<(Vec<String>, Vec<String>)>>>,
+    >;
+}
+
+fn exact_touched_enabled() -> bool {
+    std::env::var("OMNIGRAPH_GROUP_COMMIT_EXACT_TOUCHED").is_ok_and(|value| value == "1")
 }
 
 #[derive(Default)]
@@ -613,6 +630,8 @@ impl Omnigraph {
                             head: commit.graph_commit_id.clone(),
                             tables: keys,
                             changed: HashSet::new(),
+                            upserted: HashMap::new(),
+                            deleted: HashMap::new(),
                         },
                     );
                     group.last_batch = admitted_count;
@@ -911,6 +930,8 @@ impl Omnigraph {
                     head: PENDING_HEAD.to_string(),
                     tables: flight.tables.clone(),
                     changed: HashSet::new(),
+                    upserted: HashMap::new(),
+                    deleted: HashMap::new(),
                 });
                 Some(PENDING_HEAD.to_string())
             }
@@ -1277,6 +1298,8 @@ impl Omnigraph {
                     head: commit.graph_commit_id.clone(),
                     tables: batch_filters,
                     changed: HashSet::new(),
+                    upserted: HashMap::new(),
+                    deleted: HashMap::new(),
                 };
                 for waiting in admitted {
                     replies.push((waiting.reply, Ok(commit.clone())));
@@ -1590,6 +1613,36 @@ fn admit_inner(
                     now.graph_head.clone(),
                 ));
             }
+            // Research (exact footprints): an upsert or update of an id this
+            // entry inserts makes it present; a delete on a table this entry
+            // reads without writing (an edge's endpoints) may remove a row it
+            // relied on. Updates of other ids and deletes on its own tables
+            // change no fact it read.
+            for write in &entry.writes {
+                if let Some(ups) = effect.upserted.get(&write.table_key) {
+                    let overlaps = match &write.ids {
+                        Some(ids) => ids.iter().any(|id| ups.contains(id)),
+                        None => !ups.is_empty(),
+                    };
+                    if overlaps {
+                        return Err(OmniError::manifest_read_set_changed(
+                            format!("group_upserted_since_capture:{}", write.table_key),
+                            authority.graph_head.clone(),
+                            now.graph_head.clone(),
+                        ));
+                    }
+                }
+            }
+            if let Some(table) = touched.iter().find(|table| {
+                !entry.writes.iter().any(|write| &write.table_key == *table)
+                    && effect.deleted.get(table.as_str()).is_some_and(|ids| !ids.is_empty())
+            }) {
+                return Err(OmniError::manifest_read_set_changed(
+                    format!("group_endpoint_deleted_since_capture:{table}"),
+                    authority.graph_head.clone(),
+                    now.graph_head.clone(),
+                ));
+            }
             for write in &entry.writes {
                 if let Some(keys) = effect.tables.get(&write.table_key)
                     && keys.may_overlap(write)
@@ -1714,6 +1767,28 @@ impl Omnigraph {
             return;
         }
         let key = group_key(branch, None);
+        let exact = if exact_touched_enabled() {
+            EXACT_TOUCHED
+                .try_with(|cell| cell.borrow_mut().take())
+                .ok()
+                .flatten()
+        } else {
+            None
+        };
+        let mut changed = HashSet::new();
+        let mut upserted = HashMap::new();
+        let mut deleted = HashMap::new();
+        for table in tables {
+            match exact.as_ref().and_then(|exact| exact.get(&table)) {
+                Some(Some((ups, dels))) => {
+                    upserted.insert(table.clone(), ups.iter().cloned().collect::<HashSet<_>>());
+                    deleted.insert(table, dels.iter().cloned().collect::<HashSet<_>>());
+                }
+                _ => {
+                    changed.insert(table);
+                }
+            }
+        }
         let mut groups = self.group_commits().groups.lock().unwrap();
         let group = groups.entry(key).or_default();
         next_log(
@@ -1722,7 +1797,9 @@ impl Omnigraph {
                 parent,
                 head: head.to_string(),
                 tables: HashMap::new(),
-                changed: tables.into_iter().collect(),
+                changed,
+                upserted,
+                deleted,
             },
         );
     }
@@ -1748,6 +1825,8 @@ impl Omnigraph {
                 head: head.to_string(),
                 tables: HashMap::new(),
                 changed: HashSet::new(),
+                upserted: HashMap::new(),
+                deleted: HashMap::new(),
             },
         );
     }
@@ -1794,6 +1873,8 @@ impl Omnigraph {
                     head: commit.graph_commit_id.clone(),
                     tables: keys,
                     changed: HashSet::new(),
+                    upserted: HashMap::new(),
+                    deleted: HashMap::new(),
                 },
             ),
             Err(_) => group.log.clear(),
