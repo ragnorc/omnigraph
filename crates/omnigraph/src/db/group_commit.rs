@@ -149,6 +149,11 @@ struct BatchEffect {
     parent: Option<String>,
     head: String,
     tables: HashMap<String, KeySet>,
+    /// Stress fix (H2/H5): tables a publication of this handle outside the
+    /// group changed in a way the log does not describe (an update, a
+    /// delete, an upsert of a present key, a load). An entry that touches
+    /// one is refused; an entry on other tables is still explained.
+    changed: HashSet<String>,
 }
 
 #[derive(Default)]
@@ -188,8 +193,24 @@ pub(crate) struct GroupCommits {
     groups: Mutex<HashMap<String, Group>>,
 }
 
-fn group_key(branch: Option<&str>, actor: Option<&str>) -> String {
-    format!("{}\u{0}{}", branch.unwrap_or("main"), actor.unwrap_or(""))
+fn group_key(branch: Option<&str>, _actor: Option<&str>) -> String {
+    // Stress fix (H2): one group, and so one effect log, per branch; a batch
+    // still holds one actor's entries (`lead_group`).
+    branch.unwrap_or("main").to_string()
+}
+
+/// Stress fix (H1): the log a batch built at `captured_head` leaves behind.
+fn next_log(log: &mut VecDeque<BatchEffect>, effect: BatchEffect) {
+    let contiguous = log
+        .back()
+        .is_some_and(|last| Some(&last.head) == effect.parent.as_ref());
+    if !contiguous {
+        log.clear();
+    }
+    log.push_back(effect);
+    while log.len() > EFFECT_LOG_BATCHES {
+        log.pop_front();
+    }
 }
 
 fn moved(txn: &WriteTxn, current: &Option<String>) -> OmniError {
@@ -209,7 +230,14 @@ fn follower_error(error: &OmniError, txn: &WriteTxn) -> OmniError {
     // Keep what the failure established about the publication, so a server
     // classifies every member of the batch as it would the batch's own
     // failure (`Unpublished` stays definite; anything else stays uncertain).
-    let follower = OmniError::manifest_internal(format!("group commit failed: {error}"));
+    let follower = match error.publication_id() {
+        // Stress fix (H7): an in-doubt publication stays typed, naming the
+        // batch's attempted commit, for every member.
+        Some(commit) => {
+            OmniError::manifest_publish_in_doubt(commit, format!("group commit in doubt: {error}"))
+        }
+        None => OmniError::manifest_internal(format!("group commit failed: {error}")),
+    };
     match error.completion_evidence() {
         Some(evidence) => follower.with_completion_evidence(evidence),
         None => follower,
@@ -257,7 +285,7 @@ impl Omnigraph {
     /// that publishes them.
     pub(crate) async fn group_commit(&self, entry: GroupEntry) -> Result<GraphCommit> {
         let key = group_key(entry.txn.branch.as_deref(), entry.actor.as_deref());
-        let (reply, mut signals) = mpsc::unbounded_channel();
+        let (reply, signals) = mpsc::unbounded_channel();
         let lead_now = {
             let mut groups = self.group_commits().groups.lock().unwrap();
             let group = groups.entry(key.clone()).or_default();
@@ -269,17 +297,28 @@ impl Omnigraph {
                 true
             }
         };
+        // Stress fix (H3): if this future is dropped while a `Lead` waits in
+        // its channel, the guard hands the lead on instead of losing it.
+        let mut waiter = Waiter {
+            db: self,
+            key: key.clone(),
+            signals: Some(signals),
+        };
         if lead_now {
             self.lead(&key).await;
         }
         loop {
-            match signals.recv().await {
+            let signal = waiter.signals.as_mut().expect("held until drop").recv().await;
+            match signal {
                 Some(Signal::Done(result)) => return result,
                 Some(Signal::Lead) => self.lead(&key).await,
                 None => {
+                    // The batch holding this entry lost its leader; whether it
+                    // published is unknown.
                     return Err(OmniError::manifest_internal(
                         "a group commit leader went away without answering",
-                    ));
+                    )
+                    .with_completion_evidence(crate::error::CompletionEvidence::Uncertain));
                 }
             }
         }
@@ -546,14 +585,15 @@ impl Omnigraph {
             }
             match &published {
                 Ok(commit) => {
-                    group.log.push_back(BatchEffect {
-                        parent: head,
-                        head: commit.graph_commit_id.clone(),
-                        tables: keys,
-                    });
-                    while group.log.len() > EFFECT_LOG_BATCHES {
-                        group.log.pop_front();
-                    }
+                    next_log(
+                        &mut group.log,
+                        BatchEffect {
+                            parent: head,
+                            head: commit.graph_commit_id.clone(),
+                            tables: keys,
+                            changed: HashSet::new(),
+                        },
+                    );
                     group.last_batch = admitted_count;
                 }
                 Err(_) => group.log.clear(),
@@ -592,9 +632,34 @@ impl Omnigraph {
         let (batch, log) = {
             let mut groups = self.group_commits().groups.lock().unwrap();
             let group = groups.get_mut(key).expect("a leading group exists");
-            let take = group.queue.len().min(MAX_BATCH_ENTRIES);
-            let batch: Vec<Waiting> = group.queue.drain(..take).collect();
+            // Stress fixes: an entry whose caller went away before admission
+            // leaves the queue (H4); a batch takes the queued entries of the
+            // first open entry's actor, in order, and the others keep their
+            // places (H2: one log per branch, one actor per batch).
+            let mut batch: Vec<Waiting> = Vec::new();
+            let mut rest = VecDeque::new();
+            let mut actor: Option<Option<String>> = None;
+            while let Some(waiting) = group.queue.pop_front() {
+                if waiting.reply.is_closed() {
+                    continue;
+                }
+                let first = actor.get_or_insert_with(|| waiting.entry.actor.clone());
+                if batch.len() < MAX_BATCH_ENTRIES && *first == waiting.entry.actor {
+                    batch.push(waiting);
+                } else {
+                    rest.push_back(waiting);
+                }
+            }
+            group.queue = rest;
             (batch, group.log.iter().cloned().collect::<Vec<_>>())
+        };
+        let effects = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let mut guard = LeadGuard {
+            db: self,
+            key: key.to_string(),
+            replies: batch.iter().map(|waiting| waiting.reply.clone()).collect(),
+            effects: std::sync::Arc::clone(&effects),
+            armed: true,
         };
         let outcome = if batch.is_empty() {
             BatchOutcome {
@@ -602,8 +667,9 @@ impl Omnigraph {
                 log: LogChange::Keep,
             }
         } else {
-            self.run_batch(batch, &log).await
+            self.run_batch(batch, &log, &effects).await
         };
+        guard.armed = false;
         let admitted = outcome
             .replies
             .iter()
@@ -618,12 +684,7 @@ impl Omnigraph {
         match outcome.log {
             LogChange::Keep => {}
             LogChange::Clear => group.log.clear(),
-            LogChange::Push(effect) => {
-                group.log.push_back(effect);
-                while group.log.len() > EFFECT_LOG_BATCHES {
-                    group.log.pop_front();
-                }
-            }
+            LogChange::Push(effect) => next_log(&mut group.log, effect),
         }
         // Hand the lead to the first queued entry whose writer is still
         // waiting; a writer that went away is dropped from the queue.
@@ -800,6 +861,7 @@ impl Omnigraph {
                     parent: flight.parent.clone(),
                     head: PENDING_HEAD.to_string(),
                     tables: flight.tables.clone(),
+                    changed: HashSet::new(),
                 });
                 Some(PENDING_HEAD.to_string())
             }
@@ -1002,14 +1064,13 @@ impl Omnigraph {
                     .await
                 }
                 None => {
-                    self.commit_updates_on_branch_with_expected(
+                    self.commit_updates_on_branch_for_group(
                         current.branch.as_deref(),
                         &updates,
                         expected,
                         actor,
                         current,
                         lineage_intent,
-                        crate::db::omnigraph::Publication::Publish,
                     )
                     .await
                 }
@@ -1028,7 +1089,12 @@ impl Omnigraph {
         published
     }
 
-    async fn run_batch(&self, batch: Vec<Waiting>, log: &[BatchEffect]) -> BatchOutcome {
+    async fn run_batch(
+        &self,
+        mut batch: Vec<Waiting>,
+        log: &[BatchEffect],
+        effects: &std::sync::atomic::AtomicBool,
+    ) -> BatchOutcome {
         let fail_all = |batch: Vec<Waiting>, error: OmniError, log: LogChange| BatchOutcome {
             replies: batch
                 .into_iter()
@@ -1050,6 +1116,15 @@ impl Omnigraph {
             Err(error) => return fail_all(batch, error, LogChange::Keep),
         };
         let gated = started.elapsed();
+        // Stress fix (H4): callers that went away while the batch waited for
+        // its gates leave it before admission.
+        batch.retain(|waiting| !waiting.reply.is_closed());
+        if batch.is_empty() {
+            return BatchOutcome {
+                replies: Vec::new(),
+                log: LogChange::Keep,
+            };
+        }
         // One capture of the current authority for the whole batch. When the
         // handle's installed view is this group's own last publication, it is
         // the capture, with no probe: a commit by another writer since makes
@@ -1119,7 +1194,7 @@ impl Omnigraph {
 
         let admitted_count = admitted.len();
         let published = self
-            .publish_batch(&current, &admitted, publish_coordinator.as_mut())
+            .publish_batch(&current, &admitted, publish_coordinator.as_mut(), effects)
             .await;
         if publish_coordinator.is_some() {
             self.keep_coordinator(&key, published.as_ref().ok().and(publish_coordinator))
@@ -1139,6 +1214,7 @@ impl Omnigraph {
                     parent: head,
                     head: commit.graph_commit_id.clone(),
                     tables: batch_filters,
+                    changed: HashSet::new(),
                 };
                 for waiting in admitted {
                     replies.push((waiting.reply, Ok(commit.clone())));
@@ -1171,6 +1247,7 @@ impl Omnigraph {
         current: &WriteTxn,
         admitted: &[Waiting],
         coordinator: Option<&mut crate::db::graph_coordinator::GraphCoordinator>,
+        effects: &std::sync::atomic::AtomicBool,
     ) -> Result<GraphCommit> {
         // Each table's effects, in admission order.
         let mut by_table: BTreeMap<String, (String, Vec<StagedHandle>)> = BTreeMap::new();
@@ -1259,6 +1336,9 @@ impl Omnigraph {
             ))
         });
         let commit_started = std::time::Instant::now();
+        // From here the batch may leave detached effects: a leader dropped
+        // later answers its members uncertain, not sent back.
+        effects.store(true, std::sync::atomic::Ordering::SeqCst);
         let committed = futures::future::try_join_all(commits)
             .await
             .map_err(OmniError::unpublished)?;
@@ -1291,14 +1371,13 @@ impl Omnigraph {
                     .await
                 }
                 None => {
-                    self.commit_updates_on_branch_with_expected(
+                    self.commit_updates_on_branch_for_group(
                         current.branch.as_deref(),
                         &updates,
                         &expected,
                         first.actor.as_deref(),
                         current,
                         lineage_intent,
-                        crate::db::omnigraph::Publication::Publish,
                     )
                     .await
                 }
@@ -1405,8 +1484,50 @@ fn admit_inner(
         // Walk this group's batches back from the current head to the
         // entry's capture; every one of them must be ours and insert keys
         // disjoint from the entry's on every table the entry writes.
+        // The entry's footprint: the tables it writes, the pins it expects,
+        // and (stress fix H10) the endpoint node tables of every edge table
+        // it writes, which its validation read for endpoint existence (RFC
+        // §Eligibility: "their endpoint node tables join the footprint as
+        // tables read and not written").
+        let mut touched: HashSet<String> = entry
+            .writes
+            .iter()
+            .map(|write| write.table_key.clone())
+            .chain(entry.expected.values().map(|expectation| expectation.table_key.clone()))
+            .collect();
+        for write in &entry.writes {
+            if let Some(edge) = write
+                .table_key
+                .strip_prefix("edge:")
+                .and_then(|name| current.catalog.edge_types.get(name))
+            {
+                touched.insert(format!("node:{}", edge.from_type));
+                touched.insert(format!("node:{}", edge.to_type));
+            }
+        }
         let mut reached = false;
+        let mut expect = batch_head.clone();
         for effect in log.iter().rev() {
+            // Stress fix (H1): the walk follows contiguous links only; a
+            // publication between two records is unexplained.
+            if expect.as_deref() != Some(effect.head.as_str()) {
+                return Err(OmniError::manifest_read_set_changed(
+                    "group_log_hole".to_string(),
+                    authority.graph_head.clone(),
+                    now.graph_head.clone(),
+                ));
+            }
+            if let Some(table) = effect
+                .changed
+                .iter()
+                .find(|table| touched.contains(table.as_str()))
+            {
+                return Err(OmniError::manifest_read_set_changed(
+                    format!("group_changed_since_capture:{table}"),
+                    authority.graph_head.clone(),
+                    now.graph_head.clone(),
+                ));
+            }
             for write in &entry.writes {
                 if let Some(keys) = effect.tables.get(&write.table_key)
                     && keys.may_overlap(write)
@@ -1422,6 +1543,7 @@ fn admit_inner(
                 reached = true;
                 break;
             }
+            expect = effect.parent.clone();
         }
         if !reached {
             return Err(OmniError::manifest_read_set_changed(
@@ -1445,4 +1567,150 @@ fn admit_inner(
         }
     }
     Ok(())
+}
+
+
+/// Stress fix (H3): hands the lead on when a waiting writer's future is
+/// dropped with a `Lead` in its channel.
+struct Waiter<'a> {
+    db: &'a Omnigraph,
+    key: String,
+    signals: Option<mpsc::UnboundedReceiver<Signal>>,
+}
+
+impl Drop for Waiter<'_> {
+    fn drop(&mut self) {
+        let Some(mut signals) = self.signals.take() else {
+            return;
+        };
+        signals.close();
+        let mut lead = false;
+        while let Ok(signal) = signals.try_recv() {
+            lead |= matches!(signal, Signal::Lead);
+        }
+        if lead {
+            let mut groups = self.db.group_commits().groups.lock().unwrap();
+            if let Some(group) = groups.get_mut(&self.key) {
+                Omnigraph::hand_lead(group);
+            }
+        }
+    }
+}
+
+/// Stress fix (H3): a leader whose future is dropped mid-batch answers every
+/// member it drained (sent back before the batch's first effect, uncertain
+/// after it), clears the log (its publication may have landed) and hands the
+/// lead to the next waiting entry.
+struct LeadGuard<'a> {
+    db: &'a Omnigraph,
+    key: String,
+    replies: Vec<mpsc::UnboundedSender<Signal>>,
+    effects: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    armed: bool,
+}
+
+impl Drop for LeadGuard<'_> {
+    fn drop(&mut self) {
+        if !self.armed {
+            return;
+        }
+        let effects = self.effects.load(std::sync::atomic::Ordering::SeqCst);
+        for reply in self.replies.drain(..) {
+            let error = if effects {
+                OmniError::manifest_internal("the group commit leader was cancelled mid-publication")
+                    .with_completion_evidence(crate::error::CompletionEvidence::Uncertain)
+            } else {
+                OmniError::manifest_read_set_changed(
+                    "group_leader_cancelled".to_string(),
+                    None,
+                    None,
+                )
+            };
+            let _ = reply.send(Signal::Done(Err(error)));
+        }
+        let mut groups = self.db.group_commits().groups.lock().unwrap();
+        if let Some(group) = groups.get_mut(&self.key) {
+            group.log.clear();
+            Omnigraph::hand_lead(group);
+        }
+    }
+}
+
+impl Omnigraph {
+    /// Stress fix (H5): record a publication this handle made on `branch`
+    /// outside the group, under the gates it held: its touched tables are
+    /// `changed` for the entries it overtakes, so entries on other tables
+    /// stay explained instead of refused wholesale.
+    pub(crate) fn log_outside_publication(
+        &self,
+        branch: Option<&str>,
+        parent: Option<String>,
+        head: &str,
+        tables: impl IntoIterator<Item = String>,
+    ) {
+        if !enabled() {
+            return;
+        }
+        let key = group_key(branch, None);
+        let mut groups = self.group_commits().groups.lock().unwrap();
+        let group = groups.entry(key).or_default();
+        next_log(
+            &mut group.log,
+            BatchEffect {
+                parent,
+                head: head.to_string(),
+                tables: HashMap::new(),
+                changed: tables.into_iter().collect(),
+            },
+        );
+    }
+
+    /// Stress fix (H5): the gated second attempt of an eligible write
+    /// publishes alone, as a batch of one, under the gates its preparation
+    /// holds, and its effect is logged with its exact keys, so the entries
+    /// queued behind it are judged against it (RFC §Progress).
+    pub(crate) async fn publish_alone_under_gates(&self, entry: GroupEntry) -> Result<GraphCommit> {
+        let key = group_key(entry.txn.branch.as_deref(), entry.actor.as_deref());
+        let (reply, _signals) = mpsc::unbounded_channel();
+        let txn = entry.txn.clone();
+        let mut keys: HashMap<String, KeySet> = HashMap::new();
+        for write in &entry.writes {
+            match keys.get_mut(&write.table_key) {
+                None => {
+                    keys.insert(write.table_key.clone(), KeySet::of(write));
+                }
+                Some(existing) => {
+                    let _ = existing.absorb(write);
+                }
+            }
+        }
+        let alone = [Waiting { entry, reply }];
+        let effects = std::sync::atomic::AtomicBool::new(false);
+        let mut coordinator = None;
+        if txn.branch != self.installed_head().0 {
+            coordinator = Some(self.open_coordinator_for_branch(txn.branch.as_deref()).await?);
+        }
+        let published = self
+            .publish_batch(&txn, &alone, coordinator.as_mut(), &effects)
+            .await;
+        if coordinator.is_some() {
+            self.keep_coordinator(&key, published.as_ref().ok().and(coordinator))
+                .await;
+        }
+        let mut groups = self.group_commits().groups.lock().unwrap();
+        let group = groups.entry(key).or_default();
+        match &published {
+            Ok(commit) => next_log(
+                &mut group.log,
+                BatchEffect {
+                    parent: txn.authority.graph_head.clone(),
+                    head: commit.graph_commit_id.clone(),
+                    tables: keys,
+                    changed: HashSet::new(),
+                },
+            ),
+            Err(_) => group.log.clear(),
+        }
+        published
+    }
 }

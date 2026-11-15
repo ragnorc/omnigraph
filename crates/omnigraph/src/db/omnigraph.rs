@@ -5287,7 +5287,8 @@ impl Omnigraph {
         lineage_intent: crate::db::manifest::LineageIntent,
         publication: Publication,
     ) -> Result<crate::db::GraphCommit> {
-        table_ops::commit_updates_on_branch_with_expected(
+        let advances = matches!(publication, Publication::Publish);
+        let published = table_ops::commit_updates_on_branch_with_expected(
             self,
             branch,
             updates,
@@ -5296,6 +5297,42 @@ impl Omnigraph {
             txn,
             lineage_intent,
             publication,
+            None,
+        )
+        .await?;
+        // Stress fix (H5): a publication outside the group, made under the
+        // gates this writer holds, enters the group's effect log.
+        if advances {
+            self.log_outside_publication(
+                branch,
+                txn.authority.graph_head.clone(),
+                &published.graph_commit_id,
+                updates.iter().map(|update| update.type_key.clone()),
+            );
+        }
+        Ok(published)
+    }
+
+    /// Research (group commit): the group's own publication, which the group
+    /// logs itself.
+    pub(crate) async fn commit_updates_on_branch_for_group(
+        &self,
+        branch: Option<&str>,
+        updates: &[crate::db::DatasetUpdate],
+        expected_table_versions: &crate::db::manifest::ExpectedTableVersions,
+        actor_id: Option<&str>,
+        txn: &crate::db::WriteTxn,
+        lineage_intent: crate::db::manifest::LineageIntent,
+    ) -> Result<crate::db::GraphCommit> {
+        table_ops::commit_updates_on_branch_with_expected(
+            self,
+            branch,
+            updates,
+            expected_table_versions,
+            actor_id,
+            txn,
+            lineage_intent,
+            Publication::Publish,
             None,
         )
         .await

@@ -1,0 +1,22 @@
+
+running 8 tests
+test gc_blob_inserts_compose_and_read_back ... [gc-repro] blob writes 96 in 9 commits
+[gc-repro] blob check after writes: 0 mismatches []
+[gc-repro] blob check after optimize: 0 mismatches []
+ok
+test gc_dropped_leader_hands_the_lead_on ... [gc-repro] dropped leader: follower published, later write published
+ok
+test gc_follower_dropped_before_admission_leaves_the_queue ... [gc-repro] leader vSome(4), f1 vSome(5); cancelled follower published anyway: false
+ok
+test gc_leader_dropped_inside_its_publication ... [gc-repro] leader dropped in publication: follower published, later write published, l present false, f present true
+ok
+test gc_log_hole_admits_an_edge_across_a_delete_of_its_endpoint ... [gc-repro] edge e ok = false, people ["a", "x", "y"], edge dsts [], dangling []
+ok
+test gc_log_hole_admits_an_entry_across_a_foreign_insert_of_its_key ... [gc-repro] A Some(4) F Some(5) B Some(6) e Ok(Some(7)): rows with slug k = 1
+ok
+test gc_second_actor_batch_is_a_hole_in_the_first_actors_log ... [gc-repro] two actors: e ok = true, rows with slug k = 1
+ok
+test gc_stress_harness ... ignored, instrument: group-commit stress harness, configured by OG_GS_* (research)
+
+test result: ok. 7 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 34.72s
+

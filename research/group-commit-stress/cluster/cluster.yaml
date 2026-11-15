@@ -1,0 +1,13 @@
+version: 1
+metadata:
+  name: gc-stress
+graphs:
+  stress:
+    schema: stress.pg
+policies:
+  cluster-access:
+    file: cluster.policy.yaml
+    applies_to: [cluster]
+  graph-access:
+    file: graph.policy.yaml
+    applies_to: [stress]

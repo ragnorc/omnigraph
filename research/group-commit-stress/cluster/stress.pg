@@ -1,0 +1,12 @@
+node Item {
+    slug: String @key
+    n: I64
+}
+node Person {
+    name: String @key
+}
+edge Knows: Person -> Person
+node Tag {
+    slug: String @key
+    label: String @unique
+}

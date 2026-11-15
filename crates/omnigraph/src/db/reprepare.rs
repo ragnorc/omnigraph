@@ -137,6 +137,7 @@ impl WriteAttempt {
     /// preparation ends here, and the writer gates may be taken from here on.
     /// Whether this attempt prepared under its writer gates (a later
     /// attempt after a send-back).
+    #[allow(dead_code)]
     pub(crate) fn holds_gates(&self) -> bool {
         self.gates.is_some()
     }
@@ -237,20 +238,10 @@ impl<'a> PreEffectReprepares<'a> {
     /// Go round again: take the branch's writer gates for the next attempt,
     /// then refresh the coordinator it prepares from under them.
     pub(crate) async fn prepare_again(&mut self) -> Result<()> {
-        if self.current.grouped {
-            // A group commit refused the attempt before any effect of its
-            // own: prepare again outside the gates and join the next batch,
-            // so the group keeps publishing every write of the branch (a
-            // gated attempt would publish alone and clear the group's log).
-            self.attempt += 1;
-            crate::instrumentation::record_mutation_reprepare();
-            let first = self.current.first.take();
-            self.current = WriteAttempt {
-                first,
-                ..WriteAttempt::default()
-            };
-            return self.db.refresh_coordinator_only().await;
-        }
+        // Stress fix (H5): a write a group refused prepares again under the
+        // writer gates, as every sent-back write does (#1349), and publishes
+        // alone as a batch of one (`publish_alone_under_gates`), so it still
+        // finishes within two attempts in its process.
         self.attempt += 1;
         tracing::debug!(
             attempt = self.attempt,

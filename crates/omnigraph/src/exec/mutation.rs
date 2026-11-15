@@ -1478,8 +1478,7 @@ impl Omnigraph {
                     && matches!(route, WriteRoute::Publish)
                     && txn.caller_expected_graph_head.is_none()
                     && txn.unattached_base.is_none()
-                    && !selects_rows
-                    && !attempt.holds_gates() =>
+                    && !selects_rows =>
             {
                 // Research: group commit (`db::group_commit`). Validate and
                 // stage as the ordinary path does; an eligible write then
@@ -1495,18 +1494,26 @@ impl Omnigraph {
                 if staged.group_eligible(&txn.catalog) {
                     // The commit point of this attempt: its preparation ends
                     // here, so the leader (this task, perhaps) may take gates.
-                    attempt.admitted_gates()?;
+                    let held = attempt.admitted_gates()?;
                     attempt.mark_grouped();
                     let (writes, expected) = staged.into_group_parts()?;
-                    let commit = self
-                        .group_commit(crate::db::group_commit::GroupEntry {
-                            txn: txn.clone(),
-                            writes,
-                            expected,
-                            actor: actor_id.map(str::to_string),
-                            history_release_bytes,
-                        })
-                        .await?;
+                    let entry = crate::db::group_commit::GroupEntry {
+                        txn: txn.clone(),
+                        writes,
+                        expected,
+                        actor: actor_id.map(str::to_string),
+                        history_release_bytes,
+                    };
+                    let commit = match held {
+                        // Stress fix (H5): the gated second attempt publishes
+                        // alone under the gates it prepared under.
+                        Some(gates) => {
+                            let published = self.publish_alone_under_gates(entry).await;
+                            drop(gates);
+                            published?
+                        }
+                        None => self.group_commit(entry).await?,
+                    };
                     return Ok(crate::MutationReceipt {
                         result: total,
                         commit: Some(commit),

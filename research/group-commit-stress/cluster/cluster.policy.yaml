@@ -1,0 +1,12 @@
+version: 1
+groups:
+  owners: [act-0, act-1, act-2, act-3, act-4, act-5, act-6, act-7, act-8, act-9, act-10, act-11, act-12, act-13, act-14, act-15]
+rules:
+  - id: owners-manage-config
+    allow:
+      actors: { group: owners }
+      actions: [config_manage]
+  - id: owners-list-graphs
+    allow:
+      actors: { group: owners }
+      actions: [graph_list]
