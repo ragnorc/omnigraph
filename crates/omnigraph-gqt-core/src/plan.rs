@@ -1492,6 +1492,46 @@ fn result_columns(node: &Value) -> Option<&Vec<Value>> {
 /// The first line the explain document contradicts, spelled with what the
 /// document holds instead; a `ran` claim reads `report`, the execution
 /// report of the run the document belongs to.
+/// The cost-driven choices of one executed plan, spelled as `expect plan`
+/// lines: every named `Expand`'s mode and the side its run ended on, every
+/// destination scan's access path (a `HashJoin` node is `hash join`), and
+/// every `AntiJoin`'s strategy. The measure report prints them beside the
+/// step's requests so a cost row names the plan that produced it.
+pub(crate) fn plan_choices(explain: &Value, report: Option<&Report>) -> Vec<String> {
+    let mut nodes = PlannedNodes::default();
+    if let Some(plan) = explain.get("physical_plan") {
+        planned_physical(plan, &mut nodes);
+    }
+    let ran = |id: Option<u64>| {
+        ran_side(report, id, "node")
+            .map(|side| format!(" ran {side}"))
+            .unwrap_or_default()
+    };
+    let mut out = Vec::new();
+    for mode in &nodes.modes {
+        out.push(format!(
+            "expand ${} {} ${}: {}{}",
+            mode.src,
+            mode.edge_type.as_deref().unwrap_or("*"),
+            mode.dst,
+            mode.mode,
+            ran(mode.id)
+        ));
+    }
+    for join in &nodes.joins {
+        out.push(format!("hash join ${}{}", join.binding, ran(join.id)));
+    }
+    for access in &nodes.accesses {
+        if let (Some(binding), Some(path)) = (&access.binding, &access.access) {
+            out.push(format!("scan ${binding}: {path}"));
+        }
+    }
+    for (outer, strategy) in &nodes.anti_joins {
+        out.push(format!("anti join ${outer}: {strategy}"));
+    }
+    out
+}
+
 pub(crate) fn plan_mismatch(
     lines: &[PlanLine],
     explain: &Value,

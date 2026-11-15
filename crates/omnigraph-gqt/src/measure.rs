@@ -210,6 +210,26 @@ fn union_us(spans: &[(u64, u64)]) -> u64 {
     total
 }
 
+/// The longest chain of requests in which each starts no earlier than the
+/// previous one ended: the most pairwise-disjoint request spans, chosen by
+/// earliest end. Requests that overlap count once, as one wave.
+fn waves(log: &[Request]) -> u64 {
+    let mut spans: Vec<(u64, u64)> = log
+        .iter()
+        .map(|r| (r.start_us + r.cost_us, r.start_us))
+        .collect();
+    spans.sort_unstable();
+    let mut count = 0;
+    let mut free_at = 0;
+    for (end, start) in spans {
+        if count == 0 || start >= free_at {
+            count += 1;
+            free_at = end;
+        }
+    }
+    count
+}
+
 /// The tick: one millisecond of virtual time, the `unit` model's request cost.
 pub(crate) const TICK: Duration = Duration::from_millis(1);
 
@@ -517,6 +537,10 @@ pub(crate) struct StepIo {
     /// Ticks from the first request's start to the last request's end: how
     /// long the schedule took under the model.
     makespan: u64,
+    /// The serial depth: the most requests of the group that ran one after
+    /// another, each starting no earlier than the previous one ended. A set
+    /// of requests in flight together is one wave, whatever the model.
+    waves: u64,
     /// Reads of an object and range the group had already read: the cache
     /// misses a reader pays for the same bytes twice.
     repeat_reads: u64,
@@ -579,6 +603,7 @@ impl From<Vec<Request>> for StepIo {
         Self {
             requests: log.len() as u64,
             makespan: ticks(end_us),
+            waves: waves(&log),
             repeat_reads,
             after_publish,
             simulated_us: end_us,
@@ -617,6 +642,7 @@ impl StepIo {
             "requests": self.requests,
             "repeat_reads": self.repeat_reads,
             "makespan": self.makespan,
+            "waves": self.waves,
             "span": span,
             "after_publish": self.after_publish,
             "by_class": self.by_class,
@@ -1367,6 +1393,26 @@ mod tests {
         ];
         let io = super::StepIo::from(two_together);
         assert_eq!((io.makespan, io.simulated_us), (1, 1_000));
+        assert_eq!(io.waves, 1);
+    }
+
+    #[test]
+    fn waves_count_requests_that_ran_one_after_another() {
+        // Two together, then one, then a long request spanning ticks 2..5
+        // beside two short ones at 3 and 4: the longest chain skips the long
+        // one, 0, 1, 3, 4.
+        let mut log = vec![
+            req("get", "table_data", "a", 0),
+            req("get", "table_data", "b", 0),
+            req("get", "table_data", "a", 1),
+            req("get", "table_data", "a", 2),
+            req("get", "table_data", "b", 3),
+            req("get", "table_data", "c", 4),
+        ];
+        log[3].cost_us = 3_000;
+        let io = super::StepIo::from(log);
+        assert_eq!((io.requests, io.makespan, io.waves), (6, 5, 4));
+        assert_eq!(super::StepIo::from(Vec::new()).waves, 0);
         assert_eq!(super::union_us(&[(0, 5), (3, 8), (20, 21)]), 9);
         assert_eq!(super::ticks(0), 0);
         assert_eq!(super::ticks(1), 1);

@@ -1053,6 +1053,16 @@ control realm's limits below are the exceptions). Per group it reports:
 - `sim ms`, the group's virtual time under the latency model, and `u$`, its
   requests at S3 list prices in microdollars (PUT, COPY and LIST 5.0, GET and
   HEAD 0.4, DELETE free).
+- `waves`, the serial depth: the most requests of the group that ran one
+  after another, each starting no earlier than the previous one ended, so a
+  set of requests in flight together counts once under every model
+  (schedule-derived, in the measurements); and `KB read`, the bytes read.
+
+While measuring, each query step also records its cost-driven plan choices
+as `plan_choice` evidence: every named `Expand`'s mode and the side its run
+took, every hash join, every scan's access path and every anti-join's
+strategy, in `expect plan` spelling. The invocation prints them under the
+table and as the `plan` metric of the TSV.
 
 Every label the runner set is a row, so a step that made no request (a
 settings step, a no-op mutation before its first table) reports zero, and

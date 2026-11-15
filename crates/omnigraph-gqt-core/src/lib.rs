@@ -4253,6 +4253,10 @@ async fn run_query_step(
                     report.validate_ann(&explain, &profile)?;
                     Ok(report)
                 });
+                if host.measuring() {
+                    let choices = plan::plan_choices(&explain, report.as_ref().ok());
+                    host.record("plan_choice", || serde_json::json!({ "choices": choices }));
+                }
                 let inspection = Inspection {
                     plan: run.plan,
                     explain,

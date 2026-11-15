@@ -99,6 +99,9 @@ impl ExecutionHost for GqtHost {
     fn observe_snapshot(&self) -> bool {
         dst_runner::active()
     }
+    fn measuring(&self) -> bool {
+        dst_runner::active() && measure::model().is_some()
+    }
     fn measure_step_begin(&self, ordinal: u64, line: Option<u64>, kind: &'static str) {
         dst_runner::measure_step_begin(ordinal, line, kind);
     }

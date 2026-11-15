@@ -54,6 +54,11 @@ pub trait ExecutionHost: Sync {
     fn active(&self) -> bool {
         false
     }
+    /// Whether the run measures store requests (`--measure`): the runner
+    /// then records each query's cost-driven plan choices beside them.
+    fn measuring(&self) -> bool {
+        false
+    }
     fn observe_snapshot(&self) -> bool {
         false
     }

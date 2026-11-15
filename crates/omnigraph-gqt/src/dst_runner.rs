@@ -258,7 +258,7 @@ pub(crate) fn measure_step_end(ordinal: u64) {
 /// The tick-derived counts, measurement-only: a detached commit's overlap moved
 /// by one tick between two runs of one seed (2026-09-24, in the seed load and
 /// in a step). The request counts are the replay-compared evidence.
-const SCHEDULE_COUNTS: [&str; 3] = ["makespan", "span", "phases"];
+const SCHEDULE_COUNTS: [&str; 4] = ["makespan", "waves", "span", "phases"];
 
 /// At the end of the run, one `io` evidence row per label group (the counts)
 /// and one measurement per group (bytes, the request log); the groups cover
@@ -900,6 +900,9 @@ struct MeasureRow {
     kind: String,
     counts: serde_json::Value,
     detail: serde_json::Value,
+    /// The step's cost-driven plan choices (`plan_choice` evidence), one
+    /// `expect plan` spelling each; empty for every other kind of row.
+    plan: Vec<String>,
 }
 
 impl MeasureRow {
@@ -969,7 +972,24 @@ fn measure_rows(summary: &Summary) -> Vec<MeasureRow> {
                     }
                 }
             }
+            let plan = report
+                .evidence
+                .iter()
+                .filter(|row| {
+                    slot == "step"
+                        && row["kind"] == "plan_choice"
+                        && row["operation"]["ordinal"] == step
+                })
+                .flat_map(|row| {
+                    row["value"]["choices"]
+                        .as_array()
+                        .into_iter()
+                        .flatten()
+                        .filter_map(|choice| choice.as_str().map(str::to_string))
+                })
+                .collect();
             rows.push(MeasureRow {
+                plan,
                 environment: attempt.environment.to_string(),
                 seed: seed.clone(),
                 slot,
@@ -1253,7 +1273,7 @@ fn report_measurements(
         "step = one executing section of the case (a mutate, query, control or restart), numbered in file order; setup = the store, schema and seed before step 1; runner, after N = from step N's end to the next step's start (the runner's own checks)"
     );
     println!(
-        "requests = the work; repeats = reads of an object and range already read in the step; makespan = ticks the schedule took (one tick = 1 ms of virtual time); span = its critical path with the tables of each phase side by side; waiting = makespan - span, then each engine gate a block session waited at with its ticks (every gate a session crossed is a wait.<gate> row in the TSV, 0 when no request moved the clock while it waited); parallelism = requests per tick, achieved (makespan) / available (span); sim ms = virtual time under the model; u$ = microdollars at S3 list prices"
+        "requests = the work; repeats = reads of an object and range already read in the step; makespan = ticks the schedule took (one tick = 1 ms of virtual time); waves = the serial depth, the most requests that ran one after another; KB read = bytes the step read; span = its critical path with the tables of each phase side by side; waiting = makespan - span, then each engine gate a block session waited at with its ticks (every gate a session crossed is a wait.<gate> row in the TSV, 0 when no request moved the clock while it waited); parallelism = requests per tick, achieved (makespan) / available (span); sim ms = virtual time under the model; u$ = microdollars at S3 list prices"
     );
     let cells = |requests: u64, makespan: Option<u64>, span: Option<u64>, tables: Option<u64>| {
         let waiting = match (makespan, span) {
@@ -1278,7 +1298,10 @@ fn report_measurements(
     };
     let mut current: Option<(String, String)> = None;
     let mut table_rows: Vec<Vec<String>> = Vec::new();
-    let flush = |current: &Option<(String, String)>, table_rows: &mut Vec<Vec<String>>| {
+    let mut plan_lines: Vec<String> = Vec::new();
+    let flush = |current: &Option<(String, String)>,
+                 table_rows: &mut Vec<Vec<String>>,
+                 plan_lines: &mut Vec<String>| {
         if let Some((environment, seed)) = current
             && !table_rows.is_empty()
         {
@@ -1291,6 +1314,8 @@ fn report_measurements(
                         "phase",
                         "requests",
                         "repeats",
+                        "waves",
+                        "KB read",
                         "makespan",
                         "span",
                         "waiting",
@@ -1304,13 +1329,23 @@ fn report_measurements(
                 )
             );
         }
+        if !plan_lines.is_empty() {
+            println!("plan choices per step:");
+            for line in plan_lines.iter() {
+                println!("  {line}");
+            }
+        }
         table_rows.clear();
+        plan_lines.clear();
     };
     for row in &rows {
         let group = (row.environment.clone(), row.seed.clone());
         if current.as_ref() != Some(&group) {
-            flush(&current, &mut table_rows);
+            flush(&current, &mut table_rows, &mut plan_lines);
             current = Some(group);
+        }
+        if !row.plan.is_empty() {
+            plan_lines.push(format!("step {}: {}", row.step, row.plan.join("; ")));
         }
         let mut step_row = vec![row.position(), "all".to_string()];
         let (requests, makespan, span) = (
@@ -1329,6 +1364,13 @@ fn report_measurements(
             all[3] = format!("{}{separator}{gate} {ticks}", all[3]);
         }
         all.insert(1, row.n("repeat_reads").unwrap_or(0).to_string());
+        all.insert(2, row.n("waves").map_or(String::new(), |v| v.to_string()));
+        all.insert(
+            3,
+            row.detail["bytes_read"]
+                .as_u64()
+                .map_or(String::new(), |b| format!("{:.1}", b as f64 / 1_000.0)),
+        );
         step_row.extend(all);
         step_row.push(
             row.n("after_publish")
@@ -1346,7 +1388,10 @@ fn report_measurements(
         );
         table_rows.push(step_row);
         let mut metrics = vec![("requests".to_string(), row.counts["requests"].clone())];
-        for key in ["repeat_reads", "makespan", "span", "after_publish"] {
+        if !row.plan.is_empty() {
+            metrics.push(("plan".to_string(), serde_json::json!(row.plan.join("; "))));
+        }
+        for key in ["repeat_reads", "makespan", "waves", "span", "after_publish"] {
             if !row.counts[key].is_null() {
                 metrics.push((key.to_string(), row.counts[key].clone()));
             }
@@ -1380,6 +1425,8 @@ fn report_measurements(
                 Some(p("tables")),
             );
             phase_cells.insert(1, String::new());
+            phase_cells.insert(2, String::new());
+            phase_cells.insert(3, String::new());
             phase_row.extend(phase_cells);
             phase_row.extend([String::new(), String::new(), String::new()]);
             table_rows.push(phase_row);
@@ -1391,7 +1438,7 @@ fn report_measurements(
             ));
         }
     }
-    flush(&current, &mut table_rows);
+    flush(&current, &mut table_rows, &mut plan_lines);
     let root = artifacts_root(artifacts).join("cost");
     let path = root.join(format!("{}.tsv", summary.invocation_id));
     match std::fs::create_dir_all(&root).and_then(|()| std::fs::write(&path, tsv.join("\n") + "\n"))
@@ -3087,6 +3134,7 @@ mod action_tests {
             kind: "mutate".into(),
             counts: serde_json::json!({"requests": requests, "repeat_reads": 0, "after_publish": 0}),
             detail: serde_json::Value::Null,
+            plan: Vec::new(),
         }
     }
 
