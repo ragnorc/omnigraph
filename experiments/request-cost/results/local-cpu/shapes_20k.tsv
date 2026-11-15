@@ -1,0 +1,22 @@
+query	profile	median_us	plan
+a_count_c_last	local	18036	hash_join $c, scan $c index_probe, expand $p->$c csr, scan $p sequential
+a_count_c_last	object_store@12000	17760	hash_join $c, scan $c index_probe, expand $p->$c csr, scan $p sequential
+a_count_c_last	object_store@48000	16642	hash_join $c, scan $c index_probe, expand $p->$c csr, scan $p sequential
+a_count_c_first	local	14199	scan $p id_lookup, expand $c->$p indexed_scan, scan $c index_probe
+a_count_c_first	object_store@12000	14631	scan $p id_lookup, expand $c->$p indexed_scan, scan $c index_probe
+a_count_c_first	object_store@48000	7437	scan $p id_lookup, expand $c->$p csr, scan $c index_probe
+b_columns_c_last	local	22520	hash_join $c, scan $c index_probe, expand $p->$c csr, scan $p sequential
+b_columns_c_last	object_store@12000	21804	hash_join $c, scan $c index_probe, expand $p->$c csr, scan $p sequential
+b_columns_c_last	object_store@48000	21761	hash_join $c, scan $c index_probe, expand $p->$c csr, scan $p sequential
+b_columns_c_first	local	15907	scan $p id_lookup, expand $c->$p indexed_scan, scan $c index_probe
+b_columns_c_first	object_store@12000	15766	scan $p id_lookup, expand $c->$p indexed_scan, scan $c index_probe
+b_columns_c_first	object_store@48000	9179	scan $p id_lookup, expand $c->$p csr, scan $c index_probe
+c_chain_city_last	local	26327	hash_join $t, scan $t index_probe, expand $c->$t csr, hash_join $c, scan $c sequential, expand $p->$c csr, scan $p sequential
+c_chain_city_last	object_store@12000	26205	hash_join $t, scan $t index_probe, expand $c->$t csr, hash_join $c, scan $c sequential, expand $p->$c csr, scan $p sequential
+c_chain_city_last	object_store@48000	24709	hash_join $t, scan $t index_probe, expand $c->$t csr, hash_join $c, scan $c sequential, expand $p->$c csr, scan $p sequential
+c_chain_city_first	local	38693	scan $p id_lookup, expand $c->$p indexed_scan, scan $c id_lookup, expand $t->$c indexed_scan, scan $t index_probe
+c_chain_city_first	object_store@12000	18172	hash_join $p, scan $p sequential, expand $c->$p csr, scan $c id_lookup, expand $t->$c csr, scan $t index_probe
+c_chain_city_first	object_store@48000	17564	hash_join $p, scan $p sequential, expand $c->$p csr, scan $c id_lookup, expand $t->$c csr, scan $t index_probe
+d_not_works_at	local	22757	expand $c->$p indexed_scan, scan $c index_probe, scan $p sequential
+d_not_works_at	object_store@12000	23766	expand $c->$p indexed_scan, scan $c index_probe, scan $p sequential
+d_not_works_at	object_store@48000	17247	expand $c->$p csr, scan $c index_probe, scan $p sequential

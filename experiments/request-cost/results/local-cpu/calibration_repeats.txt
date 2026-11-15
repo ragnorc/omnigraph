@@ -1,0 +1,21 @@
+indexed-probe row: 0.980 us (fixed 11291 us)
+id_lookup row:     16.650 us (fixed 2519 us) = 16.98 indexed rows (count only; warm csr hop included)
+id_lookup row, 3 columns: 21.647 us (fixed 2302 us) = 22.08 indexed rows
+scan row:          0.514 us = 0.52 indexed rows (Person 104174 us, Company 1483 us)
+csr build row:     0.406 us = 0.41 indexed rows (build 81140 us; warm csr hop over all 179138 us)
+latency_units for 20 ms: 20401 indexed-probe rows
+
+indexed-probe row: 0.456 us (fixed 15268 us)
+id_lookup row:     16.966 us (fixed 262 us) = 37.24 indexed rows (count only; warm csr hop included)
+id_lookup row, 3 columns: 22.222 us (fixed 1879 us) = 48.78 indexed rows
+scan row:          0.510 us = 1.12 indexed rows (Person 103395 us, Company 1401 us)
+csr build row:     0.420 us = 0.92 indexed rows (build 84058 us; warm csr hop over all 179231 us)
+latency_units for 20 ms: 43899 indexed-probe rows
+
+indexed-probe row: 1.050 us (fixed 13469 us)
+id_lookup row:     16.539 us (fixed 3416 us) = 15.75 indexed rows (count only; warm csr hop included)
+id_lookup row, 3 columns: 21.446 us (fixed 4074 us) = 20.42 indexed rows
+scan row:          0.491 us = 0.47 indexed rows (Person 99678 us, Company 1533 us)
+csr build row:     0.355 us = 0.34 indexed rows (build 71093 us; warm csr hop over all 173271 us)
+latency_units for 20 ms: 19042 indexed-probe rows
+

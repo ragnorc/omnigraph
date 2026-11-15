@@ -1,0 +1,15 @@
+graph /tmp/og-calib: 200000 persons, 1000 edges per company, 15 reps
+k  edges  indexed_us  csr_us  csr_columns_us  plans
+  1   1000      31911    19504      25491  [scan $p id_lookup, expand $c->$p indexed_scan, scan $c sequential] [scan $p id_lookup, expand $c->$p csr, scan $c sequential]
+  2   2000      49330    36041      45386  [scan $p id_lookup, expand $c->$p indexed_scan, scan $c sequential] [scan $p id_lookup, expand $c->$p csr, scan $c sequential]
+  4   4000      85095    68792      89125  [scan $p id_lookup, expand $c->$p indexed_scan, scan $c sequential] [scan $p id_lookup, expand $c->$p csr, scan $c sequential]
+  8   8000     156024   135172     171281  [scan $p id_lookup, expand $c->$p indexed_scan, scan $c sequential] [scan $p id_lookup, expand $c->$p csr, scan $c sequential]
+ 16  16000     303020   266255     345801  [scan $p id_lookup, expand $c->$p indexed_scan, scan $c sequential] [scan $p id_lookup, expand $c->$p csr, scan $c sequential]
+ 24  24000     421440   396646     521477  [scan $p id_lookup, expand $c->$p indexed_scan, scan $c sequential] [scan $p id_lookup, expand $c->$p csr, scan $c sequential]
+
+indexed-probe row: 0.760 us (fixed 13765 us)
+id_lookup row:     16.404 us (fixed 3361 us) = 21.58 indexed rows (count only; warm csr hop included)
+id_lookup row, 3 columns: 21.569 us (fixed 2043 us) = 28.37 indexed rows
+scan row:          0.472 us = 0.62 indexed rows (Person 95671 us, Company 1329 us)
+csr build row:     0.404 us = 0.53 indexed rows (build 80876 us; warm csr hop over all 170656 us)
+latency_units for 20 ms: 26304 indexed-probe rows

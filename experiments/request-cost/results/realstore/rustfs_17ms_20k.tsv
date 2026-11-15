@@ -1,0 +1,24 @@
+bucket 200
+built s3://omnigraph-exp/g20000: 20000 persons in 50 fragments
+query	profile	median_us	plan
+a_count_c_last	local	74895	hash_join $c, scan $c index_probe, expand $p->$c csr, scan $p sequential
+a_count_c_last	object_store@12000	76281	hash_join $c, scan $c index_probe, expand $p->$c csr, scan $p sequential
+a_count_c_last	object_store@48000	75570	hash_join $c, scan $c index_probe, expand $p->$c csr, scan $p sequential
+a_count_c_first	local	93800	scan $p id_lookup, expand $c->$p indexed_scan, scan $c index_probe
+a_count_c_first	object_store@12000	93287	scan $p id_lookup, expand $c->$p indexed_scan, scan $c index_probe
+a_count_c_first	object_store@48000	66393	scan $p id_lookup, expand $c->$p csr, scan $c index_probe
+b_columns_c_last	local	77706	hash_join $c, scan $c index_probe, expand $p->$c csr, scan $p sequential
+b_columns_c_last	object_store@12000	77900	hash_join $c, scan $c index_probe, expand $p->$c csr, scan $p sequential
+b_columns_c_last	object_store@48000	77496	hash_join $c, scan $c index_probe, expand $p->$c csr, scan $p sequential
+b_columns_c_first	local	94170	scan $p id_lookup, expand $c->$p indexed_scan, scan $c index_probe
+b_columns_c_first	object_store@12000	93986	scan $p id_lookup, expand $c->$p indexed_scan, scan $c index_probe
+b_columns_c_first	object_store@48000	67535	scan $p id_lookup, expand $c->$p csr, scan $c index_probe
+c_chain_city_last	local	104207	hash_join $t, scan $t index_probe, expand $c->$t csr, hash_join $c, scan $c sequential, expand $p->$c csr, scan $p sequential
+c_chain_city_last	object_store@12000	105669	hash_join $t, scan $t index_probe, expand $c->$t csr, hash_join $c, scan $c sequential, expand $p->$c csr, scan $p sequential
+c_chain_city_last	object_store@48000	104609	hash_join $t, scan $t index_probe, expand $c->$t csr, hash_join $c, scan $c sequential, expand $p->$c csr, scan $p sequential
+c_chain_city_first	local	200532	scan $p id_lookup, expand $c->$p indexed_scan, scan $c id_lookup, expand $t->$c indexed_scan, scan $t index_probe
+c_chain_city_first	object_store@12000	97748	hash_join $p, scan $p sequential, expand $c->$p csr, scan $c id_lookup, expand $t->$c csr, scan $t index_probe
+c_chain_city_first	object_store@48000	97354	hash_join $p, scan $p sequential, expand $c->$p csr, scan $c id_lookup, expand $t->$c csr, scan $t index_probe
+d_not_works_at	local	102228	expand $c->$p indexed_scan, scan $c index_probe, scan $p sequential
+d_not_works_at	object_store@12000	101445	expand $c->$p indexed_scan, scan $c index_probe, scan $p sequential
+d_not_works_at	object_store@48000	75780	expand $c->$p csr, scan $c index_probe, scan $p sequential
