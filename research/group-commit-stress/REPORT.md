@@ -220,4 +220,180 @@ wrong outcome.
 Real bugs these suites found: H11 (DST v11 fault universe, DST fault storm,
 three `branch_claim_*` failpoints tests) and H12 (DST writer-claims universe).
 
-<!-- SECTIONS3 -->
+
+## 5. Throughput and latency
+
+All closed-loop: decision evidence, not claims (RFC 0039 Rule 1).
+
+### 5.1 Pure inserts
+
+| setup | writers | writes/s | writes/commit | p50 / p99 | notes |
+|---|---:|---:|---:|---|---|
+| embedded, dev build, local (f08) | 32 | 175.9 | 13.0 | 134 / 482 ms | 20 s |
+| served, release, local (k01, first 10 s) | 64 | 503 | ~20 | 116 / 352 ms | decays without maintenance (§5.3) |
+| served, release, RustFS +30 ms (soak 3) | 56 | ~100–124 | ~28 | ~500 / 700–1,200 ms | optimize every minute, §6 |
+
+### 5.2 Mixed workloads: the RFC's rules lose the gain (R1)
+
+RustFS +30 ms, served, 48 writers over 4 actors, 70% fresh inserts, ~15%
+updates, deletes and upserts of present keys on the same table, persons and
+edges, optimize every 30 s, 60 s (`served/r03*`):
+
+| variant | writes/s | writes/commit | p50 / p99 | caller errors |
+|---|---:|---:|---|---|
+| group commit off | 3.0 | 1.00 | 23.0 / 26.3 s | 0 |
+| fixed prototype, RFC rules (gated retry, `changed` per table) | 3.2 | 1.06 | 19.6 / 32.3 s | 0 |
+| unfixed prototype (ungated retries, per-actor log) | 5.75 | 2.86 | 2.4 / 39.5 s | 24 × 409 |
+| fixed, 32 ungated retries (no progress bound) | 8.0 | 3.47 | 5.5 / 32.1 s | 0 |
+| fixed, RFC rules + exact footprints | EXACT_S3 | | | |
+
+Locally (embedded, 32 writers, one actor, `f10`, `f01`): RFC rules 24.4
+writes/s, 1.05 writes/commit, p50 1,372 ms; with exact footprints 35.2,
+1.96, 768 ms; ungated 34.5, 2.08, 624 ms.
+
+Mechanism: every write outside the group is logged `changed` for its table;
+that refuses every queued insert into the table; each refused insert then
+holds the branch gate through its whole preparation and publication
+(~10 serial requests on S3) and publishes alone; batches behind it shrink to
+one.
+
+### 5.3 Decay with the fragment count (one fragment per write)
+
+Local served, 48 writers, pure inserts, no maintenance (p02, p05): 695 →
+292 → 235 → 198 → 159 writes/s at 5 s intervals with readers; 649 → 24
+writes/s in 40 s without readers, server CPU 16–20 cores, the leader's
+commit+publish from ~7 ms to 150–200 ms, RSS 1.2 → 2.4 GB. Past 8,192
+uncovered fragments the rate fell to 0 (C1). Cause: per-write passes over
+the fragment list (uncovered-set computation three times, known-key lookups
+under a global mutex per fragment, the tail's data-file sizes) and per-batch
+manifest builds and writes, all O(fragments), with every write adding one.
+
+## 6. Soak
+
+SOAK_SECTION
+
+## 7. Improvements tried
+
+Each on the same instrument and seed, before and after; switches are on the
+branch so both sides run from one binary.
+
+| # | Idea | Hypothesis | Result | Verdict |
+|---|---|---|---|---|
+| 1 | **Exact footprints** for publications outside the group (`OMNIGRAPH_GROUP_COMMIT_EXACT_TOUCHED`) | An update or delete changes exactly the ids its staging folded or deleted; an insert-only entry only read its own ids' absence and its endpoints' existence | local mixed: 24.4 → **35.2 writes/s (+44%)**, 1.05 → 1.96 writes/commit, p50 1,372 → **768 ms**; S3 mixed: EXACT_S3_SHORT | **keep**; RFC change |
+| 2 | **Lift the 8,192 probe cap** when the known keys answer the whole uncovered tail (`OMNIGRAPH_KNOWN_KEYS_LIFT_CAP`) | The cap guards against per-uncovered-fragment IN lists, which `fast_search` never plans when the tail is answered from memory | 80–90 s window: **0.0 → 44.5 writes/s**; no cliff | **keep**; RFC change (Known keys) |
+| 3 | **Memoize the known-tail analysis per manifest version** (`OMNIGRAPH_KNOWN_KEYS_TAIL_CACHE`) | Every writer probing the same pin rebuilds the same uncovered set three times and takes the global known-keys mutex per fragment | MEMO_RESULT | MEMO_VERDICT |
+| 4 | H14 fix (log read under the gates) | — | S3 soak minute 2: **2.35 → ~114 writes/s** | required |
+| 5 | Ungated retries before the gated one (`OMNIGRAPH_GROUP_COMMIT_UNGATED_RETRIES`) | Most refused entries would batch on a second ungated try | 1 retry: no change (1.00 writes/commit); 32: 2.08 writes/commit but no bound | **discard**; exact footprints get the same batching with the bound |
+| 6 | Linger, pipelining, rebase-per-write, probe-free writer capture | from #1401 | not re-run | — |
+
+## 8. Where the cost lives, and Lance
+
+**Per publication on S3** (from #1401's trace, unchanged here): five serial
+puts, table `.txn` → table detached manifest → `__manifest` data file →
+`.txn` → version put-if-absent (~165 ms at 32 ms), plus the leader's capture.
+Batches amortize them; the soak's ~3.7 batches/s × ~28 writes is that
+arithmetic.
+
+**Per write** (preparation, ungated, parallel): capture probe (none with the
+writer epoch held), validation's index metadata (warmed by the leader), the
+absence probe (indexed fragments via the id BTREE plus the known tail from
+memory), the data file put. Locally the O(fragments) passes of §5.3 dominate
+once the tail grows.
+
+**Upstream asks, with locations** (Lance 13.0.0; still true in 14.0.2):
+
+1. Detached commits write the transaction file before the manifest
+   (`io/commit.rs:1197` `do_commit_detached_transaction`, ~line 1233, "we
+   don't strictly need a transaction file"). For a detached commit nothing
+   names the manifest until the caller publishes it, so the two puts can be
+   concurrent, or the file skipped with a public
+   `ManifestWriteConfig::with_transaction_file_disabled` (`pub(crate)` in
+   14.0.2, `dataset.rs:4347`); the engine would read the inline transaction
+   (moved to a new manifest field in 14.0.0, #9482). One serial round trip per
+   table per batch.
+2. Let the caller choose the detached version (today random inside the retry
+   loop, `commit.rs` `rng().random::<u64>() | DETACHED_VERSION_MASK`), so the
+   `__manifest` rows can be built while the table commit is in flight.
+3. Populate the session caches after a detached commit as
+   `record_successful_commit` (`commit.rs:1532`) does after a linear one; the
+   prototype's index warm-up works around its absence.
+4. Build the Blob v2 projection schema once per scan, not once per fragment
+   read (`io/exec/filtered_read.rs:1484` → `public_blob_v2_binary_projection_schema`
+   → `Schema::to_schema`; 14.0.2 line 1535): with one fragment per write it
+   dominates scans.
+5. Do not unwrap a cancelled fragment-read task (`filtered_read.rs:667`).
+6. `FLAG_FRAGMENT_TREE` (present, marked unsupported in 14.0.2) is the format
+   answer to manifests that grow with one fragment per write.
+
+**Lance 14.0.2 relevance.** No composite operation exists (the
+`Transaction.operation` oneof ends at `DataOverlay = 115`), so the RFC's
+`CompositeOperation`/`AssertUniqueKeys` path is not available at 14.0.2.
+Relevant improvements: #9915 (`read_version_transaction` from the held or
+cached manifest: cheaper chain walks for the carry and the collector),
+#9942 and #9653 (O(fragments) trims in index and scan planning, which bear on
+§5.3), #9631 (commit retry budget after catch-up), #9482 (inline transaction
+field).
+
+## 9. RFC claims against the evidence
+
+| Claim | Verdict | Evidence |
+|---|---|---|
+| Admission makes a batch equivalent to its members in order on `Hc`; the history is strictly serializable | **supported where implemented as written**; the prototype's deviations broke it | 0 violations after fixes in every run; H1 (log holes) and H10 (footprint) are exactly the RFC's rules 2 and 3 not implemented |
+| No new durable state; the collector's rule does not change | **supported** | 8 aborts between detached commits and the CAS; `cleanup` reclaimed exactly 8 unpublished manifests, no row changed |
+| Known keys change cost, never a result | **supported**; incomplete | no violation with known keys on; the 8,192 cap still sends inserts to the full merge join (C1) |
+| A refused write finishes within two attempts in its process | **supported** after H5's fix; **but** the RFC's batching does not survive it under mixed load | R1 |
+| Logging every publication stops the cascade after a sent-back write | **contradicted as specified** | H14: the cascade persists unless the leader reads the log under the gates and a zero-admission batch keeps it |
+| `optimize` and index builds since the capture are explained | **not implemented in the prototype**; fixed (H13) | k00 |
+| Maintenance under batches starves; the carry is needed | **confirmed** | 0 of 16 direct-path maintenance runs landed at ~120 writes/s |
+| The soak gate (64 writers, optimize every 5 min, index build every minute) | **not runnable on the served path** | O1 (64 write observers), O2 (no served index build) |
+| Blob tables must wait for the guard | **no defect found** | 96 Blob writes in 9 commits read back exactly, before and after optimize |
+| Headline throughput (20–65× on one branch) | **pure inserts only** | soak ~100–124 writes/s at 56 writers on S3 vs ~3 writes/s baseline; mixed: 1.06× with the RFC rules |
+| Lance 14's `CompositeOperation` with `AssertUniqueKeys` | **incorrect for 14.0.2** | §8 |
+| `with_transaction_file_disabled` is `#[cfg(test)]` | `pub(crate)` in 14.0.2; still not public | §8 |
+
+## 10. Recommended RFC changes
+
+1. **The effect log** (§The effect log, rule 2): state that the walk follows
+   contiguous links only (each record's `parent` is the previous record's
+   `head`) and that a record that does not continue the log resets it.
+   Matrix cell: the parked-entry repro of H1, with a foreign insert of the
+   same key and with another actor's batch.
+2. **Read the log under the gates** (§The write group step 2): the leader
+   judges admission by the log as it is after taking the gates, and a batch
+   that admits nothing never clears it (H14). Without this the gated second
+   attempt turns any unexplained publication into a permanent storm.
+3. **Exact footprints for publications outside the group** (§The effect log
+   classes): add `touched(upserted ids, deleted ids)` per table for mutations,
+   whose staging knows them; refuse an entry only when an upserted id is one
+   it inserts or a delete hit a table it reads without writing. Keep
+   `changed` for loads, merges and overwrites. Without it the RFC's batching
+   is worth ~1.06× on a realistic mixed workload (R1).
+4. **Maintenance publications in the log** as row-preserving records (H13),
+   and make the maintenance carry (rollout step 4) a prerequisite of step 6.
+5. **Known keys** (§Known keys): lift the `KEYED_WRITE_MAX_ROWS` tail cap when
+   the known keys answer the whole uncovered tail (C1); compute the tail
+   analysis once per manifest version (improvement 3); bound the map by bytes
+   and drop entries for files no retained version lists (soak: ~6.5k files a
+   minute, never evicted).
+6. **Fragments** (§Bounds): name the per-write O(fragments) costs, require a
+   maintenance cadence that keeps the unindexed tail bounded, and evaluate
+   one fragment per table per batch (leader-side coalescing) before default
+   on; the gate in `blocked_on` should include a no-maintenance decay check.
+7. **Cancellation and outcomes** (§Outcomes per member): drop guards for the
+   leader and for a follower holding a pending lead; closed entries leave the
+   queue at drain and after the gates; every member gets the batch's typed
+   error (H3, H4, H7, H11). Add matrix cells for each.
+8. **Server admission**: the soak needs a maintenance lane outside the 64
+   write observers, or the gate should say "fewer than 64 writers" (O1); a
+   served index-build route or an explicit statement that optimize covers it
+   (O2).
+9. **Evidence section**: add the mixed-workload and no-maintenance numbers
+   beside the pure-insert ones; correct the Lance 14 `CompositeOperation`
+   sentence and the `with_transaction_file_disabled` visibility.
+10. **Publisher trust** (the #837 trim in the measured configuration): an
+    epoch assertion on an unverified image must not clear the holder (H12).
+11. **Per root, not per handle** (§The write group): unchanged by these
+    fixes; two handles of one process still see each other's batches as
+    foreign (h03).
+
+<!-- APPENDIX -->
