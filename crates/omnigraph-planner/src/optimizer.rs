@@ -14,10 +14,11 @@ use omnigraph_compiler::traversal::{EDGE_TYPE_COLUMN, EdgeSelection};
 use omnigraph_compiler::types::Direction;
 
 use crate::cost::{
-    AccessPath, AntiJoinStrategy, CoverageProvenance, EndpointProbe, ExpandCostInputs, ExpandMode,
-    ExpandPolicy, HASH_JOIN_POOL_DIVISOR, HASH_JOIN_RATIO, HYDRATE_ROW_RATIO, IndexCoverage,
-    ValidateAccess, ValidateCostInputs, ValidateIndexCoverage, ValidateRemoval, chain_rows,
-    choose_access_path, choose_anti_join_strategy, choose_expand_mode, choose_validate_access,
+    AccessPath, AccessRequestInputs, AntiJoinStrategy, CoverageProvenance, EndpointProbe,
+    ExpandCostInputs, ExpandMode, ExpandPolicy, HASH_JOIN_POOL_DIVISOR, HASH_JOIN_RATIO,
+    HYDRATE_ROW_RATIO, IndexCoverage, ValidateAccess, ValidateCostInputs, ValidateIndexCoverage,
+    ValidateRemoval, chain_rows, choose_access_path, choose_access_path_priced,
+    choose_anti_join_strategy, choose_expand_mode, choose_validate_access,
     coverage_validate_access, direction_probe_factor, estimate_rows, executed_hops,
     hydrate_chunk_bytes, scan_row_estimate,
 };
@@ -4046,9 +4047,34 @@ impl Lowering<'_> {
             )
         });
         let budget = self.source.query_memory_pool_bytes() / HASH_JOIN_POOL_DIVISOR;
-        let Some(access) = choose_access_path(frontier, rows, build_bytes, budget) else {
+        let request = AccessRequestInputs {
+            profile: self.source.storage_profile(),
+            table_fragments: self
+                .source
+                .table_fragments(&spec.table.type_key)
+                .unwrap_or(1),
+            projected_columns: spec
+                .projection
+                .as_ref()
+                .map_or(node_type.schema.fields().len(), Vec::len)
+                as u64,
+        };
+        let Some(priced) = choose_access_path_priced(frontier, rows, build_bytes, budget, &request)
+        else {
             return Ok(AccessPath::IdLookup);
         };
+        let access = priced.path;
+        if let (Some(id_lookup), Some(hash_join)) = (priced.id_lookup, priced.hash_join) {
+            self.decisions.push(StatisticSource {
+                statistic: format!("access_path_cost({})", spec.table.type_key),
+                value: format!(
+                    "id_lookup {}; hash_join {}",
+                    id_lookup.describe(),
+                    hash_join.describe()
+                ),
+                origin: "row estimates, fragments and the storage profile".to_string(),
+            });
+        }
         self.access_path = true;
         self.decisions.push(StatisticSource {
             statistic: format!("hash_join_build_bytes({})", spec.table.type_key),

@@ -119,14 +119,141 @@ pub fn choose_access_path(
     build_bytes: Option<u64>,
     build_bytes_budget: u64,
 ) -> Option<AccessPath> {
+    choose_access_path_priced(
+        frontier_rows,
+        table_rows,
+        build_bytes,
+        build_bytes_budget,
+        &AccessRequestInputs::local(),
+    )
+    .map(|priced| priced.path)
+}
+
+/// Rows one `id_lookup` slice carries; slices are awaited one at a time.
+pub const ID_LOOKUP_SLICE_ROWS: u64 = 256;
+
+/// The request-model inputs of a destination's access path: the profile the
+/// plan prices under, the destination table's fragments and the columns the
+/// scan projects (each a request per fragment it reads).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct AccessRequestInputs {
+    pub profile: StorageProfile,
+    pub table_fragments: u64,
+    pub projected_columns: u64,
+}
+
+impl AccessRequestInputs {
+    pub fn local() -> Self {
+        Self {
+            profile: StorageProfile::local(),
+            table_fragments: 1,
+            projected_columns: 1,
+        }
+    }
+}
+
+/// One alternative of a priced decision: row work, the serial request waves
+/// on its critical path, the bytes it moves, and the total in row units.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Priced {
+    pub rows: f64,
+    pub waves: u64,
+    pub bytes: u64,
+    pub units: f64,
+}
+
+impl Priced {
+    fn new(rows: f64, waves: u64, bytes: u64, profile: &StorageProfile) -> Self {
+        Self {
+            rows,
+            waves,
+            bytes,
+            units: rows + profile.request_units(waves, bytes),
+        }
+    }
+
+    pub fn describe(&self) -> String {
+        format!(
+            "{:.0} units ({:.0} rows, {} waves, {} bytes)",
+            self.units, self.rows, self.waves, self.bytes
+        )
+    }
+}
+
+/// An access path decision with both alternatives' prices (`None` under a
+/// profile that prices no requests: the rows-only ratio rule decided).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PricedAccess {
+    pub path: AccessPath,
+    pub id_lookup: Option<Priced>,
+    pub hash_join: Option<Priced>,
+}
+
+/// `choose_access_path` under a storage profile. A profile that prices no
+/// requests keeps the rows-only rule exactly. Otherwise each alternative is
+/// priced as row work plus serial waves times the profile's latency plus
+/// bytes: `id_lookup` is `HASH_JOIN_RATIO` per frontier row, in one wave set
+/// per slice of `ID_LOOKUP_SLICE_ROWS` ids (each the projected columns of the
+/// fragments the slice's ids fall in), its bytes unpriced; `hash_join` reads
+/// the table's rows once, in the waves of one scan of its projected columns
+/// over every fragment, with the build side's bytes. The memory admission
+/// stays a hard condition, not a cost.
+pub fn choose_access_path_priced(
+    frontier_rows: Option<u64>,
+    table_rows: Option<u64>,
+    build_bytes: Option<u64>,
+    build_bytes_budget: u64,
+    request: &AccessRequestInputs,
+) -> Option<PricedAccess> {
     let (frontier, rows) = (frontier_rows?, table_rows?);
-    let few_rows = rows <= frontier.saturating_mul(HASH_JOIN_RATIO);
     let fits = build_bytes.is_some_and(|bytes| bytes <= build_bytes_budget);
-    Some(if few_rows && fits {
-        AccessPath::HashJoin
-    } else {
-        AccessPath::IdLookup
+    let profile = &request.profile;
+    if !profile.prices_requests() {
+        let few_rows = rows <= frontier.saturating_mul(HASH_JOIN_RATIO);
+        return Some(PricedAccess {
+            path: if few_rows && fits {
+                AccessPath::HashJoin
+            } else {
+                AccessPath::IdLookup
+            },
+            id_lookup: None,
+            hash_join: None,
+        });
+    }
+    let fragments = request.table_fragments.max(1);
+    let columns = request.projected_columns.max(1);
+    let slices = frontier.div_ceil(ID_LOOKUP_SLICE_ROWS).max(1);
+    let per_slice = waves(
+        columns.saturating_mul(fragments.min(ID_LOOKUP_SLICE_ROWS)),
+        profile.parallelism,
+    );
+    let id_lookup = Priced::new(
+        frontier as f64 * HASH_JOIN_RATIO as f64,
+        slices.saturating_mul(per_slice),
+        0,
+        profile,
+    );
+    let hash_join = Priced::new(
+        rows as f64,
+        waves(columns.saturating_mul(fragments), profile.parallelism),
+        build_bytes.unwrap_or(0),
+        profile,
+    );
+    Some(PricedAccess {
+        path: if fits && hash_join.units <= id_lookup.units {
+            AccessPath::HashJoin
+        } else {
+            AccessPath::IdLookup
+        },
+        id_lookup: Some(id_lookup),
+        hash_join: Some(hash_join),
     })
+}
+
+/// The round trips `requests` issued together take on a store serving
+/// `parallelism` at once; at least one when any request is issued.
+fn waves(requests: u64, parallelism: u64) -> u64 {
+    requests.div_ceil(parallelism.max(1))
 }
 
 /// How a correlated block (`not { … }`, `count { … } > 2`) reaches the
@@ -262,6 +389,20 @@ impl StorageProfile {
         self.latency_units > 0 || self.bytes_per_unit > 0
     }
 
+    /// `waves` serial round trips and `bytes` transferred, in row units:
+    /// exactly zero under a profile that prices no requests.
+    pub fn request_units(&self, waves: u64, bytes: u64) -> f64 {
+        if !self.prices_requests() {
+            return 0.0;
+        }
+        let transfer = if self.bytes_per_unit == 0 {
+            0.0
+        } else {
+            bytes as f64 / self.bytes_per_unit as f64
+        };
+        waves as f64 * self.latency_units as f64 + transfer
+    }
+
     /// The explain spelling: kind and constants.
     pub fn describe(&self) -> String {
         format!(
@@ -338,28 +479,92 @@ pub fn choose_expand_mode(i: &ExpandCostInputs) -> ExpandMode {
     if i.effective_max_hops > i.max_hops_cap || i.frontier_rows > i.max_frontier_cap {
         return ExpandMode::Csr;
     }
+    let (indexed, csr) = price_expand(i);
+    if indexed.units < csr.units {
+        ExpandMode::IndexedScan
+    } else {
+        ExpandMode::Csr
+    }
+}
 
+/// Rows an indexed hop's lookup takes per input batch: the producer's batch,
+/// at most the session's batch size.
+pub const EXPAND_INPUT_BATCH_ROWS: u64 = 8_192;
+
+/// Both Expand alternatives priced under the inputs' profile: today's row
+/// work plus the request term. The indexed path per hop and orientation runs
+/// one lookup per input batch: an index wave, then a take of the key and
+/// opposite-endpoint columns of the fragments its matches fall in (or, under
+/// degraded coverage, a scan of both columns of every fragment, with their
+/// bytes); orientations run one after another. The CSR build scans both
+/// columns of every fragment once, with their bytes, and is free when cached.
+pub fn price_expand(i: &ExpandCostInputs) -> (Priced, Priced) {
     let hops = i.effective_max_hops.max(1) as f64;
     let frontier = i.frontier_rows as f64;
     let edges = i.edge_count as f64;
     let src = i.src_node_count.max(1) as f64;
     let fanout = edges / src;
 
-    let indexed_cost = match i.coverage {
+    let indexed_rows = match i.coverage {
         IndexCoverage::Indexed => hops * frontier * fanout * i.probe_factor,
         IndexCoverage::Degraded => hops * edges * i.probe_factor,
     };
-    let csr_cost = if i.csr_cached {
+    let csr_rows = if i.csr_cached {
         0.0
     } else {
         CSR_BUILD_FACTOR * edges
     };
-
-    if indexed_cost < csr_cost {
-        ExpandMode::IndexedScan
-    } else {
-        ExpandMode::Csr
+    if !i.profile.prices_requests() {
+        return (
+            Priced::new(indexed_rows, 0, 0, &i.profile),
+            Priced::new(csr_rows, 0, 0, &i.profile),
+        );
     }
+    let hop_waves = indexed_hop_waves(i, i.frontier_rows);
+    let indexed_bytes = match i.coverage {
+        IndexCoverage::Indexed => 0,
+        IndexCoverage::Degraded => i.edge_bytes,
+    };
+    let orientations = i.probe_factor.max(1.0) as u64;
+    let hop_count = i.effective_max_hops.max(1) as u64;
+    let indexed = Priced::new(
+        indexed_rows,
+        hop_count.saturating_mul(hop_waves),
+        indexed_bytes
+            .saturating_mul(orientations)
+            .saturating_mul(hop_count),
+        &i.profile,
+    );
+    let csr = if i.csr_cached {
+        Priced::new(0.0, 0, 0, &i.profile)
+    } else {
+        Priced::new(csr_rows, csr_build_waves(i), i.edge_bytes, &i.profile)
+    };
+    (indexed, csr)
+}
+
+/// The serial waves of one indexed hop over a frontier of `frontier` rows.
+fn indexed_hop_waves(i: &ExpandCostInputs, frontier: u64) -> u64 {
+    let fragments = i.edge_fragments.max(1);
+    let orientations = i.probe_factor.max(1.0) as u64;
+    let batches = frontier.div_ceil(EXPAND_INPUT_BATCH_ROWS).max(1);
+    let per_batch = match i.coverage {
+        IndexCoverage::Indexed => {
+            let fanout = i.edge_count as f64 / i.src_node_count.max(1) as f64;
+            let batch_rows = frontier.min(EXPAND_INPUT_BATCH_ROWS) as f64;
+            let matched = (batch_rows * fanout).ceil().max(1.0) as u64;
+            1 + waves(2 * fragments.min(matched), i.profile.parallelism)
+        }
+        IndexCoverage::Degraded => waves(2 * fragments, i.profile.parallelism),
+    };
+    orientations
+        .saturating_mul(batches)
+        .saturating_mul(per_batch)
+}
+
+/// The serial waves of the CSR build for this Expand's edge type.
+fn csr_build_waves(i: &ExpandCostInputs) -> u64 {
+    waves(2 * i.edge_fragments.max(1), i.profile.parallelism)
 }
 
 /// Mid-traversal re-decision (issue #533): asked by the engine at the top of
@@ -399,17 +604,19 @@ pub fn should_switch_to_csr(
     let growth = observed_growth.max(fanout).max(1.0);
 
     let mut remaining_cost = 0.0;
+    let mut remaining_waves = 0u64;
     let mut frontier = observed_frontier as f64;
     for _ in 0..remaining_hops {
         remaining_cost += frontier * fanout * i.probe_factor;
+        remaining_waves = remaining_waves.saturating_add(indexed_hop_waves(i, frontier as u64));
         frontier = (frontier * growth).min(src);
     }
     let csr_cost = if csr_ready {
         0.0
     } else {
-        CSR_BUILD_FACTOR * edges
+        CSR_BUILD_FACTOR * edges + i.profile.request_units(csr_build_waves(i), i.edge_bytes)
     };
-    remaining_cost > csr_cost
+    remaining_cost + i.profile.request_units(remaining_waves, 0) > csr_cost
 }
 
 /// The hops an `Expand` runs for the cost model: its `max_hops`, or its
@@ -779,6 +986,226 @@ pub fn coverage_validate_access(
         ValidateAccess::Probe
     } else {
         ValidateAccess::Scan
+    }
+}
+
+#[cfg(test)]
+mod request_cost_tests {
+    use super::*;
+
+    fn inputs(
+        frontier: u64,
+        edges: u64,
+        src: u64,
+        hops: u32,
+        coverage: IndexCoverage,
+    ) -> ExpandCostInputs {
+        ExpandCostInputs {
+            frontier_rows: frontier,
+            edge_count: edges,
+            src_node_count: src,
+            effective_max_hops: hops,
+            max_hops_cap: 6,
+            max_frontier_cap: 1024,
+            coverage,
+            coverage_provenance: CoverageProvenance::PinnedIndexFacts,
+            csr_cached: false,
+            probe_factor: 1.0,
+            profile: StorageProfile::local(),
+            edge_fragments: 50,
+            edge_bytes: 3_000_000,
+        }
+    }
+
+    /// The decisions as the planner made them before profiles existed.
+    fn rows_only_mode(i: &ExpandCostInputs) -> ExpandMode {
+        if i.effective_max_hops > i.max_hops_cap || i.frontier_rows > i.max_frontier_cap {
+            return ExpandMode::Csr;
+        }
+        let fanout = i.edge_count as f64 / i.src_node_count.max(1) as f64;
+        let indexed = match i.coverage {
+            IndexCoverage::Indexed => {
+                i.effective_max_hops.max(1) as f64
+                    * i.frontier_rows as f64
+                    * fanout
+                    * i.probe_factor
+            }
+            IndexCoverage::Degraded => {
+                i.effective_max_hops.max(1) as f64 * i.edge_count as f64 * i.probe_factor
+            }
+        };
+        let csr = if i.csr_cached {
+            0.0
+        } else {
+            CSR_BUILD_FACTOR * i.edge_count as f64
+        };
+        if indexed < csr {
+            ExpandMode::IndexedScan
+        } else {
+            ExpandMode::Csr
+        }
+    }
+
+    fn rows_only_switch(
+        observed: u64,
+        prev: u64,
+        remaining: u32,
+        ready: bool,
+        i: &ExpandCostInputs,
+    ) -> bool {
+        if observed > i.max_frontier_cap {
+            return true;
+        }
+        let edges = i.edge_count as f64;
+        let src = i.src_node_count.max(1) as f64;
+        let fanout = edges / src;
+        let growth = if prev > 0 {
+            observed as f64 / prev as f64
+        } else {
+            fanout
+        }
+        .max(fanout)
+        .max(1.0);
+        let (mut cost, mut frontier) = (0.0, observed as f64);
+        for _ in 0..remaining {
+            cost += frontier * fanout * i.probe_factor;
+            frontier = (frontier * growth).min(src);
+        }
+        cost > if ready { 0.0 } else { CSR_BUILD_FACTOR * edges }
+    }
+
+    /// The local profile is today's model exactly, whatever the request
+    /// inputs say: every grid point decides as the rows-only rules do, for
+    /// the Expand mode, the run-time switch and the access path.
+    #[test]
+    fn the_local_profile_reproduces_the_rows_only_decisions() {
+        let sizes = [
+            0u64,
+            1,
+            2,
+            7,
+            64,
+            255,
+            256,
+            1_000,
+            1_024,
+            8_192,
+            20_000,
+            200_000,
+            u64::MAX,
+        ];
+        for &frontier in &sizes {
+            for &edges in &[0u64, 1, 100, 20_000, 200_000, 5_000_000] {
+                for &src in &[1u64, 20, 200, 200_000] {
+                    for hops in [1u32, 2, 7] {
+                        for coverage in [IndexCoverage::Indexed, IndexCoverage::Degraded] {
+                            for cached in [false, true] {
+                                for fragments in [0u64, 1, 50, 5_000] {
+                                    let mut i = inputs(frontier, edges, src, hops, coverage);
+                                    i.csr_cached = cached;
+                                    i.edge_fragments = fragments;
+                                    i.probe_factor = if hops == 2 { 2.0 } else { 1.0 };
+                                    assert_eq!(choose_expand_mode(&i), rows_only_mode(&i), "{i:?}");
+                                    for (observed, prev) in [(frontier.min(5_000), 1), (3, 0)] {
+                                        assert_eq!(
+                                            should_switch_to_csr(observed, prev, hops, cached, &i),
+                                            rows_only_switch(observed, prev, hops, cached, &i),
+                                            "{i:?}"
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            for &rows in &sizes {
+                for bytes in [None, Some(0), Some(10_000_000)] {
+                    for fragments in [0u64, 1, 50] {
+                        let request = AccessRequestInputs {
+                            table_fragments: fragments,
+                            projected_columns: 3,
+                            ..AccessRequestInputs::local()
+                        };
+                        let priced = choose_access_path_priced(
+                            Some(frontier),
+                            Some(rows),
+                            bytes,
+                            1 << 30,
+                            &request,
+                        )
+                        .unwrap();
+                        let few = rows <= frontier.saturating_mul(HASH_JOIN_RATIO);
+                        let fits = bytes.is_some_and(|b| b <= 1 << 30);
+                        let expected = if few && fits {
+                            AccessPath::HashJoin
+                        } else {
+                            AccessPath::IdLookup
+                        };
+                        assert_eq!(priced.path, expected, "{frontier} {rows} {bytes:?}");
+                        assert!(priced.id_lookup.is_none() && priced.hash_join.is_none());
+                    }
+                }
+            }
+        }
+    }
+
+    /// The measured shapes under the object-store profile: the 200,000-row
+    /// Person table in 50 fragments, one column read. A destination of 10,000
+    /// ids (40 slices) flips to the hash join at the calibrated latency; one
+    /// of 1,000 ids (4 slices) needs a latency near 100,000 row units; the
+    /// expand from one company over 200,000 edges stays indexed until the
+    /// latency exceeds the CSR build's 300,000 rows.
+    #[test]
+    fn the_object_store_profile_flips_at_the_measured_shapes() {
+        let path = |frontier: u64, latency: u64| {
+            let request = AccessRequestInputs {
+                profile: StorageProfile::object_store(Some(latency)),
+                table_fragments: 50,
+                projected_columns: 1,
+            };
+            choose_access_path_priced(
+                Some(frontier),
+                Some(200_000),
+                Some(1_000_000),
+                1 << 30,
+                &request,
+            )
+            .unwrap()
+            .path
+        };
+        assert_eq!(path(10_000, 0), AccessPath::IdLookup);
+        assert_eq!(path(10_000, 3_000), AccessPath::IdLookup);
+        assert_eq!(path(10_000, 3_300), AccessPath::HashJoin);
+        assert_eq!(path(10_000, 12_000), AccessPath::HashJoin);
+        assert_eq!(path(1_000, 12_000), AccessPath::IdLookup);
+        assert_eq!(path(1_000, 63_000), AccessPath::IdLookup);
+        assert_eq!(path(1_000, 64_000), AccessPath::HashJoin);
+        // Memory admission stays a hard condition whatever the latency.
+        let request = AccessRequestInputs {
+            profile: StorageProfile::object_store(Some(1_000_000)),
+            table_fragments: 50,
+            projected_columns: 1,
+        };
+        let refused = choose_access_path_priced(
+            Some(10_000),
+            Some(200_000),
+            Some(2 << 30),
+            1 << 30,
+            &request,
+        );
+        assert_eq!(refused.unwrap().path, AccessPath::IdLookup);
+
+        let mut expand = inputs(1, 200_000, 200, 1, IndexCoverage::Indexed);
+        for (latency, mode) in [
+            (0, ExpandMode::IndexedScan),
+            (12_000, ExpandMode::IndexedScan),
+            (298_000, ExpandMode::IndexedScan),
+            (300_000, ExpandMode::Csr),
+        ] {
+            expand.profile = StorageProfile::object_store(Some(latency));
+            assert_eq!(choose_expand_mode(&expand), mode, "latency {latency}");
+        }
     }
 }
 
