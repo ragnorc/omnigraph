@@ -458,3 +458,51 @@ fragment read (`filtered_read.rs:1484` → `public_blob_v2_binary_projection_sch
 → `Schema::to_schema`, allocating every field name), a per-fragment cost that
 dominates scans of many small fragments; hoisting it to the plan is an
 upstream ask.
+
+## 2026-11-15 — several processes on one root; a writer-epoch claim mid-load
+
+`scripts/mp_run.py`: `omnigraph init` + seed + `index build` on a local
+root, P harness processes (`OG_GS_URI`, distinct key prefixes), CLI export and
+`commit list --json`, one combined check (`http_stress.py check`).
+
+- **mp01**: 4 processes × 8 writers, mixed, 30 s: 578 acknowledged, 0
+  violations; writes per commit 1.0 (each process's publications are foreign
+  to the others, as the RFC expects across processes); 3 writes exhausted the
+  32-attempt cross-process bound (`ReadSetChanged` to the caller), the
+  existing ordinary-path behavior across processes.
+- **mp02**: as mp01, 6 writers each, process 0 claims `main`'s writer epoch at
+  10 s (`claim_branch_writer`): claimed at epoch 1 in 404 ms; processes 1–3
+  then had every write refused `WriterFenced` ("nothing was published"), 438
+  in all; process 0 kept writing (396 acknowledged). **0 violations.**
+  (`WriterFenced` carries no completion evidence, so the harness counts those
+  refusals as in doubt; the message says nothing was published.)
+- **Pre-existing, not batching (v01):** with group commit **off**, validation
+  refusals (`@unique`, missing endpoint) also answer 400 with disposition
+  `effects: unknown`.
+
+## 2026-11-15 — Lance 13.0.0 and 14.0.2 code read for the upstream asks
+
+- Detached commit (`lance-13.0.0/src/io/commit.rs:1197`
+  `do_commit_detached_transaction`): awaits `write_transaction_file` (line
+  ~1233, commented "We don't strictly need a transaction file") before
+  building and writing the manifest; picks the random detached version inside
+  its retry loop (`rng().random::<u64>() | DETACHED_VERSION_MASK`); returns at
+  `Ok(location)` without `record_successful_commit` (`commit.rs:1532`, called
+  only from the linear path at 1780/1812/1882), so no transaction, manifest or
+  index-metadata cache entry is made. 14.0.2: same sequence (line ~1336), same
+  cache gap (`record_successful_commit` at 1646, called at 1941/1973/2046).
+- `ManifestWriteConfig::with_transaction_file_disabled`: `pub(crate)` in
+  14.0.2 (`dataset.rs:4347`); still no public switch.
+- `CompositeOperation` / `AssertUniqueKeys`: **absent from Lance 14.0.2**; the
+  `Transaction.operation` oneof in `lance-table-14.0.2/protos/transaction.proto`
+  ends at `DataOverlay = 115`. The RFC's "Lance 14's `CompositeOperation`"
+  sentence needs correcting.
+- `FLAG_FRAGMENT_TREE` exists in `lance-table-14.0.2/src/feature_flags.rs:92`
+  and is marked unsupported (`mark_supported(.., false)`, line 345).
+- Per-fragment Blob v2 projection schema rebuild still present in 14.0.2
+  (`filtered_read.rs:1535`).
+- 14.0.0 release notes items that bear on this work: inline transaction moved
+  to a new manifest field (#9482), `read_version_transaction` served from the
+  held or cached manifest (#9915), index paths reading the manifest version
+  without summarizing every fragment (#9942), scan plans reusing the fragment
+  lookup (#9653), commit retry budget started after catch-up (#9631).
