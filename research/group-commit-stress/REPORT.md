@@ -425,12 +425,13 @@ field).
 | No new durable state; the collector's rule does not change | **supported** | 8 aborts between detached commits and the CAS; `cleanup` reclaimed exactly 8 unpublished manifests, no row changed |
 | Known keys change cost, never a result | **supported**; incomplete | no violation with known keys on; the 8,192 cap still sends inserts to the full merge join (C1) |
 | A refused write finishes within two attempts in its process | **supported** after H5's fix; **but** the RFC's batching does not survive it under mixed load | R1 |
-| Logging every publication stops the cascade after a sent-back write | **contradicted as specified** | H14: the cascade persists unless the leader reads the log under the gates and a zero-admission batch keeps it |
+| Logging every publication stops the cascade after a sent-back write | **incomplete** | H14: the cascade persists unless the leader reads the log under the gates and a batch that admits nothing keeps it |
 | `optimize` and index builds since the capture are explained | **not implemented in the prototype**; fixed (H13) | k00 |
 | Maintenance under batches starves; the carry is needed | **confirmed** | 0 of 16 direct-path maintenance runs landed at ~120 writes/s |
 | The soak gate (64 writers, optimize every 5 min, index build every minute) | **not runnable on the served path** | O1 (64 write observers), O2 (no served index build) |
 | Blob tables must wait for the guard | **no defect found** | 96 Blob writes in 9 commits read back exactly, before and after optimize |
-| Headline throughput (20–65× on one branch) | **pure inserts only** | soak ~100–124 writes/s at 56 writers on S3 vs ~3 writes/s baseline; mixed: 1.06× with the RFC rules |
+| Headline throughput (20–65× on one branch) | **pure inserts only** | soak ~100–124 writes/s at 56 writers on S3 (pure inserts), against the one-publication-per-write ceiling of ~2–3 writes/s on this backend (#1401 §4; 3.0 here with group commit off on the mixed workload); mixed workload with the RFC rules: 1.06× |
+| A batch of one costs no more than today | **not measured here** | GQT (batches of one through the group path) passes; no single-writer timing taken |
 | Lance 14's `CompositeOperation` with `AssertUniqueKeys` | **incorrect for 14.0.2** | §8 |
 | `with_transaction_file_disabled` is `#[cfg(test)]` | `pub(crate)` in 14.0.2; still not public | §8 |
 
