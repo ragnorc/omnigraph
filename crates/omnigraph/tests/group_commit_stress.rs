@@ -485,6 +485,53 @@ async fn gc_blob_inserts_compose_and_read_back() {
     );
 }
 
+/// RFC §Admission rule 1: an entry captured on a branch incarnation that was
+/// deleted and created again under its name is never admitted into the new
+/// one. Group commit on a named branch, which the prototype serves through a
+/// held coordinator and the per-branch writer-state cache.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[serial]
+async fn gc_entry_captured_on_a_recreated_branch_is_not_admitted() {
+    let _scenario = FailScenario::setup();
+    group_commit_on();
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap().to_string();
+    let db = seeded(&uri, ITEM_SCHEMA, &item_seed()).await;
+    db.branch_create("b1").await.unwrap();
+    // A batch on b1 so the group holds b1's coordinator and log.
+    db.mutate_with_receipt("b1", ITEM_QUERIES, "put", &put("b1-first", 1))
+        .await
+        .unwrap();
+    let parked = helpers::failpoint::Rendezvous::park_first(
+        &catalog::MUTATION_POST_STAGE_PRE_EFFECT_GATE,
+    );
+    let e = {
+        let db = Arc::clone(&db);
+        tokio::spawn(async move { db.mutate_with_receipt("b1", ITEM_QUERIES, "put", &put("stale", 2)).await })
+    };
+    parked.wait_until_reached().await;
+    db.branch_delete("b1").await.unwrap();
+    db.branch_create("b1").await.unwrap();
+    db.mutate_with_receipt("b1", ITEM_QUERIES, "put", &put("b1-new", 3))
+        .await
+        .unwrap();
+    parked.release();
+    let e = e.await.unwrap();
+    let fresh = Omnigraph::open(&uri).await.unwrap();
+    let rows = collect_column_strings(&helpers::read_table_branch(&fresh, "b1", "node:Item").await, "slug");
+    let stale = rows.iter().filter(|slug| *slug == "stale").count();
+    let old_first = rows.iter().any(|slug| slug == "b1-first");
+    eprintln!(
+        "[gc-repro] recreated branch: e {:?}; new b1 rows {} (stale x{stale}, old incarnation row present {old_first})",
+        e.as_ref().map(|r| r.commit.as_ref().map(|c| c.graph_manifest_version)),
+        rows.len()
+    );
+    assert!(!old_first, "the recreated branch shows a row of the deleted incarnation");
+    // The request may rerun on the new incarnation (a fresh preparation), so
+    // `stale` is there at most once.
+    assert!(stale <= 1, "duplicate rows for `stale`");
+}
+
 #[path = "group_commit_stress/harness.rs"]
 mod harness;
 
