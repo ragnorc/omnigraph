@@ -229,6 +229,7 @@ def main():
     p.add_argument("--toxic-window", type=float, default=2.0, help="seconds a toxic stays on")
     p.add_argument("--toxic-toxicity", type=float, default=0.3)
     p.add_argument("--latency-ms", type=int, default=15)
+    p.add_argument("--watchdog", type=int, default=0, help="restart the server whenever it dies")
     argv = sys.argv[1:]
     driver_args = []
     if "--" in argv:
@@ -325,7 +326,22 @@ def main():
             toxi("DELETE", "/proxies/rustfs/toxics/chaos")
             event(kind="toxic_off", toxic_kind=kind)
 
+    def watchdog():
+        # Restart the server whenever it dies on its own (crash points).
+        while not stop.wait(0.2):
+            if server.proc.poll() is not None and not stop.is_set():
+                event(kind="server_died", code=server.proc.returncode)
+                server.restarts += 1
+                lock = server.unlock_stale()
+                try:
+                    server.start()
+                    event(kind="restarted", pid=server.proc.pid, lock=lock)
+                except Exception as error:  # noqa: BLE001
+                    event(kind="restart_failed", error=str(error)[:300])
+
     threads = []
+    if args.watchdog:
+        threads.append(threading.Thread(target=watchdog, daemon=True))
     if args.toxics and args.backend == "s3":
         threads.append(threading.Thread(target=toxics, daemon=True))
     if args.optimize_secs > 0:

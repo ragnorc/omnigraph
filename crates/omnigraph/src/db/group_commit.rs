@@ -1276,9 +1276,13 @@ impl Omnigraph {
         }
 
         let admitted_count = admitted.len();
+        crash_point("batch_admitted");
         let published = self
             .publish_batch(&current, &admitted, publish_coordinator.as_mut(), effects)
             .await;
+        if published.is_ok() {
+            crash_point("batch_published");
+        }
         if publish_coordinator.is_some() {
             self.keep_coordinator(&key, published.as_ref().ok().and(publish_coordinator))
                 .await;
@@ -1428,6 +1432,7 @@ impl Omnigraph {
             .await
             .map_err(OmniError::unpublished)?;
         let (updates, detached): (Vec<_>, Vec<_>) = committed.into_iter().unzip();
+        crash_point("batch_committed");
         if timing_enabled() {
             eprintln!(
                 "[group-timing]   detached commits {:.1} ms",
@@ -1936,5 +1941,36 @@ mod stats {
             FAILED.swap(0, Ordering::Relaxed),
             MAX_BATCH.swap(0, Ordering::Relaxed),
         )
+    }
+}
+
+
+/// Research (stress crash points): `OMNIGRAPH_STRESS_CRASH=point:per_mille,...`
+/// aborts the process at a named point of the batch path with that
+/// probability, the equivalent of a kill -9 there.
+pub(crate) fn crash_point(point: &str) {
+    static SPEC: std::sync::OnceLock<Vec<(String, u64)>> = std::sync::OnceLock::new();
+    let spec = SPEC.get_or_init(|| {
+        std::env::var("OMNIGRAPH_STRESS_CRASH")
+            .unwrap_or_default()
+            .split(',')
+            .filter_map(|part| {
+                let (name, per_mille) = part.split_once(':')?;
+                Some((name.to_string(), per_mille.parse().ok()?))
+            })
+            .collect()
+    });
+    let Some((_, per_mille)) = spec.iter().find(|(name, _)| name == point) else {
+        return;
+    };
+    let roll = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|elapsed| elapsed.subsec_nanos() as u64)
+        .unwrap_or(0)
+        .wrapping_mul(0x9E37_79B9_7F4A_7C15)
+        >> 54;
+    if roll % 1000 < *per_mille {
+        eprintln!("[stress-crash] aborting at {point}");
+        std::process::abort();
     }
 }
