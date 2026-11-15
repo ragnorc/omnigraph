@@ -1,0 +1,160 @@
+
+running 25 tests
+test s3_storage::s3_adapter_conditional_writes_contract ... ok
+test s3_storage::durable_refuses_a_base_that_holds_an_object_at_the_reserved_name ... ok
+test s3_storage::a_create_and_a_delete_of_one_base_object_take_turns ... ok
+test s3_storage::durable_refuses_a_base_that_is_itself_a_clone_root ... ok
+test s3_storage::a_rename_of_a_base_object_is_refused_and_one_of_a_clone_object_runs ... ok
+test s3_storage::racing_updates_of_a_base_object_over_a_clone_root_admit_one ... ok
+test s3_storage::create_after_a_durable_delete_holds_across_reopens ... ok
+test s3_storage::an_update_and_a_delete_of_one_base_object_take_turns ... ok
+test s3_storage::a_durable_store_keeps_its_whiteouts_out_of_sight ... ok
+test s3_storage::a_stop_between_the_whiteout_and_the_delete_leaves_the_key_deleted_or_untouched ... ok
+test s3_storage::a_clone_root_carries_the_reserved_directory_from_its_first_build ... ok
+test s3_storage::durable_deletes_survive_a_reopen_and_stay_in_their_own_clone_root ... ok
+test write_cost_s3::external_blob_source_cost_is_deduplicated_on_s3 ... ok
+test s3_storage::s3_schema_apply_migrates_live_graph ... ok
+test s3_storage::s3_fresh_branch_traversal_reuses_main_graph_index_with_etags ... ok
+test s3_storage::s3_compatible_graph_lifecycle_works ... ok
+test s3_storage::s3_read_through_adapter_masks_the_base_and_leaves_its_listing_as_it_was ... ok
+test write_cost_s3::branch_claim_adds_no_request_to_a_write_on_s3 ... ok
+test s3_storage::s3_branch_change_merge_flow_works ... ok
+test s3_storage::s3_public_load_uses_hidden_run_and_publishes ... ok
+test write_cost_s3::data_table_opener_is_flat_in_history_on_s3 ... ok
+test s3_storage::s3_open_clone_reads_the_base_and_writes_only_its_own_prefix ... ok
+test branch_control_cost::branch_list_detailed_reads_bounded_per_branch_and_flat_in_history_s3 ... ok
+test durable_head_lookup_cost::s3_durable_head_lookup_matrix_is_correct_and_observable ... FAILED
+test checkpoint_retention_cost::s3_checkpoint_retention_matrix_is_exact_and_records_the_current_no_go ... FAILED
+
+failures:
+
+---- durable_head_lookup_cost::s3_durable_head_lookup_matrix_is_correct_and_observable stdout ----
+RFC024 backend=S3 depth=20 actual=20 layout=Uncompacted index=Absent access=ColdOpen fragments=0/21 object_io=53/173953 scan_io=83/83/191834 pages=0 scanned=f31/r50/rows82 output=10
+RFC024 backend=S3 depth=20 actual=20 layout=Uncompacted index=Absent access=WarmRepeat fragments=0/21 object_io=31/123810 scan_io=31/31/51360 pages=0 scanned=f31/r50/rows82 output=10
+RFC024 backend=S3 depth=20 actual=20 layout=Compacted index=Absent access=ColdOpen fragments=0/1 object_io=4/51884 scan_io=5/5/93694 pages=0 scanned=f2/r11/rows82 output=10
+RFC024 backend=S3 depth=20 actual=20 layout=Compacted index=Absent access=WarmRepeat fragments=0/1 object_io=2/45868 scan_io=2/2/35872 pages=0 scanned=f2/r11/rows82 output=10
+RFC024 backend=S3 depth=20 actual=20 layout=Uncompacted index=Reconciled access=ColdOpen fragments=21/21 object_io=34/60566 scan_io=30/30/71520 pages=1 scanned=f10/r10/rows10 output=10
+RFC024 backend=S3 depth=20 actual=20 layout=Uncompacted index=Reconciled access=WarmRepeat fragments=21/21 object_io=10/37680 scan_io=10/10/16480 pages=0 scanned=f10/r10/rows10 output=10
+RFC024 backend=S3 depth=20 actual=20 layout=Compacted index=Reconciled access=ColdOpen fragments=1/1 object_io=5/30537 scan_io=3/3/64210 pages=1 scanned=f1/r10/rows10 output=10
+RFC024 backend=S3 depth=20 actual=20 layout=Compacted index=Reconciled access=WarmRepeat fragments=1/1 object_io=1/22934 scan_io=1/1/20728 pages=0 scanned=f1/r10/rows10 output=10
+RFC024 backend=S3 depth=20 actual=21 layout=Uncompacted index=OneUncovered access=ColdOpen fragments=21/22 object_io=35/94485 scan_io=30/30/71520 pages=1 scanned=f10/r10/rows13 output=10
+RFC024 backend=S3 depth=20 actual=21 layout=Uncompacted index=OneUncovered access=WarmRepeat fragments=21/22 object_io=10/37680 scan_io=10/10/16480 pages=0 scanned=f10/r10/rows13 output=10
+RFC024 backend=S3 depth=20 actual=21 layout=Compacted index=OneUncovered access=ColdOpen fragments=1/2 object_io=7/68806 scan_io=6/6/71362 pages=1 scanned=f2/r10/rows13 output=10
+RFC024 backend=S3 depth=20 actual=21 layout=Compacted index=OneUncovered access=WarmRepeat fragments=1/2 object_io=2/26702 scan_io=2/2/22376 pages=0 scanned=f2/r10/rows13 output=10
+RFC024 backend=S3 depth=20 actual=28 layout=Uncompacted index=GrowingTail access=ColdOpen fragments=21/29 object_io=42/100132 scan_io=30/30/71520 pages=1 scanned=f10/r17/rows27 output=10
+RFC024 backend=S3 depth=20 actual=28 layout=Uncompacted index=GrowingTail access=WarmRepeat fragments=21/29 object_io=10/37680 scan_io=10/10/16480 pages=0 scanned=f10/r17/rows27 output=10
+RFC024 backend=S3 depth=20 actual=28 layout=Compacted index=GrowingTail access=ColdOpen fragments=1/9 object_io=21/100998 scan_io=27/27/121426 pages=1 scanned=f9/r17/rows27 output=10
+RFC024 backend=S3 depth=20 actual=28 layout=Compacted index=GrowingTail access=WarmRepeat fragments=1/9 object_io=9/53078 scan_io=9/9/33912 pages=0 scanned=f9/r17/rows27 output=10
+RFC024 backend=S3 depth=20 actual=28 layout=Uncompacted index=ReconciledAfterTail access=ColdOpen fragments=29/29 object_io=42/68200 scan_io=30/30/71520 pages=1 scanned=f10/r10/rows10 output=10
+RFC024 backend=S3 depth=20 actual=28 layout=Uncompacted index=ReconciledAfterTail access=WarmRepeat fragments=29/29 object_io=10/37680 scan_io=10/10/16480 pages=0 scanned=f10/r10/rows10 output=10
+RFC024 backend=S3 depth=20 actual=28 layout=Compacted index=ReconciledAfterTail access=ColdOpen fragments=9/9 object_io=21/68311 scan_io=27/27/121426 pages=1 scanned=f9/r10/rows10 output=10
+RFC024 backend=S3 depth=20 actual=28 layout=Compacted index=ReconciledAfterTail access=WarmRepeat fragments=9/9 object_io=9/53078 scan_io=9/9/33912 pages=0 scanned=f9/r10/rows10 output=10
+RFC024 backend=S3 depth=80 actual=80 layout=Uncompacted index=Absent access=ColdOpen fragments=0/81 object_io=173/448433 scan_io=263/263/620954 pages=0 scanned=f91/r110/rows202 output=10
+RFC024 backend=S3 depth=80 actual=80 layout=Uncompacted index=Absent access=WarmRepeat fragments=0/81 object_io=91/349890 scan_io=91/91/150240 pages=0 scanned=f91/r110/rows202 output=10
+RFC024 backend=S3 depth=80 actual=80 layout=Compacted index=Absent access=ColdOpen fragments=0/1 object_io=4/110081 scan_io=5/5/190752 pages=0 scanned=f2/r11/rows202 output=10
+RFC024 backend=S3 depth=80 actual=80 layout=Compacted index=Absent access=WarmRepeat fragments=0/1 object_io=2/90826 scan_io=2/2/72480 pages=0 scanned=f2/r11/rows202 output=10
+RFC024 backend=S3 depth=80 actual=80 layout=Uncompacted index=Reconciled access=ColdOpen fragments=81/81 object_io=94/116133 scan_io=30/30/71520 pages=1 scanned=f10/r10/rows10 output=10
+RFC024 backend=S3 depth=80 actual=80 layout=Uncompacted index=Reconciled access=WarmRepeat fragments=81/81 object_io=10/37680 scan_io=10/10/16480 pages=0 scanned=f10/r10/rows10 output=10
+RFC024 backend=S3 depth=80 actual=80 layout=Compacted index=Reconciled access=ColdOpen fragments=1/1 object_io=5/61633 scan_io=3/3/124316 pages=1 scanned=f1/r10/rows10 output=10
+RFC024 backend=S3 depth=80 actual=80 layout=Compacted index=Reconciled access=WarmRepeat fragments=1/1 object_io=1/45413 scan_io=1/1/35784 pages=0 scanned=f1/r10/rows10 output=10
+RFC024 backend=S3 depth=80 actual=81 layout=Uncompacted index=OneUncovered access=ColdOpen fragments=81/82 object_io=95/150053 scan_io=30/30/71520 pages=1 scanned=f10/r10/rows13 output=10
+RFC024 backend=S3 depth=80 actual=81 layout=Uncompacted index=OneUncovered access=WarmRepeat fragments=81/82 object_io=10/37680 scan_io=10/10/16480 pages=0 scanned=f10/r10/rows13 output=10
+RFC024 backend=S3 depth=80 actual=81 layout=Compacted index=OneUncovered access=ColdOpen fragments=1/2 object_io=7/101345 scan_io=6/6/131468 pages=1 scanned=f2/r10/rows13 output=10
+RFC024 backend=S3 depth=80 actual=81 layout=Compacted index=OneUncovered access=WarmRepeat fragments=1/2 object_io=2/49181 scan_io=2/2/37432 pages=0 scanned=f2/r10/rows13 output=10
+RFC024 backend=S3 depth=80 actual=88 layout=Uncompacted index=GrowingTail access=ColdOpen fragments=81/89 object_io=102/155697 scan_io=30/30/71520 pages=1 scanned=f10/r17/rows27 output=10
+RFC024 backend=S3 depth=80 actual=88 layout=Uncompacted index=GrowingTail access=WarmRepeat fragments=81/89 object_io=10/37680 scan_io=10/10/16480 pages=0 scanned=f10/r17/rows27 output=10
+RFC024 backend=S3 depth=80 actual=88 layout=Compacted index=GrowingTail access=ColdOpen fragments=1/9 object_io=21/133539 scan_io=27/27/181532 pages=1 scanned=f9/r17/rows27 output=10
+RFC024 backend=S3 depth=80 actual=88 layout=Compacted index=GrowingTail access=WarmRepeat fragments=1/9 object_io=9/75557 scan_io=9/9/48968 pages=0 scanned=f9/r17/rows27 output=10
+RFC024 backend=S3 depth=80 actual=88 layout=Uncompacted index=ReconciledAfterTail access=ColdOpen fragments=89/89 object_io=102/123571 scan_io=30/30/71520 pages=1 scanned=f10/r10/rows10 output=10
+RFC024 backend=S3 depth=80 actual=88 layout=Uncompacted index=ReconciledAfterTail access=WarmRepeat fragments=89/89 object_io=10/37680 scan_io=10/10/16480 pages=0 scanned=f10/r10/rows10 output=10
+RFC024 backend=S3 depth=80 actual=88 layout=Compacted index=ReconciledAfterTail access=ColdOpen fragments=9/9 object_io=21/99215 scan_io=27/27/181532 pages=1 scanned=f9/r10/rows10 output=10
+RFC024 backend=S3 depth=80 actual=88 layout=Compacted index=ReconciledAfterTail access=WarmRepeat fragments=9/9 object_io=9/75557 scan_io=9/9/48968 pages=0 scanned=f9/r10/rows10 output=10
+
+thread 'durable_head_lookup_cost::s3_durable_head_lookup_matrix_is_correct_and_observable' (40855) panicked at crates/omnigraph/tests/integration/durable_head_lookup_cost.rs:860:5:
+compacted warm scan bytes must not grow with journal history: shallow=20728, deep=35784
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- checkpoint_retention_cost::s3_checkpoint_retention_matrix_is_exact_and_records_the_current_no_go stdout ----
+RFC025 backend=S3 depth=20 actual=20 layout=Uncompacted index=Absent op=List access=ColdOpen fragments=0/21 object_io=44/137836 scan_io=65/65/121145 pages=0 scanned=f22/r24/rows91 output=3
+RFC025 backend=S3 depth=20 actual=20 layout=Uncompacted index=Absent op=List access=WarmRepeat fragments=0/21 object_io=22/87734 scan_io=22/22/17880 pages=0 scanned=f22/r24/rows91 output=3
+RFC025 backend=S3 depth=20 actual=20 layout=Compacted index=Absent op=List access=ColdOpen fragments=0/1 object_io=4/45078 scan_io=5/5/75027 pages=0 scanned=f2/r4/rows91 output=3
+RFC025 backend=S3 depth=20 actual=20 layout=Compacted index=Absent op=List access=WarmRepeat fragments=0/1 object_io=2/39454 scan_io=2/2/27472 pages=0 scanned=f2/r4/rows91 output=3
+RFC025 backend=S3 depth=20 actual=20 layout=Uncompacted index=Absent op=Show access=ColdOpen fragments=0/21 object_io=66/225570 scan_io=107/107/145985 pages=0 scanned=f44/r44/rows188 output=12
+RFC025 backend=S3 depth=20 actual=20 layout=Uncompacted index=Absent op=Show access=WarmRepeat fragments=0/21 object_io=44/175468 scan_io=44/44/37520 pages=0 scanned=f44/r44/rows188 output=12
+RFC025 backend=S3 depth=20 actual=20 layout=Compacted index=Absent op=Show access=ColdOpen fragments=0/1 object_io=6/84532 scan_io=7/7/102499 pages=0 scanned=f4/r4/rows188 output=12
+RFC025 backend=S3 depth=20 actual=20 layout=Compacted index=Absent op=Show access=WarmRepeat fragments=0/1 object_io=4/78908 scan_io=4/4/54944 pages=0 scanned=f4/r4/rows188 output=12
+RFC025 backend=S3 depth=20 actual=20 layout=Uncompacted index=Absent op=CleanupPlan access=ColdOpen fragments=0/21 object_io=44/137836 scan_io=65/65/121145 pages=0 scanned=f22/r24/rows132 output=44
+RFC025 backend=S3 depth=20 actual=20 layout=Uncompacted index=Absent op=CleanupPlan access=WarmRepeat fragments=0/21 object_io=22/87734 scan_io=22/22/17880 pages=0 scanned=f22/r24/rows132 output=44
+RFC025 backend=S3 depth=20 actual=20 layout=Compacted index=Absent op=CleanupPlan access=ColdOpen fragments=0/1 object_io=4/45078 scan_io=5/5/75027 pages=0 scanned=f2/r4/rows132 output=44
+RFC025 backend=S3 depth=20 actual=20 layout=Compacted index=Absent op=CleanupPlan access=WarmRepeat fragments=0/1 object_io=2/39454 scan_io=2/2/27472 pages=0 scanned=f2/r4/rows132 output=44
+RFC025 backend=S3 depth=20 actual=20 layout=Uncompacted index=Reconciled op=List access=ColdOpen fragments=21/21 object_io=6/22287 scan_io=3/3/33729 pages=1 scanned=f1/r3/rows3 output=3
+RFC025 backend=S3 depth=20 actual=20 layout=Uncompacted index=Reconciled op=List access=WarmRepeat fragments=21/21 object_io=1/12977 scan_io=1/1/10288 pages=0 scanned=f1/r3/rows3 output=3
+RFC025 backend=S3 depth=20 actual=20 layout=Compacted index=Reconciled op=List access=ColdOpen fragments=1/1 object_io=5/25497 scan_io=3/3/53967 pages=1 scanned=f1/r3/rows3 output=3
+RFC025 backend=S3 depth=20 actual=20 layout=Compacted index=Reconciled op=List access=WarmRepeat fragments=1/1 object_io=1/19727 scan_io=1/1/16976 pages=0 scanned=f1/r3/rows3 output=3
+RFC025 backend=S3 depth=20 actual=20 layout=Uncompacted index=Reconciled op=Show access=ColdOpen fragments=21/21 object_io=12/48955 scan_io=4/4/44017 pages=3 scanned=f2/r2/rows12 output=12
+RFC025 backend=S3 depth=20 actual=20 layout=Uncompacted index=Reconciled op=Show access=WarmRepeat fragments=21/21 object_io=2/25954 scan_io=2/2/20576 pages=0 scanned=f2/r2/rows12 output=12
+RFC025 backend=S3 depth=20 actual=20 layout=Compacted index=Reconciled op=Show access=ColdOpen fragments=1/1 object_io=11/58915 scan_io=4/4/70943 pages=3 scanned=f2/r2/rows12 output=12
+RFC025 backend=S3 depth=20 actual=20 layout=Compacted index=Reconciled op=Show access=WarmRepeat fragments=1/1 object_io=2/39454 scan_io=2/2/33952 pages=0 scanned=f2/r2/rows12 output=12
+RFC025 backend=S3 depth=20 actual=20 layout=Uncompacted index=Reconciled op=CleanupPlan access=ColdOpen fragments=21/21 object_io=8/28049 scan_io=3/3/33729 pages=1 scanned=f1/r3/rows44 output=44
+RFC025 backend=S3 depth=20 actual=20 layout=Uncompacted index=Reconciled op=CleanupPlan access=WarmRepeat fragments=21/21 object_io=1/12977 scan_io=1/1/10288 pages=0 scanned=f1/r3/rows44 output=44
+RFC025 backend=S3 depth=20 actual=20 layout=Compacted index=Reconciled op=CleanupPlan access=ColdOpen fragments=1/1 object_io=7/31259 scan_io=3/3/53967 pages=1 scanned=f1/r3/rows44 output=44
+RFC025 backend=S3 depth=20 actual=20 layout=Compacted index=Reconciled op=CleanupPlan access=WarmRepeat fragments=1/1 object_io=1/19727 scan_io=1/1/16976 pages=0 scanned=f1/r3/rows44 output=44
+RFC025 backend=S3 depth=20 actual=28 layout=Uncompacted index=BoundedTail op=List access=ColdOpen fragments=21/29 object_io=21/85773 scan_io=27/27/67705 pages=1 scanned=f9/r11/rows20 output=3
+RFC025 backend=S3 depth=20 actual=28 layout=Uncompacted index=BoundedTail op=List access=WarmRepeat fragments=21/29 object_io=9/37689 scan_io=9/9/12848 pages=0 scanned=f9/r11/rows20 output=3
+RFC025 backend=S3 depth=20 actual=28 layout=Compacted index=BoundedTail op=List access=ColdOpen fragments=1/9 object_io=21/89613 scan_io=27/27/87943 pages=1 scanned=f9/r11/rows20 output=3
+RFC025 backend=S3 depth=20 actual=28 layout=Compacted index=BoundedTail op=List access=WarmRepeat fragments=1/9 object_io=9/44439 scan_io=9/9/19536 pages=0 scanned=f9/r11/rows20 output=3
+RFC025 backend=S3 depth=20 actual=28 layout=Uncompacted index=BoundedTail op=Show access=ColdOpen fragments=21/29 object_io=35/137153 scan_io=36/36/80553 pages=3 scanned=f18/r18/rows46 output=12
+RFC025 backend=S3 depth=20 actual=28 layout=Uncompacted index=BoundedTail op=Show access=WarmRepeat fragments=21/29 object_io=18/75378 scan_io=18/18/25696 pages=0 scanned=f18/r18/rows46 output=12
+RFC025 backend=S3 depth=20 actual=28 layout=Compacted index=BoundedTail op=Show access=ColdOpen fragments=1/9 object_io=35/147743 scan_io=36/36/107479 pages=3 scanned=f18/r18/rows46 output=12
+RFC025 backend=S3 depth=20 actual=28 layout=Compacted index=BoundedTail op=Show access=WarmRepeat fragments=1/9 object_io=18/88878 scan_io=18/18/39072 pages=0 scanned=f18/r18/rows46 output=12
+RFC025 backend=S3 depth=20 actual=28 layout=Uncompacted index=BoundedTail op=CleanupPlan access=ColdOpen fragments=21/29 object_io=23/91535 scan_io=27/27/67705 pages=1 scanned=f9/r11/rows61 output=44
+RFC025 backend=S3 depth=20 actual=28 layout=Uncompacted index=BoundedTail op=CleanupPlan access=WarmRepeat fragments=21/29 object_io=9/37689 scan_io=9/9/12848 pages=0 scanned=f9/r11/rows61 output=44
+RFC025 backend=S3 depth=20 actual=28 layout=Compacted index=BoundedTail op=CleanupPlan access=ColdOpen fragments=1/9 object_io=23/95375 scan_io=27/27/87943 pages=1 scanned=f9/r11/rows61 output=44
+RFC025 backend=S3 depth=20 actual=28 layout=Compacted index=BoundedTail op=CleanupPlan access=WarmRepeat fragments=1/9 object_io=9/44439 scan_io=9/9/19536 pages=0 scanned=f9/r11/rows61 output=44
+RFC025 backend=S3 depth=80 actual=80 layout=Uncompacted index=Absent op=List access=ColdOpen fragments=0/81 object_io=164/371685 scan_io=245/245/345245 pages=0 scanned=f82/r84/rows211 output=3
+RFC025 backend=S3 depth=80 actual=80 layout=Uncompacted index=Absent op=List access=WarmRepeat fragments=0/81 object_io=82/273074 scan_io=82/82/21720 pages=0 scanned=f82/r84/rows211 output=3
+RFC025 backend=S3 depth=80 actual=80 layout=Compacted index=Absent op=List access=ColdOpen fragments=0/1 object_io=4/68283 scan_io=5/5/83382 pages=0 scanned=f2/r4/rows211 output=3
+RFC025 backend=S3 depth=80 actual=80 layout=Compacted index=Absent op=List access=WarmRepeat fragments=0/1 object_io=2/49300 scan_io=2/2/29064 pages=0 scanned=f2/r4/rows211 output=3
+RFC025 backend=S3 depth=80 actual=80 layout=Uncompacted index=Absent op=Show access=ColdOpen fragments=0/81 object_io=246/644759 scan_io=407/407/394805 pages=0 scanned=f164/r164/rows428 output=12
+RFC025 backend=S3 depth=80 actual=80 layout=Uncompacted index=Absent op=Show access=WarmRepeat fragments=0/81 object_io=164/546148 scan_io=164/164/50480 pages=0 scanned=f164/r164/rows428 output=12
+RFC025 backend=S3 depth=80 actual=80 layout=Compacted index=Absent op=Show access=ColdOpen fragments=0/1 object_io=6/117583 scan_io=7/7/112446 pages=0 scanned=f4/r4/rows428 output=12
+RFC025 backend=S3 depth=80 actual=80 layout=Compacted index=Absent op=Show access=WarmRepeat fragments=0/1 object_io=4/98600 scan_io=4/4/58128 pages=0 scanned=f4/r4/rows428 output=12
+RFC025 backend=S3 depth=80 actual=80 layout=Compacted index=Absent op=CleanupPlan access=ColdOpen fragments=0/1 object_io=4/68283 scan_io=5/5/83382 pages=0 scanned=f2/r4/rows252 output=44
+RFC025 backend=S3 depth=80 actual=80 layout=Compacted index=Absent op=CleanupPlan access=WarmRepeat fragments=0/1 object_io=2/49300 scan_io=2/2/29064 pages=0 scanned=f2/r4/rows252 output=44
+RFC025 backend=S3 depth=80 actual=80 layout=Uncompacted index=Absent op=CleanupPlan access=ColdOpen fragments=0/81 object_io=164/371685 scan_io=245/245/345245 pages=0 scanned=f82/r84/rows252 output=44
+RFC025 backend=S3 depth=80 actual=80 layout=Uncompacted index=Absent op=CleanupPlan access=WarmRepeat fragments=0/81 object_io=82/273074 scan_io=82/82/21720 pages=0 scanned=f82/r84/rows252 output=44
+RFC025 backend=S3 depth=80 actual=80 layout=Compacted index=Reconciled op=List access=ColdOpen fragments=1/1 object_io=5/30809 scan_io=3/3/68250 pages=1 scanned=f1/r3/rows3 output=3
+RFC025 backend=S3 depth=80 actual=80 layout=Compacted index=Reconciled op=List access=WarmRepeat fragments=1/1 object_io=1/24650 scan_io=1/1/21552 pages=0 scanned=f1/r3/rows3 output=3
+RFC025 backend=S3 depth=80 actual=80 layout=Uncompacted index=Reconciled op=List access=ColdOpen fragments=81/81 object_io=6/31700 scan_io=3/3/33729 pages=1 scanned=f1/r3/rows3 output=3
+RFC025 backend=S3 depth=80 actual=80 layout=Uncompacted index=Reconciled op=List access=WarmRepeat fragments=81/81 object_io=1/12977 scan_io=1/1/10288 pages=0 scanned=f1/r3/rows3 output=3
+RFC025 backend=S3 depth=80 actual=80 layout=Compacted index=Reconciled op=Show access=ColdOpen fragments=1/1 object_io=11/74725 scan_io=4/4/89802 pages=3 scanned=f2/r2/rows12 output=12
+RFC025 backend=S3 depth=80 actual=80 layout=Compacted index=Reconciled op=Show access=WarmRepeat fragments=1/1 object_io=2/49300 scan_io=2/2/43104 pages=0 scanned=f2/r2/rows12 output=12
+RFC025 backend=S3 depth=80 actual=80 layout=Uncompacted index=Reconciled op=Show access=ColdOpen fragments=81/81 object_io=12/63943 scan_io=4/4/44017 pages=3 scanned=f2/r2/rows12 output=12
+RFC025 backend=S3 depth=80 actual=80 layout=Uncompacted index=Reconciled op=Show access=WarmRepeat fragments=81/81 object_io=2/25954 scan_io=2/2/20576 pages=0 scanned=f2/r2/rows12 output=12
+RFC025 backend=S3 depth=80 actual=80 layout=Compacted index=Reconciled op=CleanupPlan access=ColdOpen fragments=1/1 object_io=7/34461 scan_io=3/3/68250 pages=1 scanned=f1/r3/rows44 output=44
+RFC025 backend=S3 depth=80 actual=80 layout=Compacted index=Reconciled op=CleanupPlan access=WarmRepeat fragments=1/1 object_io=1/24650 scan_io=1/1/21552 pages=0 scanned=f1/r3/rows44 output=44
+RFC025 backend=S3 depth=80 actual=80 layout=Uncompacted index=Reconciled op=CleanupPlan access=ColdOpen fragments=81/81 object_io=8/35352 scan_io=3/3/33729 pages=1 scanned=f1/r3/rows44 output=44
+RFC025 backend=S3 depth=80 actual=80 layout=Uncompacted index=Reconciled op=CleanupPlan access=WarmRepeat fragments=81/81 object_io=1/12977 scan_io=1/1/10288 pages=0 scanned=f1/r3/rows44 output=44
+RFC025 backend=S3 depth=80 actual=88 layout=Compacted index=BoundedTail op=List access=ColdOpen fragments=1/9 object_io=21/94925 scan_io=27/27/102226 pages=1 scanned=f9/r11/rows20 output=3
+RFC025 backend=S3 depth=80 actual=88 layout=Compacted index=BoundedTail op=List access=WarmRepeat fragments=1/9 object_io=9/49362 scan_io=9/9/24112 pages=0 scanned=f9/r11/rows20 output=3
+RFC025 backend=S3 depth=80 actual=88 layout=Uncompacted index=BoundedTail op=List access=ColdOpen fragments=81/89 object_io=21/95186 scan_io=27/27/67705 pages=1 scanned=f9/r11/rows20 output=3
+RFC025 backend=S3 depth=80 actual=88 layout=Uncompacted index=BoundedTail op=List access=WarmRepeat fragments=81/89 object_io=9/37689 scan_io=9/9/12848 pages=0 scanned=f9/r11/rows20 output=3
+RFC025 backend=S3 depth=80 actual=88 layout=Compacted index=BoundedTail op=Show access=ColdOpen fragments=1/9 object_io=35/163553 scan_io=36/36/126338 pages=3 scanned=f18/r18/rows46 output=12
+RFC025 backend=S3 depth=80 actual=88 layout=Compacted index=BoundedTail op=Show access=WarmRepeat fragments=1/9 object_io=18/98724 scan_io=18/18/48224 pages=0 scanned=f18/r18/rows46 output=12
+RFC025 backend=S3 depth=80 actual=88 layout=Uncompacted index=BoundedTail op=Show access=ColdOpen fragments=81/89 object_io=35/152141 scan_io=36/36/80553 pages=3 scanned=f18/r18/rows46 output=12
+RFC025 backend=S3 depth=80 actual=88 layout=Uncompacted index=BoundedTail op=Show access=WarmRepeat fragments=81/89 object_io=18/75378 scan_io=18/18/25696 pages=0 scanned=f18/r18/rows46 output=12
+RFC025 backend=S3 depth=80 actual=88 layout=Compacted index=BoundedTail op=CleanupPlan access=ColdOpen fragments=1/9 object_io=23/98577 scan_io=27/27/102226 pages=1 scanned=f9/r11/rows61 output=44
+RFC025 backend=S3 depth=80 actual=88 layout=Compacted index=BoundedTail op=CleanupPlan access=WarmRepeat fragments=1/9 object_io=9/49362 scan_io=9/9/24112 pages=0 scanned=f9/r11/rows61 output=44
+RFC025 backend=S3 depth=80 actual=88 layout=Uncompacted index=BoundedTail op=CleanupPlan access=ColdOpen fragments=81/89 object_io=23/98838 scan_io=27/27/67705 pages=1 scanned=f9/r11/rows61 output=44
+RFC025 backend=S3 depth=80 actual=88 layout=Uncompacted index=BoundedTail op=CleanupPlan access=WarmRepeat fragments=81/89 object_io=9/37689 scan_io=9/9/12848 pages=0 scanned=f9/r11/rows61 output=44
+
+thread 'checkpoint_retention_cost::s3_checkpoint_retention_matrix_is_exact_and_records_the_current_no_go' (40854) panicked at crates/omnigraph/tests/integration/checkpoint_retention_cost.rs:1002:5:
+BLOCKER: S3 uncompacted cold-open object reads must remain an explicit no-go until substrate behavior changes: shallow=6, deep=6
+
+
+failures:
+    checkpoint_retention_cost::s3_checkpoint_retention_matrix_is_exact_and_records_the_current_no_go
+    durable_head_lookup_cost::s3_durable_head_lookup_matrix_is_correct_and_observable
+
+test result: FAILED. 23 passed; 2 failed; 0 ignored; 0 measured; 688 filtered out; finished in 18.66s
+

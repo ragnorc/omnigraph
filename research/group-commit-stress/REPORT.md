@@ -91,8 +91,8 @@ sustained). Lance upstream asks with exact code locations are in §8.
 - **Backends.** Local disk; RustFS `1.0.0-beta.12` behind toxiproxy `v2.13.0`
   at +15 ms each way (32 ms round trip, probed before and after every S3
   run: `scripts/proxy-rtt.sh`), the CI-pinned versions #1401 used, checksums
-  verified. Azurite not run (no Node package cache for it on the box; the
-  Azure path shares the engine code exercised here, not its provider).
+  verified. Azurite was not run in this pass (the Azure path shares the
+  engine code exercised here, not its provider or admission wrapper).
 - **Drivers.**
   1. `crates/omnigraph/tests/group_commit_stress.rs`: seven focused repros
      (seams park a write at a chosen point) and `gc_stress_harness`, a seeded
@@ -202,6 +202,7 @@ known keys keyed by relative path (H9; not exercised with copied roots).
 | `failpoints` | hung (H3) after 22 tests: 16 pass, 6 fail | **167 pass**, 2 ignored, 13 fail (10 seam, 3 old behavior) | — |
 | DST (`crates/omnigraph-dst`) | — (first pass on the fixed build: 6 failures, 2 real bugs H11, H12) | lib 54/55, scenarios 54/57 (3 seam, 1 golden) | writer-claims universe passes after H12 |
 | GQT corpus | — | **477 pass** | — |
+| RustFS-configured engine tests (`integration` filtered to `s3`, RustFS direct) | — | 23 pass, 2 fail | 23 pass, the same 2 fail |
 
 Final rerun: `results/final/`, `results/pertest-final-failpoints-gc1.tsv`
 (`scripts/final-suites.sh`).
@@ -252,6 +253,17 @@ wrong outcome.
    batching off too: the prototype's publisher trust and known keys change
    request counts, and it asserts the carry. Regenerating it with reasons is
    rollout work.
+
+The two RustFS failures are cost instruments that fail identically with
+batching off, so batching is not their cause:
+`durable_head_lookup_cost::s3_durable_head_lookup_matrix_is_correct_and_observable`
+("compacted warm scan bytes must not grow with journal history: shallow=20728,
+deep=35784") and
+`checkpoint_retention_cost::s3_checkpoint_retention_matrix_is_exact_and_records_the_current_no_go`
+(its "explicit no-go" now measures flat: shallow=6, deep=6 cold-open reads).
+They were not run on `origin/main` here, so whether the prototype's
+always-on trims (publisher trust, known keys) or #1407 moved them is open.
+Azurite was not run.
 
 Real bugs these suites found: H11 (DST v11 fault universe, DST fault storm,
 three `branch_claim_*` failpoints tests) and H12 (DST writer-claims universe).

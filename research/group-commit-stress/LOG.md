@@ -602,3 +602,21 @@ deletes), final build (cap lift and memo on), gated retry.
 readers. Off: 3.73 writes/s, p50 268 ms, p99 277 ms. On: 4.20 writes/s, p50
 238 ms, p99 251 ms. 0 violations. A batch of one costs no more (the leader's
 capture from its own last publication and the index warm-up save requests).
+
+## 2026-11-15 — final suite rerun (final build)
+
+`scripts/final-suites.sh` (`results/final/`): `writes` 67/67 and engine
+`integration` 704/704 with batching on and off; `detached_commit_matrix` 24
+pass, 7 fail (5 seam, 2 carry); `failpoints` 167 pass, 2 ignored, 13 fail
+(10 seam, 3 asserting the ordinary path's re-preparation or carry counter;
+`insert_overlapping_an_optimize_publication_does_not_reprepare_issue_1331`
+now passes thanks to H13, `insert_still_reprepares_over_a_row_change_after_optimize_issue_1331`
+now fails because the group path admits an entry the other table's insert
+did not touch); DST lib 54/55, scenarios 54/57 (seams, the cost golden);
+GQT 477/477.
+
+RustFS-configured engine tests (`integration … s3`, RustFS direct): 23 pass,
+2 fail, identically with batching on and off:
+`durable_head_lookup_cost::s3_durable_head_lookup_matrix_is_correct_and_observable`
+and `checkpoint_retention_cost::s3_checkpoint_retention_matrix_is_exact_and_records_the_current_no_go`.
+Not classified against `origin/main` in this pass.
