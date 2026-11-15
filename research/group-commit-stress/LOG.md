@@ -548,3 +548,50 @@ Local served, release, 48 writers, pure inserts, no maintenance, no readers,
 0 violations both. In release the memo's per-write saving is smaller than in
 the dev-build harness (2.0×): the O(F log F) passes cost less relative to the
 rest; the cliff removal (3.7–4.6× in the last 15 s) is the visible gain.
+
+## 2026-11-15 — soak 3: one hour on RustFS (build 6)
+
+`served_run.py soak3-s3-w56 --backend s3 --bins /srv/bins/proto-fixed3
+--optimize-secs 60 --server-env OMNIGRAPH_PER_ACTOR_INFLIGHT_MAX=128
+--server-env OMNIGRAPH_GLOBAL_INFLIGHT_MAX=160 --server-env
+OMNIGRAPH_INGRESS_INFLIGHT_MAX=160 --server-env
+OMNIGRAPH_GROUP_COMMIT_STATS_SECS=60 -- --writers 56 --secs 3600 --actors 1
+--mix fresh=100 --reader-count 1 --read-interval 1`; proxy RTT probed each
+minute (31.2–40.2 ms). Series: `results/soak3-series.md`; gates:
+`results/soak3-gates.json` (`scripts/soak_report.py`).
+
+- 362,706 acknowledged, all verified (final export + model), 0 violations;
+  12,987 commits, 27.9 writes/commit (max 55); p50 504 ms, p99 1,068 ms;
+  6,233 `count` observations all equal to the model at their commit.
+- writes/s: minute 1 124, then ~100–104, last 5 minutes 94.5 (0.85 of the
+  first 5).
+- optimize: 54 of 54 published, 6.1–7.4 s each, flat; writers' max latency
+  ~6 s in those minutes.
+- RSS: 2,191 MB (1 min), 2,621 (10), 3,454 (30), 5,219 (60): 1.32× at 30/10,
+  1.99× at 60/10; growth slowing to ~25 MB/min at the end. Lance default
+  caches (6 GiB index, 1 GiB metadata) are the likely sink; not proven.
+- known-key files 362,650 (one per write, never evicted); queue 1–35.
+- During minutes ~28–45 local measurements ran on the same box (improvement
+  3, i01): minute 43's dip to 90 writes/s and p99 6.1 s coincide with them.
+
+## 2026-11-15 — RustFS mixed workload, final build: exact footprints
+
+`served/r04a-final-changed`, `served/r04b-final-exact`: same config as r03
+(48 writers, 4 actors, 70% fresh inserts, ~15% same-table updates and
+deletes), final build (cap lift and memo on), gated retry.
+
+| | writes/s | writes/commit | p50 / p99 | violations |
+|---|---:|---:|---|---|
+| `changed` per table (RFC as written) | 3.3 | 1.06 | 20.0 / 32.3 s | 0 |
+| exact footprints | **9.0** | **4.07** | **5.8 / 11.9 s** | 0 |
+
+2.75× and the p99 cut by 63%, beating the unbounded ungated variant (8.0).
+
+## 2026-11-15 — 1,024 writers (embedded, dev build)
+
+90% fresh, 10% same-table updates/deletes/upserts, 30 s:
+
+| | writes/s | writes/commit (max) | p50 | p99 | violations |
+|---|---:|---|---:|---:|---|
+| RFC rules (f13-w1024) | 57.3 | 1.0 (1) | 42.4 s | 125.8 s | 0 |
+| exact footprints (f13-w1024-exact) | 89.3 | 15.6 (512, the cap) | 13.7 s | 50.5 s | 0 |
