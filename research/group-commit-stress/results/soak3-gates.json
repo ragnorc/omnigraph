@@ -1,0 +1,1 @@
+{"minutes": 60, "first5_writes_per_s": 111.3, "last5_writes_per_s": 94.5, "last5_over_first5": 0.85, "rss_10min_mb": 2621, "rss_30min_mb": 3454, "rss_end_mb": 5219, "rss_30_over_10": 1.318, "optimize_runs": 54, "optimize_published": 54, "optimize_secs_median": 6.64, "refusals_total": 0, "failed_batches": 0, "proxy_rtt_ms_min_max": [31.2, 40.2]}

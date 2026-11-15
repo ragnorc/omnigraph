@@ -44,9 +44,10 @@ inserts. Two results contradict it as written:
    insert there, and each refused insert then prepares and publishes alone
    under the branch gate. On RustFS (+30 ms) with 70% fresh inserts and
    ~15% same-table updates and deletes: 3.2 writes/s, against 3.0 with group
-   commit off (p50 19.6 s). Logging the exact ids such writes touched
-   (improvement 1) restores batching without giving up the two-attempt
-   bound.
+   commit off (p50 19.6 s); at 1,024 writers every batch held one write.
+   Logging the exact ids such writes touched (improvement 1) restores
+   batching without giving up the two-attempt bound: 9.0 writes/s, 4.07
+   writes/commit, p99 32 → 12 s on the same RustFS run.
 2. **Maintenance and fragment growth are not side issues.** One fragment per
    write makes every per-write pass O(fragments); without maintenance the
    rate decays 27× in 40 s locally, and past 8,192 unindexed fragments every
@@ -55,7 +56,8 @@ inserts. Two results contradict it as written:
    served `optimize` is refused outright with ≥64 writers (a hard-coded
    observer cap), and the RFC's soak cannot run on the served path as
    specified. With served `optimize` every minute the S3 soak held ~100
-   writes/s for an hour (§6).
+   writes/s for an hour, 362,706 writes verified, both RFC soak gates
+   passed (§6), while RSS grew from 2.6 to 5.2 GB.
 
 **Improving it.** Best three, each measured on the same instrument:
 memoizing the known-tail analysis per table version (2.0× writes/s on pure
@@ -250,11 +252,17 @@ edges, optimize every 30 s, 60 s (`served/r03*`):
 | fixed prototype, RFC rules (gated retry, `changed` per table) | 3.2 | 1.06 | 19.6 / 32.3 s | 0 |
 | unfixed prototype (ungated retries, per-actor log) | 5.75 | 2.86 | 2.4 / 39.5 s | 24 × 409 |
 | fixed, 32 ungated retries (no progress bound) | 8.0 | 3.47 | 5.5 / 32.1 s | 0 |
-| fixed, RFC rules + exact footprints | EXACT_S3 | | | |
+| fixed, RFC rules + exact footprints (final build) | **9.0** | **4.07** | **5.8 / 11.9 s** | 0 |
 
 Locally (embedded, 32 writers, one actor, `f10`, `f01`): RFC rules 24.4
 writes/s, 1.05 writes/commit, p50 1,372 ms; with exact footprints 35.2,
 1.96, 768 ms; ungated 34.5, 2.08, 624 ms.
+
+At 1,024 embedded writers (dev build, 90% fresh, 10% same-table updates,
+deletes and upserts, 30 s, `f13-*`): RFC rules 57.3 writes/s, **1.0
+writes/commit (max 1)**, p50 42.4 s, p99 125.8 s; with exact footprints 89.3
+writes/s, 15.6 writes/commit (the 512-entry batch cap reached), p50 13.7 s,
+p99 50.5 s. 0 violations both.
 
 Mechanism: every write outside the group is logged `changed` for its table;
 that refuses every queued insert into the table; each refused insert then
@@ -275,7 +283,71 @@ manifest builds and writes, all O(fragments), with every write adding one.
 
 ## 6. Soak
 
-SOAK_SECTION
+Served `omnigraph-server` (final fix wave of the prototype, build 6), RustFS
+behind toxiproxy at 32 ms (probed every minute: 31.2–40.2 ms), one branch,
+56 closed-loop writers as one actor (the server's per-actor cap raised; 56
+leaves room under the hard-coded 64 write observers so `optimize` is
+admitted), pure fresh inserts into `Item`, two readers reading `count(Item)`
+once a second at the exact commit they were served from, recorded `optimize`
+every minute (compaction plus index reconciliation; the served path has no
+separate index-build route), 60 minutes. Full series:
+`results/soak3-series.md`; gates: `results/soak3-gates.json`.
+
+| minute | writes/s | p50 ms | p99 ms | max ms | server RSS MB | server CPU % | writes/batch | queue | known-key files |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 123.97 | 436.7 | 860.1 | 1027.7 | 2191 | 0.0 | 23.4 | 23 | 6049 |
+| 2 | 113.73 | 445.7 | 648.4 | 5998.1 | 2427 | 202.6 | 27.8 | 20 | 12694 |
+| 5 | 104.78 | 473.1 | 906.6 | 5862.5 | 2521 | 173.8 | 27.9 | 10 | 31705 |
+| 10 | 100.36 | 504.4 | 978.7 | 6123.3 | 2621 | 152.9 | 27.9 | 30 | 63048 |
+| 15 | 103.55 | 482.6 | 904.6 | 6298.6 | 2675 | 182.8 | 27.9 | 1 | 93472 |
+| 20 | 101.73 | 504.0 | 766.8 | 6063.8 | 2823 | 170.9 | 27.9 | 22 | 125205 |
+| 25 | 103.53 | 479.2 | 926.8 | 6441.2 | 3042 | 226.9 | 28.0 | 33 | 156509 |
+| 30 | 102.16 | 491.7 | 689.3 | 911.4 | 3454 | 203.1 | 28.0 | 30 | 187707 |
+| 35 | 99.73 | 483.6 | 852.9 | 6768.1 | 4231 | 167.0 | 28.0 | 26 | 218202 |
+| 40 | 101.15 | 507.4 | 636.4 | 895.9 | 4676 | 172.8 | 28.0 | 33 | 248134 |
+| 45 | 96.45 | 504.8 | 816.8 | 6252.6 | 4898 | 170.5 | 28.0 | 21 | 276720 |
+| 50 | 103.6 | 508.0 | 674.7 | 880.0 | 5079 | 184.0 | 28.0 | 35 | 305652 |
+| 55 | 94.63 | 525.4 | 888.6 | 6157.6 | 5163 | 146.7 | 28.0 | 31 | 334152 |
+| 60 | 102.15 | 533.9 | 674.1 | 681.6 | 5219 | 165.6 | 28.0 | 25 | 362650 |
+
+| gate (RFC `blocked_on`, adapted) | result |
+|---|---|
+| every acknowledged write verified | **362,706 of 362,706**, final export and model replay; 0 violations |
+| batch atomicity at every observed commit | 6,233 `count` observations, each equal to the model at that commit |
+| every maintenance run published | **54 of 54** optimize runs (median 6.6 s, flat over the hour) |
+| writes/s, last 5 min ≥ 80% of first 5 | 94.5 / 111.3 = **0.85** (pass; minute 1 at 124 is an empty table) |
+| peak RSS at 30 min ≤ 1.5× the 10-min mark | 3,454 / 2,621 MB = **1.32** (pass) |
+| refusals, failed batches | 0, 0 |
+
+Reading the curves:
+
+- **Throughput** settles at ~100 writes/s by minute 4 and drifts ~7% lower
+  over the hour; every batch holds ~28 writes (max 55), ~3.6 publications a
+  second. p50 ~500 ms; p99 0.6–1.3 s; max ~6 s in the minutes an optimize ran:
+  writers wait out its ~6.6 s gate hold, ~10% of each minute.
+- **Maintenance keeps up** at this rate (compacting ~6,000 small fragments a
+  minute takes a flat ~6.6 s) but only because it is the served path
+  (captures under the gates) at < 64 writers; the direct path never lands
+  under batching (§5, 0 of 16) and at 64 writers the served path is refused
+  (O1).
+- **Memory grows all hour**: 2.19 GB at minute 1, 2.62 at 10, 3.45 at 30, 5.22
+  at 60, about 50 MB a minute after minute 30, slowing to ~25 MB a minute at
+  the end. The engine's data session uses Lance's default caches (6 GiB index,
+  1 GiB metadata, `lance_access.rs`), every optimize rebuilds the id index
+  under a new UUID, and every batch writes a new table manifest, so the
+  growth is consistent with caches filling toward their caps. The hour does
+  not show the plateau; a longer soak or capped caches would. The RFC's
+  30-versus-10 gate passes; a 60-versus-10 gate (1.99×) would not.
+- **Known keys** grew one entry per write (362,650 files) and were never
+  evicted: the 4 M-id bound was never reached, and entries for files that
+  compaction replaced stay. At ~0.3 KB an entry that is ~100 MB here.
+- **Queue depth** (writers waiting when a batch starts) 1–35, bounded by the
+  56 writers.
+- **Discarded soaks**: soak 1 (64 writers) had every optimize refused by the
+  observer cap and a toxiproxy stall; soak 2 (56 writers, build 5) collapsed
+  after its first optimize (H14: 122 → 2.35 writes/s). Both are evidence for
+  O1 and H14.
+
 
 ## 7. Improvements tried
 
@@ -284,7 +356,7 @@ branch so both sides run from one binary.
 
 | # | Idea | Hypothesis | Result | Verdict |
 |---|---|---|---|---|
-| 1 | **Exact footprints** for publications outside the group (`OMNIGRAPH_GROUP_COMMIT_EXACT_TOUCHED`) | An update or delete changes exactly the ids its staging folded or deleted; an insert-only entry only read its own ids' absence and its endpoints' existence | local mixed: 24.4 → **35.2 writes/s (+44%)**, 1.05 → 1.96 writes/commit, p50 1,372 → **768 ms**; S3 mixed: EXACT_S3_SHORT | **keep**; RFC change |
+| 1 | **Exact footprints** for publications outside the group (`OMNIGRAPH_GROUP_COMMIT_EXACT_TOUCHED`) | An update or delete changes exactly the ids its staging folded or deleted; an insert-only entry only read its own ids' absence and its endpoints' existence | local mixed: 24.4 → **35.2 writes/s (+44%)**, 1.05 → 1.96 writes/commit, p50 1,372 → **768 ms**; S3 mixed: 3.3 → **9.0 writes/s (2.75×)**, 1.06 → 4.07 writes/commit, p99 32.3 → 11.9 s | **keep**; RFC change |
 | 2 | **Lift the 8,192 probe cap** when the known keys answer the whole uncovered tail (`OMNIGRAPH_KNOWN_KEYS_LIFT_CAP`) | The cap guards against per-uncovered-fragment IN lists, which `fast_search` never plans when the tail is answered from memory | 80–90 s window: **0.0 → 44.5 writes/s**; no cliff | **keep**; RFC change (Known keys) |
 | 3 | **Memoize the known-tail analysis per manifest version** (`OMNIGRAPH_KNOWN_KEYS_TAIL_CACHE`) | Every writer probing the same pin rebuilds the same uncovered set three times and takes the global known-keys mutex per fragment | embedded, 48 writers, pure inserts, 60 s: **112.1 → 224.7 writes/s (2.0×)**; last 10 s 59 → 134 | **keep**; RFC change (Known keys) |
 | 4 | H14 fix (log read under the gates) | — | S3 soak minute 2: **2.35 → ~114 writes/s** | required |
