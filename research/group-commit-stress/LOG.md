@@ -534,3 +534,17 @@ for both, writes/s per 10 s (the soak was running beside it on S3):
 0 violations both. Verdict: keep (2.0× mean, 2.3× in the last window). The
 remaining decay is the per-batch O(fragments) manifest work and the rest of
 §5.3; only maintenance or fewer fragments per write remove it.
+
+## 2026-11-15 — improvements 2 + 3 on real binaries
+
+Local served, release, 48 writers, pure inserts, no maintenance, no readers,
+40 s, writes/s per 5 s (`served/i01-*`):
+
+| build | 0–5 | 5–10 | 10–15 | 15–20 | 20–25 | 25–30 | 30–35 | 35–40 | total | writes/commit |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| build 7 (no cap lift, no memo) | 698 | 323 | 257 | 207 | 162 | **27** | **36** | **33** | 8,760 | 13.6 |
+| final (cap lift + memo) | 757 | 290 | 223 | 198 | 170 | **126** | **136** | **134** | 10,217 | 14.5 |
+
+0 violations both. In release the memo's per-write saving is smaller than in
+the dev-build harness (2.0×): the O(F log F) passes cost less relative to the
+rest; the cliff removal (3.7–4.6× in the last 15 s) is the visible gain.
