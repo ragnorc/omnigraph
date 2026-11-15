@@ -337,14 +337,15 @@ pub struct StorageProfile {
 }
 
 /// The object-store profile's wave latency in row units: 20 ms over the
-/// measured cost of one indexed-probe row on the reference host (1.63 µs,
-/// release build, `examples/request_cost_calibrate.rs`; the record is
+/// measured cost of one indexed-probe row on the reference host (median
+/// 0.98 µs over five release runs of `examples/request_cost_calibrate.rs`,
+/// range 0.46 to 1.63 µs; the record is
 /// `experiments/request-cost/CALIBRATION.md`).
-pub const OBJECT_STORE_LATENCY_UNITS: u64 = 12_000;
+pub const OBJECT_STORE_LATENCY_UNITS: u64 = 20_000;
 
 /// Bytes per row unit on the object-store profile: 64 requests in flight at
-/// 50 MiB/s each move about 5,000 bytes in one row unit's 1.63 µs.
-pub const OBJECT_STORE_BYTES_PER_UNIT: u64 = 5_000;
+/// 50 MiB/s each move about 3,300 bytes in one row unit's 0.98 µs.
+pub const OBJECT_STORE_BYTES_PER_UNIT: u64 = 3_300;
 
 /// Lance's I/O parallelism for a cloud store (`ObjectStore::io_parallelism`).
 pub const OBJECT_STORE_PARALLELISM: u64 = 64;

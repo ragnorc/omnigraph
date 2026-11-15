@@ -4,7 +4,7 @@
 //! a request latency can be expressed in them.
 //!
 //! ```text
-//! cargo run --release -p omnigraph-engine --example request_cost_calibrate -- build <dir> [persons]
+//! cargo run --release -p omnigraph-engine --example request_cost_calibrate -- build <dir> [persons] [hub_rows]
 //! cargo run --release -p omnigraph-engine --example request_cost_calibrate -- time <dir> [reps]
 //! cargo run --release -p omnigraph-engine --example request_cost_calibrate -- shapes <dir> [reps] [latency_units...]
 //! ```
@@ -14,8 +14,9 @@
 //! plan's choices, rows and median wall time.
 //!
 //! `build` writes a local graph shaped like the request-cost fixtures
-//! (Person in 50 fragments, Company 200, WorksAt one edge per person,
-//! uniform). `time` runs each probe warm, `reps` times after three
+//! (Person in 50 fragments, Company 200, City 20, WorksAt one edge per
+//! person, uniform except the last `hub_rows` persons, who all work at
+//! c-007). `time` runs each probe warm, `reps` times after three
 //! warm-ups, and prints the median wall time per frontier size `k`
 //! companies (`k × |Person| / 200` edges) and the least-squares slope per
 //! row of each operator the model prices:
@@ -117,7 +118,7 @@ fn session(db: Omnigraph, traversal: Traversal) -> Session {
     )
 }
 
-async fn build(dir: &str, persons: u64) {
+async fn build(dir: &str, persons: u64, hub_rows: u64) {
     let db = session(Omnigraph::init(dir, SCHEMA).await.unwrap(), Traversal::Auto);
     let mut companies = String::new();
     for c in 0..COMPANIES {
@@ -154,7 +155,12 @@ async fn build(dir: &str, persons: u64) {
         let (start, end) = (fragment * per, ((fragment + 1) * per).min(persons));
         let mut rows = String::new();
         for i in start..end {
-            let c = splitmix(i) % COMPANIES;
+            // The last `hub_rows` persons all work at c-007, the hub.
+            let c = if i >= persons - hub_rows {
+                7
+            } else {
+                splitmix(i) % COMPANIES
+            };
             rows.push_str(&format!(
                 "{{\"edge\":\"WorksAt\",\"from\":\"p-{i:06}\",\"to\":\"c-{c:03}\"}}\n"
             ));
@@ -408,7 +414,8 @@ async fn main() {
     match args.get(1).map(String::as_str) {
         Some("build") => {
             let persons = args.get(3).map_or(200_000, |n| n.parse().unwrap());
-            build(&args[2], persons).await;
+            let hub_rows = args.get(4).map_or(0, |n| n.parse().unwrap());
+            build(&args[2], persons, hub_rows).await;
         }
         Some("time") => {
             let reps = args.get(3).map_or(15, |n| n.parse().unwrap());
