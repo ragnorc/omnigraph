@@ -59,14 +59,17 @@ inserts. Two results contradict it as written:
    writes/s for an hour, 362,706 writes verified, both RFC soak gates
    passed (§6), while RSS grew from 2.6 to 5.2 GB.
 
-**Improving it.** Best three, each measured on the same instrument:
-memoizing the known-tail analysis per table version (2.0× writes/s on pure
-inserts), exact footprints for writes outside the group (+44% writes/s and
-−44% p50 on a mixed workload with the gated retry kept), and lifting the
-probe cap when known keys cover the tail (removes a 0 writes/s cliff). The H14
-fix is a prerequisite rather than an improvement (the S3 soak's minute-2 rate
-from 2.35 to ~114 writes/s, sustained). Lance upstream asks with exact code
-locations are in §8.
+**Improving it.** Best three, each measured before and after on the same
+instrument and seed: (1) exact footprints for writes outside the group,
+**2.75× writes/s on RustFS** (3.3 → 9.0, p99 32.3 → 11.9 s) on the mixed
+workload with the gated retry kept, and 1.0 → 15.6 writes/commit at 1,024
+writers; (2) lifting the 8,192 probe cap when known keys cover the tail,
+which removes a cliff to 0 writes/s (release, served: **27–36 → 126–136
+writes/s** once past it); (3) memoizing the known-tail analysis per table
+version, **2.0× mean writes/s** on pure inserts in the dev-build harness
+(smaller in release). The H14 fix is a prerequisite rather than an
+improvement (the S3 soak's minute-2 rate from 2.35 to ~114 writes/s,
+sustained). Lance upstream asks with exact code locations are in §8.
 
 
 ## 1. Setup and method
@@ -81,7 +84,9 @@ locations are in §8.
   same lifetime. `origin/main` merged cleanly.
 - **Binaries.** `omnigraph` and `omnigraph-server` built with the release
   profile (opt-level 2, thin LTO, line tables kept): `/srv/bins/proto-unfixed`
-  (the merge), then one build per fix wave (`proto-fixed` … `proto-fixed4`).
+  (the merge), then one build per fix wave (`proto-fixed` … `proto-fixed4`,
+  and `proto-final` with improvements 2 and 3 on by default). The soak ran
+  `proto-fixed3`: every fix H1–H14, without improvements 2 and 3.
   Group commit is the prototype's process switch `OMNIGRAPH_GROUP_COMMIT=1`.
 - **Backends.** Local disk; RustFS `1.0.0-beta.12` behind toxiproxy `v2.13.0`
   at +15 ms each way (32 ms round trip, probed before and after every S3
@@ -132,7 +137,8 @@ locations are in §8.
 | Crash points between detached commits and the CAS (8 aborts) | served local | 0 violations; cleanup reclaimed exactly 8 unpublished manifests |
 | Resets, truncated acknowledgements, stalls, jitter (17 windows) | served S3 | 0 violations; lost-ack re-issue path exercised |
 | Optimize, index builds, cleanup, branch create/merge/delete, schema apply alongside | embedded, served | H13, H14, maintenance starvation |
-| Writer epoch claim mid-load; several processes on one root | DST, embedded | H12; 4 processes 0 violations |
+| Writer epoch claim mid-load; several processes on one root | DST, embedded | H12; 4 processes 0 violations; after a claim the other processes are fenced, the claimer keeps writing |
+| Named branch deleted and recreated while an entry captured on it is parked | focused repro | rule 1 holds: refused, request reran on the new incarnation |
 | Suites with batching forced on: `writes`, engine `integration`, `failpoints`, `detached_commit_matrix`, DST, GQT | dev build | §4 |
 | Soak: 1 hour, S3, 56 writers, optimize every minute | served | §6 |
 
@@ -153,7 +159,7 @@ lost guarantee or a bounded stall; **low** = cosmetic or conservative.
 | H11 | **medium** | Every batch failure re-typed as `manifest_internal("group commit failed: …")` for every member, the leader included: `WriterFenced`, conflicts and injected refusals lose kind, details and HTTP status (409 → 500) | DST `dst_v11_fault_injection_atomicity_and_replay`, `dst_fault_storm_on_one_live_handle_keeps_writing`; failpoints `branch_claim_*` ("not a writer-fenced refusal: None") | `follower_error` rebuilt all errors | clone `ManifestError` and `KeyConflict` with their evidence (`44008d15`) | Outcomes per member |
 | H10 | **medium** | An edge entry's footprint omitted its endpoint node tables | `gc_log_hole_admits_an_edge_across_a_delete_of_its_endpoint` after H5's per-table logging | admission checked only written tables | add each written edge table's endpoint tables (`285922cf`) | Eligibility ("endpoint node tables join the footprint") |
 | H2 | **medium** | Groups keyed per (handle, branch, actor): one actor's batches are foreign to another's; with H1, duplicates | `gc_second_actor_batch_is_a_hole_in_the_first_actors_log`; h02, h03 | `group_key` included the actor | one group and log per branch, one actor per batch (`285922cf`); per root (shared across handles) still open | The write group |
-| C1 | **medium (perf cliff)** | Past 8,192 fragments outside the id index every keyed insert becomes a full-table merge join: 0 writes/s | f11-liftcap0 (80–90 s window: 0.0 writes/s); stacks all Lance `filtered_read` | `stage_keyed_write` runs the absence probe only while `tail.fragments × ids ≤ 8,192` (#1225) | lift the cap when known keys answer the whole tail (improvement 2) | Known keys |
+| C1 | **medium (perf cliff)** | Past 8,192 fragments outside the id index every keyed insert becomes a full-table merge join: 0 writes/s | f11-liftcap0 (80–90 s window: 0.0 writes/s); stacks all Lance `filtered_read` | `stage_keyed_write` runs the absence probe only while `tail.fragments × ids ≤ 8,192` (#1225) | lift the cap when known keys answer the whole tail (improvement 2, `6d4a893b`) | Known keys |
 | H4 | **low–medium** | A write cancelled before admission was still published | `gc_follower_dropped_before_admission_leaves_the_queue` | the leader drained entries whose caller had gone | closed entries leave the queue at drain and after the gates (`285922cf`) | Outcomes per member |
 | H7 | **low** | Followers of an in-doubt batch got an internal error, not `manifest_publish_in_doubt` naming the batch's commit | code reading | `follower_error` | typed in-doubt for every member (`285922cf`) | Outcomes per member |
 | O1 | **medium (operational)** | `omnigraph-server` caps concurrent write responses at 64 (`DEFAULT_WRITE_OBSERVERS`, no override); an `optimize` submission is a write, so with ≥64 writers it is always refused 429 | served s03, soak 1 | hard-coded constant in `operations.rs` | none (ran the soak at 56 writers) | Soak gate in `blocked_on` |
@@ -283,7 +289,7 @@ manifest builds and writes, all O(fragments), with every write adding one.
 
 ## 6. Soak
 
-Served `omnigraph-server` (final fix wave of the prototype, build 6), RustFS
+Served `omnigraph-server` (`proto-fixed3`: every fix, no improvements), RustFS
 behind toxiproxy at 32 ms (probed every minute: 31.2–40.2 ms), one branch,
 56 closed-loop writers as one actor (the server's per-actor cap raised; 56
 leaves room under the hard-coded 64 write observers so `optimize` is
@@ -357,10 +363,10 @@ branch so both sides run from one binary.
 | # | Idea | Hypothesis | Result | Verdict |
 |---|---|---|---|---|
 | 1 | **Exact footprints** for publications outside the group (`OMNIGRAPH_GROUP_COMMIT_EXACT_TOUCHED`) | An update or delete changes exactly the ids its staging folded or deleted; an insert-only entry only read its own ids' absence and its endpoints' existence | local mixed: 24.4 → **35.2 writes/s (+44%)**, 1.05 → 1.96 writes/commit, p50 1,372 → **768 ms**; S3 mixed: 3.3 → **9.0 writes/s (2.75×)**, 1.06 → 4.07 writes/commit, p99 32.3 → 11.9 s | **keep**; RFC change |
-| 2 | **Lift the 8,192 probe cap** when the known keys answer the whole uncovered tail (`OMNIGRAPH_KNOWN_KEYS_LIFT_CAP`) | The cap guards against per-uncovered-fragment IN lists, which `fast_search` never plans when the tail is answered from memory | 80–90 s window: **0.0 → 44.5 writes/s**; no cliff | **keep**; RFC change (Known keys) |
-| 3 | **Memoize the known-tail analysis per manifest version** (`OMNIGRAPH_KNOWN_KEYS_TAIL_CACHE`) | Every writer probing the same pin rebuilds the same uncovered set three times and takes the global known-keys mutex per fragment | embedded, 48 writers, pure inserts, 60 s: **112.1 → 224.7 writes/s (2.0×)**; last 10 s 59 → 134 | **keep**; RFC change (Known keys) |
+| 2 | **Lift the 8,192 probe cap** when the known keys answer the whole uncovered tail (`OMNIGRAPH_KNOWN_KEYS_LIFT_CAP`) | The cap guards against per-uncovered-fragment IN lists, which `fast_search` never plans when the tail is answered from memory | embedded, 80–90 s window: **0.0 → 44.5 writes/s**; release served (with 3), 25–40 s: **27–36 → 126–136 writes/s**, +17% writes over 40 s; no cliff | **keep**; RFC change (Known keys) |
+| 3 | **Memoize the known-tail analysis per manifest version** (`OMNIGRAPH_KNOWN_KEYS_TAIL_CACHE`) | Every writer probing the same pin rebuilds the same uncovered set three times and takes the global known-keys mutex per fragment | embedded (dev build), 48 writers, pure inserts, 60 s: **112.1 → 224.7 writes/s (2.0×)**, last 10 s 59 → 134; in release the per-write saving is smaller relative to the rest (combined with 2 above) | **keep**; RFC change (Known keys) |
 | 4 | H14 fix (log read under the gates) | — | S3 soak minute 2: **2.35 → ~114 writes/s** | required |
-| 5 | Ungated retries before the gated one (`OMNIGRAPH_GROUP_COMMIT_UNGATED_RETRIES`) | Most refused entries would batch on a second ungated try | 1 retry: no change (1.00 writes/commit); 32: 2.08 writes/commit but no bound | **discard**; exact footprints get the same batching with the bound |
+| 5 | Ungated retries before the gated one (`OMNIGRAPH_GROUP_COMMIT_UNGATED_RETRIES`) | Most refused entries would batch on a second ungated try | local: 1 retry no change (1.00 writes/commit); 32: 2.08 writes/commit, no bound; S3: 32 retries 8.0 writes/s vs exact footprints 9.0 | **discard**; exact footprints batch as well or better and keep the bound |
 | 6 | Linger, pipelining, rebase-per-write, probe-free writer capture | from #1401 | not re-run | — |
 
 ## 8. Where the cost lives, and Lance
