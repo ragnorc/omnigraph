@@ -131,7 +131,10 @@ fn checked_in_schema_fields_and_required_lists_match_serde_records() {
     record::<TokenSource>("storeSource", json!({"store":{}}));
     record::<TokenSource>("envSource", json!({"env":"TOKEN"}));
     record::<TokenSource>("fileSource", json!({"file":"token"}));
-    record::<Transport>("transport", json!({"tls":{},"proxy":{"mode":"direct"}}));
+    record::<Transport>(
+        "transport",
+        json!({"tls":{},"proxy":{"mode":"direct"},"loopback_http":"allow"}),
+    );
     record::<Tls>("tls", json!({"ca":{"mode":"append","file":"ca.pem"}}));
     record::<Ca>("ca", json!({"mode":"append","file":"ca.pem"}));
     record::<Proxy>("directProxy", json!({"mode":"direct"}));
