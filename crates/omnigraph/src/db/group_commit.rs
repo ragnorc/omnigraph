@@ -701,6 +701,10 @@ impl Omnigraph {
                     continue;
                 }
                 let first = actor.get_or_insert_with(|| waiting.entry.actor.clone());
+                // The header names the common actor, at most the first's.
+                if batch.is_empty() {
+                    used = WRITE_LIST_HEADER_BYTES + json_actor_bytes(first.as_deref());
+                }
                 let cost = write_list_entry_bytes(&waiting.entry);
                 let fits = batch.is_empty() || used + cost <= budget;
                 if !full
@@ -1545,10 +1549,19 @@ impl Omnigraph {
                 .all(|write| write.actor_id == common)
                 .then_some(common)
                 .flatten();
-            Some(omnigraph_catalog::commit_graph::encode_write_list(
-                common.as_deref(),
-                &writes,
-            ))
+            let encoded =
+                omnigraph_catalog::commit_graph::encode_write_list(common.as_deref(), &writes);
+            // Admission sized the list; a list over its budget is a defect,
+            // refused before the publication.
+            if encoded.len() > write_list_budget().max(WRITE_LIST_HEADER_BYTES) && writes.len() > 1 {
+                return Err(OmniError::manifest_internal(format!(
+                    "a batch's write list is {} bytes, over its budget of {}",
+                    encoded.len(),
+                    write_list_budget()
+                ))
+                .with_completion_evidence(crate::error::CompletionEvidence::Unpublished));
+            }
+            Some(encoded)
         } else {
             None
         };
@@ -2132,17 +2145,24 @@ fn write_list_budget() -> usize {
         .unwrap_or(omnigraph_catalog::HISTORY_RELEASE_BYTES / 2)
 }
 
-/// An upper bound of one member's entry in the encoded write list: its actor
-/// (JSON-escaped at most 6 bytes a byte) and one `[table, start, end]` per
-/// table it inserted into.
+/// The exact size of one member's entry in the encoded write list, with a
+/// 20-digit bound for each row id: `{"a":<actor>,"r":[[<table>,<start>,<end>],..]},`.
 fn write_list_entry_bytes(entry: &GroupEntry) -> usize {
-    let actor = entry.actor.as_ref().map_or(4, |actor| actor.len() * 6 + 2);
     let rows: usize = entry
         .writes
         .iter()
-        .map(|write| write.table_key.len() * 6 + 2 + 2 * 20 + 6)
+        .map(|write| json_string_bytes(&write.table_key) + 2 * 20 + 5)
         .sum();
-    16 + actor + rows
+    16 + json_actor_bytes(entry.actor.as_deref()) + rows
+}
+
+/// A JSON-encoded actor: a string, or `null`.
+fn json_actor_bytes(actor: Option<&str>) -> usize {
+    actor.map_or(4, json_string_bytes)
+}
+
+fn json_string_bytes(value: &str) -> usize {
+    serde_json::to_string(value).map_or(value.len() * 6 + 2, |encoded| encoded.len())
 }
 
 /// Research: the stable row-id range of each listed data file's fragment in

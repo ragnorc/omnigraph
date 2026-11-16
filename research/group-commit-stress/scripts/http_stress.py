@@ -44,6 +44,16 @@ DEFAULT_MIX = "fresh=40,hot=20,pair=5,update=8,delete=5,person=5,del_person=2,kn
 HEADERS = {"Omnigraph-Http-Api": "0.14", "Content-Type": "application/json"}
 
 
+def actor_names(args):
+    """The actors writers cycle through: `--actor-names a,b,...`, or `--actors N`
+    of `act-I` (`--actor-style long`: `act-long-II-` and 1000 `x`)."""
+    if args.actor_names:
+        return args.actor_names.split(",")
+    if args.actor_style == "long":
+        return [f"act-long-{i:02d}-" + "x" * 1000 for i in range(args.actors)]
+    return [f"act-{i}" for i in range(args.actors)]
+
+
 def parse_mix(spec):
     out = []
     for part in spec.split(","):
@@ -82,7 +92,8 @@ async def writer_loop(session, args, rec, writer, deadline, tokens, stats):
     import aiohttp
 
     rng = random.Random(args.seed * 100003 + writer)
-    actor = f"act-{writer % args.actors}"
+    names = actor_names(args)
+    actor = names[writer % len(names)]
     token = tokens[actor]
     seq = 0
     mix = parse_mix(args.mix)
@@ -353,7 +364,8 @@ def check(args):
             continue
         if c["graph_manifest_version"] != op.get("version"):
             violations.append(f"op {op['id']}: receipt v{op.get('version')} commit is v{c['graph_manifest_version']}")
-        if c.get("actor_id") != op["actor"]:
+        # A commit of several writes is checked by attr_http_check.py.
+        if not c.get("writes") and c.get("actor_id") != op["actor"]:
             violations.append(f"op {op['id']}: actor {op['actor']} commit actor {c.get('actor_id')}")
     uncertain_items, uncertain_people = set(), set()
     excluded = tuple(args.exclude_prefix or ())
@@ -492,6 +504,8 @@ def main():
     r.add_argument("--writers", type=int, default=32)
     r.add_argument("--secs", type=float, default=30)
     r.add_argument("--actors", type=int, default=1)
+    r.add_argument("--actor-names", default="")
+    r.add_argument("--actor-style", choices=["short", "long"], default="short")
     r.add_argument("--seed", type=int, default=1)
     r.add_argument("--mix", default=DEFAULT_MIX)
     r.add_argument("--hot", type=int, default=64)

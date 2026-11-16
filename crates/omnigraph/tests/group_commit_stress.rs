@@ -865,3 +865,209 @@ async fn gc_attribution_offline() {
         report.violations.len()
     );
 }
+
+/// RFC §Attribution: "The list counts toward the commit record's byte
+/// budget. Admission stops adding members when the next one would exceed
+/// it." Writers with long actor ids and a lowered budget
+/// (`OMNIGRAPH_GROUP_COMMIT_WRITE_LIST_BYTES`): every write publishes, no
+/// write list exceeds the budget, the members left out publish in later
+/// batches in arrival order, and attribution stays exact.
+#[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+#[serial]
+async fn gc_write_list_budget_splits_batches_of_long_actor_ids() {
+    use harness::{QUERIES, SCHEMA};
+    let _scenario = FailScenario::setup();
+    group_commit_on();
+    let budget = 1_400usize;
+    // SAFETY: serial test; read per batch.
+    unsafe { std::env::set_var("OMNIGRAPH_GROUP_COMMIT_WRITE_LIST_BYTES", budget.to_string()) };
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap().to_string();
+    let db = seeded(&uri, SCHEMA, "{\"type\":\"Item\",\"data\":{\"slug\":\"seed\",\"n\":0}}\n").await;
+    let holder_park =
+        helpers::failpoint::Rendezvous::park_first(&catalog::MUTATION_POST_TABLE_COMMIT);
+    let holder = {
+        let db = Arc::clone(&db);
+        tokio::spawn(async move {
+            db.mutate_with_receipt("main", QUERIES, "tag", &params(&[("$slug", "hold"), ("$label", "hold")]))
+                .await
+        })
+    };
+    holder_park.wait_until_reached().await;
+    let writers = 12usize;
+    let actor_of = |w: usize| format!("act-long-{w:02}-{}", "x".repeat(300));
+    let mut tasks = Vec::new();
+    for w in 0..writers {
+        let db = Arc::clone(&db);
+        let actor = actor_of(w);
+        tasks.push(tokio::spawn(async move {
+            let slug = format!("b{w}");
+            db.mutate_as_with_receipt("main", QUERIES, "ins", &mixed_params(&[("$slug", &slug)], &[("$n", w as i64)]), Some(&actor))
+                .await
+        }));
+        tokio::time::sleep(Duration::from_millis(40)).await;
+    }
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    holder_park.release();
+    holder.await.unwrap().unwrap();
+    let mut ops = Vec::new();
+    let mut versions = Vec::new();
+    for (w, task) in tasks.into_iter().enumerate() {
+        let receipt = task.await.unwrap().expect("every write publishes");
+        let commit = receipt.commit.unwrap();
+        versions.push(commit.graph_manifest_version);
+        ops.push(attribution::AttrOp {
+            id: w as u64,
+            actor: Some(actor_of(w)),
+            outcome: "ok".into(),
+            commit: Some(commit.graph_commit_id.clone()),
+            rows: attribution::inserted_rows("fresh", &[format!("b{w}")], None, None, None),
+        });
+    }
+    // SAFETY: serial test.
+    unsafe { std::env::remove_var("OMNIGRAPH_GROUP_COMMIT_WRITE_LIST_BYTES") };
+    let fresh = Omnigraph::open(&uri).await.unwrap();
+    let commits = fresh.list_commits(None).await.unwrap();
+    let mut sizes = Vec::new();
+    for commit in commits.iter().filter(|c| !c.writes.is_empty()) {
+        let encoded = omnigraph_catalog::commit_graph::encode_write_list(commit.actor_id.as_deref(), &commit.writes);
+        sizes.push((commit.writes.len(), encoded.len()));
+        assert!(encoded.len() <= budget, "a write list of {} bytes exceeds the budget {budget}", encoded.len());
+    }
+    eprintln!("[gc-repro] budget {budget}: write lists (members, bytes) {sizes:?}; versions {versions:?}");
+    assert!(sizes.iter().any(|(members, _)| *members >= 2), "no batch held two writes");
+    // Arrival order: versions never decrease along submission order.
+    assert!(versions.windows(2).all(|pair| pair[0] <= pair[1]), "a later write overtook an earlier one: {versions:?}");
+    let report = attribution::check(&fresh, &ops).await;
+    eprintln!("[gc-repro] attribution: {} {:?}", report.summary, report.violations);
+    assert!(report.violations.is_empty());
+}
+
+/// RFC admission rule 4 across actors: two actors insert the same absent key
+/// into one batch, and two actors insert Tags with one `@unique` label. The
+/// key's second insert is sent back and publishes alone, under its own actor;
+/// the batch's write list never names it. One Tag wins; the other gets a
+/// typed refusal with definite evidence and appears in no commit.
+#[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+#[serial]
+async fn gc_cross_actor_conflicts_in_one_batch() {
+    use harness::{QUERIES, SCHEMA};
+    let _scenario = FailScenario::setup();
+    group_commit_on();
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap().to_string();
+    let db = seeded(&uri, SCHEMA, "{\"type\":\"Item\",\"data\":{\"slug\":\"seed\",\"n\":0}}\n").await;
+    let holder_park =
+        helpers::failpoint::Rendezvous::park_first(&catalog::MUTATION_POST_TABLE_COMMIT);
+    let holder = {
+        let db = Arc::clone(&db);
+        tokio::spawn(async move {
+            db.mutate_with_receipt("main", QUERIES, "tag", &params(&[("$slug", "hold"), ("$label", "hold")]))
+                .await
+        })
+    };
+    holder_park.wait_until_reached().await;
+    let specs: Vec<(&'static str, &'static str, omnigraph_compiler::ir::ParamMap)> = vec![
+        // The first write leads alone; the rest queue behind it as one batch.
+        ("act-z", "ins", mixed_params(&[("$slug", "z1")], &[("$n", 9)])),
+        ("act-a", "ins", mixed_params(&[("$slug", "k")], &[("$n", 1)])),
+        ("act-e", "ins", mixed_params(&[("$slug", "e1")], &[("$n", 5)])),
+        ("act-b", "ins", mixed_params(&[("$slug", "k")], &[("$n", 2)])),
+        ("act-f", "ins", mixed_params(&[("$slug", "f1")], &[("$n", 6)])),
+        ("act-c", "tag", params(&[("$slug", "t1"), ("$label", "L")])),
+        ("act-d", "tag", params(&[("$slug", "t2"), ("$label", "L")])),
+    ];
+    let mut tasks = Vec::new();
+    for (actor, name, p) in specs.clone() {
+        let db = Arc::clone(&db);
+        tasks.push(tokio::spawn(async move {
+            db.mutate_as_with_receipt("main", QUERIES, name, &p, Some(actor)).await
+        }));
+        tokio::time::sleep(Duration::from_millis(60)).await;
+    }
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    holder_park.release();
+    holder.await.unwrap().unwrap();
+    let mut results = Vec::new();
+    for task in tasks {
+        results.push(task.await.unwrap());
+    }
+    let fresh = Omnigraph::open(&uri).await.unwrap();
+    let commits = fresh.list_commits(None).await.unwrap();
+    let by_id: std::collections::HashMap<&str, &omnigraph::db::GraphCommit> =
+        commits.iter().map(|c| (c.graph_commit_id.as_str(), c)).collect();
+    let mut ops = Vec::new();
+    for (index, result) in results.iter().enumerate() {
+        let (actor, name, _) = &specs[index];
+        match result {
+            Ok(receipt) => {
+                let commit = receipt.commit.as_ref().unwrap();
+                let stored = by_id[commit.graph_commit_id.as_str()];
+                eprintln!(
+                    "[gc-repro] {actor} {name}: v{} writes {:?} actor {:?}",
+                    commit.graph_manifest_version,
+                    stored.writes.iter().map(|w| w.actor_id.clone()).collect::<Vec<_>>(),
+                    stored.actor_id
+                );
+                let slug = match specs[index].2.get("slug") {
+                    Some(omnigraph_compiler::query::ast::Literal::String(s)) => s.clone(),
+                    _ => unreachable!(),
+                };
+                let rows = if *name == "tag" {
+                    attribution::inserted_rows("tag", &[], None, None, Some(&slug))
+                } else {
+                    attribution::inserted_rows("fresh", &[slug], None, None, None)
+                };
+                ops.push(attribution::AttrOp {
+                    id: index as u64,
+                    actor: Some(actor.to_string()),
+                    outcome: "ok".into(),
+                    commit: Some(commit.graph_commit_id.clone()),
+                    rows,
+                });
+            }
+            Err(error) => {
+                eprintln!(
+                    "[gc-repro] {actor} {name}: refused: {error} (evidence {:?})",
+                    error.completion_evidence()
+                );
+                // The ordinary path's validation refusal (Tags never batch):
+                // typed, and nothing of it is in any commit (checked below).
+                assert!(
+                    format!("{error}").contains("@unique violation"),
+                    "the refusal is the typed @unique violation"
+                );
+                ops.push(attribution::AttrOp {
+                    id: index as u64,
+                    actor: Some(actor.to_string()),
+                    outcome: "refused".into(),
+                    commit: None,
+                    rows: Default::default(),
+                });
+            }
+        }
+    }
+    // Both key inserts publish; act-b's lands in a commit of its own, as an
+    // update of `k`, and no write list names act-b.
+    let a = results[1].as_ref().expect("act-a publishes");
+    let b = results[3].as_ref().expect("act-b publishes (sent back, then alone)");
+    let a_commit = a.commit.as_ref().unwrap();
+    let b_commit = b.commit.as_ref().unwrap();
+    assert_ne!(a_commit.graph_commit_id, b_commit.graph_commit_id, "one batch holds two writes of one key");
+    let b_stored = by_id[b_commit.graph_commit_id.as_str()];
+    assert!(b_stored.writes.is_empty() && b_stored.actor_id.as_deref() == Some("act-b"));
+    for commit in &commits {
+        assert!(commit.writes.iter().all(|w| w.actor_id.as_deref() != Some("act-b")));
+    }
+    // Exactly one Tag publishes.
+    let tags_ok = [&results[5], &results[6]].iter().filter(|r| r.is_ok()).count();
+    assert_eq!(tags_ok, 1, "exactly one of two equal @unique labels publishes");
+    // act-b's insert of an existing key is not an insert in its own commit:
+    // the attribution oracle sees only act-a's row of `k` as a batch insert.
+    ops[3].rows = Default::default();
+    let a_stored = by_id[a_commit.graph_commit_id.as_str()];
+    assert!(a_stored.writes.len() >= 2, "act-a's write did not share a batch: {:?}", a_stored.writes);
+    let report = attribution::check(&fresh, &ops).await;
+    eprintln!("[gc-repro] attribution: {} {:?}", report.summary, report.violations);
+    assert!(report.violations.is_empty());
+}

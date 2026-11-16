@@ -230,6 +230,9 @@ def main():
     p.add_argument("--toxic-toxicity", type=float, default=0.3)
     p.add_argument("--latency-ms", type=int, default=15)
     p.add_argument("--watchdog", type=int, default=0, help="restart the server whenever it dies")
+    p.add_argument("--attribution", type=int, default=1, help="run the attribution checks after the run")
+    p.add_argument("--attr-bin", default=os.environ.get("GS_ATTR_BIN", ""),
+                   help="the group_commit_stress test binary (engine attribution oracle)")
     argv = sys.argv[1:]
     driver_args = []
     if "--" in argv:
@@ -361,7 +364,36 @@ def main():
         server.start()
     export(server, args, os.path.join(outdir, "final-export.jsonl"))
     commits(server, args, os.path.join(outdir, "commits.json"))
+    attr_codes = []
+    if args.attribution:
+        # Attribution through the server: commit get and the change feed.
+        attr_http = subprocess.run([PY, os.path.join(HERE, "attr_http_check.py"), "--base", server.base(),
+                                    "--graph", args.graph, "--history", history,
+                                    "--out", os.path.join(outdir, "attr-http.json")],
+                                   capture_output=True, text=True)
+        with open(os.path.join(outdir, "attr-http.txt"), "w") as f:
+            f.write(attr_http.stdout + attr_http.stderr)
+        print("[attr-http]", attr_http.stdout[-3000:], attr_http.stderr[-2000:], flush=True)
+        event(kind="attr_http_done", code=attr_http.returncode)
+        attr_codes.append(attr_http.returncode)
     server.stop()
+    if args.attribution and args.attr_bin:
+        # The engine oracle on the root: row-id coverage at every batch
+        # commit and at the head, commit get and the change feed.
+        env = dict(os.environ)
+        env.update({"OG_GS_URI": root, "OG_GS_OPS": history, "RUST_MIN_STACK": "16777216"})
+        if root.startswith("s3://"):
+            env.update(S3_ENV)
+            env["AWS_ENDPOINT_URL"] = env["AWS_ENDPOINT_URL_S3"] = "http://127.0.0.1:9000"
+        attr_rs = subprocess.run([args.attr_bin, "--ignored", "--nocapture", "--exact", "gc_attribution_offline"],
+                                 env=env, capture_output=True, text=True, cwd=os.path.join(ROOT, "crates", "omnigraph"))
+        lines = [line for line in (attr_rs.stdout + attr_rs.stderr).splitlines()
+                 if line.startswith("[attr-") or "test result" in line or "panicked" in line]
+        with open(os.path.join(outdir, "attr-engine.txt"), "w") as f:
+            f.write("\n".join(lines) + "\n")
+        print("[attr-engine]", "\n".join(lines[-45:]), flush=True)
+        event(kind="attr_engine_done", code=attr_rs.returncode)
+        attr_codes.append(attr_rs.returncode)
     check = subprocess.run([PY, os.path.join(HERE, "http_stress.py"), "check", "--history", history,
                             "--export", os.path.join(outdir, "final-export.jsonl"),
                             "--seed-export", os.path.join(outdir, "seed-export.jsonl"),
@@ -371,7 +403,7 @@ def main():
         f.write(check.stdout + check.stderr)
     print(check.stdout[-6000:], check.stderr[-3000:])
     event(kind="check_done", code=check.returncode, root=root)
-    sys.exit(check.returncode)
+    sys.exit(check.returncode or max(attr_codes, default=0))
 
 
 if __name__ == "__main__":
