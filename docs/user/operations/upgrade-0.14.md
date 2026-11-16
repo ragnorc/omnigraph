@@ -76,6 +76,13 @@ Use your actual endpoint and graph name. Install its token again:
 printf '%s\n' "$SERVER_TOKEN" | omnigraph credentials set --target prod --stdin
 ```
 
+A target with a credential needs an HTTPS endpoint, also on loopback: an
+authenticated server at `http://127.0.0.1` that 0.13 reached is refused with
+`endpoint requires HTTPS`. Put a local TLS proxy in front of it and trust its
+certificate authority with `transport: {tls: {ca: {mode: append, file: ...}}}`,
+or keep the server anonymous. See
+[transport](../cli/targets.md#transport-and-capability-boundaries).
+
 Old resource profiles become targets too. `login NAME` and implicit token
 environment overrides are gone; credentials must have an explicit source.
 For other target kinds and managed sign-in, use the

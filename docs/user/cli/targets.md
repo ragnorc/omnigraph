@@ -270,7 +270,8 @@ cannot be exported. The receiving process can copy or disclose the token.
 ## Transport and capability boundaries
 
 Remote endpoints require HTTPS. The only HTTP exception is an explicitly
-anonymous loopback standalone server. Optional `transport` belongs independently
+anonymous loopback standalone server; a target with a credential on loopback
+needs HTTPS too, for example a local TLS proxy whose CA `tls.ca` appends. Optional `transport` belongs independently
 to a profile's API or target's data endpoint; it is not inherited.
 API/endpoint URLs may include a base-path prefix, which stays inside the
 credential scope. Userinfo, queries, fragments, traversal and ambiguous encoded

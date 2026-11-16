@@ -389,7 +389,11 @@ fn endpoint(value: &str, allow_loopback: bool, path: &str) -> Result<String, Con
     {
         return Err(invalid(
             path,
-            "endpoint requires HTTPS; HTTP is only allowed for anonymous loopback servers",
+            if allow_loopback || !(parsed.scheme() == "http" && loopback) {
+                "endpoint requires HTTPS; HTTP is only allowed for anonymous loopback servers"
+            } else {
+                "endpoint requires HTTPS; HTTP is only allowed for anonymous loopback servers. For an authenticated local server, serve HTTPS behind a local TLS proxy and trust its CA with transport.tls.ca"
+            },
         ));
     }
     if !parsed.path().ends_with('/') {

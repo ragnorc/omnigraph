@@ -1008,8 +1008,9 @@ fn authenticated_loopback_http_server_target_is_accepted_issue_1419() {
             "{provider: token, source: {file: secrets/token}}",
             "{provider: token, source: {store: {}}}",
         ] {
-            let text = server(endpoint, auth);
-            assert!(decode(&text).is_ok(), "refused:\n{text}\n{:?}", decode(&text).err());
+            // Option C keeps the refusal and names the supported route.
+            let error = decode(&server(endpoint, auth)).unwrap_err().to_string();
+            assert!(error.contains("transport.tls.ca"), "{error}");
         }
     }
 }

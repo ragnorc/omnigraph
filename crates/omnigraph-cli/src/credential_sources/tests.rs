@@ -503,5 +503,6 @@ fn server_binding_accepts_a_loopback_http_route_issue_1419() {
         "http://127.0.0.1:8080/".into(),
         None,
     );
-    assert!(owner.is_ok(), "{owner:?}");
+    // Option C keeps every credential route HTTPS.
+    assert!(owner.is_err(), "{owner:?}");
 }
