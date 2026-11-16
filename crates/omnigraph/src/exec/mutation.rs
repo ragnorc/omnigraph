@@ -1368,7 +1368,10 @@ impl Omnigraph {
             {
                 match self.group_view_txn(requested.as_deref(), actor_id).await {
                     Some(captured) => captured,
-                    None => self.open_write_txn_probed(requested.as_deref(), false).await,
+                    None => {
+                        self.open_write_txn_probed(requested.as_deref(), false)
+                            .await
+                    }
                 }
             }
             WriteRoute::Publish | WriteRoute::AsCommit | WriteRoute::UnattachedRoot => {
@@ -1516,6 +1519,8 @@ impl Omnigraph {
                         }
                         None => self.group_commit(entry).await?,
                     };
+                    // Callers see the batch's write list decoded.
+                    let commit = commit.decoded();
                     return Ok(crate::MutationReceipt {
                         result: total,
                         commit: Some(commit),
@@ -1526,7 +1531,11 @@ impl Omnigraph {
                 // Not eligible (an upsert matched a key, a constrained
                 // table): the ordinary commit of the same staged effects.
                 let lineage_intent = self
-                    .new_lineage_intent_for_branch(requested_branch, actor_id, history_release_bytes)
+                    .new_lineage_intent_for_branch(
+                        requested_branch,
+                        actor_id,
+                        history_release_bytes,
+                    )
                     .await
                     .map_err(OmniError::unpublished)?;
                 let touched = std::mem::take(&mut staged.touched);

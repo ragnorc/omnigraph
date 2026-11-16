@@ -126,6 +126,13 @@ pub struct GraphEntityChange {
     pub before: Option<EntityImage>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub after: Option<EntityImage>,
+    /// Research (group commit across actors): for a row a batch commit
+    /// inserted, the actor of the write whose row-id range holds its `_rowid`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub actor_id: Option<String>,
+    /// Research: the index of that write in the commit's write list.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub write: Option<u32>,
 }
 
 /// The commit cause of one change block, stated once.
@@ -150,6 +157,7 @@ pub struct ChangeCause {
 
 impl From<&GraphCommit> for ChangeCause {
     fn from(commit: &GraphCommit) -> Self {
+        let commit = &commit.decoded();
         Self {
             graph_commit_id: commit.graph_commit_id.clone(),
             parent_commit_id: commit.parent_commit_id.clone(),
@@ -346,4 +354,113 @@ mod tests {
         assert_eq!(ChangeOpKind::Update.rank(), 1);
         assert_eq!(ChangeOpKind::Delete.rank(), 2);
     }
+}
+
+/// Research (group commit across actors): give every row a batch commit
+/// inserted the actor of the write whose stable row-id range holds its
+/// `_rowid`, read at the commit's own snapshot. A one-write commit, and every
+/// change that is not an insert, is left as it is: its block's cause names
+/// the actor.
+pub(crate) async fn attribute_batch_inserts(
+    child: &crate::db::Snapshot,
+    commit: &GraphCommit,
+    changes: &mut [GraphEntityChange],
+) -> crate::error::Result<()> {
+    use arrow_array::Array as _;
+    use futures::TryStreamExt as _;
+    let commit = commit.decoded();
+    if commit.writes.is_empty() {
+        return Ok(());
+    }
+    let mut by_table: std::collections::BTreeMap<String, Vec<usize>> = Default::default();
+    for (index, change) in changes.iter().enumerate() {
+        if change.op != ChangeOpKind::Insert {
+            continue;
+        }
+        let table_key = match change.kind {
+            ChangeEntityKind::Node => format!("node:{}", change.entity_type.name),
+            ChangeEntityKind::Edge => format!("edge:{}", change.entity_type.name),
+        };
+        by_table.entry(table_key).or_default().push(index);
+    }
+    for (table_key, indices) in by_table {
+        let ranges: Vec<(u64, u64, Option<String>, u32)> = commit
+            .writes
+            .iter()
+            .enumerate()
+            .flat_map(|(position, write)| {
+                let table_key = table_key.clone();
+                write
+                    .rows
+                    .iter()
+                    .filter(move |rows| rows.table_key == table_key)
+                    .map(move |rows| {
+                        (
+                            rows.start,
+                            rows.end,
+                            write.actor_id.clone(),
+                            position as u32,
+                        )
+                    })
+            })
+            .collect();
+        if ranges.is_empty() {
+            continue;
+        }
+        let dataset = child.open_dataset(&table_key).await?;
+        let id_column = if dataset.schema().field("__id").is_some() {
+            "__id"
+        } else {
+            "id"
+        };
+        let ids: Vec<String> = indices
+            .iter()
+            .map(|index| changes[*index].id.clone())
+            .collect();
+        let mut scanner = dataset.scan();
+        scanner.project(&[id_column])?;
+        scanner.with_row_id();
+        scanner.filter_expr(
+            datafusion::prelude::col(id_column).in_list(
+                ids.iter()
+                    .map(|id| datafusion::prelude::lit(id.clone()))
+                    .collect(),
+                false,
+            ),
+        );
+        let batches: Vec<arrow_array::RecordBatch> = scanner
+            .try_into_stream()
+            .await?
+            .try_collect()
+            .await
+            .map_err(crate::error::OmniError::storage)?;
+        let mut row_of: std::collections::HashMap<String, u64> = Default::default();
+        for batch in &batches {
+            let id_values = batch
+                .column_by_name(id_column)
+                .and_then(|column| column.as_any().downcast_ref::<arrow_array::StringArray>());
+            let row_ids = batch
+                .column_by_name("_rowid")
+                .and_then(|column| column.as_any().downcast_ref::<arrow_array::UInt64Array>());
+            let (Some(id_values), Some(row_ids)) = (id_values, row_ids) else {
+                continue;
+            };
+            for row in 0..batch.num_rows() {
+                row_of.insert(id_values.value(row).to_string(), row_ids.value(row));
+            }
+        }
+        for index in indices {
+            let Some(row_id) = row_of.get(&changes[index].id) else {
+                continue;
+            };
+            if let Some((_, _, actor, position)) = ranges
+                .iter()
+                .find(|(start, end, _, _)| *row_id >= *start && *row_id < *end)
+            {
+                changes[index].actor_id = actor.clone();
+                changes[index].write = Some(*position);
+            }
+        }
+    }
+    Ok(())
 }

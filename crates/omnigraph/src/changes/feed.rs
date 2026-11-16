@@ -349,6 +349,9 @@ pub(crate) async fn poll(
             &mut changes,
         )
         .await;
+        if outcome.is_ok() {
+            super::model::attribute_batch_inserts(&child_snapshot, commit, &mut changes).await?;
+        }
         let cause = ChangeCause::from(commit);
         match outcome {
             Ok(CommitEnumeration::Complete) => {

@@ -29,7 +29,8 @@ query foreign_put($slug: String, $n: I64) {
 }
 "#;
 
-const PERSON_SCHEMA: &str = "node Person {\n    name: String @key\n}\nedge Knows: Person -> Person\n";
+const PERSON_SCHEMA: &str =
+    "node Person {\n    name: String @key\n}\nedge Knows: Person -> Person\n";
 const PERSON_QUERIES: &str = r#"
 query add_person($name: String) {
     insert Person { name: $name }
@@ -97,12 +98,14 @@ async fn gc_log_hole_admits_an_entry_across_a_foreign_insert_of_its_key() {
     let db = seeded(&uri, ITEM_SCHEMA, &item_seed()).await;
 
     // e: captures H0, proves `k` absent there, parks after staging.
-    let parked = helpers::failpoint::Rendezvous::park_first(
-        &catalog::MUTATION_POST_STAGE_PRE_EFFECT_GATE,
-    );
+    let parked =
+        helpers::failpoint::Rendezvous::park_first(&catalog::MUTATION_POST_STAGE_PRE_EFFECT_GATE);
     let e = {
         let db = Arc::clone(&db);
-        tokio::spawn(async move { db.mutate_with_receipt("main", ITEM_QUERIES, "put", &put("k", 1)).await })
+        tokio::spawn(async move {
+            db.mutate_with_receipt("main", ITEM_QUERIES, "put", &put("k", 1))
+                .await
+        })
     };
     parked.wait_until_reached().await;
     // A: a group batch, H0 -> H1 (logged).
@@ -129,7 +132,8 @@ async fn gc_log_hole_admits_an_entry_across_a_foreign_insert_of_its_key() {
         a.commit.as_ref().map(|c| c.graph_manifest_version),
         f.commit.as_ref().map(|c| c.graph_manifest_version),
         b.commit.as_ref().map(|c| c.graph_manifest_version),
-        e.as_ref().map(|r| r.commit.as_ref().map(|c| c.graph_manifest_version)),
+        e.as_ref()
+            .map(|r| r.commit.as_ref().map(|c| c.graph_manifest_version)),
     );
     assert!(k_rows <= 1, "duplicate key `k`: {k_rows} rows");
 }
@@ -147,9 +151,8 @@ async fn gc_second_actor_batch_is_a_hole_in_the_first_actors_log() {
     let uri = dir.path().to_str().unwrap().to_string();
     let db = seeded(&uri, ITEM_SCHEMA, &item_seed()).await;
 
-    let parked = helpers::failpoint::Rendezvous::park_first(
-        &catalog::MUTATION_POST_STAGE_PRE_EFFECT_GATE,
-    );
+    let parked =
+        helpers::failpoint::Rendezvous::park_first(&catalog::MUTATION_POST_STAGE_PRE_EFFECT_GATE);
     let e = {
         let db = Arc::clone(&db);
         tokio::spawn(async move {
@@ -172,7 +175,10 @@ async fn gc_second_actor_batch_is_a_hole_in_the_first_actors_log() {
     let e = e.await.unwrap();
     let slugs = fresh_slugs(&uri).await;
     let k_rows = slugs.iter().filter(|slug| *slug == "k").count();
-    eprintln!("[gc-repro] two actors: e ok = {}, rows with slug k = {k_rows}", e.is_ok());
+    eprintln!(
+        "[gc-repro] two actors: e ok = {}, rows with slug k = {k_rows}",
+        e.is_ok()
+    );
     assert!(k_rows <= 1, "duplicate key `k`: {k_rows} rows");
 }
 
@@ -188,9 +194,8 @@ async fn gc_log_hole_admits_an_edge_across_a_delete_of_its_endpoint() {
     let seed = "{\"type\":\"Person\",\"data\":{\"name\":\"a\"}}\n{\"type\":\"Person\",\"data\":{\"name\":\"b\"}}\n";
     let db = seeded(&uri, PERSON_SCHEMA, seed).await;
 
-    let parked = helpers::failpoint::Rendezvous::park_first(
-        &catalog::MUTATION_POST_STAGE_PRE_EFFECT_GATE,
-    );
+    let parked =
+        helpers::failpoint::Rendezvous::park_first(&catalog::MUTATION_POST_STAGE_PRE_EFFECT_GATE);
     let e = {
         let db = Arc::clone(&db);
         tokio::spawn(async move {
@@ -204,15 +209,30 @@ async fn gc_log_hole_admits_an_edge_across_a_delete_of_its_endpoint() {
         })
     };
     parked.wait_until_reached().await;
-    db.mutate("main", PERSON_QUERIES, "add_person", &params(&[("$name", "x")]))
-        .await
-        .unwrap();
-    db.mutate("main", PERSON_QUERIES, "remove_person", &params(&[("$name", "b")]))
-        .await
-        .unwrap();
-    db.mutate("main", PERSON_QUERIES, "add_person", &params(&[("$name", "y")]))
-        .await
-        .unwrap();
+    db.mutate(
+        "main",
+        PERSON_QUERIES,
+        "add_person",
+        &params(&[("$name", "x")]),
+    )
+    .await
+    .unwrap();
+    db.mutate(
+        "main",
+        PERSON_QUERIES,
+        "remove_person",
+        &params(&[("$name", "b")]),
+    )
+    .await
+    .unwrap();
+    db.mutate(
+        "main",
+        PERSON_QUERIES,
+        "add_person",
+        &params(&[("$name", "y")]),
+    )
+    .await
+    .unwrap();
     parked.release();
     let e = e.await.unwrap();
     let fresh = Omnigraph::open(&uri).await.unwrap();
@@ -262,13 +282,19 @@ async fn gc_dropped_leader_hands_the_lead_on() {
     // L leads and waits for the branch gate.
     let leader = {
         let db = Arc::clone(&db);
-        tokio::spawn(async move { db.mutate_with_receipt("main", ITEM_QUERIES, "put", &put("l", 1)).await })
+        tokio::spawn(async move {
+            db.mutate_with_receipt("main", ITEM_QUERIES, "put", &put("l", 1))
+                .await
+        })
     };
     tokio::time::sleep(Duration::from_millis(500)).await;
     // F queues behind L.
     let follower = {
         let db = Arc::clone(&db);
-        tokio::spawn(async move { db.mutate_with_receipt("main", ITEM_QUERIES, "put", &put("f", 2)).await })
+        tokio::spawn(async move {
+            db.mutate_with_receipt("main", ITEM_QUERIES, "put", &put("f", 2))
+                .await
+        })
     };
     tokio::time::sleep(Duration::from_millis(300)).await;
     leader.abort();
@@ -295,7 +321,10 @@ async fn gc_dropped_leader_hands_the_lead_on() {
             Err(_) => "hung (15 s)".to_string(),
         },
     );
-    assert!(follower.is_ok(), "the follower of a dropped leader never finished");
+    assert!(
+        follower.is_ok(),
+        "the follower of a dropped leader never finished"
+    );
     assert!(later.is_ok(), "a later write of the group never finished");
 }
 
@@ -315,16 +344,25 @@ async fn gc_follower_dropped_before_admission_leaves_the_queue() {
     let publish_park = helpers::failpoint::Rendezvous::park_first(&catalog::PUBLISH_PRE_MERGE);
     let leader = {
         let db = Arc::clone(&db);
-        tokio::spawn(async move { db.mutate_with_receipt("main", ITEM_QUERIES, "put", &put("l", 1)).await })
+        tokio::spawn(async move {
+            db.mutate_with_receipt("main", ITEM_QUERIES, "put", &put("l", 1))
+                .await
+        })
     };
     publish_park.wait_until_reached().await;
     let f1 = {
         let db = Arc::clone(&db);
-        tokio::spawn(async move { db.mutate_with_receipt("main", ITEM_QUERIES, "put", &put("f1", 2)).await })
+        tokio::spawn(async move {
+            db.mutate_with_receipt("main", ITEM_QUERIES, "put", &put("f1", 2))
+                .await
+        })
     };
     let f2 = {
         let db = Arc::clone(&db);
-        tokio::spawn(async move { db.mutate_with_receipt("main", ITEM_QUERIES, "put", &put("f2", 3)).await })
+        tokio::spawn(async move {
+            db.mutate_with_receipt("main", ITEM_QUERIES, "put", &put("f2", 3))
+                .await
+        })
     };
     // Long enough for both followers to prepare and queue behind the leader.
     tokio::time::sleep(Duration::from_millis(1500)).await;
@@ -358,12 +396,18 @@ async fn gc_leader_dropped_inside_its_publication() {
     let publish_park = helpers::failpoint::Rendezvous::park_first(&catalog::PUBLISH_PRE_MERGE);
     let leader = {
         let db = Arc::clone(&db);
-        tokio::spawn(async move { db.mutate_with_receipt("main", ITEM_QUERIES, "put", &put("l", 1)).await })
+        tokio::spawn(async move {
+            db.mutate_with_receipt("main", ITEM_QUERIES, "put", &put("l", 1))
+                .await
+        })
     };
     publish_park.wait_until_reached().await;
     let follower = {
         let db = Arc::clone(&db);
-        tokio::spawn(async move { db.mutate_with_receipt("main", ITEM_QUERIES, "put", &put("f", 2)).await })
+        tokio::spawn(async move {
+            db.mutate_with_receipt("main", ITEM_QUERIES, "put", &put("f", 2))
+                .await
+        })
     };
     tokio::time::sleep(Duration::from_millis(1500)).await;
     leader.abort();
@@ -392,7 +436,10 @@ async fn gc_leader_dropped_inside_its_publication() {
         slugs.iter().any(|slug| slug == "l"),
         slugs.iter().any(|slug| slug == "f"),
     );
-    assert!(follower.is_ok(), "the follower of a dropped leader never finished");
+    assert!(
+        follower.is_ok(),
+        "the follower of a dropped leader never finished"
+    );
     assert!(later.is_ok(), "a later write of the group never finished");
 }
 
@@ -419,7 +466,9 @@ async fn gc_blob_inserts_compose_and_read_back() {
             for i in 0..per_writer {
                 // Sizes spread over inline and dedicated Blob v2 storage.
                 let len = [5usize, 600, 70_000, 300_000][(w + i) % 4];
-                let bytes: Vec<u8> = (0..len).map(|b| ((b * 31 + w * 7 + i) % 251) as u8).collect();
+                let bytes: Vec<u8> = (0..len)
+                    .map(|b| ((b * 31 + w * 7 + i) % 251) as u8)
+                    .collect();
                 let content = format!(
                     "base64:{}",
                     base64::engine::general_purpose::STANDARD.encode(&bytes)
@@ -458,8 +507,9 @@ async fn gc_blob_inserts_compose_and_read_back() {
             for w in 0..writers {
                 for i in 0..per_writer {
                     let len = [5usize, 600, 70_000, 300_000][(w + i) % 4];
-                    let expected: Vec<u8> =
-                        (0..len).map(|b| ((b * 31 + w * 7 + i) % 251) as u8).collect();
+                    let expected: Vec<u8> = (0..len)
+                        .map(|b| ((b * 31 + w * 7 + i) % 251) as u8)
+                        .collect();
                     let got = helpers::read_managed_blob_bytes(
                         &fresh,
                         "main",
@@ -467,18 +517,28 @@ async fn gc_blob_inserts_compose_and_read_back() {
                     )
                     .await;
                     if got != expected {
-                        bad.push(format!("d-{w}-{i} ({} vs {} bytes)", got.len(), expected.len()));
+                        bad.push(format!(
+                            "d-{w}-{i} ({} vs {} bytes)",
+                            got.len(),
+                            expected.len()
+                        ));
                     }
                 }
             }
-            eprintln!("[gc-repro] blob check {label}: {} mismatches {bad:?}", bad.len());
+            eprintln!(
+                "[gc-repro] blob check {label}: {} mismatches {bad:?}",
+                bad.len()
+            );
             bad
         }
     };
     let before = check("after writes").await;
     db.optimize_as(None, Default::default()).await.unwrap();
     let after = check("after optimize").await;
-    assert!(before.is_empty() && after.is_empty(), "Blob values changed through composition");
+    assert!(
+        before.is_empty() && after.is_empty(),
+        "Blob values changed through composition"
+    );
     assert!(
         commits.len() < writers * per_writer,
         "no two Blob writes shared a commit, so composition was not exercised"
@@ -502,12 +562,14 @@ async fn gc_entry_captured_on_a_recreated_branch_is_not_admitted() {
     db.mutate_with_receipt("b1", ITEM_QUERIES, "put", &put("b1-first", 1))
         .await
         .unwrap();
-    let parked = helpers::failpoint::Rendezvous::park_first(
-        &catalog::MUTATION_POST_STAGE_PRE_EFFECT_GATE,
-    );
+    let parked =
+        helpers::failpoint::Rendezvous::park_first(&catalog::MUTATION_POST_STAGE_PRE_EFFECT_GATE);
     let e = {
         let db = Arc::clone(&db);
-        tokio::spawn(async move { db.mutate_with_receipt("b1", ITEM_QUERIES, "put", &put("stale", 2)).await })
+        tokio::spawn(async move {
+            db.mutate_with_receipt("b1", ITEM_QUERIES, "put", &put("stale", 2))
+                .await
+        })
     };
     parked.wait_until_reached().await;
     db.branch_delete("b1").await.unwrap();
@@ -518,20 +580,29 @@ async fn gc_entry_captured_on_a_recreated_branch_is_not_admitted() {
     parked.release();
     let e = e.await.unwrap();
     let fresh = Omnigraph::open(&uri).await.unwrap();
-    let rows = collect_column_strings(&helpers::read_table_branch(&fresh, "b1", "node:Item").await, "slug");
+    let rows = collect_column_strings(
+        &helpers::read_table_branch(&fresh, "b1", "node:Item").await,
+        "slug",
+    );
     let stale = rows.iter().filter(|slug| *slug == "stale").count();
     let old_first = rows.iter().any(|slug| slug == "b1-first");
     eprintln!(
         "[gc-repro] recreated branch: e {:?}; new b1 rows {} (stale x{stale}, old incarnation row present {old_first})",
-        e.as_ref().map(|r| r.commit.as_ref().map(|c| c.graph_manifest_version)),
+        e.as_ref()
+            .map(|r| r.commit.as_ref().map(|c| c.graph_manifest_version)),
         rows.len()
     );
-    assert!(!old_first, "the recreated branch shows a row of the deleted incarnation");
+    assert!(
+        !old_first,
+        "the recreated branch shows a row of the deleted incarnation"
+    );
     // The request may rerun on the new incarnation (a fresh preparation), so
     // `stale` is there at most once.
     assert!(stale <= 1, "duplicate rows for `stale`");
 }
 
+#[path = "group_commit_stress/attribution.rs"]
+mod attribution;
 #[path = "group_commit_stress/harness.rs"]
 mod harness;
 
@@ -556,6 +627,241 @@ async fn gc_stress_harness() {
     assert!(
         report.violations.is_empty(),
         "{} checker violations",
+        report.violations.len()
+    );
+}
+
+/// RFC §Attribution and rules 6 and 19: one batch holds writes of several
+/// actors (and one without an actor); its commit records each write with its
+/// own actor and row-id range per table, commit get and the change feed
+/// report each row with its write's actor, and the attribution holds after
+/// an update, a delete and a compaction of batched rows.
+#[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+#[serial]
+async fn gc_mixed_actor_batch_attributes_every_row() {
+    use harness::{QUERIES, SCHEMA};
+    let _scenario = FailScenario::setup();
+    group_commit_on();
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap().to_string();
+    let mut seed = String::new();
+    for i in 0..4 {
+        seed.push_str(&format!(
+            "{{\"type\":\"Item\",\"data\":{{\"slug\":\"seed-{i}\",\"n\":{i}}}}}\n"
+        ));
+        seed.push_str(&format!(
+            "{{\"type\":\"Person\",\"data\":{{\"name\":\"p{i}\"}}}}\n"
+        ));
+    }
+    let db = seeded(&uri, SCHEMA, &seed).await;
+
+    // An ordinary-path write parked after its table commit holds the gates,
+    // so the group's writes queue behind one leader.
+    let holder_park =
+        helpers::failpoint::Rendezvous::park_first(&catalog::MUTATION_POST_TABLE_COMMIT);
+    let holder = {
+        let db = Arc::clone(&db);
+        tokio::spawn(async move {
+            // A Tag insert (a non-key `@unique`: ineligible) touches no
+            // table the batch writes.
+            db.mutate_with_receipt(
+                "main",
+                QUERIES,
+                "tag",
+                &params(&[("$slug", "hold"), ("$label", "hold")]),
+            )
+            .await
+        })
+    };
+    holder_park.wait_until_reached().await;
+
+    type Spec = (
+        &'static str,
+        Option<&'static str>,
+        &'static str,
+        omnigraph_compiler::ir::ParamMap,
+    );
+    let specs: Vec<Spec> = vec![
+        (
+            "fresh",
+            Some("act-a"),
+            "ins",
+            mixed_params(&[("$slug", "f1")], &[("$n", 1)]),
+        ),
+        (
+            "pair",
+            Some("act-b"),
+            "ins2",
+            mixed_params(&[("$a", "f2a"), ("$b", "f2b")], &[("$n", 2)]),
+        ),
+        (
+            "multi",
+            Some("act-c"),
+            "multi",
+            mixed_params(&[("$slug", "f3"), ("$name", "q3")], &[("$n", 3)]),
+        ),
+        (
+            "knows",
+            Some("act-a"),
+            "knows",
+            params(&[("$from", "p0"), ("$to", "p1")]),
+        ),
+        (
+            "fresh",
+            None,
+            "ins",
+            mixed_params(&[("$slug", "f5")], &[("$n", 5)]),
+        ),
+        (
+            "person",
+            Some("act-b"),
+            "person",
+            params(&[("$name", "q6")]),
+        ),
+        (
+            "knows",
+            Some("act-d"),
+            "knows",
+            params(&[("$from", "p2"), ("$to", "p3")]),
+        ),
+        (
+            "fresh",
+            Some("act-c"),
+            "ins",
+            mixed_params(&[("$slug", "f8")], &[("$n", 8)]),
+        ),
+    ];
+    let mut tasks = Vec::new();
+    for (kind, actor, name, p) in specs.clone() {
+        let db = Arc::clone(&db);
+        tasks.push(tokio::spawn(async move {
+            db.mutate_as_with_receipt("main", QUERIES, name, &p, actor)
+                .await
+        }));
+        let _ = kind;
+        tokio::time::sleep(Duration::from_millis(60)).await;
+    }
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    holder_park.release();
+    holder.await.unwrap().unwrap();
+    let mut ops = Vec::new();
+    let mut per_commit: std::collections::HashMap<
+        String,
+        std::collections::BTreeSet<Option<&str>>,
+    > = Default::default();
+    for (index, task) in tasks.into_iter().enumerate() {
+        let receipt = task.await.unwrap().expect("every write publishes");
+        let (kind, actor, _, p) = &specs[index];
+        let commit = receipt.commit.expect("a receipt names its commit");
+        let mut items = Vec::new();
+        let mut person = None;
+        let mut edge = None;
+        let s = |key: &str| match p.get(key.trim_start_matches('$')) {
+            Some(omnigraph_compiler::query::ast::Literal::String(s)) => Some(s.clone()),
+            _ => None,
+        };
+        match *kind {
+            "fresh" => items.push(s("$slug").unwrap()),
+            "pair" => items.extend([s("$a").unwrap(), s("$b").unwrap()]),
+            "multi" => {
+                items.push(s("$slug").unwrap());
+                person = s("$name");
+            }
+            "person" => person = s("$name"),
+            "knows" => edge = Some((s("$from").unwrap(), s("$to").unwrap())),
+            _ => {}
+        }
+        if !commit.writes.is_empty() {
+            assert!(
+                commit
+                    .writes
+                    .iter()
+                    .any(|w| w.actor_id.as_deref() == *actor),
+                "the receipt's decoded write list names its actor"
+            );
+        }
+        per_commit
+            .entry(commit.graph_commit_id.clone())
+            .or_default()
+            .insert(*actor);
+        ops.push(attribution::AttrOp {
+            id: index as u64,
+            actor: actor.map(str::to_string),
+            outcome: "ok".into(),
+            commit: Some(commit.graph_commit_id.clone()),
+            rows: attribution::inserted_rows(
+                kind,
+                &items,
+                person.as_deref(),
+                edge.as_ref().map(|(a, b)| (a.as_str(), b.as_str())),
+                None,
+            ),
+        });
+    }
+    let widest = per_commit.values().map(|a| a.len()).max().unwrap_or(0);
+    eprintln!("[gc-repro] mixed actors: commits {per_commit:?}");
+    assert!(widest >= 4, "no batch held four actors: {per_commit:?}");
+
+    let fresh = Omnigraph::open(&uri).await.unwrap();
+    let report = attribution::check(&fresh, &ops).await;
+    eprintln!(
+        "[gc-repro] attribution after the batch: {} {:?}",
+        report.summary, report.violations
+    );
+    assert!(report.violations.is_empty());
+
+    // Later versions: update one batched row, delete another, compact.
+    db.mutate_as_with_receipt(
+        "main",
+        QUERIES,
+        "upd",
+        &mixed_params(&[("$slug", "f1")], &[("$n", 11)]),
+        Some("act-z"),
+    )
+    .await
+    .unwrap();
+    db.mutate_as_with_receipt(
+        "main",
+        QUERIES,
+        "del",
+        &params(&[("$slug", "f2a")]),
+        Some("act-z"),
+    )
+    .await
+    .unwrap();
+    db.optimize_as(None, Default::default()).await.unwrap();
+    let fresh = Omnigraph::open(&uri).await.unwrap();
+    let report = attribution::check(&fresh, &ops).await;
+    eprintln!(
+        "[gc-repro] attribution after update, delete, optimize: {} {:?}",
+        report.summary, report.violations
+    );
+    assert!(report.violations.is_empty());
+    assert!(report.summary["head_rows_checked"].as_u64().unwrap() > 0);
+}
+
+/// Offline attribution check of a finished run (served or embedded):
+/// `OG_GS_URI` the graph root, `OG_GS_OPS` comma-separated JSONL histories.
+#[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+#[serial]
+#[ignore = "instrument: offline attribution oracle for a finished run, configured by OG_GS_URI and OG_GS_OPS (research)"]
+async fn gc_attribution_offline() {
+    let uri = std::env::var("OG_GS_URI").expect("OG_GS_URI");
+    let paths: Vec<String> = std::env::var("OG_GS_OPS")
+        .expect("OG_GS_OPS")
+        .split(',')
+        .map(str::to_string)
+        .collect();
+    let ops = attribution::load_ops(&paths);
+    let db = Omnigraph::open(&uri).await.unwrap();
+    let report = attribution::check(&db, &ops).await;
+    eprintln!("[attr-summary] ops {} {}", ops.len(), report.summary);
+    for violation in report.violations.iter().take(40) {
+        eprintln!("[attr-violation] {violation}");
+    }
+    assert!(
+        report.violations.is_empty(),
+        "{} attribution violations",
         report.violations.len()
     );
 }

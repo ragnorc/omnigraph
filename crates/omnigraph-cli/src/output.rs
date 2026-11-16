@@ -1869,6 +1869,8 @@ mod tests {
                 properties: serde_json::json!({"name": id}),
                 endpoints: None,
             }),
+            actor_id: None,
+            write: None,
         }
     }
 
@@ -2545,6 +2547,7 @@ mod tests {
                 published: true,
                 kind: omnigraph_api_types::CommitKind::Published,
                 root_commit_id: None,
+                writes: Vec::new(),
             }),
         };
         assert_human_format(

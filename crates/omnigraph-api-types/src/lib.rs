@@ -979,6 +979,26 @@ pub struct CommitOutput {
     /// a root; `null` for the other kinds.
     #[serde(default)]
     pub root_commit_id: Option<String>,
+    /// Research (group commit across actors): one entry per write of a batch
+    /// commit, in batch order, with its actor and its stable row-id range per
+    /// table. Absent for a one-write commit.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub writes: Vec<CommitWriteOutput>,
+}
+
+/// One write of a batch commit.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct CommitWriteOutput {
+    pub actor_id: Option<String>,
+    pub rows: Vec<CommitWriteRowsOutput>,
+}
+
+/// The half-open range of stable row ids one write's rows received in one table.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct CommitWriteRowsOutput {
+    pub table_key: String,
+    pub start: u64,
+    pub end: u64,
 }
 
 impl<'de> Deserialize<'de> for CommitOutput {
@@ -1001,6 +1021,8 @@ impl<'de> Deserialize<'de> for CommitOutput {
             kind: Option<CommitKind>,
             #[serde(default)]
             root_commit_id: Option<String>,
+            #[serde(default)]
+            writes: Vec<CommitWriteOutput>,
         }
 
         let receipt = Receipt::deserialize(deserializer)?;
@@ -1020,6 +1042,7 @@ impl<'de> Deserialize<'de> for CommitOutput {
             published: receipt.published,
             kind,
             root_commit_id: receipt.root_commit_id,
+            writes: receipt.writes,
         })
     }
 }
@@ -1141,6 +1164,13 @@ pub struct EntityChangeOutput {
     pub before: Option<ChangeImageOutput>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub after: Option<ChangeImageOutput>,
+    /// Research (group commit across actors): the actor of the write that
+    /// inserted this row, for a row a batch commit inserted.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub actor_id: Option<String>,
+    /// Research: the index of that write in the commit's write list.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub write: Option<u32>,
 }
 
 /// The commit cause of one change block, stated once.
@@ -3096,6 +3126,7 @@ pub fn schema_apply_output(uri: &str, result: SchemaApplyResult) -> SchemaApplyO
 }
 
 pub fn commit_output(commit: &GraphCommit) -> CommitOutput {
+    let commit = &commit.decoded();
     CommitOutput {
         graph_commit_id: commit.graph_commit_id.clone(),
         graph_branch: commit.graph_branch.clone(),
@@ -3107,6 +3138,22 @@ pub fn commit_output(commit: &GraphCommit) -> CommitOutput {
         published: commit.published,
         kind: commit.kind.into(),
         root_commit_id: commit.root_commit_id.clone(),
+        writes: commit
+            .writes
+            .iter()
+            .map(|write| CommitWriteOutput {
+                actor_id: write.actor_id.clone(),
+                rows: write
+                    .rows
+                    .iter()
+                    .map(|rows| CommitWriteRowsOutput {
+                        table_key: rows.table_key.clone(),
+                        start: rows.start,
+                        end: rows.end,
+                    })
+                    .collect(),
+            })
+            .collect(),
     }
 }
 
@@ -3237,6 +3284,8 @@ pub fn entity_change_output(change: &omnigraph::changes::GraphEntityChange) -> E
         op: change.op.into(),
         before: change.before.as_ref().map(change_image_output),
         after: change.after.as_ref().map(change_image_output),
+        actor_id: change.actor_id.clone(),
+        write: change.write,
     }
 }
 

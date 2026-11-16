@@ -462,6 +462,13 @@ impl StagedHandle {
         self.inner.inserted_rows_filter()
     }
 
+    /// Research (group commit across actors): the data file of every new
+    /// fragment of this effect's transaction, in transaction order, with the
+    /// fragment's row count.
+    pub(crate) fn new_fragment_files(&self) -> Vec<(String, u64)> {
+        self.inner.new_fragment_files()
+    }
+
     /// Compose insert-only effects of one table into one effect read on
     /// `base` (research: group commit; `table_store::compose_insert_only`).
     pub(crate) fn compose_insert_only(

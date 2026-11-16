@@ -90,7 +90,12 @@ impl OperationRuntime {
                 state: Mutex::new(State::default()),
                 changed: Notify::new(),
                 read_limit,
-                write_response_limit: DEFAULT_WRITE_OBSERVERS,
+                // Research: `OMNIGRAPH_WRITE_OBSERVERS_MAX` raises the write
+                // observer bound so maintenance is admitted beside >=64 writers.
+                write_response_limit: std::env::var("OMNIGRAPH_WRITE_OBSERVERS_MAX")
+                    .ok()
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or(DEFAULT_WRITE_OBSERVERS),
             }),
         }
     }

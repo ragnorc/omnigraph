@@ -383,7 +383,12 @@ pub async fn observe(db: &Omnigraph, target: ReadTarget) -> omnigraph::error::Re
         edges: Vec::new(),
         tags: Vec::new(),
     };
-    for (table, kind) in [("node:Item", 0), ("node:Person", 1), ("edge:Knows", 2), ("node:Tag", 3)] {
+    for (table, kind) in [
+        ("node:Item", 0),
+        ("node:Person", 1),
+        ("edge:Knows", 2),
+        ("node:Tag", 3),
+    ] {
         let ds = snap.open_dataset(table).await?;
         let batches: Vec<RecordBatch> = ds
             .scan()
@@ -414,17 +419,23 @@ pub async fn observe(db: &Omnigraph, target: ReadTarget) -> omnigraph::error::Re
                     }
                 }
                 2 => {
-                    let src = str_col(batch, "__src").or_else(|| str_col(batch, "src")).expect("src");
-                    let dst = str_col(batch, "__dst").or_else(|| str_col(batch, "dst")).expect("dst");
+                    let src = str_col(batch, "__src")
+                        .or_else(|| str_col(batch, "src"))
+                        .expect("src");
+                    let dst = str_col(batch, "__dst")
+                        .or_else(|| str_col(batch, "dst"))
+                        .expect("dst");
                     for row in 0..batch.num_rows() {
-                        obs.edges.push((src.value(row).to_string(), dst.value(row).to_string()));
+                        obs.edges
+                            .push((src.value(row).to_string(), dst.value(row).to_string()));
                     }
                 }
                 _ => {
                     let slugs = str_col(batch, "slug").expect("tag slug");
                     let labels = str_col(batch, "label").expect("tag label");
                     for row in 0..batch.num_rows() {
-                        obs.tags.push((slugs.value(row).to_string(), labels.value(row).to_string()));
+                        obs.tags
+                            .push((slugs.value(row).to_string(), labels.value(row).to_string()));
                     }
                 }
             }
@@ -480,7 +491,10 @@ async fn run_writer(shared: Arc<Shared>, sessions: Arc<Vec<Session>>, writer: us
             }
             OpKind::Pair => {
                 op.items = vec![hot.clone(), fresh.clone()];
-                ("ins2", mixed_params(&[("$a", &hot), ("$b", &fresh)], &[("$n", n)]))
+                (
+                    "ins2",
+                    mixed_params(&[("$a", &hot), ("$b", &fresh)], &[("$n", n)]),
+                )
             }
             OpKind::Update => {
                 op.items = vec![hot.clone()];
@@ -561,11 +575,12 @@ async fn run_writer(shared: Arc<Shared>, sessions: Arc<Vec<Session>>, writer: us
                         problems.push(format!("own fresh key {fresh} missing at v{}", obs.version));
                     }
                     if !problems.is_empty() {
-                        shared
-                            .ryw_violations
-                            .lock()
-                            .unwrap()
-                            .push(format!("op {} ({}): {}", op.id, kind.name(), problems.join("; ")));
+                        shared.ryw_violations.lock().unwrap().push(format!(
+                            "op {} ({}): {}",
+                            op.id,
+                            kind.name(),
+                            problems.join("; ")
+                        ));
                     }
                 }
                 Err(error) => shared
@@ -607,22 +622,41 @@ async fn run_maintenance(shared: Arc<Shared>, session: Session) {
         let t = shared.start.elapsed().as_secs();
         let log = |line: String| {
             eprintln!("[gs-maint] t={t}s {line}");
-            shared.maintenance.lock().unwrap().push(format!("t={t}s {line}"));
+            shared
+                .maintenance
+                .lock()
+                .unwrap()
+                .push(format!("t={t}s {line}"));
         };
         if cfg.optimize_secs > 0 && t >= next_optimize {
             next_optimize = t + cfg.optimize_secs;
             let started = Instant::now();
             match session.optimize_as(None, Default::default()).await {
-                Ok(report) => log(format!("optimize ok in {:?}: {report:?}", started.elapsed()).chars().take(300).collect()),
-                Err(error) => log(format!("optimize failed in {:?}: {error}", started.elapsed())),
+                Ok(report) => log(
+                    format!("optimize ok in {:?}: {report:?}", started.elapsed())
+                        .chars()
+                        .take(300)
+                        .collect(),
+                ),
+                Err(error) => log(format!(
+                    "optimize failed in {:?}: {error}",
+                    started.elapsed()
+                )),
             }
         }
         if cfg.index_secs > 0 && t >= next_index {
             next_index = t + cfg.index_secs;
             let started = Instant::now();
             match session.ensure_indices_as(None).await {
-                Ok(pending) => log(format!("index build ok in {:?} (pending {})", started.elapsed(), pending.len())),
-                Err(error) => log(format!("index build failed in {:?}: {error}", started.elapsed())),
+                Ok(pending) => log(format!(
+                    "index build ok in {:?} (pending {})",
+                    started.elapsed(),
+                    pending.len()
+                )),
+                Err(error) => log(format!(
+                    "index build failed in {:?}: {error}",
+                    started.elapsed()
+                )),
             }
         }
         if cfg.cleanup_secs > 0 && t >= next_cleanup {
@@ -633,8 +667,15 @@ async fn run_maintenance(shared: Arc<Shared>, session: Session) {
                 older_than: None,
             };
             match session.cleanup_as(options, None).await {
-                Ok(stats) => log(format!("cleanup ok in {:?} ({} tables)", started.elapsed(), stats.len())),
-                Err(error) => log(format!("cleanup failed in {:?}: {error}", started.elapsed())),
+                Ok(stats) => log(format!(
+                    "cleanup ok in {:?} ({} tables)",
+                    started.elapsed(),
+                    stats.len()
+                )),
+                Err(error) => log(format!(
+                    "cleanup failed in {:?}: {error}",
+                    started.elapsed()
+                )),
             }
         }
         if cfg.branch_secs > 0 && t >= next_branch {
@@ -649,7 +690,12 @@ async fn run_maintenance(shared: Arc<Shared>, session: Session) {
                     let slug = format!("s{branch_seq}-{j}");
                     let n = 9_000_000 + (branch_seq as i64) * 10 + j;
                     session
-                        .mutate(&side, QUERIES, "ins", &mixed_params(&[("$slug", &slug)], &[("$n", n)]))
+                        .mutate(
+                            &side,
+                            QUERIES,
+                            "ins",
+                            &mixed_params(&[("$slug", &slug)], &[("$n", n)]),
+                        )
                         .await?;
                     keys.push((slug, n));
                 }
@@ -663,15 +709,24 @@ async fn run_maintenance(shared: Arc<Shared>, session: Session) {
             }
             .await;
             match outcome {
-                Ok(version) => log(format!("branch churn {side} ok in {:?}, merged at {version:?}", started.elapsed())),
-                Err(error) => log(format!("branch churn {side} failed in {:?}: {error}", started.elapsed())),
+                Ok(version) => log(format!(
+                    "branch churn {side} ok in {:?}, merged at {version:?}",
+                    started.elapsed()
+                )),
+                Err(error) => log(format!(
+                    "branch churn {side} failed in {:?}: {error}",
+                    started.elapsed()
+                )),
             }
         }
         if cfg.claim_at_secs > 0 && t >= cfg.claim_at_secs && !claimed {
             claimed = true;
             let started = Instant::now();
             match session.claim_branch_writer("main").await {
-                Ok(epoch) => log(format!("claimed main at epoch {epoch} in {:?}", started.elapsed())),
+                Ok(epoch) => log(format!(
+                    "claimed main at epoch {epoch} in {:?}",
+                    started.elapsed()
+                )),
                 Err(error) => log(format!("claim failed in {:?}: {error}", started.elapsed())),
             }
         }
@@ -680,7 +735,10 @@ async fn run_maintenance(shared: Arc<Shared>, session: Session) {
             let started = Instant::now();
             match session.apply_schema(SCHEMA_EVOLVED).await {
                 Ok(_) => log(format!("schema apply ok in {:?}", started.elapsed())),
-                Err(error) => log(format!("schema apply failed in {:?}: {error}", started.elapsed())),
+                Err(error) => log(format!(
+                    "schema apply failed in {:?}: {error}",
+                    started.elapsed()
+                )),
             }
         }
     }
@@ -730,7 +788,8 @@ impl Model {
             OpKind::DeletePerson => {
                 if let Some(person) = &op.person {
                     self.people.remove(person);
-                    self.edges.retain(|(src, dst), _| src != person && dst != person);
+                    self.edges
+                        .retain(|(src, dst), _| src != person && dst != person);
                 }
             }
             OpKind::Knows => {
@@ -765,7 +824,10 @@ pub struct Report {
 fn invariants(obs: &Observation, label: &str, out: &mut Vec<String>) {
     for (slug, values) in &obs.items {
         if values.len() > 1 {
-            out.push(format!("{label}: duplicate Item key {slug} x{} {values:?}", values.len()));
+            out.push(format!(
+                "{label}: duplicate Item key {slug} x{} {values:?}",
+                values.len()
+            ));
         }
     }
     for (name, count) in &obs.people {
@@ -784,7 +846,9 @@ fn invariants(obs: &Observation, label: &str, out: &mut Vec<String>) {
     }
     for (tag_label, count) in labels {
         if count > 1 {
-            out.push(format!("{label}: @unique Tag label {tag_label} held {count} times"));
+            out.push(format!(
+                "{label}: @unique Tag label {tag_label} held {count} times"
+            ));
         }
     }
 }
@@ -792,7 +856,9 @@ fn invariants(obs: &Observation, label: &str, out: &mut Vec<String>) {
 pub async fn check(shared: &Shared, uri: &str) -> Report {
     let mut violations = Vec::new();
     let ops = shared.ops.lock().unwrap().clone();
-    let fresh = Omnigraph::open(uri).await.expect("reopen graph for checking");
+    let fresh = Omnigraph::open(uri)
+        .await
+        .expect("reopen graph for checking");
     let final_obs = observe(&fresh, ReadTarget::branch("main"))
         .await
         .expect("final observation");
@@ -800,10 +866,14 @@ pub async fn check(shared: &Shared, uri: &str) -> Report {
 
     // Receipts against the commit list.
     let commits = fresh.list_commits(None).await.expect("list commits");
-    let _by_version: HashMap<u64, &omnigraph::db::GraphCommit> =
-        commits.iter().map(|c| (c.graph_manifest_version, c)).collect();
-    let by_id: HashMap<&str, &omnigraph::db::GraphCommit> =
-        commits.iter().map(|c| (c.graph_commit_id.as_str(), c)).collect();
+    let _by_version: HashMap<u64, &omnigraph::db::GraphCommit> = commits
+        .iter()
+        .map(|c| (c.graph_manifest_version, c))
+        .collect();
+    let by_id: HashMap<&str, &omnigraph::db::GraphCommit> = commits
+        .iter()
+        .map(|c| (c.graph_commit_id.as_str(), c))
+        .collect();
     let mut sorted: Vec<&omnigraph::db::GraphCommit> = commits.iter().collect();
     sorted.sort_by_key(|c| c.graph_manifest_version);
     for pair in sorted.windows(2) {
@@ -819,10 +889,15 @@ pub async fn check(shared: &Shared, uri: &str) -> Report {
     }
     let mut writes_per_commit: HashMap<String, usize> = HashMap::new();
     for op in ops.iter().filter(|op| op.outcome == Outcome::Ok) {
-        let Some(commit_id) = &op.commit else { continue };
+        let Some(commit_id) = &op.commit else {
+            continue;
+        };
         *writes_per_commit.entry(commit_id.clone()).or_default() += 1;
         match by_id.get(commit_id.as_str()) {
-            None => violations.push(format!("op {}: receipt commit {commit_id} not in commit list", op.id)),
+            None => violations.push(format!(
+                "op {}: receipt commit {commit_id} not in commit list",
+                op.id
+            )),
             Some(commit) => {
                 if Some(commit.graph_manifest_version) != op.version {
                     violations.push(format!(
@@ -830,7 +905,10 @@ pub async fn check(shared: &Shared, uri: &str) -> Report {
                         op.id, op.version, commit.graph_manifest_version
                     ));
                 }
-                if commit.actor_id.as_deref() != Some(op.actor.as_str()) {
+                // A batch commit of several writes is checked by the
+                // attribution oracle below.
+                if commit.writes.is_empty() && commit.actor_id.as_deref() != Some(op.actor.as_str())
+                {
                     violations.push(format!(
                         "op {}: actor {} but commit {} records {:?}",
                         op.id, op.actor, commit_id, commit.actor_id
@@ -843,7 +921,10 @@ pub async fn check(shared: &Shared, uri: &str) -> Report {
     // Uncertain keys: anything an in-doubt op may have touched.
     let mut uncertain_items: HashSet<String> = HashSet::new();
     let mut uncertain_people: HashSet<String> = HashSet::new();
-    for op in ops.iter().filter(|op| matches!(op.outcome, Outcome::InDoubt(_))) {
+    for op in ops
+        .iter()
+        .filter(|op| matches!(op.outcome, Outcome::InDoubt(_)))
+    {
         let (items, people) = touched(op);
         uncertain_items.extend(items);
         uncertain_people.extend(people);
@@ -906,14 +987,19 @@ pub async fn check(shared: &Shared, uri: &str) -> Report {
                 continue;
             }
             if model.people.contains(person) != obs.people.contains_key(person) {
-                diffs.push(format!("person {person}: model {} got {}", model.people.contains(person), obs.people.contains_key(person)));
+                diffs.push(format!(
+                    "person {person}: model {} got {}",
+                    model.people.contains(person),
+                    obs.people.contains_key(person)
+                ));
             }
         }
         let mut got_edges: BTreeMap<(String, String), usize> = BTreeMap::new();
         for edge in &obs.edges {
             *got_edges.entry(edge.clone()).or_default() += 1;
         }
-        let pairs: BTreeSet<&(String, String)> = model.edges.keys().chain(got_edges.keys()).collect();
+        let pairs: BTreeSet<&(String, String)> =
+            model.edges.keys().chain(got_edges.keys()).collect();
         for pair in pairs {
             if uncertain_people.contains(&pair.0) || uncertain_people.contains(&pair.1) {
                 continue;
@@ -921,7 +1007,10 @@ pub async fn check(shared: &Shared, uri: &str) -> Report {
             let want = model.edges.get(pair).copied().unwrap_or(0);
             let got = got_edges.get(pair).copied().unwrap_or(0);
             if want != got {
-                diffs.push(format!("edge {}->{}: model {want} got {got}", pair.0, pair.1));
+                diffs.push(format!(
+                    "edge {}->{}: model {want} got {got}",
+                    pair.0, pair.1
+                ));
             }
         }
         if !diffs.is_empty() {
@@ -959,14 +1048,47 @@ pub async fn check(shared: &Shared, uri: &str) -> Report {
         compare(&model, obs, &mut violations);
     }
     compare(&model, &final_obs, &mut violations);
+    // Attribution of batch commits (RFC §Attribution).
+    let attr_ops: Vec<super::attribution::AttrOp> = ops
+        .iter()
+        .map(|op| super::attribution::AttrOp {
+            id: op.id,
+            actor: Some(op.actor.clone()),
+            outcome: op.outcome.label().to_string(),
+            commit: op.commit.clone(),
+            rows: super::attribution::inserted_rows(
+                op.kind.name(),
+                &op.items,
+                op.person.as_deref(),
+                op.edge.as_ref().map(|(a, b)| (a.as_str(), b.as_str())),
+                op.tag.as_ref().map(|t| t.0.as_str()),
+            ),
+        })
+        .collect();
+    let attribution = super::attribution::check(&fresh, &attr_ops).await;
+    violations.extend(
+        attribution
+            .violations
+            .iter()
+            .map(|line| format!("attribution: {line}")),
+    );
     let ryw = shared.ryw_violations.lock().unwrap().clone();
-    violations.extend(ryw.into_iter().map(|line| format!("read-your-writes: {line}")));
+    violations.extend(
+        ryw.into_iter()
+            .map(|line| format!("read-your-writes: {line}")),
+    );
 
     // Summary.
     let secs = shared.cfg.secs.max(1) as f64;
     let ok = ops.iter().filter(|op| op.outcome == Outcome::Ok).count();
-    let refused = ops.iter().filter(|op| matches!(op.outcome, Outcome::Refused(_))).count();
-    let in_doubt = ops.iter().filter(|op| matches!(op.outcome, Outcome::InDoubt(_))).count();
+    let refused = ops
+        .iter()
+        .filter(|op| matches!(op.outcome, Outcome::Refused(_)))
+        .count();
+    let in_doubt = ops
+        .iter()
+        .filter(|op| matches!(op.outcome, Outcome::InDoubt(_)))
+        .count();
     let mut latencies: Vec<u64> = ops
         .iter()
         .filter(|op| op.outcome == Outcome::Ok)
@@ -1013,10 +1135,15 @@ pub async fn check(shared: &Shared, uri: &str) -> Report {
         "by_kind": by_kind.iter().map(|(k, (a, b, c))| (k.to_string(), serde_json::json!([a, b, c]))).collect::<serde_json::Map<_, _>>(),
         "errors": refusal_texts.iter().map(|(k, v)| (k.clone(), serde_json::json!(v))).collect::<serde_json::Map<_, _>>(),
         "violations": violations.len(),
+        "attribution": attribution.summary,
     });
     if let Some(path) = &shared.cfg.out {
         use std::io::Write as _;
-        let mut file = std::fs::OpenOptions::new().create(true).append(true).open(path).expect("open OUT");
+        let mut file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)
+            .expect("open OUT");
         for op in &ops {
             let line = serde_json::json!({
                 "type": "op", "id": op.id, "writer": op.writer, "handle": op.handle, "actor": op.actor,
@@ -1030,23 +1157,45 @@ pub async fn check(shared: &Shared, uri: &str) -> Report {
             writeln!(file, "{line}").unwrap();
         }
         for line in shared.maintenance.lock().unwrap().iter() {
-            writeln!(file, "{}", serde_json::json!({"type": "maintenance", "line": line})).unwrap();
+            writeln!(
+                file,
+                "{}",
+                serde_json::json!({"type": "maintenance", "line": line})
+            )
+            .unwrap();
         }
         for violation in &violations {
-            writeln!(file, "{}", serde_json::json!({"type": "violation", "line": violation})).unwrap();
+            writeln!(
+                file,
+                "{}",
+                serde_json::json!({"type": "violation", "line": violation})
+            )
+            .unwrap();
         }
-        writeln!(file, "{}", serde_json::json!({"type": "summary", "summary": summary})).unwrap();
+        writeln!(
+            file,
+            "{}",
+            serde_json::json!({"type": "summary", "summary": summary})
+        )
+        .unwrap();
     }
-    Report { violations, summary }
+    Report {
+        violations,
+        summary,
+    }
 }
 
 pub fn seed_jsonl(cfg: &Config) -> String {
     let mut out = String::new();
     for i in 0..cfg.hot / 2 {
-        out.push_str(&format!("{{\"type\":\"Item\",\"data\":{{\"slug\":\"h{i}\",\"n\":{i}}}}}\n"));
+        out.push_str(&format!(
+            "{{\"type\":\"Item\",\"data\":{{\"slug\":\"h{i}\",\"n\":{i}}}}}\n"
+        ));
     }
     for i in 0..cfg.people / 2 {
-        out.push_str(&format!("{{\"type\":\"Person\",\"data\":{{\"name\":\"p{i}\"}}}}\n"));
+        out.push_str(&format!(
+            "{{\"type\":\"Person\",\"data\":{{\"name\":\"p{i}\"}}}}\n"
+        ));
     }
     out
 }
@@ -1060,7 +1209,11 @@ pub async fn run(cfg: Config) -> Report {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        format!("{}/gs-{}-{nanos}", cfg.target.trim_end_matches('/'), cfg.seed)
+        format!(
+            "{}/gs-{}-{nanos}",
+            cfg.target.trim_end_matches('/'),
+            cfg.seed
+        )
     };
     let multi = cfg.uri.is_some();
     let uri = cfg.uri.clone().unwrap_or(uri);
@@ -1079,11 +1232,16 @@ pub async fn run(cfg: Config) -> Report {
         base
     };
     // The seed is part of the model's starting state.
-    let seed_obs = observe(&base, ReadTarget::branch("main")).await.expect("seed observation");
+    let seed_obs = observe(&base, ReadTarget::branch("main"))
+        .await
+        .expect("seed observation");
     let mut sessions = vec![base];
     for _ in 1..cfg.handles {
         let handle = Omnigraph::open(&uri).await.expect("open extra handle");
-        sessions.push(Session::from_defaults(Arc::new(handle), SessionSettings::default()));
+        sessions.push(Session::from_defaults(
+            Arc::new(handle),
+            SessionSettings::default(),
+        ));
     }
     let sessions = Arc::new(sessions);
     let shared = Arc::new(Shared {
@@ -1147,7 +1305,11 @@ pub async fn run(cfg: Config) -> Report {
     }
     let mut tasks = Vec::new();
     for writer in 0..cfg.writers {
-        tasks.push(tokio::spawn(run_writer(Arc::clone(&shared), Arc::clone(&sessions), writer)));
+        tasks.push(tokio::spawn(run_writer(
+            Arc::clone(&shared),
+            Arc::clone(&sessions),
+            writer,
+        )));
     }
     for reader in 0..cfg.readers {
         let session = sessions[reader % sessions.len()].clone();
@@ -1164,7 +1326,10 @@ pub async fn run(cfg: Config) -> Report {
         let _ = maintenance.await;
     };
     let mut hung = false;
-    if tokio::time::timeout(Duration::from_secs(120), drain).await.is_err() {
+    if tokio::time::timeout(Duration::from_secs(120), drain)
+        .await
+        .is_err()
+    {
         hung = true;
     }
     if multi {
@@ -1186,7 +1351,6 @@ pub async fn run(cfg: Config) -> Report {
     report
 }
 
-
 /// Multi-process mode: the history without the in-process model check.
 pub async fn write_history_only(shared: &Shared) -> Report {
     use std::io::Write as _;
@@ -1205,7 +1369,11 @@ pub async fn write_history_only(shared: &Shared) -> Report {
         "errors": errors,
     });
     if let Some(path) = &shared.cfg.out {
-        let mut file = std::fs::OpenOptions::new().create(true).append(true).open(path).expect("open OUT");
+        let mut file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)
+            .expect("open OUT");
         for op in ops.iter().filter(|op| op.writer != usize::MAX) {
             let line = serde_json::json!({
                 "type": "op", "id": format!("{}:{}", shared.cfg.tag, op.id), "writer": op.writer, "actor": op.actor,
@@ -1218,9 +1386,22 @@ pub async fn write_history_only(shared: &Shared) -> Report {
             writeln!(file, "{line}").unwrap();
         }
         for line in shared.maintenance.lock().unwrap().iter() {
-            writeln!(file, "{}", serde_json::json!({"type": "maintenance", "line": line})).unwrap();
+            writeln!(
+                file,
+                "{}",
+                serde_json::json!({"type": "maintenance", "line": line})
+            )
+            .unwrap();
         }
-        writeln!(file, "{}", serde_json::json!({"type": "summary", "summary": summary})).unwrap();
+        writeln!(
+            file,
+            "{}",
+            serde_json::json!({"type": "summary", "summary": summary})
+        )
+        .unwrap();
     }
-    Report { violations: Vec::new(), summary }
+    Report {
+        violations: Vec::new(),
+        summary,
+    }
 }

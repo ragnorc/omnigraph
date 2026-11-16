@@ -688,6 +688,8 @@ pub(crate) async fn enumerate_commit_changes(
                 op,
                 before,
                 after,
+                actor_id: None,
+                write: None,
             };
             let encoded_bytes = u64::try_from(
                 serde_json::to_vec(&change)

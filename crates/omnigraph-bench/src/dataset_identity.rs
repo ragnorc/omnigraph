@@ -331,6 +331,7 @@ mod tests {
             published: true,
             kind: omnigraph::db::GraphCommitKind::Published,
             root_commit_id: None,
+            writes: Vec::new(),
         }
     }
     #[test]

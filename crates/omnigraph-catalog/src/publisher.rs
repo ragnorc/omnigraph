@@ -1813,7 +1813,10 @@ impl GraphNamespacePublisher {
                 let stale = match self.holder_key() {
                     Ok(key) => {
                         !self.holders.native_matches(key, native_branch.as_deref())
-                            || self.holders.peek(key, native_branch.as_deref()).unwrap_or(0)
+                            || self
+                                .holders
+                                .peek(key, native_branch.as_deref())
+                                .unwrap_or(0)
                                 != image_epoch
                     }
                     Err(_) => true,
@@ -2705,7 +2708,6 @@ pub fn is_retryable_publish_conflict(err: &OmniError) -> bool {
             )
     )
 }
-
 
 /// Research switch (write throughput): whether the first publish attempt
 /// trusts this publisher's own last acknowledged version without listing

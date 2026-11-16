@@ -3077,7 +3077,7 @@ impl Omnigraph {
             .transpose()?;
 
         let mut budget = crate::changes::enumerate::PageBudget::new(max_changes, max_bytes);
-        let mut changes = Vec::new();
+        let mut changes: Vec<crate::changes::GraphEntityChange> = Vec::new();
         let outcome = crate::changes::enumerate::enumerate_commit_changes(
             &self.table_store,
             &parent.snapshot,
@@ -3120,6 +3120,8 @@ impl Omnigraph {
             }
         };
 
+        crate::changes::model::attribute_batch_inserts(&child.snapshot, &commit, &mut changes)
+            .await?;
         Ok(crate::changes::CommitChangesPage {
             block: crate::changes::GraphChangeBlock {
                 cause: crate::changes::ChangeCause::from(&commit),
@@ -4759,7 +4761,8 @@ impl Omnigraph {
         let coordinator = self.open_coordinator_for_branch(branch.as_deref()).await?;
         let mut commits = coordinator.list_commits().await?;
         commits.reverse();
-        Ok(commits)
+        // Research: batch commits carry their write list decoded.
+        Ok(commits.iter().map(GraphCommit::decoded).collect())
     }
 
     /// One page of [`Self::list_commits`]: up to `limit` commits

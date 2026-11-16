@@ -1313,6 +1313,30 @@ pub struct StagedWrite {
 }
 
 impl StagedWrite {
+    /// Research (group commit across actors): the first data file and row
+    /// count of every new fragment of this transaction, in order.
+    pub(crate) fn new_fragment_files(&self) -> Vec<(String, u64)> {
+        match &self.transaction.operation {
+            Operation::Update { new_fragments, .. }
+            | Operation::Append {
+                fragments: new_fragments,
+            } => new_fragments
+                .iter()
+                .map(|fragment| {
+                    (
+                        fragment
+                            .files
+                            .first()
+                            .map(|file| file.path.clone())
+                            .unwrap_or_default(),
+                        fragment.physical_rows.unwrap_or(0) as u64,
+                    )
+                })
+                .collect(),
+            _ => Vec::new(),
+        }
+    }
+
     /// Whether this staged effect only inserts rows by key
     /// ([`is_insert_only_update`]).
     pub(crate) fn is_insert_only(&self) -> bool {
@@ -4408,7 +4432,8 @@ impl TableStore {
                     .await?
                     .filter(|tail| {
                         known_tail
-                            || tail.fragments.saturating_mul(source_ids.len()) <= KEYED_WRITE_MAX_ROWS
+                            || tail.fragments.saturating_mul(source_ids.len())
+                                <= KEYED_WRITE_MAX_ROWS
                     })
             }
             _ => None,

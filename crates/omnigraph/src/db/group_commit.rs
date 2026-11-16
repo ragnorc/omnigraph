@@ -107,10 +107,7 @@ impl KeySet {
     fn of(write: &GroupTableWrite) -> Self {
         Self {
             filter: write.filter.clone(),
-            ids: write
-                .ids
-                .as_ref()
-                .map(|ids| ids.iter().cloned().collect()),
+            ids: write.ids.as_ref().map(|ids| ids.iter().cloned().collect()),
         }
     }
 
@@ -253,7 +250,10 @@ fn follower_error(error: &OmniError, txn: &WriteTxn) -> OmniError {
     }
     let typed = match inner {
         OmniError::Manifest(detail) => Some(OmniError::Manifest(detail.clone())),
-        OmniError::KeyConflict { type_key, entity_id } => Some(OmniError::KeyConflict {
+        OmniError::KeyConflict {
+            type_key,
+            entity_id,
+        } => Some(OmniError::KeyConflict {
             type_key: type_key.clone(),
             entity_id: entity_id.clone(),
         }),
@@ -346,7 +346,12 @@ impl Omnigraph {
             self.lead(&key).await;
         }
         loop {
-            let signal = waiter.signals.as_mut().expect("held until drop").recv().await;
+            let signal = waiter
+                .signals
+                .as_mut()
+                .expect("held until drop")
+                .recv()
+                .await;
             match signal {
                 Some(Signal::Done(result)) => return result,
                 Some(Signal::Lead) => self.lead(&key).await,
@@ -531,7 +536,10 @@ impl Omnigraph {
         }
         if let Some(error) = refusal {
             if debug_enabled() {
-                eprintln!("[group] pipelined batch of {} refused: {error}", admitted.len());
+                eprintln!(
+                    "[group] pipelined batch of {} refused: {error}",
+                    admitted.len()
+                );
             }
             drop(gates);
             for waiting in admitted {
@@ -676,17 +684,39 @@ impl Omnigraph {
             // leaves the queue (H4); a batch takes the queued entries of the
             // first open entry's actor, in order, and the others keep their
             // places (H2: one log per branch, one actor per batch).
+            // Cross-actor batches (RFC rule 19): entries are taken in arrival
+            // order whatever their actors, until the batch cap or the write
+            // list's byte budget; the rest keep their places. The research
+            // switch `OMNIGRAPH_GROUP_COMMIT_ONE_ACTOR=1` restores batches of
+            // the first entry's actor, for comparison.
+            let one_actor = one_actor_batches();
+            let budget = write_list_budget();
+            let mut used = WRITE_LIST_HEADER_BYTES;
             let mut batch: Vec<Waiting> = Vec::new();
             let mut rest = VecDeque::new();
             let mut actor: Option<Option<String>> = None;
+            let mut full = false;
             while let Some(waiting) = group.queue.pop_front() {
                 if waiting.reply.is_closed() {
                     continue;
                 }
                 let first = actor.get_or_insert_with(|| waiting.entry.actor.clone());
-                if batch.len() < MAX_BATCH_ENTRIES && *first == waiting.entry.actor {
+                let cost = write_list_entry_bytes(&waiting.entry);
+                let fits = batch.is_empty() || used + cost <= budget;
+                if !full
+                    && batch.len() < MAX_BATCH_ENTRIES
+                    && fits
+                    && (!one_actor || *first == waiting.entry.actor)
+                {
+                    used += cost;
                     batch.push(waiting);
                 } else {
+                    if !fits {
+                        // Arrival order: nothing overtakes the first entry
+                        // the budget left out.
+                        full = true;
+                        stats::BUDGET_STOPS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    }
                     rest.push_back(waiting);
                 }
             }
@@ -719,7 +749,11 @@ impl Omnigraph {
             let refused = outcome
                 .replies
                 .iter()
-                .filter(|(_, result)| result.as_ref().is_err_and(|error| error.is_read_set_changed()))
+                .filter(|(_, result)| {
+                    result
+                        .as_ref()
+                        .is_err_and(|error| error.is_read_set_changed())
+                })
                 .count();
             let failed = admitted == 0 && outcome.replies.len() > refused;
             stats::record(admitted as u64, refused as u64, failed);
@@ -792,24 +826,29 @@ impl Omnigraph {
                     .any(|effect| &effect.head == head || effect.parent.as_ref() == Some(head))
             })
         });
-        let last = log.last().map(|effect| effect.head.clone()).filter(|_| explained);
+        let last = log
+            .last()
+            .map(|effect| effect.head.clone())
+            .filter(|_| explained);
         if bound == *branch {
-            let own_view =
-                capture_skip_enabled() && installed.is_some() && last.as_ref() == installed.as_ref();
-            let txn = self.open_write_txn_probed(branch.as_deref(), !own_view).await?;
+            let own_view = capture_skip_enabled()
+                && installed.is_some()
+                && last.as_ref() == installed.as_ref();
+            let txn = self
+                .open_write_txn_probed(branch.as_deref(), !own_view)
+                .await?;
             return Ok((txn, None));
         }
         let held = {
             let groups = self.group_commits().groups.lock().unwrap();
-            groups
-                .get(key)
-                .and_then(|group| group.coordinator.clone())
+            groups.get(key).and_then(|group| group.coordinator.clone())
         };
         if debug_enabled() {
             eprintln!(
                 "[group] capture {:?}: held head {:?}, log head {:?}",
                 branch,
-                held.as_ref().map(|coordinator| coordinator.exact_graph_head()),
+                held.as_ref()
+                    .map(|coordinator| coordinator.exact_graph_head()),
                 last
             );
         }
@@ -918,11 +957,7 @@ impl Omnigraph {
         let log_reaches_head = log
             .last()
             .is_some_and(|effect| Some(&effect.head) == head.as_ref());
-        let mut admission_log: Vec<BatchEffect> = if log_reaches_head {
-            log
-        } else {
-            Vec::new()
-        };
+        let mut admission_log: Vec<BatchEffect> = if log_reaches_head { log } else { Vec::new() };
         let batch_head = match &predecessor {
             Some(flight) => {
                 admission_log.push(BatchEffect {
@@ -994,15 +1029,16 @@ impl Omnigraph {
                 }
             }
         }
-        let fail = |admitted: Vec<Waiting>,
-                    error: OmniError,
-                    replies: &mut Vec<(mpsc::UnboundedSender<Signal>, Result<GraphCommit>)>| {
-            for waiting in admitted {
-                let error = follower_error(&error, &waiting.entry.txn);
-                replies.push((waiting.reply, Err(error)));
-            }
-            None
-        };
+        let fail =
+            |admitted: Vec<Waiting>,
+             error: OmniError,
+             replies: &mut Vec<(mpsc::UnboundedSender<Signal>, Result<GraphCommit>)>| {
+                for waiting in admitted {
+                    let error = follower_error(&error, &waiting.entry.txn);
+                    replies.push((waiting.reply, Err(error)));
+                }
+                None
+            };
         if let Some(table) = missing {
             return fail(
                 admitted,
@@ -1021,48 +1057,51 @@ impl Omnigraph {
         let witness = &witness;
         let current_ref = &current;
         let base_pin = &base_pin;
-        let commits = by_table.into_iter().map(|(table_key, (full_path, writes))| async move {
-            let pin = base_pin(&table_key).ok_or_else(|| {
-                OmniError::manifest_read_set_changed(format!("table:{table_key}"), None, None)
-            })?;
-            let base = self.open_pinned_for_write(&full_path, &pin).await?;
-            let composed = StagedHandle::compose_insert_only(&base, writes)?;
-            let declared_full_text = crate::db::omnigraph::table_ops::declared_full_text_columns(
-                &current_ref.catalog,
-                &table_key,
-            );
-            let (detached, identity) = self
-                .storage()
-                .commit_staged_detached(base, composed, witness, &declared_full_text)
-                .await?;
-            let state = self.storage().table_state(&full_path, &detached).await?;
-            let target = pin.published_dataset_version + 1;
-            let version_metadata = state
-                .version_metadata
-                .with_table_fork_owner(table_fork_owner)
-                .with_staged(state.version, identity.uuid.clone())
-                .with_last_linear_version(pin.version_metadata.last_linear_version());
-            self.read_caches()
-                .handles
-                .insert(
-                    &pin.dataset_path,
-                    pin.native_dataset_branch.as_deref(),
-                    target,
-                    Some(state.version),
-                    version_metadata.e_tag(),
-                    detached.dataset().clone(),
-                )
-                .await;
-            let update = crate::db::DatasetUpdate {
-                identity: pin.identity,
-                type_key: table_key.clone(),
-                published_dataset_version: target,
-                native_dataset_branch: pin.native_dataset_branch.clone(),
-                entity_count: state.row_count,
-                version_metadata,
-            };
-            Ok::<_, OmniError>((table_key, pin, update, detached))
-        });
+        let commits = by_table
+            .into_iter()
+            .map(|(table_key, (full_path, writes))| async move {
+                let pin = base_pin(&table_key).ok_or_else(|| {
+                    OmniError::manifest_read_set_changed(format!("table:{table_key}"), None, None)
+                })?;
+                let base = self.open_pinned_for_write(&full_path, &pin).await?;
+                let composed = StagedHandle::compose_insert_only(&base, writes)?;
+                let declared_full_text =
+                    crate::db::omnigraph::table_ops::declared_full_text_columns(
+                        &current_ref.catalog,
+                        &table_key,
+                    );
+                let (detached, identity) = self
+                    .storage()
+                    .commit_staged_detached(base, composed, witness, &declared_full_text)
+                    .await?;
+                let state = self.storage().table_state(&full_path, &detached).await?;
+                let target = pin.published_dataset_version + 1;
+                let version_metadata = state
+                    .version_metadata
+                    .with_table_fork_owner(table_fork_owner)
+                    .with_staged(state.version, identity.uuid.clone())
+                    .with_last_linear_version(pin.version_metadata.last_linear_version());
+                self.read_caches()
+                    .handles
+                    .insert(
+                        &pin.dataset_path,
+                        pin.native_dataset_branch.as_deref(),
+                        target,
+                        Some(state.version),
+                        version_metadata.e_tag(),
+                        detached.dataset().clone(),
+                    )
+                    .await;
+                let update = crate::db::DatasetUpdate {
+                    identity: pin.identity,
+                    type_key: table_key.clone(),
+                    published_dataset_version: target,
+                    native_dataset_branch: pin.native_dataset_branch.clone(),
+                    entity_count: state.row_count,
+                    version_metadata,
+                };
+                Ok::<_, OmniError>((table_key, pin, update, detached))
+            });
         let committed = match futures::future::try_join_all(commits).await {
             Ok(committed) => committed,
             Err(error) => return fail(admitted, error, replies),
@@ -1352,13 +1391,16 @@ impl Omnigraph {
             // Every touched table expects its pin at the batch's head: the
             // admission proved the entry's reads hold there.
             for (identity, expectation) in &waiting.entry.expected {
-                let entry = current.base.dataset(&expectation.table_key).ok_or_else(|| {
-                    OmniError::manifest_read_set_changed(
-                        format!("table:{}", expectation.table_key),
-                        Some(expectation.table_version.to_string()),
-                        None,
-                    )
-                })?;
+                let entry = current
+                    .base
+                    .dataset(&expectation.table_key)
+                    .ok_or_else(|| {
+                        OmniError::manifest_read_set_changed(
+                            format!("table:{}", expectation.table_key),
+                            Some(expectation.table_version.to_string()),
+                            None,
+                        )
+                    })?;
                 expected.insert(
                     *identity,
                     TableVersionExpectation {
@@ -1379,51 +1421,60 @@ impl Omnigraph {
                 ))
             })?),
         };
-        let commits = by_table.into_iter().map(|(table_key, (full_path, writes))| async move {
-            let entry = current.base.dataset(&table_key).ok_or_else(|| {
-                OmniError::manifest_read_set_changed(format!("table:{table_key}"), None, None)
-            })?;
-            let base = self.open_pinned_for_write(&full_path, entry).await?;
-            let composed = StagedHandle::compose_insert_only(&base, writes)?;
-            let declared_full_text =
-                crate::db::omnigraph::table_ops::declared_full_text_columns(
-                    &current.catalog,
-                    &table_key,
-                );
-            let (detached, identity) = self
-                .storage()
-                .commit_staged_detached(base, composed, witness, &declared_full_text)
-                .await?;
-            let state = self.storage().table_state(&full_path, &detached).await?;
-            let target = entry.published_dataset_version + 1;
-            let version_metadata = state
-                .version_metadata
-                .with_table_fork_owner(table_fork_owner)
-                .with_staged(state.version, identity.uuid.clone())
-                .with_last_linear_version(entry.version_metadata.last_linear_version());
-            self.read_caches()
-                .handles
-                .insert(
-                    &entry.dataset_path,
-                    entry.native_dataset_branch.as_deref(),
-                    target,
-                    Some(state.version),
-                    version_metadata.e_tag(),
-                    detached.dataset().clone(),
-                )
-                .await;
-            Ok::<_, OmniError>((
-                crate::db::DatasetUpdate {
-                    identity: entry.identity,
-                    type_key: table_key.clone(),
-                    published_dataset_version: target,
-                    native_dataset_branch: entry.native_dataset_branch.clone(),
-                    entity_count: state.row_count,
-                    version_metadata,
-                },
-                detached,
-            ))
-        });
+        let commits = by_table
+            .into_iter()
+            .map(|(table_key, (full_path, writes))| async move {
+                let entry = current.base.dataset(&table_key).ok_or_else(|| {
+                    OmniError::manifest_read_set_changed(format!("table:{table_key}"), None, None)
+                })?;
+                let base = self.open_pinned_for_write(&full_path, entry).await?;
+                let staged_files: HashSet<String> = writes
+                    .iter()
+                    .flat_map(|write| write.new_fragment_files())
+                    .map(|(path, _)| path)
+                    .collect();
+                let composed = StagedHandle::compose_insert_only(&base, writes)?;
+                let declared_full_text =
+                    crate::db::omnigraph::table_ops::declared_full_text_columns(
+                        &current.catalog,
+                        &table_key,
+                    );
+                let (detached, identity) = self
+                    .storage()
+                    .commit_staged_detached(base, composed, witness, &declared_full_text)
+                    .await?;
+                let state = self.storage().table_state(&full_path, &detached).await?;
+                let ranges = fragment_row_ranges(detached.dataset(), &staged_files)?;
+                let target = entry.published_dataset_version + 1;
+                let version_metadata = state
+                    .version_metadata
+                    .with_table_fork_owner(table_fork_owner)
+                    .with_staged(state.version, identity.uuid.clone())
+                    .with_last_linear_version(entry.version_metadata.last_linear_version());
+                self.read_caches()
+                    .handles
+                    .insert(
+                        &entry.dataset_path,
+                        entry.native_dataset_branch.as_deref(),
+                        target,
+                        Some(state.version),
+                        version_metadata.e_tag(),
+                        detached.dataset().clone(),
+                    )
+                    .await;
+                Ok::<_, OmniError>((
+                    (table_key.clone(), ranges),
+                    crate::db::DatasetUpdate {
+                        identity: entry.identity,
+                        type_key: table_key.clone(),
+                        published_dataset_version: target,
+                        native_dataset_branch: entry.native_dataset_branch.clone(),
+                        entity_count: state.row_count,
+                        version_metadata,
+                    },
+                    detached,
+                ))
+            });
         let commit_started = std::time::Instant::now();
         // From here the batch may leave detached effects: a leader dropped
         // later answers its members uncertain, not sent back.
@@ -1431,7 +1482,76 @@ impl Omnigraph {
         let committed = futures::future::try_join_all(commits)
             .await
             .map_err(OmniError::unpublished)?;
-        let (updates, detached): (Vec<_>, Vec<_>) = committed.into_iter().unzip();
+        let mut ranges_by_table: HashMap<String, HashMap<String, (u64, u64)>> = HashMap::new();
+        let mut updates = Vec::with_capacity(committed.len());
+        let mut detached = Vec::with_capacity(committed.len());
+        for ((table_key, ranges), update, handle) in committed {
+            ranges_by_table.insert(table_key, ranges);
+            updates.push(update);
+            detached.push(handle);
+        }
+        // Rule 19: every member's rows, per table, as one half-open stable
+        // row-id range read from the committed detached manifests; members
+        // in batch order. A range that is not one contiguous run, or rows
+        // that do not add up, fail the batch before its publication.
+        let write_list = if admitted.len() > 1 {
+            let mut writes = Vec::with_capacity(admitted.len());
+            for waiting in admitted {
+                let mut rows = Vec::new();
+                for write in &waiting.entry.writes {
+                    let table = ranges_by_table.get(&write.table_key).ok_or_else(|| {
+                        OmniError::manifest_internal("a batch table has no committed ranges")
+                    })?;
+                    let mut start = u64::MAX;
+                    let mut end = 0u64;
+                    let mut total = 0u64;
+                    let mut expected = 0u64;
+                    for (path, physical) in write.staged.new_fragment_files() {
+                        let (lo, hi) = *table.get(&path).ok_or_else(|| {
+                            OmniError::manifest_internal(format!(
+                                "a member's fragment {path} is missing from the committed {}",
+                                write.table_key
+                            ))
+                        })?;
+                        start = start.min(lo);
+                        end = end.max(hi);
+                        total += hi - lo;
+                        expected += physical;
+                    }
+                    if total == 0 {
+                        continue;
+                    }
+                    if end - start != total || total != expected {
+                        return Err(OmniError::manifest_internal(format!(
+                            "a member's rows in {} are not one contiguous row-id range ({start}..{end}, {total} rows, {expected} written)",
+                            write.table_key
+                        ))
+                        .with_completion_evidence(crate::error::CompletionEvidence::Unpublished));
+                    }
+                    rows.push(omnigraph_catalog::commit_graph::CommitWriteRows {
+                        table_key: write.table_key.clone(),
+                        start,
+                        end,
+                    });
+                }
+                writes.push(omnigraph_catalog::commit_graph::CommitWrite {
+                    actor_id: waiting.entry.actor.clone(),
+                    rows,
+                });
+            }
+            let common = writes[0].actor_id.clone();
+            let common = writes
+                .iter()
+                .all(|write| write.actor_id == common)
+                .then_some(common)
+                .flatten();
+            Some(omnigraph_catalog::commit_graph::encode_write_list(
+                common.as_deref(),
+                &writes,
+            ))
+        } else {
+            None
+        };
         crash_point("batch_committed");
         if timing_enabled() {
             eprintln!(
@@ -1448,6 +1568,14 @@ impl Omnigraph {
             )
             .await
             .map_err(OmniError::unpublished)?;
+        let mut lineage_intent = lineage_intent;
+        if let Some(encoded) = write_list {
+            lineage_intent.actor_id = Some(encoded);
+        }
+        // The publisher checks the actor it is handed against the lineage
+        // intent's: hand it the recorded form (the write list for a batch of
+        // several writes).
+        let publish_actor = lineage_intent.actor_id.clone();
         let publish = async {
             match coordinator {
                 Some(coordinator) => {
@@ -1465,7 +1593,7 @@ impl Omnigraph {
                         current.branch.as_deref(),
                         &updates,
                         &expected,
-                        first.actor.as_deref(),
+                        publish_actor.as_deref(),
                         current,
                         lineage_intent,
                     )
@@ -1583,7 +1711,12 @@ fn admit_inner(
             .writes
             .iter()
             .map(|write| write.table_key.clone())
-            .chain(entry.expected.values().map(|expectation| expectation.table_key.clone()))
+            .chain(
+                entry
+                    .expected
+                    .values()
+                    .map(|expectation| expectation.table_key.clone()),
+            )
             .collect();
         for write in &entry.writes {
             if let Some(edge) = write
@@ -1640,7 +1773,10 @@ fn admit_inner(
             }
             if let Some(table) = touched.iter().find(|table| {
                 !entry.writes.iter().any(|write| &write.table_key == *table)
-                    && effect.deleted.get(table.as_str()).is_some_and(|ids| !ids.is_empty())
+                    && effect
+                        .deleted
+                        .get(table.as_str())
+                        .is_some_and(|ids| !ids.is_empty())
             }) {
                 return Err(OmniError::manifest_read_set_changed(
                     format!("group_endpoint_deleted_since_capture:{table}"),
@@ -1689,7 +1825,6 @@ fn admit_inner(
     Ok(())
 }
 
-
 /// Stress fix (H3): hands the lead on when a waiting writer's future is
 /// dropped with a `Lead` in its channel.
 struct Waiter<'a> {
@@ -1737,8 +1872,10 @@ impl Drop for LeadGuard<'_> {
         let effects = self.effects.load(std::sync::atomic::Ordering::SeqCst);
         for reply in self.replies.drain(..) {
             let error = if effects {
-                OmniError::manifest_internal("the group commit leader was cancelled mid-publication")
-                    .with_completion_evidence(crate::error::CompletionEvidence::Uncertain)
+                OmniError::manifest_internal(
+                    "the group commit leader was cancelled mid-publication",
+                )
+                .with_completion_evidence(crate::error::CompletionEvidence::Uncertain)
             } else {
                 OmniError::manifest_read_set_changed(
                     "group_leader_cancelled".to_string(),
@@ -1859,7 +1996,10 @@ impl Omnigraph {
         let effects = std::sync::atomic::AtomicBool::new(false);
         let mut coordinator = None;
         if txn.branch != self.installed_head().0 {
-            coordinator = Some(self.open_coordinator_for_branch(txn.branch.as_deref()).await?);
+            coordinator = Some(
+                self.open_coordinator_for_branch(txn.branch.as_deref())
+                    .await?,
+            );
         }
         let published = self
             .publish_batch(&txn, &alone, coordinator.as_mut(), &effects)
@@ -1888,7 +2028,6 @@ impl Omnigraph {
     }
 }
 
-
 /// Research (stress soak): counters a leader prints at most every
 /// `OMNIGRAPH_GROUP_COMMIT_STATS_SECS` seconds as one `[gc-stats]` JSON line.
 mod stats {
@@ -1900,6 +2039,7 @@ mod stats {
     pub(super) static REFUSED: AtomicU64 = AtomicU64::new(0);
     pub(super) static FAILED: AtomicU64 = AtomicU64::new(0);
     pub(super) static MAX_BATCH: AtomicU64 = AtomicU64::new(0);
+    pub(super) static BUDGET_STOPS: AtomicU64 = AtomicU64::new(0);
     static LAST: Mutex<Option<std::time::Instant>> = Mutex::new(None);
 
     pub(super) fn every() -> Option<std::time::Duration> {
@@ -1944,7 +2084,6 @@ mod stats {
     }
 }
 
-
 /// Research (stress crash points): `OMNIGRAPH_STRESS_CRASH=point:per_mille,...`
 /// aborts the process at a named point of the batch path with that
 /// probability, the equivalent of a kill -9 there.
@@ -1973,4 +2112,75 @@ pub(crate) fn crash_point(point: &str) {
         eprintln!("[stress-crash] aborting at {point}");
         std::process::abort();
     }
+}
+
+/// Research: one-actor batches (the pre-revision rule), for comparison.
+fn one_actor_batches() -> bool {
+    std::env::var("OMNIGRAPH_GROUP_COMMIT_ONE_ACTOR").is_ok_and(|value| value == "1")
+}
+
+/// Bytes of the write list's fixed part in the stored commit record.
+const WRITE_LIST_HEADER_BYTES: usize = 64;
+
+/// The byte budget of a batch's write list: half the commit fields' bound
+/// (`HISTORY_RELEASE_BYTES`), leaving the rest of the record its room;
+/// `OMNIGRAPH_GROUP_COMMIT_WRITE_LIST_BYTES` lowers it for tests.
+fn write_list_budget() -> usize {
+    std::env::var("OMNIGRAPH_GROUP_COMMIT_WRITE_LIST_BYTES")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(omnigraph_catalog::HISTORY_RELEASE_BYTES / 2)
+}
+
+/// An upper bound of one member's entry in the encoded write list: its actor
+/// (JSON-escaped at most 6 bytes a byte) and one `[table, start, end]` per
+/// table it inserted into.
+fn write_list_entry_bytes(entry: &GroupEntry) -> usize {
+    let actor = entry.actor.as_ref().map_or(4, |actor| actor.len() * 6 + 2);
+    let rows: usize = entry
+        .writes
+        .iter()
+        .map(|write| write.table_key.len() * 6 + 2 + 2 * 20 + 6)
+        .sum();
+    16 + actor + rows
+}
+
+/// Research: the stable row-id range of each listed data file's fragment in
+/// a committed manifest, from the fragment's inline row-id sequence; an error
+/// when a sequence is not one consecutive run.
+fn fragment_row_ranges(
+    dataset: &lance::Dataset,
+    files: &HashSet<String>,
+) -> Result<HashMap<String, (u64, u64)>> {
+    let mut out = HashMap::new();
+    for fragment in dataset.fragments().iter() {
+        let Some(file) = fragment.files.first() else {
+            continue;
+        };
+        if !files.contains(&file.path) {
+            continue;
+        }
+        let Some(lance_table::format::RowIdMeta::Inline(bytes)) = fragment.row_id_meta.as_ref()
+        else {
+            return Err(OmniError::manifest_internal(format!(
+                "batch fragment {} carries no inline row-id sequence",
+                fragment.id
+            )));
+        };
+        let sequence = lance_table::rowids::read_row_ids(&bytes[..])
+            .map_err(|error| OmniError::manifest_internal(error.to_string()))?;
+        let ids: Vec<u64> = sequence.iter().collect();
+        let (Some(first), Some(last)) = (ids.first(), ids.last()) else {
+            continue;
+        };
+        if last + 1 - first != ids.len() as u64 || ids.windows(2).any(|pair| pair[1] != pair[0] + 1)
+        {
+            return Err(OmniError::manifest_internal(format!(
+                "batch fragment {} row ids are not one consecutive run",
+                fragment.id
+            )));
+        }
+        out.insert(file.path.clone(), (*first, last + 1));
+    }
+    Ok(out)
 }

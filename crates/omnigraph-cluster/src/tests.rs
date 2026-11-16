@@ -2913,6 +2913,7 @@ fn offline_deployment_graph_completion_reserve_covers_maximum_serialized_engine_
         published: true,
         kind: omnigraph::db::GraphCommitKind::Published,
         root_commit_id: None,
+        writes: Vec::new(),
     };
     // Decode the engine's opaque type, so a new serialized token field makes
     // this bound review fail instead of silently remaining absent from a mock.

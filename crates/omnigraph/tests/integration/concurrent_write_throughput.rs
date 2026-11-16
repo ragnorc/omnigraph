@@ -71,7 +71,8 @@ use omnigraph::settings::SessionSettings;
 use super::helpers::mixed_params;
 
 const SCHEMA: &str = "node Item {\n    slug: String @key\n    n: I64\n}\n";
-const QUERIES: &str = "query put($slug: String, $n: I64) {\n    insert Item { slug: $slug, n: $n }\n}\n";
+const QUERIES: &str =
+    "query put($slug: String, $n: I64) {\n    insert Item { slug: $slug, n: $n }\n}\n";
 const TABLE: &str = "node:Item";
 
 const PHASE_WARMUP: u8 = 0;
@@ -234,7 +235,9 @@ type TraceEntry = (Instant, Instant, &'static str, &'static str, String);
 
 /// Every request's timing when `OG_CW_TRACE=1`, for the cost model.
 static TRACE: std::sync::LazyLock<Option<Mutex<Vec<TraceEntry>>>> =
-    std::sync::LazyLock::new(|| (env_or("OG_CW_TRACE", "0") == "1").then(|| Mutex::new(Vec::new())));
+    std::sync::LazyLock::new(|| {
+        (env_or("OG_CW_TRACE", "0") == "1").then(|| Mutex::new(Vec::new()))
+    });
 
 static BT_PATTERN: std::sync::LazyLock<Option<String>> =
     std::sync::LazyLock::new(|| std::env::var("OG_CW_BT_PATTERN").ok());
@@ -244,7 +247,10 @@ fn trace(start: Instant, plane: &'static str, method: &'static str, path: &Path)
     if let Some(pattern) = BT_PATTERN.as_ref()
         && method.starts_with("get")
         && path.as_ref().contains(pattern.as_str())
-        && { let n = BT_PRINTED.fetch_add(1, Ordering::Relaxed); n >= env_num("OG_CW_BT_SKIP", 0) && n < env_num("OG_CW_BT_SKIP", 0) + 2 }
+        && {
+            let n = BT_PRINTED.fetch_add(1, Ordering::Relaxed);
+            n >= env_num("OG_CW_BT_SKIP", 0) && n < env_num("OG_CW_BT_SKIP", 0) + 2
+        }
     {
         let bt = std::backtrace::Backtrace::force_capture().to_string();
         let frames: Vec<&str> = bt
@@ -371,7 +377,12 @@ impl ObjectStore for CountingStore {
 
     fn list(&self, prefix: Option<&Path>) -> BoxStream<'static, OSResult<ObjectMeta>> {
         self.counts.list.fetch_add(1, Ordering::Relaxed);
-        trace(Instant::now(), self.plane, "list", &prefix.cloned().unwrap_or_default());
+        trace(
+            Instant::now(),
+            self.plane,
+            "list",
+            &prefix.cloned().unwrap_or_default(),
+        );
         self.target.list(prefix)
     }
 
@@ -381,7 +392,12 @@ impl ObjectStore for CountingStore {
         offset: &Path,
     ) -> BoxStream<'static, OSResult<ObjectMeta>> {
         self.counts.list.fetch_add(1, Ordering::Relaxed);
-        trace(Instant::now(), self.plane, "list_offset", &prefix.cloned().unwrap_or_default());
+        trace(
+            Instant::now(),
+            self.plane,
+            "list_offset",
+            &prefix.cloned().unwrap_or_default(),
+        );
         self.target.list_with_offset(prefix, offset)
     }
 
@@ -389,7 +405,12 @@ impl ObjectStore for CountingStore {
         self.counts.list_delimiter.fetch_add(1, Ordering::Relaxed);
         let start = Instant::now();
         let result = self.target.list_with_delimiter(prefix).await;
-        trace(start, self.plane, "list_delim", &prefix.cloned().unwrap_or_default());
+        trace(
+            start,
+            self.plane,
+            "list_delim",
+            &prefix.cloned().unwrap_or_default(),
+        );
         result
     }
 
@@ -552,17 +573,24 @@ async fn build_fixture(cfg: &Config, uri: &str, writers: usize, mode: &str) -> A
             .await
             .expect("seed load");
     }
-    session.ensure_indices_as(None).await.expect("ensure indices");
+    session
+        .ensure_indices_as(None)
+        .await
+        .expect("ensure indices");
     if mode == "separate" {
         for w in 0..writers {
-            db.branch_create(&format!("w{w}")).await.expect("branch create");
+            db.branch_create(&format!("w{w}"))
+                .await
+                .expect("branch create");
         }
     }
     // The production server shape: the one writer process claims the writer
     // epoch of the branch it writes, which lets its handle read and write its
     // bound branch with no freshness probe (`claim_branch_writer`).
     if env_or("OG_CW_CLAIM", "0") == "1" && mode == "same" {
-        db.claim_branch_writer("main").await.expect("claim writer epoch");
+        db.claim_branch_writer("main")
+            .await
+            .expect("claim writer epoch");
     }
     db
 }
@@ -604,7 +632,10 @@ async fn run_cell(cfg: &Config, writers: usize, mode: &str, run: u64) -> serde_j
                 let params = mixed_params(&[("$slug", slug.as_str())], &[("$n", seq as i64)]);
                 let started = Instant::now();
                 loop {
-                    match session.mutate_with_receipt(&branch, QUERIES, "put", &params).await {
+                    match session
+                        .mutate_with_receipt(&branch, QUERIES, "put", &params)
+                        .await
+                    {
                         Ok(receipt) => {
                             let us = started.elapsed().as_micros() as u64;
                             stats.longest_us = stats.longest_us.max(us);

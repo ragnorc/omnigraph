@@ -52,6 +52,91 @@ pub struct GraphCommit {
     /// The root of an unattached snapshot's chain, `None` for the other kinds.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub root_commit_id: Option<String>,
+    /// Research (group commit across actors): one entry per write of a batch
+    /// commit, in batch order. Empty in the stored form and for a one-write
+    /// commit; filled by [`GraphCommit::decoded`] from the write list the
+    /// record's `actor_id` column carries (`WRITE_LIST_PREFIX`).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub writes: Vec<CommitWrite>,
+}
+
+/// Research encoding: a stored `actor_id` that starts with this tag holds a
+/// batch commit's write list as JSON, `{"a": common actor or null, "w":
+/// [{"a": actor or null, "r": [[table_key, start, end], ...]}, ...]}`.
+pub const WRITE_LIST_PREFIX: &str = "\u{1}gcw1";
+
+/// One write of a batch commit: its actor and, per table it inserted into,
+/// the half-open range of stable row ids its rows received.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct CommitWrite {
+    pub actor_id: Option<String>,
+    pub rows: Vec<CommitWriteRows>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct CommitWriteRows {
+    pub table_key: String,
+    pub start: u64,
+    pub end: u64,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct EncodedWriteList {
+    a: Option<String>,
+    w: Vec<EncodedWrite>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct EncodedWrite {
+    a: Option<String>,
+    r: Vec<(String, u64, u64)>,
+}
+
+/// The stored `actor_id` of a batch commit: the tag and the JSON write list.
+pub fn encode_write_list(common: Option<&str>, writes: &[CommitWrite]) -> String {
+    let list = EncodedWriteList {
+        a: common.map(str::to_string),
+        w: writes
+            .iter()
+            .map(|write| EncodedWrite {
+                a: write.actor_id.clone(),
+                r: write
+                    .rows
+                    .iter()
+                    .map(|rows| (rows.table_key.clone(), rows.start, rows.end))
+                    .collect(),
+            })
+            .collect(),
+    };
+    format!(
+        "{WRITE_LIST_PREFIX}{}",
+        serde_json::to_string(&list).expect("a write list serializes")
+    )
+}
+
+/// The common actor and the write list of a stored `actor_id`, when it holds
+/// one; `None` for an ordinary actor or none.
+pub fn decode_write_list(stored: Option<&str>) -> Option<(Option<String>, Vec<CommitWrite>)> {
+    let json = stored?.strip_prefix(WRITE_LIST_PREFIX)?;
+    let list: EncodedWriteList = serde_json::from_str(json).ok()?;
+    Some((
+        list.a,
+        list.w
+            .into_iter()
+            .map(|write| CommitWrite {
+                actor_id: write.a,
+                rows: write
+                    .r
+                    .into_iter()
+                    .map(|(table_key, start, end)| CommitWriteRows {
+                        table_key,
+                        start,
+                        end,
+                    })
+                    .collect(),
+            })
+            .collect(),
+    ))
 }
 
 fn published_by_default() -> bool {
@@ -63,6 +148,18 @@ fn kind_is_published(kind: &GraphCommitKind) -> bool {
 }
 
 impl GraphCommit {
+    /// The commit as callers see it: a stored write list decoded into
+    /// `writes`, with `actor_id` naming the one actor every write shares, or
+    /// empty. Idempotent; an ordinary commit is returned unchanged.
+    pub fn decoded(&self) -> GraphCommit {
+        let mut commit = self.clone();
+        if let Some((common, writes)) = decode_write_list(self.actor_id.as_deref()) {
+            commit.actor_id = common;
+            commit.writes = writes;
+        }
+        commit
+    }
+
     /// The one total order for deterministic lineage listing and head
     /// selection. A commit-list page, ancestry and CDC traversal follow
     /// persisted first-parent links instead, along which this key and the
@@ -966,6 +1063,7 @@ pub fn graph_commit_from_manifest_row(row: crate::GraphLineageRow) -> GraphCommi
         published: true,
         kind: GraphCommitKind::Published,
         root_commit_id: None,
+        writes: Vec::new(),
     }
 }
 
@@ -1823,6 +1921,7 @@ mod tests {
             published: true,
             kind: GraphCommitKind::Published,
             root_commit_id: None,
+            writes: Vec::new(),
         }
     }
 

@@ -601,7 +601,10 @@ impl MutationStaging {
             touched.insert(table_key.clone(), ids.map(|ids| (ids, Vec::new())));
         }
         for (table_key, ids) in &deleted_ids {
-            match touched.entry(table_key.clone()).or_insert_with(|| Some((Vec::new(), Vec::new()))) {
+            match touched
+                .entry(table_key.clone())
+                .or_insert_with(|| Some((Vec::new(), Vec::new())))
+            {
                 Some((_, deleted)) => deleted.extend(ids.iter().cloned()),
                 None => {}
             }
