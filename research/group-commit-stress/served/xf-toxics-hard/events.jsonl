@@ -1,0 +1,26 @@
+{"kind": "driver_start", "cmd": ["run", "--base", "http://127.0.0.1:18080", "--graph", "stress", "--hot", "64", "--people", "24", "--out", "/src/omnigraph/research/group-commit-stress/served/xf-toxics-hard/history.jsonl", "--server-pid", "6485", "--writers", "64", "--secs", "90", "--actors", "16", "--mix", "fresh=80,fmulti=10,sknows=10", "--reader-count", "1", "--readers", "1"], "root": "s3://omnigraph-stress/xf-toxics-hard-1794804857", "t": 1794804876.638}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.8, "type": "limit_data", "attributes": {"bytes": 98}}, "status": 200, "t": 1794804877.674}
+{"kind": "toxic_off", "toxic_kind": "truncate", "t": 1794804881.676}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "upstream", "toxicity": 0.8, "type": "reset_peer", "attributes": {"timeout": 15}}, "status": 200, "t": 1794804886.558}
+{"kind": "toxic_off", "toxic_kind": "reset", "t": 1794804890.561}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "upstream", "toxicity": 0.8, "type": "timeout", "attributes": {"timeout": 1741}}, "status": 200, "t": 1794804897.232}
+{"kind": "toxic_off", "toxic_kind": "timeout", "t": 1794804901.234}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.8, "type": "limit_data", "attributes": {"bytes": 232}}, "status": 200, "t": 1794804905.343}
+{"kind": "toxic_off", "toxic_kind": "truncate", "t": 1794804909.346}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "upstream", "toxicity": 0.8, "type": "timeout", "attributes": {"timeout": 1749}}, "status": 200, "t": 1794804911.328}
+{"kind": "toxic_off", "toxic_kind": "timeout", "t": 1794804915.331}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "upstream", "toxicity": 0.8, "type": "reset_peer", "attributes": {"timeout": 44}}, "status": 200, "t": 1794804915.708}
+{"kind": "toxic_off", "toxic_kind": "reset", "t": 1794804919.711}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.8, "type": "limit_data", "attributes": {"bytes": 194}}, "status": 200, "t": 1794804920.954}
+{"kind": "toxic_off", "toxic_kind": "truncate", "t": 1794804924.956}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.8, "type": "timeout", "attributes": {"timeout": 497}}, "status": 200, "t": 1794804930.136}
+{"kind": "toxic_off", "toxic_kind": "timeout", "t": 1794804934.138}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.8, "type": "reset_peer", "attributes": {"timeout": 39}}, "status": 200, "t": 1794804953.26}
+{"kind": "toxic_off", "toxic_kind": "reset", "t": 1794804957.262}
+{"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "upstream", "toxicity": 0.8, "type": "reset_peer", "attributes": {"timeout": 21}}, "status": 200, "t": 1794804964.341}
+{"kind": "toxic_off", "toxic_kind": "reset", "t": 1794804967.151}
+{"kind": "driver_done", "code": 0, "t": 1794804967.151}
+{"kind": "check_server", "endpoint": "direct", "pid": 6678, "t": 1794804968.264}
+{"kind": "attr_http_done", "code": 0, "t": 1794805026.727}
+{"kind": "attr_engine_done", "code": 0, "t": 1794805112.441}
+{"kind": "check_done", "code": 0, "root": "s3://omnigraph-stress/xf-toxics-hard-1794804857", "t": 1794805112.772}

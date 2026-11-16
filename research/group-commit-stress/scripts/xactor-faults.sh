@@ -21,6 +21,8 @@ for cell in $CELLS; do
     crash)  run=(--watchdog 1 --server-env OMNIGRAPH_STRESS_CRASH=batch_admitted:3,batch_committed:3,batch_published:3) ;;
     kill9)  run=(--chaos-kill-secs 15 --optimize-secs 30) ;;
     toxics) run=(--toxics reset,truncate,timeout,jitter --toxic-every 5 --toxic-window 2) ;;
+    toxics-hard) run=(--toxics reset,truncate,timeout --toxic-every 4 --toxic-window 4 --toxic-toxicity 0.8) ;;
+    kill9-30) run=(--chaos-kill-secs 30 --optimize-secs 30) ;;
     cancel) drive+=(--cancel-pct 20 --cancel-ms 1500); run=(--optimize-secs 30) ;;
     budget) drive=(--writers 128 --secs "$SECS" --actors 64 --actor-style long --mix "$MIX" --reader-count 1 --readers 1) ;;
     policy) drive=(--writers 64 --secs "$SECS" --actor-names "$POLICY_ACTORS" --mix "$MIX" --reader-count 1 --readers 1) ;;

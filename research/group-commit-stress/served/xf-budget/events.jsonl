@@ -1,6 +1,6 @@
-{"kind": "driver_start", "cmd": ["run", "--base", "http://127.0.0.1:18080", "--graph", "stress", "--hot", "64", "--people", "24", "--out", "/src/omnigraph/research/group-commit-stress/served/xf-budget/history.jsonl", "--server-pid", "58291", "--writers", "128", "--secs", "90", "--actors", "64", "--actor-style", "long", "--mix", "fresh=80,fmulti=10,sknows=10", "--reader-count", "1", "--readers", "1"], "root": "s3://omnigraph-stress/xf-budget-1794803448", "t": 1794803468.642}
-{"kind": "driver_done", "code": 0, "t": 1794803559.485}
-{"kind": "check_server", "endpoint": "direct", "pid": 58520, "t": 1794803560.67}
-{"kind": "attr_http_done", "code": 0, "t": 1794803644.226}
-{"kind": "attr_engine_done", "code": 0, "t": 1794803759.319}
-{"kind": "check_done", "code": 0, "root": "s3://omnigraph-stress/xf-budget-1794803448", "t": 1794803760.073}
+{"kind": "driver_start", "cmd": ["run", "--base", "http://127.0.0.1:18080", "--graph", "stress", "--hot", "64", "--people", "24", "--out", "/src/omnigraph/research/group-commit-stress/served/xf-budget/history.jsonl", "--server-pid", "6894", "--writers", "128", "--secs", "90", "--actors", "64", "--actor-style", "long", "--mix", "fresh=80,fmulti=10,sknows=10", "--reader-count", "1", "--readers", "1"], "root": "s3://omnigraph-stress/xf-budget-1794805113", "t": 1794805132.481}
+{"kind": "driver_done", "code": 0, "t": 1794805223.622}
+{"kind": "check_server", "endpoint": "direct", "pid": 7705, "t": 1794805224.911}
+{"kind": "attr_http_done", "code": 0, "t": 1794805309.584}
+{"kind": "attr_engine_done", "code": 0, "t": 1794805422.037}
+{"kind": "check_done", "code": 0, "root": "s3://omnigraph-stress/xf-budget-1794805113", "t": 1794805422.746}

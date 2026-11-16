@@ -1,0 +1,35 @@
+[seed] optimize {"status": 200, "answer": {"lookup": "found", "operation": {"operation_id": "01M7HB9YJH6A1GE2NHAPNYXDEF", "request_digest": "sha256:29ee8451ddff1ccc78121854ff170ffc6c81c5a3acccfb9341093b34856ec27a", "graph": "stress", "schema_identity_domain": "01M7HB9FQ1C00EJRTRFXJH62RP", "settlement_branch": "main", "request": {"kind": "optimize"}, "principal": "act-0", "accepted_at": "2026-11-16T04:54:33.907204598Z", "state": "succeeded", "nonce": "01M7HBA083X3C2EN1A7C04H8P7", "input_commit": "hb1.01M7HB9JN2AKWSR7JNDCFVKFK8.44.01M7HB9YFBRW7M7MAF72EET69Y", "input_manifest_version": 45, "published_commit": "h
+[event] {"kind": "driver_start", "cmd": ["run", "--base", "http://127.0.0.1:18080", "--graph", "stress", "--hot", "64", "--people", "24", "--out", "/src/omnigraph/research/group-commit-stress/served/xf-toxics-hard/history.jsonl", "--server-pid", "6485", "--writers", "64", "--secs", "90", "--actors", "16", "--mix", "fresh=80,fmulti=10,sknows=10", "--reader-count", "1", "--readers", "1"], "root": "s3://omnigraph-stress/xf-toxics-hard-1794804857", "t": 1794804876.638}
+[event] {"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.8, "type": "limit_data", "attributes": {"bytes": 98}}, "status": 200, "t": 1794804877.674}
+[event] {"kind": "toxic_off", "toxic_kind": "truncate", "t": 1794804881.676}
+[event] {"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "upstream", "toxicity": 0.8, "type": "reset_peer", "attributes": {"timeout": 15}}, "status": 200, "t": 1794804886.558}
+[event] {"kind": "toxic_off", "toxic_kind": "reset", "t": 1794804890.561}
+[event] {"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "upstream", "toxicity": 0.8, "type": "timeout", "attributes": {"timeout": 1741}}, "status": 200, "t": 1794804897.232}
+[event] {"kind": "toxic_off", "toxic_kind": "timeout", "t": 1794804901.234}
+[event] {"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.8, "type": "limit_data", "attributes": {"bytes": 232}}, "status": 200, "t": 1794804905.343}
+[event] {"kind": "toxic_off", "toxic_kind": "truncate", "t": 1794804909.346}
+[event] {"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "upstream", "toxicity": 0.8, "type": "timeout", "attributes": {"timeout": 1749}}, "status": 200, "t": 1794804911.328}
+[event] {"kind": "toxic_off", "toxic_kind": "timeout", "t": 1794804915.331}
+[event] {"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "upstream", "toxicity": 0.8, "type": "reset_peer", "attributes": {"timeout": 44}}, "status": 200, "t": 1794804915.708}
+[event] {"kind": "toxic_off", "toxic_kind": "reset", "t": 1794804919.711}
+[event] {"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.8, "type": "limit_data", "attributes": {"bytes": 194}}, "status": 200, "t": 1794804920.954}
+[event] {"kind": "toxic_off", "toxic_kind": "truncate", "t": 1794804924.956}
+[event] {"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.8, "type": "timeout", "attributes": {"timeout": 497}}, "status": 200, "t": 1794804930.136}
+[event] {"kind": "toxic_off", "toxic_kind": "timeout", "t": 1794804934.138}
+[event] {"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "downstream", "toxicity": 0.8, "type": "reset_peer", "attributes": {"timeout": 39}}, "status": 200, "t": 1794804953.26}
+[event] {"kind": "toxic_off", "toxic_kind": "reset", "t": 1794804957.262}
+[event] {"kind": "toxic_on", "toxic": {"name": "chaos", "stream": "upstream", "toxicity": 0.8, "type": "reset_peer", "attributes": {"timeout": 21}}, "status": 200, "t": 1794804964.341}
+task failed: ModuleNotFoundError("No module named 'psutil'")
+[run] {"type": "run_summary", "ok": 8182, "refused": 0, "throttled": 0, "in_doubt": 0, "secs": 90.0}
+[event] {"kind": "toxic_off", "toxic_kind": "reset", "t": 1794804967.151}
+[event] {"kind": "driver_done", "code": 0, "t": 1794804967.151}
+[event] {"kind": "check_server", "endpoint": "direct", "pid": 6678, "t": 1794804968.264}
+[attr-http] {"commits": 317, "batch_commits": 269, "mixed_actor_commits": 269, "actors_per_batch_commit": {"5": 1, "6": 1, "7": 2, "8": 4, "9": 3, "10": 6, "11": 3, "12": 8, "13": 27, "14": 55, "15": 70, "16": 89}, "entries": 8180, "batch_rows": 9016, "feed_polls": 10, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 0, "violations": 0}
+ 
+[event] {"kind": "attr_http_done", "code": 0, "t": 1794805026.727}
+[attr-engine] test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 85.47s
+[attr-summary] ops 8182 {"commits":317,"batch_commits":269,"mixed_actor_commits":269,"entries":8180,"actors_per_batch_commit":{"5":1,"6":1,"7":2,"8":4,"9":3,"10":6,"11":3,"12":8,"13":27,"14":55,"15":70,"16":89},"batch_rows_checked":9016,"head_rows_checked":9016,"feed_polls":10,"violations":0}
+[event] {"kind": "attr_engine_done", "code": 0, "t": 1794805112.441}
+{"ops": 8182, "ok": 8182, "refused": 0, "in_doubt": 0, "commits_with_writes": 271, "writes_per_commit": 30.19, "max_batch": 63, "observations": 263, "p50_ms": 432.821, "p99_ms": 4751.043, "errors": [], "violations": 0}
+ 
+[event] {"kind": "check_done", "code": 0, "root": "s3://omnigraph-stress/xf-toxics-hard-1794804857", "t": 1794805112.772}

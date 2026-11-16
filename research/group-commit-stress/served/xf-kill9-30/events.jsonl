@@ -1,0 +1,23 @@
+{"kind": "driver_start", "cmd": ["run", "--base", "http://127.0.0.1:18080", "--graph", "stress", "--hot", "64", "--people", "24", "--out", "/src/omnigraph/research/group-commit-stress/served/xf-kill9-30/history.jsonl", "--server-pid", "5541", "--writers", "64", "--secs", "90", "--actors", "16", "--mix", "fresh=80,fmulti=10,sknows=10", "--reader-count", "1", "--readers", "1"], "root": "s3://omnigraph-stress/xf-kill9-30-1794804699", "t": 1794804719.081}
+{"kind": "kill9", "pid": 5541, "t": 1794804730.821}
+{"kind": "unlock", "lock": "01M7HB4QKJ6Z2E4SDW7QPXWY53", "t": 1794804731.123}
+{"kind": "restarted", "pid": 5745, "t": 1794804732.028}
+{"kind": "kill9", "pid": 5745, "t": 1794804736.934}
+{"kind": "unlock", "lock": "01M7HB5KB30937AFXJFQ6KC16C", "t": 1794804737.331}
+{"kind": "restarted", "pid": 5852, "t": 1794804738.545}
+{"kind": "optimize", "status": 200, "secs": 14.08, "answer": "{\"lookup\": \"found\", \"operation\": {\"operation_id\": \"01M7HB64RS5VVPF4VV5C7622WQ\", \"request_digest\": \"sha256:99f8aeba7992e8f044903d91963f089da4f4ddbf8deaeb47564fb376062b63de\", \"graph\": \"stress\", \"schema_identity_domain\": \"01M7HB4NWRK0FKDG8DE9T14549\", \"settlement_branch\": \"main\", \"request\": {\"kind\": \"optimize\"}, \"principal\": \"act-0\", \"accepted_at\": \"2026-11-16T04:52:29.176716216Z\", \"state\": \"succeeded", "t": 1794804763.159}
+{"kind": "kill9", "pid": 5852, "t": 1794804770.12}
+{"kind": "unlock", "lock": "01M7HB5SEN0S0PN7Q69J1R1MSJ", "t": 1794804770.498}
+{"kind": "restarted", "pid": 5992, "t": 1794804771.848}
+{"kind": "kill9", "pid": 5992, "t": 1794804774.104}
+{"kind": "unlock", "lock": "01M7HB6SS945D1R7TE449NZ6YQ", "t": 1794804774.445}
+{"kind": "restarted", "pid": 6097, "t": 1794804775.35}
+{"kind": "optimize", "status": 200, "secs": 4.48, "answer": "{\"lookup\": \"found\", \"operation\": {\"operation_id\": \"01M7HB7FT7CJ9RYCGNB2KQ0KH8\", \"request_digest\": \"sha256:99f8aeba7992e8f044903d91963f089da4f4ddbf8deaeb47564fb376062b63de\", \"graph\": \"stress\", \"schema_identity_domain\": \"01M7HB4NWRK0FKDG8DE9T14549\", \"settlement_branch\": \"main\", \"request\": {\"kind\": \"optimize\"}, \"principal\": \"act-0\", \"accepted_at\": \"2026-11-16T04:53:13.254780495Z\", \"state\": \"succeeded", "t": 1794804797.636}
+{"kind": "kill9", "pid": 6097, "t": 1794804798.379}
+{"kind": "unlock", "lock": "01M7HB6XMMKVWWRVCW856QHVBZ", "t": 1794804798.753}
+{"kind": "restarted", "pid": 6228, "t": 1794804799.664}
+{"kind": "driver_done", "code": 0, "t": 1794804809.891}
+{"kind": "check_server", "endpoint": "direct", "pid": 6313, "t": 1794804810.998}
+{"kind": "attr_http_done", "code": 0, "t": 1794804828.966}
+{"kind": "attr_engine_done", "code": 0, "t": 1794804856.574}
+{"kind": "check_done", "code": 0, "root": "s3://omnigraph-stress/xf-kill9-30-1794804699", "t": 1794804856.902}

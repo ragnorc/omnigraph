@@ -1,0 +1,32 @@
+[seed] optimize {"status": 200, "answer": {"lookup": "found", "operation": {"operation_id": "01M7HB54PQ8ZQQXV1CZWNAG38J", "request_digest": "sha256:99f8aeba7992e8f044903d91963f089da4f4ddbf8deaeb47564fb376062b63de", "graph": "stress", "schema_identity_domain": "01M7HB4NWRK0FKDG8DE9T14549", "settlement_branch": "main", "request": {"kind": "optimize"}, "principal": "act-0", "accepted_at": "2026-11-16T04:51:56.344617385Z", "state": "succeeded", "nonce": "01M7HB56C674TDZ19X0NBFK9AM", "input_commit": "hb1.01M7HB4RT0FHHC5S0QPMJ64FXH.44.01M7HB54KHRG38N43SG7YVE17A", "input_manifest_version": 45, "published_commit": "h
+[event] {"kind": "driver_start", "cmd": ["run", "--base", "http://127.0.0.1:18080", "--graph", "stress", "--hot", "64", "--people", "24", "--out", "/src/omnigraph/research/group-commit-stress/served/xf-kill9-30/history.jsonl", "--server-pid", "5541", "--writers", "64", "--secs", "90", "--actors", "16", "--mix", "fresh=80,fmulti=10,sknows=10", "--reader-count", "1", "--readers", "1"], "root": "s3://omnigraph-stress/xf-kill9-30-1794804699", "t": 1794804719.081}
+[event] {"kind": "kill9", "pid": 5541, "t": 1794804730.821}
+[event] {"kind": "unlock", "lock": "01M7HB4QKJ6Z2E4SDW7QPXWY53", "t": 1794804731.123}
+[event] {"kind": "restarted", "pid": 5745, "t": 1794804732.028}
+[event] {"kind": "kill9", "pid": 5745, "t": 1794804736.934}
+[event] {"kind": "unlock", "lock": "01M7HB5KB30937AFXJFQ6KC16C", "t": 1794804737.331}
+[event] {"kind": "restarted", "pid": 5852, "t": 1794804738.545}
+[event] {"kind": "optimize", "status": 200, "secs": 14.08, "answer": "{\"lookup\": \"found\", \"operation\": {\"operation_id\": \"01M7HB64RS5VVPF4VV5C7622WQ\", \"request_digest\": \"sha256:99f8aeba7992e8f044903d91963f089da4f4ddbf8deaeb47564fb376062b63de\", \"graph\": \"stress\", \"schema_identity_domain\": \"01M7HB4NWRK0FKDG8DE9T14549\", \"settlement_branch\": \"main\", \"request\": {\"kind\": \"optimize\"}, \"principal\": \"act-0\", \"accepted_at\": \"2026-11-16T04:52:29.176716216Z\", \"state\": \"succeeded", "t": 1794804763.159}
+[event] {"kind": "kill9", "pid": 5852, "t": 1794804770.12}
+[event] {"kind": "unlock", "lock": "01M7HB5SEN0S0PN7Q69J1R1MSJ", "t": 1794804770.498}
+[event] {"kind": "restarted", "pid": 5992, "t": 1794804771.848}
+[event] {"kind": "kill9", "pid": 5992, "t": 1794804774.104}
+[event] {"kind": "unlock", "lock": "01M7HB6SS945D1R7TE449NZ6YQ", "t": 1794804774.445}
+[event] {"kind": "restarted", "pid": 6097, "t": 1794804775.35}
+[event] {"kind": "optimize", "status": 200, "secs": 4.48, "answer": "{\"lookup\": \"found\", \"operation\": {\"operation_id\": \"01M7HB7FT7CJ9RYCGNB2KQ0KH8\", \"request_digest\": \"sha256:99f8aeba7992e8f044903d91963f089da4f4ddbf8deaeb47564fb376062b63de\", \"graph\": \"stress\", \"schema_identity_domain\": \"01M7HB4NWRK0FKDG8DE9T14549\", \"settlement_branch\": \"main\", \"request\": {\"kind\": \"optimize\"}, \"principal\": \"act-0\", \"accepted_at\": \"2026-11-16T04:53:13.254780495Z\", \"state\": \"succeeded", "t": 1794804797.636}
+[event] {"kind": "kill9", "pid": 6097, "t": 1794804798.379}
+[event] {"kind": "unlock", "lock": "01M7HB6XMMKVWWRVCW856QHVBZ", "t": 1794804798.753}
+[event] {"kind": "restarted", "pid": 6228, "t": 1794804799.664}
+task failed: ModuleNotFoundError("No module named 'psutil'")
+[run] {"type": "run_summary", "ok": 4019, "refused": 7974, "throttled": 0, "in_doubt": 320, "secs": 90.0}
+[event] {"kind": "driver_done", "code": 0, "t": 1794804809.891}
+[event] {"kind": "check_server", "endpoint": "direct", "pid": 6313, "t": 1794804810.998}
+[attr-http] {"commits": 195, "batch_commits": 131, "mixed_actor_commits": 131, "actors_per_batch_commit": {"2": 1, "3": 3, "4": 10, "6": 2, "7": 7, "8": 9, "9": 1, "10": 1, "13": 4, "14": 7, "15": 17, "16": 69}, "entries": 4003, "batch_rows": 4385, "feed_polls": 5, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 320, "violations": 0}
+ 
+[event] {"kind": "attr_http_done", "code": 0, "t": 1794804828.966}
+[attr-engine] test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 27.48s
+[attr-summary] ops 12313 {"commits":195,"batch_commits":131,"mixed_actor_commits":131,"entries":4003,"actors_per_batch_commit":{"2":1,"3":3,"4":10,"6":2,"7":7,"8":9,"9":1,"10":1,"13":4,"14":7,"15":17,"16":69},"batch_rows_checked":4385,"head_rows_checked":4385,"feed_polls":5,"violations":0}
+[event] {"kind": "attr_engine_done", "code": 0, "t": 1794804856.574}
+{"ops": 12313, "ok": 4019, "refused": 7974, "in_doubt": 320, "commits_with_writes": 147, "writes_per_commit": 27.34, "max_batch": 63, "observations": 135, "p50_ms": 394.462, "p99_ms": 24799.495, "errors": [[["graph_unavailable", "graph is loading; wait for its startup attempt to complete"], 6963], [[null, "connect: Cannot connect to host 127.0.0.1:18080 ssl:default [Connect call failed"], 1011], [[null, "ServerDisconnectedError: Server disconnected"], 320]], "violations": 0}
+ 
+[event] {"kind": "check_done", "code": 0, "root": "s3://omnigraph-stress/xf-kill9-30-1794804699", "t": 1794804856.902}

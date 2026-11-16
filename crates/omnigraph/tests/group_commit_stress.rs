@@ -1170,3 +1170,103 @@ async fn gc_cross_actor_conflicts_in_one_batch() {
     );
     assert!(report.violations.is_empty());
 }
+
+/// RFC §The batch, outcomes ("Publication in doubt") with a mixed-actor
+/// batch: the batch's acknowledgement is lost after its compare-and-swap
+/// landed and the read-back fails. Every member gets
+/// `manifest_publish_in_doubt` naming the same attempted commit; that commit
+/// is published, and after reopening its write list attributes every
+/// member's rows to that member's actor; the handle keeps writing.
+#[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+#[serial]
+async fn gc_mixed_actor_batch_in_doubt_names_one_commit_for_every_member() {
+    use harness::{QUERIES, SCHEMA};
+    let _scenario = FailScenario::setup();
+    group_commit_on();
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap().to_string();
+    let db = seeded(&uri, SCHEMA, "{\"type\":\"Person\",\"data\":{\"name\":\"p0\"}}\n{\"type\":\"Person\",\"data\":{\"name\":\"p1\"}}\n").await;
+    // A first leader parks inside its own publication; the rest queue.
+    let parked = helpers::failpoint::Rendezvous::park_first(&catalog::PUBLISH_PRE_MERGE);
+    let first = {
+        let db = Arc::clone(&db);
+        tokio::spawn(async move {
+            db.mutate_as_with_receipt("main", QUERIES, "ins", &mixed_params(&[("$slug", "z0")], &[("$n", 0)]), Some("act-z"))
+                .await
+        })
+    };
+    parked.wait_until_reached().await;
+    // The next publication's acknowledgement is lost and its read-back fails.
+    let _ack = catalog::PUBLISH_POST_MERGE_PRE_ACK.fail_once_at(2);
+    let _read = catalog::PUBLISH_READ_BACK.fail_once_at(1);
+    let specs: Vec<(&'static str, &'static str, omnigraph_compiler::ir::ParamMap, &'static str)> = vec![
+        ("act-a", "ins", mixed_params(&[("$slug", "d1")], &[("$n", 1)]), "fresh"),
+        ("act-b", "multi", mixed_params(&[("$slug", "d2"), ("$name", "q2")], &[("$n", 2)]), "fmulti"),
+        ("act-c", "knows", params(&[("$from", "p0"), ("$to", "p1")]), "sknows"),
+        ("act-d", "ins2", mixed_params(&[("$a", "d4a"), ("$b", "d4b")], &[("$n", 4)]), "pair"),
+        ("act-e", "ins", mixed_params(&[("$slug", "d5")], &[("$n", 5)]), "fresh"),
+        ("act-f", "person", params(&[("$name", "q6")]), "person"),
+    ];
+    let mut tasks = Vec::new();
+    for (actor, name, p, _) in specs.clone() {
+        let db = Arc::clone(&db);
+        tasks.push(tokio::spawn(async move {
+            db.mutate_as_with_receipt("main", QUERIES, name, &p, Some(actor)).await
+        }));
+        tokio::time::sleep(Duration::from_millis(40)).await;
+    }
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    parked.release();
+    first.await.unwrap().expect("the parked leader publishes");
+    let mut attempts = std::collections::BTreeSet::new();
+    let mut ops = Vec::new();
+    for (index, task) in tasks.into_iter().enumerate() {
+        let result = task.await.unwrap();
+        let (actor, _, p, kind) = &specs[index];
+        let s = |key: &str| match p.get(key) {
+            Some(omnigraph_compiler::query::ast::Literal::String(s)) => Some(s.clone()),
+            _ => None,
+        };
+        let (items, person, edge) = match *kind {
+            "fresh" => (vec![s("slug").unwrap()], None, None),
+            "fmulti" => (vec![s("slug").unwrap()], s("name"), None),
+            "pair" => (vec![s("a").unwrap(), s("b").unwrap()], None, None),
+            "person" => (vec![], s("name"), None),
+            _ => (vec![], None, Some((s("from").unwrap(), s("to").unwrap()))),
+        };
+        let rows = attribution::inserted_rows(kind, &items, person.as_deref(), edge.as_ref().map(|(a, b)| (a.as_str(), b.as_str())), None);
+        match result {
+            Ok(receipt) => {
+                eprintln!("[gc-repro] {actor}: published v{}", receipt.commit.as_ref().unwrap().graph_manifest_version);
+                ops.push(attribution::AttrOp { id: index as u64, actor: Some(actor.to_string()), outcome: "ok".into(), commit: receipt.commit.map(|c| c.graph_commit_id), rows });
+            }
+            Err(error) => {
+                eprintln!("[gc-repro] {actor}: {error} (evidence {:?}, attempt {:?})", error.completion_evidence(), error.publication_id());
+                assert!(format!("{error}").contains("in doubt"), "{actor}: {error}");
+                attempts.insert(error.publication_id().map(str::to_string));
+                ops.push(attribution::AttrOp { id: index as u64, actor: Some(actor.to_string()), outcome: "in_doubt".into(), commit: None, rows });
+            }
+        }
+    }
+    let in_doubt = ops.iter().filter(|op| op.outcome == "in_doubt").count();
+    eprintln!("[gc-repro] in doubt: {in_doubt} members, attempts {attempts:?}");
+    assert!(in_doubt >= 2, "the in-doubt batch held fewer than two members");
+    assert_eq!(attempts.len(), 1, "members of one batch name different attempts");
+    let attempt = attempts.into_iter().next().unwrap().expect("the in-doubt error names the attempted commit");
+    // The handle keeps writing.
+    db.mutate_as_with_receipt("main", QUERIES, "ins", &mixed_params(&[("$slug", "after")], &[("$n", 9)]), Some("act-a"))
+        .await
+        .expect("the handle writes after an in-doubt batch");
+    let fresh = Omnigraph::open(&uri).await.unwrap();
+    let commits = fresh.list_commits(None).await.unwrap();
+    let landed = commits.iter().find(|c| c.graph_commit_id == attempt).expect("the attempted commit landed");
+    let actors: std::collections::BTreeSet<_> = landed.writes.iter().map(|w| w.actor_id.clone()).collect();
+    eprintln!("[gc-repro] landed {attempt}: writes of {actors:?}");
+    let report = attribution::check(&fresh, &ops).await;
+    eprintln!("[gc-repro] attribution: {} {:?}", report.summary, report.violations);
+    assert!(report.violations.is_empty());
+    // Every in-doubt member is in the landed commit's write list.
+    for op in ops.iter().filter(|op| op.outcome == "in_doubt") {
+        assert!(landed.writes.iter().any(|w| w.actor_id == op.actor), "{:?} missing from the landed batch", op.actor);
+    }
+}

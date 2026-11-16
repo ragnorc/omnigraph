@@ -1,0 +1,10 @@
+{"kind": "driver_start", "cmd": ["run", "--base", "http://127.0.0.1:18080", "--graph", "stress", "--hot", "64", "--people", "24", "--out", "/src/omnigraph/research/group-commit-stress/served/xf-crash/history.jsonl", "--server-pid", "4942", "--writers", "64", "--secs", "90", "--actors", "16", "--mix", "fresh=80,fmulti=10,sknows=10", "--reader-count", "1", "--readers", "1"], "root": "s3://omnigraph-stress/xf-crash-1794804533", "t": 1794804554.352}
+{"kind": "server_died", "code": -6, "t": 1794804573.184}
+{"kind": "restarted", "pid": 5093, "lock": "01M7HB05TB2G57EBSBHJ1TT23V", "t": 1794804574.387}
+{"kind": "server_died", "code": -6, "t": 1794804614.044}
+{"kind": "restarted", "pid": 5235, "lock": "01M7HB0SCFFWBXYH3YXAN0ZXNN", "t": 1794804615.233}
+{"kind": "driver_done", "code": 0, "t": 1794804654.452}
+{"kind": "check_server", "endpoint": "direct", "pid": 5368, "t": 1794804655.655}
+{"kind": "attr_http_done", "code": 0, "t": 1794804673.496}
+{"kind": "attr_engine_done", "code": 0, "t": 1794804699.278}
+{"kind": "check_done", "code": 0, "root": "s3://omnigraph-stress/xf-crash-1794804533", "t": 1794804699.482}

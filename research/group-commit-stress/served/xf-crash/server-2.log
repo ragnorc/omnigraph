@@ -1,0 +1,4 @@
+OMNIGRAPH_LISTEN_ADDR=127.0.0.1:18080
+[gc-stats] {"unix":1794804584,"branch":"main","batches":1,"entries":1,"refused":0,"failed_batches":0,"max_batch":1,"queue":1,"log":0,"known_key_files":9,"known_key_ids":9,"budget_stops":0}
+[gc-stats] {"unix":1794804609,"branch":"main","batches":2,"entries":2,"refused":0,"failed_batches":0,"max_batch":1,"queue":0,"log":2,"known_key_files":11,"known_key_ids":11,"budget_stops":0}
+[stress-crash] aborting at batch_committed
