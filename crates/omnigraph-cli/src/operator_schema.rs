@@ -175,6 +175,16 @@ pub(crate) struct Transport {
     pub(crate) tls: Option<Tls>,
     #[serde(default)]
     pub(crate) proxy: Proxy,
+    /// Explicit consent to send a credential over plain HTTP to a standalone
+    /// server at a loopback address. Refused everywhere else.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) loopback_http: Option<LoopbackHttp>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum LoopbackHttp {
+    Allow,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

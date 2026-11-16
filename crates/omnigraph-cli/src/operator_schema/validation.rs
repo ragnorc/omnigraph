@@ -54,6 +54,7 @@ pub(super) fn validate(config: &mut OperatorConfig, base: &Path) -> Result<(), C
         profile.api = endpoint(&profile.api, PlainHttp::Refused, &format!("{path}.api"))?;
         auth_provider(&mut profile.auth, true, base, &format!("{path}.auth"))?;
         transport(&mut profile.transport, base, &path)?;
+        no_loopback_http(profile.transport.as_ref(), &path)?;
     }
     for (key, target) in &mut config.targets {
         let path = format!("targets.{key}");
@@ -78,6 +79,7 @@ pub(super) fn validate(config: &mut OperatorConfig, base: &Path) -> Result<(), C
                     *route = endpoint(route, PlainHttp::Refused, &format!("{path}.endpoint"))?;
                 }
                 transport(network, base, &path)?;
+                no_loopback_http(network.as_ref(), &path)?;
                 graph(default_graph, true, &path)?;
             }
             Target::Server {
@@ -94,8 +96,26 @@ pub(super) fn validate(config: &mut OperatorConfig, base: &Path) -> Result<(), C
                 };
                 *route = endpoint(route, plain_http, &format!("{path}.endpoint"))?;
                 transport(network, base, &path)?;
-                if plain_http == PlainHttp::LoopbackAddress && route.starts_with("http:") {
-                    credential_over_http_is_direct(network.as_ref(), &path)?;
+                let consented = network
+                    .as_ref()
+                    .is_some_and(|value| value.loopback_http.is_some());
+                match (plain_http, route.starts_with("http:"), consented) {
+                    (PlainHttp::LoopbackAddress, true, true) => {
+                        credential_over_http_is_direct(network.as_ref(), &path)?
+                    }
+                    (PlainHttp::LoopbackAddress, true, false) => {
+                        return Err(invalid(
+                            &format!("{path}.endpoint"),
+                            "a credential over loopback HTTP requires transport.loopback_http: allow",
+                        ));
+                    }
+                    (_, _, true) => {
+                        return Err(invalid(
+                            &format!("{path}.transport.loopback_http"),
+                            "loopback_http applies only to a server target with a credential and an http:// loopback address",
+                        ));
+                    }
+                    _ => {}
                 }
                 graph(default_graph, true, &path)?;
             }
@@ -423,6 +443,16 @@ fn endpoint(value: &str, plain_http: PlainHttp, path: &str) -> Result<String, Co
         parsed.set_path(&prefix);
     }
     Ok(parsed.to_string())
+}
+
+fn no_loopback_http(value: Option<&Transport>, path: &str) -> Result<(), ConfigError> {
+    if value.is_some_and(|value| value.loopback_http.is_some()) {
+        return Err(invalid(
+            &format!("{path}.transport.loopback_http"),
+            "loopback_http applies only to standalone server targets",
+        ));
+    }
+    Ok(())
 }
 
 /// A bearer token sent over plain HTTP must not pass through a proxy, where

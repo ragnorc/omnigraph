@@ -474,6 +474,12 @@
           "default": {
             "mode": "direct"
           }
+        },
+        "loopback_http": {
+          "$comment": "Consent to send a credential over plain HTTP. Valid only on a standalone server target with a credential and an http:// loopback address literal, with proxy mode direct.",
+          "enum": [
+            "allow"
+          ]
         }
       },
       "additionalProperties": false

@@ -411,6 +411,7 @@ fn test_transports(endpoints: &[&str]) -> Transports {
             }),
         }),
         proxy: schema::Proxy::Direct,
+        loopback_http: None,
     };
     for endpoint in endpoints {
         let url = url::Url::parse(endpoint).unwrap();

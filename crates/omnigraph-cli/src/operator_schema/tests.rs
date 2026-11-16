@@ -737,27 +737,40 @@ fn http_exception_is_only_for_standalone_loopback() {
         reject(&COMPLETE.replace("HTTPS://Platform.Example:443/Control/V1", endpoint));
         reject(&COMPLETE.replace("https://Private.Example/Data/V1", endpoint));
     }
-    // A credential goes over HTTP only to a loopback address literal, never
-    // to a name that resolution could send elsewhere, and never by proxy.
+    // A credential goes over HTTP only with explicit consent, only to a
+    // loopback address literal, never to a name resolution could send
+    // elsewhere, and never by proxy.
+    let allow = "    transport: {loopback_http: allow}\n";
     for endpoint in ["http://127.0.0.1", "http://127.10.20.30", "http://[::1]/api"] {
-        assert!(decode(&server(endpoint, "{provider: token, source: {env: TOKEN}}")).is_ok());
-        assert!(decode(&server(endpoint, "{provider: exec, command: [/missing/helper]}")).is_ok());
+        let token = server(endpoint, "{provider: token, source: {env: TOKEN}}");
+        reject(&token);
+        assert!(decode(&(token.clone() + allow)).is_ok());
+        assert!(
+            decode(&(server(endpoint, "{provider: exec, command: [/missing/helper]}") + allow))
+                .is_ok()
+        );
         for proxy in ["{mode: environment}", "{mode: url, url: http://proxy.example}"] {
             reject(
-                &(server(endpoint, "{provider: token, source: {env: TOKEN}}")
-                    + &format!("    transport: {{proxy: {proxy}}}\n")),
+                &(token.clone()
+                    + &format!("    transport: {{loopback_http: allow, proxy: {proxy}}}\n")),
             );
         }
-        assert!(decode(
-            &(server(endpoint, "{provider: token, source: {env: TOKEN}}")
-                + "    transport: {proxy: {mode: direct}}\n")
-        )
-        .is_ok());
+        // Consent is refused where it would mean nothing.
+        reject(&(server(endpoint, "{provider: anonymous}") + allow));
     }
-    reject(&server(
-        "http://localhost:8080",
-        "{provider: token, source: {env: TOKEN}}",
+    reject(
+        &(server("https://example.com", "{provider: token, source: {env: TOKEN}}") + allow),
+    );
+    reject(&COMPLETE.replace(
+        "      tls: {ca: {mode: append, file: ca.pem}}\n",
+        "      tls: {ca: {mode: append, file: ca.pem}}\n      loopback_http: allow\n",
     ));
+    reject(
+        &(server(
+            "http://localhost:8080",
+            "{provider: token, source: {env: TOKEN}}",
+        ) + allow),
+    );
     for endpoint in [
         "http://localhost.example",
         "http://example.localhost",
@@ -1029,8 +1042,10 @@ fn authenticated_loopback_http_server_target_is_accepted_issue_1419() {
             "{provider: token, source: {file: secrets/token}}",
             "{provider: token, source: {store: {}}}",
         ] {
-            let text = server(endpoint, auth);
+            let text = server(endpoint, auth) + "    transport: {loopback_http: allow}\n";
             assert!(decode(&text).is_ok(), "refused:\n{text}\n{:?}", decode(&text).err());
+            // Without the explicit consent the credential stays HTTPS-only.
+            reject(&server(endpoint, auth));
         }
     }
 }

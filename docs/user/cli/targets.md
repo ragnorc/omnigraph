@@ -272,8 +272,9 @@ cannot be exported. The receiving process can copy or disclose the token.
 Remote endpoints require HTTPS. The only HTTP exception is a standalone server
 on loopback: an anonymous target may name `localhost` or a loopback address,
 and a target with a credential must name a loopback address literal
-(`127.0.0.1`, any `127.0.0.0/8` address, or `[::1]`) with proxy mode `direct`,
-so the token never leaves the machine. Optional `transport` belongs independently
+(`127.0.0.1`, any `127.0.0.0/8` address, or `[::1]`), set
+`transport: {loopback_http: allow}` and keep proxy mode `direct`, so the token
+never leaves the machine. `loopback_http` is refused on any other target. Optional `transport` belongs independently
 to a profile's API or target's data endpoint; it is not inherited.
 API/endpoint URLs may include a base-path prefix, which stays inside the
 credential scope. Userinfo, queries, fragments, traversal and ambiguous encoded
