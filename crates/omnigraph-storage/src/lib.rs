@@ -3013,7 +3013,7 @@ fn file_uri_from_path_text(text: &str, windows: bool) -> Result<String> {
     };
     let body = if windows {
         let (authority, rest) = if let Some(rest) = text.strip_prefix(r"\\?\UNC\") {
-            ("//", rest.to_string())
+            ("", rest.to_string())
         } else if let Some(rest) = text.strip_prefix(r"\\?\") {
             if !is_windows_drive_path(rest) {
                 return Err(refuse("a verbatim path without a drive letter"));
@@ -3022,7 +3022,7 @@ fn file_uri_from_path_text(text: &str, windows: bool) -> Result<String> {
         } else if text.starts_with(r"\\.\") {
             return Err(refuse("a device path"));
         } else if let Some(rest) = text.strip_prefix(r"\\") {
-            ("//", rest.to_string())
+            ("", rest.to_string())
         } else if is_windows_drive_path(text) {
             ("/", text.to_string())
         } else {
