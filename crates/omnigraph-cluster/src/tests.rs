@@ -4754,15 +4754,24 @@ async fn plan_accepts_a_config_dir_path_with_uri_delimiters_issue_907() {
         let dir = parent.path().join(name);
         fs::create_dir(&dir).unwrap();
         let source = fixture();
-        for file in ["people.pg", "people.gq", "base.policy.yaml", CLUSTER_CONFIG_FILE] {
+        for file in [
+            "people.pg",
+            "people.gq",
+            "base.policy.yaml",
+            CLUSTER_CONFIG_FILE,
+        ] {
             fs::copy(source.path().join(file), dir.join(file)).unwrap();
         }
         let root = store::ClusterStore::for_config_dir(&dir)
             .canonical_root()
             .unwrap();
-        let reopened = store::ClusterStore::for_storage_root(&root)
-            .and_then(|store| store.canonical_root());
-        assert_eq!(reopened.as_deref().ok(), Some(root.as_str()), "{name}: canonical root {root}: {reopened:?}");
+        let reopened =
+            store::ClusterStore::for_storage_root(&root).and_then(|store| store.canonical_root());
+        assert_eq!(
+            reopened.as_deref().ok(),
+            Some(root.as_str()),
+            "{name}: canonical root {root}: {reopened:?}"
+        );
         let out = plan_config_dir(&dir).await;
         assert!(out.ok, "{name}: {:?}", out.diagnostics);
     }

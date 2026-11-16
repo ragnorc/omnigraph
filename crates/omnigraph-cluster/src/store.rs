@@ -66,13 +66,39 @@ pub(crate) fn canonical_storage_root(root: &str) -> Result<String, Diagnostic> {
         .map_err(|error| Diagnostic::error("storage_root_invalid", "storage", error.to_string()))?
     {
         StorageKind::Local => {
-            let path = std::fs::canonicalize(normalized.trim_start_matches("file://")).map_err(
-                |error| Diagnostic::error("storage_root_invalid", "storage", error.to_string()),
-            )?;
-            Ok(format!("file://{}", path.to_string_lossy()))
+            let path = local_root_path(&normalized)?;
+            let path = std::fs::canonicalize(path).map_err(|error| {
+                Diagnostic::error("storage_root_invalid", "storage", error.to_string())
+            })?;
+            local_root_uri(&path)
         }
         _ => Ok(normalized),
     }
+}
+
+/// The one conversion from a local path to a cluster root URI (issue #907).
+pub(crate) fn local_root_uri(path: &Path) -> Result<String, Diagnostic> {
+    omnigraph_storage::file_uri_from_local_path(path)
+        .map_err(|error| Diagnostic::error("storage_root_invalid", "storage", error.to_string()))
+}
+
+/// The local path a cluster root URI (or plain path) names.
+pub(crate) fn local_root_path(uri: &str) -> Result<std::path::PathBuf, Diagnostic> {
+    omnigraph_storage::local_path_from_uri(uri)
+        .map_err(|error| Diagnostic::error("storage_root_invalid", "storage", error.to_string()))
+}
+
+/// The plain-path identity of graph `graph` under a canonical local root, as
+/// `admission::canonical_graph_uri` spells it and ledgers record it.
+pub(crate) fn local_graph_root_identity(
+    canonical_root: &str,
+    graph: &str,
+) -> Result<String, Diagnostic> {
+    Ok(local_root_path(canonical_root)?
+        .join("graphs")
+        .join(format!("{graph}.omni"))
+        .to_string_lossy()
+        .into_owned())
 }
 
 fn bootstrap_lock_error(error: StateLockError) -> Diagnostic {
@@ -210,7 +236,10 @@ impl ClusterStore {
     pub(crate) fn for_config_dir(config_dir: &Path) -> Self {
         let absolute = std::path::absolute(config_dir).unwrap_or_else(|_| config_dir.to_path_buf());
         let display_root = absolute.to_string_lossy().trim_end_matches('/').to_string();
-        let root = format!("file://{display_root}");
+        // A path no file URI can name keeps the old spelling, which then
+        // fails loudly at the first parse (prototype: no signature change).
+        let root = local_root_uri(Path::new(&display_root))
+            .unwrap_or_else(|_| format!("file://{display_root}"));
         let storage = storage_handle_for_uri(&root)
             .expect("local storage adapter construction is infallible for file:// roots");
         let adapter = storage.adapter();
@@ -277,7 +306,7 @@ impl ClusterStore {
         })?;
         let display_root = normalized.trim_start_matches("file://").to_owned();
         let root = if binding.kind() == StorageKind::Local {
-            format!("file://{display_root}")
+            local_root_uri(Path::new(&display_root))?
         } else {
             normalized
         };
@@ -421,7 +450,7 @@ impl ClusterStore {
             let path = std::fs::canonicalize(&self.display_root).map_err(|err| {
                 Diagnostic::error("storage_root_invalid", "storage", err.to_string())
             })?;
-            Ok(format!("file://{}", path.to_string_lossy()))
+            local_root_uri(&path)
         } else {
             Ok(self.root.clone())
         }
@@ -456,10 +485,7 @@ impl ClusterStore {
         if let Some(error) = diagnostics.into_iter().next() {
             return Err(error);
         }
-        let expected = format!(
-            "{}/graphs/{graph}.omni",
-            self.canonical_root()?.trim_start_matches("file://")
-        );
+        let expected = local_graph_root_identity(&self.canonical_root()?, graph)?;
         let actual = crate::admission::canonical_graph_uri(&self.graph_root(graph))?;
         if actual != expected {
             return Err(Diagnostic::error(
@@ -623,7 +649,8 @@ impl ClusterStore {
         if storage_kind_for_uri(graph_uri)? != StorageKind::Local {
             return Ok(false);
         }
-        let root = Path::new(graph_uri.trim_start_matches("file://"));
+        let root = omnigraph_storage::local_path_from_uri(graph_uri)?;
+        let root = root.as_path();
         if !std::fs::symlink_metadata(root)?.file_type().is_dir() {
             return Ok(false);
         }
@@ -659,7 +686,7 @@ impl ClusterStore {
         graph_uri: &str,
     ) -> omnigraph_storage::Result<bool> {
         match storage_kind_for_uri(graph_uri)? {
-            StorageKind::Local => Path::new(graph_uri.trim_start_matches("file://"))
+            StorageKind::Local => omnigraph_storage::local_path_from_uri(graph_uri)?
                 .try_exists()
                 .map_err(StorageError::from),
             // `exists` falls back from an exact-object HEAD to a recursive,

@@ -1240,7 +1240,7 @@ fn remote_root_identity(root: &str) -> Result<String, Diagnostic> {
                     "remote deployment requires an absolute storage root; omit storage to select the server's root",
                 ));
             }
-            Ok(format!("file://{normalized}"))
+            crate::store::local_root_uri(Path::new(&normalized))
         }
         omnigraph_storage::StorageKind::S3 | omnigraph_storage::StorageKind::Azure => {
             Ok(normalized)
@@ -2189,10 +2189,8 @@ async fn prepare_graphs(
             }
             let uri = store.graph_root(&graph);
             let canonical = admission::canonical_graph_uri(&uri)?;
-            let expected_uri = format!(
-                "{}/graphs/{graph}.omni",
-                bundle.canonical_root.trim_start_matches("file://")
-            );
+            let expected_uri =
+                crate::store::local_graph_root_identity(&bundle.canonical_root, &graph)?;
             if canonical != expected_uri {
                 return Err(refusal(
                     "cluster_graph_root_mismatch",
@@ -2601,11 +2599,8 @@ fn validate_pending_input(
         if let Some(delete) = &entry.delete {
             if bundle.resources.contains_key(&graph_address(graph))
                 || pending.authorization.base.schema_contracts.get(graph) != Some(&delete.contract)
-                || delete.root
-                    != format!(
-                        "{}/graphs/{graph}.omni",
-                        bundle.canonical_root.trim_start_matches("file://")
-                    )
+                || crate::store::local_graph_root_identity(&bundle.canonical_root, graph)
+                    .map_or(true, |expected| delete.root != expected)
                 || entry.create.is_some()
                 || entry.intent.is_some()
             {

@@ -242,13 +242,15 @@ impl Drop for StateLockGuard {
         }
         match self.kind {
             StorageKind::Local => {
-                let path = self.uri.trim_start_matches("file://");
-                let still_owned = std::fs::read_to_string(path)
+                let Ok(path) = omnigraph_storage::local_path_from_uri(&self.uri) else {
+                    return;
+                };
+                let still_owned = std::fs::read_to_string(&path)
                     .ok()
                     .and_then(|text| StateLockFile::parse(&text).ok())
                     .is_some_and(|lock| lock.lock_id() == self.lock_id());
                 if still_owned {
-                    let _ = std::fs::remove_file(path);
+                    let _ = std::fs::remove_file(&path);
                 }
             }
             StorageKind::S3 | StorageKind::Azure => {

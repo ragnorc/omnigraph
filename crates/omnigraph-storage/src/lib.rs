@@ -2982,11 +2982,70 @@ pub fn join_uri(root_uri: &str, relative_path: &str) -> String {
     }
 }
 
-fn local_path_from_uri(uri: &str) -> Result<PathBuf> {
+/// The local path a `file://` URI or a plain path names.
+pub fn local_path_from_uri(uri: &str) -> Result<PathBuf> {
     if uri.starts_with(FILE_SCHEME_PREFIX) {
         return local_path_from_file_uri(uri);
     }
     Ok(PathBuf::from(uri))
+}
+
+/// The `file://` URI naming an absolute local path: the one conversion from a
+/// path to a local root identity (issue #907).
+///
+/// A path that `file://` + its text already named correctly keeps exactly
+/// that spelling, so recorded roots stay byte-identical. Only the three URI
+/// delimiters a path may hold (`%`, `?`, `#`) are percent-encoded. A Windows
+/// path loses its verbatim prefix and is written with `/` separators:
+/// `\\?\C:\a` and `C:\a` become `file:///C:/a`, `\\?\UNC\s\h\a` and
+/// `\\s\h\a` become `file://s/h/a`. Device paths (`\\.\`, `\\?\Volume{..}`)
+/// have no file URI and are refused.
+pub fn file_uri_from_local_path(path: &Path) -> Result<String> {
+    file_uri_from_path_text(&path.to_string_lossy(), cfg!(windows))
+}
+
+fn file_uri_from_path_text(text: &str, windows: bool) -> Result<String> {
+    let refuse = |reason: &str| {
+        StorageError::backend(
+            StorageFailureKind::Configuration,
+            format!("local path '{text}' cannot be named by a file URI: {reason}"),
+        )
+    };
+    let body = if windows {
+        let (authority, rest) = if let Some(rest) = text.strip_prefix(r"\\?\UNC\") {
+            ("//", rest.to_string())
+        } else if let Some(rest) = text.strip_prefix(r"\\?\") {
+            if !is_windows_drive_path(rest) {
+                return Err(refuse("a verbatim path without a drive letter"));
+            }
+            ("/", rest.to_string())
+        } else if text.starts_with(r"\\.\") {
+            return Err(refuse("a device path"));
+        } else if let Some(rest) = text.strip_prefix(r"\\") {
+            ("//", rest.to_string())
+        } else if is_windows_drive_path(text) {
+            ("/", text.to_string())
+        } else {
+            return Err(refuse("not an absolute path"));
+        };
+        format!("{authority}{}", rest.replace('\\', "/"))
+    } else {
+        if !text.starts_with('/') {
+            return Err(refuse("not an absolute path"));
+        }
+        text.to_string()
+    };
+    let mut uri = String::with_capacity(FILE_SCHEME_PREFIX.len() + body.len());
+    uri.push_str(FILE_SCHEME_PREFIX);
+    for ch in body.chars() {
+        match ch {
+            '%' => uri.push_str("%25"),
+            '?' => uri.push_str("%3F"),
+            '#' => uri.push_str("%23"),
+            other => uri.push(other),
+        }
+    }
+    Ok(uri)
 }
 
 fn has_uri_scheme(value: &str) -> bool {
@@ -3070,6 +3129,17 @@ fn local_path_from_file_uri(uri: &str) -> Result<PathBuf> {
             format!("invalid file uri '{}': {}", uri, err),
         )
     })?;
+    // A path never carries a query or fragment: dropping one silently would
+    // name another directory (issue #907).
+    if url.query().is_some() || url.fragment().is_some() {
+        return Err(StorageError::backend(
+            StorageFailureKind::Configuration,
+            format!(
+                "invalid file uri '{}': percent-encode '?' and '#' in a local path",
+                uri
+            ),
+        ));
+    }
     url.to_file_path().map_err(|_| {
         StorageError::backend(
             StorageFailureKind::Configuration,
@@ -5887,6 +5957,50 @@ mod tests {
             .to_string();
         assert!(!malformed_error.contains(malformed_secret));
         assert!(malformed_error.contains("az://<invalid or redacted>"));
+    }
+
+    #[test]
+    fn file_uri_from_local_path_keeps_working_spellings_and_escapes_delimiters_issue_907() {
+        let unix = |text: &str| file_uri_from_path_text(text, false).unwrap();
+        // Spellings that already round-trip stay byte-identical.
+        assert_eq!(unix("/data/og 13"), "file:///data/og 13");
+        assert_eq!(unix("/data/ensayo-ñ"), "file:///data/ensayo-ñ");
+        // URI delimiters are encoded and decode back to the same path.
+        for (path, uri) in [
+            ("/data/og?13", "file:///data/og%3F13"),
+            ("/data/og#13", "file:///data/og%2313"),
+            ("/data/og%2513", "file:///data/og%252513"),
+            ("/data/og 13", "file:///data/og 13"),
+        ] {
+            assert_eq!(unix(path), uri);
+            assert_eq!(local_path_from_uri(uri).unwrap(), PathBuf::from(path));
+        }
+        assert!(file_uri_from_path_text("relative", false).is_err());
+
+        let windows = |text: &str| file_uri_from_path_text(text, true);
+        assert_eq!(
+            windows(r"\\?\C:\og13ensayo").unwrap(),
+            "file:///C:/og13ensayo"
+        );
+        assert_eq!(windows(r"C:\og13ensayo").unwrap(), "file:///C:/og13ensayo");
+        assert_eq!(
+            windows(r"\\?\UNC\server\share\og").unwrap(),
+            "file://server/share/og"
+        );
+        assert_eq!(
+            windows(r"\\server\share\og").unwrap(),
+            "file://server/share/og"
+        );
+        assert_eq!(windows(r"C:\og#13").unwrap(), "file:///C:/og%2313");
+        assert!(windows(r"\\?\Volume{0}\og").is_err());
+        assert!(windows(r"\\.\C:\og").is_err());
+    }
+
+    #[test]
+    fn file_uri_with_a_query_or_fragment_is_refused_issue_907() {
+        for uri in ["file:///data/og?13", "file:///data/og#13"] {
+            assert!(local_path_from_uri(uri).is_err(), "{uri}");
+        }
     }
 
     #[test]

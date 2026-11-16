@@ -673,7 +673,7 @@ fn canonical_store_uri(uri: &str) -> Result<String, Diagnostic> {
         .map_err(|error| Diagnostic::error("storage_root_invalid", "storage", error.to_string()))?;
     match kind {
         omnigraph_storage::StorageKind::Local => {
-            Ok(format!("file://{}", uri.trim_start_matches("file://")))
+            crate::store::local_root_uri(&crate::store::local_root_path(uri)?)
         }
         _ => Ok(uri.to_string()),
     }
