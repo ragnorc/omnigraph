@@ -15162,6 +15162,56 @@
               "null"
             ],
             "description": "The root of an unattached snapshot's chain, the snapshot's own id on\na root; `null` for the other kinds."
+          },
+          "writes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommitWriteOutput"
+            },
+            "description": "Research (group commit across actors): one entry per write of a batch\ncommit, in batch order, with its actor and its stable row-id range per\ntable. Absent for a one-write commit."
+          }
+        }
+      },
+      "CommitWriteOutput": {
+        "type": "object",
+        "description": "One write of a batch commit.",
+        "required": [
+          "rows"
+        ],
+        "properties": {
+          "actor_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommitWriteRowsOutput"
+            }
+          }
+        }
+      },
+      "CommitWriteRowsOutput": {
+        "type": "object",
+        "description": "The rows one write of a batch commit inserted into one graph type, in\ngraph vocabulary. The commit record keeps the write's stable row-id range\nper table; that physical range stays inside the engine, and the change\nrows of the commit name their write (`EntityChangeOutput::write`).",
+        "required": [
+          "kind",
+          "type",
+          "rows"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/EntityKind"
+          },
+          "rows": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "type": {
+            "type": "string"
           }
         }
       },
@@ -15356,6 +15406,13 @@
           "op"
         ],
         "properties": {
+          "actor_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Research (group commit across actors): the actor of the write that\ninserted this row, for a row a batch commit inserted."
+          },
           "after": {
             "oneOf": [
               {
@@ -15387,6 +15444,15 @@
           },
           "type": {
             "$ref": "#/components/schemas/ChangeTypeOutput"
+          },
+          "write": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Research: the index of that write in the commit's write list.",
+            "minimum": 0
           }
         }
       },

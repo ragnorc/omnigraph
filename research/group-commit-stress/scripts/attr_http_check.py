@@ -146,10 +146,14 @@ def main():
         for wi, w in enumerate(writes):
             er = {}
             for r in w["rows"]:
-                got = len(groups.get((wi, r["table_key"]), []))
-                if got != r["end"] - r["start"]:
-                    v.append(f"commit {cid} write {wi} {r['table_key']}: range width {r['end'] - r['start']}, {got} rows")
-                er[r["table_key"]] = sorted(groups.get((wi, r["table_key"]), []))
+                # Graph vocabulary (kind, type, rows); older builds listed
+                # the table key and the row-id range.
+                table = r.get("table_key") or f"{r['kind']}:{r['type']}"
+                width = r["rows"] if "rows" in r else r["end"] - r["start"]
+                got = len(groups.get((wi, table), []))
+                if got != width:
+                    v.append(f"commit {cid} write {wi} {table}: {width} rows recorded, {got} reported")
+                er[table] = sorted(groups.get((wi, table), []))
             entry_rows.append(er)
         taken = [False] * len(writes)
         for op in acked.get(cid, []):
@@ -221,7 +225,7 @@ def main():
             for table, sig, wi, actor in commit_get.get(attempt, []):
                 got[(wi, table)].append(sig)
             for wi, w in enumerate(c.get("writes") or []):
-                rows_by_entry.append((w.get("actor_id"), {r["table_key"]: sorted(got.get((wi, r["table_key"]), [])) for r in w["rows"]}))
+                rows_by_entry.append((w.get("actor_id"), {(r.get("table_key") or f"{r['kind']}:{r['type']}"): sorted(got.get((wi, r.get("table_key") or f"{r['kind']}:{r['type']}"), [])) for r in w["rows"]}))
             for op in members:
                 want = inserted_rows(op)
                 if c.get("writes"):

@@ -1,0 +1,23 @@
+[seed] optimize {"status": 200, "answer": {"lookup": "found", "operation": {"operation_id": "01M7HFCM5T5DHPA4TSTEQ7EK35", "request_digest": "sha256:4d0df7387067b5bc7d3dc6912374ca7b65ae54cee42fbe5d79384e94220f207a", "graph": "stress", "schema_identity_domain": "01M7HFC5C9DMX7D19KK6SPKJJ9", "settlement_branch": "main", "request": {"kind": "optimize"}, "principal": "act-0", "accepted_at": "2026-11-16T06:05:55.866450821Z", "state": "succeeded", "nonce": "01M7HFCNV4XP9RM308S4E13MD7", "input_commit": "hb1.01M7HFC8B48KHHDF8A0MAPPCEW.44.01M7HFCM2M3Z3W98CVT1AQ910Y", "input_manifest_version": 45, "published_commit": "h
+[event] {"kind": "driver_start", "cmd": ["run", "--base", "http://127.0.0.1:18081", "--graph", "stress", "--hot", "64", "--people", "24", "--out", "/src/omnigraph/research/group-commit-stress/served/xf-crash-admitted/history.jsonl", "--server-pid", "11738", "--writers", "64", "--secs", "90", "--actors", "16", "--mix", "fresh=80,fmulti=10,sknows=10", "--reader-count", "1", "--readers", "1"], "root": "s3://omnigraph-stress/xf-crash-admitted-1794809139", "t": 1794809160.335}
+[event] {"kind": "server_died", "code": -6, "t": 1794809168.944}
+[event] {"kind": "restarted", "pid": 12363, "lock": "01M7HFCQJ9KDB1GD5DB1MKCTSJ", "t": 1794809170.477}
+[event] {"kind": "server_died", "code": -6, "t": 1794809190.543}
+[event] {"kind": "restarted", "pid": 13972, "lock": "01M7HFD1FKWGQFF11EEBX95PR6", "t": 1794809192.045}
+[event] {"kind": "server_died", "code": -6, "t": 1794809219.864}
+[event] {"kind": "restarted", "pid": 15697, "lock": "01M7HFDPH5SAB71Y4AV4XE03HR", "t": 1794809221.067}
+[event] {"kind": "server_died", "code": -6, "t": 1794809272.322}
+task failed: ModuleNotFoundError("No module named 'psutil'")
+[run] {"type": "run_summary", "ok": 2205, "refused": 4235, "throttled": 0, "in_doubt": 256, "secs": 90.0}
+[event] {"kind": "restarted", "pid": 18045, "lock": "01M7HFEK58EV5CT6ERFQWZF383", "t": 1794809273.518}
+[event] {"kind": "driver_done", "code": 0, "t": 1794809273.519}
+[event] {"kind": "check_server", "endpoint": "direct", "pid": 18113, "t": 1794809274.53}
+[attr-http] {"commits": 139, "batch_commits": 78, "mixed_actor_commits": 78, "actors_per_batch_commit": {"3": 2, "5": 1, "6": 1, "8": 1, "9": 2, "10": 1, "11": 5, "12": 18, "13": 6, "14": 12, "15": 7, "16": 22}, "entries": 2190, "batch_rows": 2410, "feed_polls": 3, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 256, "violations": 0}
+ 
+[event] {"kind": "attr_http_done", "code": 0, "t": 1794809286.753}
+[attr-engine] test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 19.32s
+[attr-summary] ops 6696 {"commits":139,"batch_commits":78,"mixed_actor_commits":78,"entries":2190,"actors_per_batch_commit":{"3":2,"5":1,"6":1,"8":1,"9":2,"10":1,"11":5,"12":18,"13":6,"14":12,"15":7,"16":22},"batch_rows_checked":2410,"head_rows_checked":2410,"feed_polls":3,"violations":0}
+[event] {"kind": "attr_engine_done", "code": 0, "t": 1794809306.22}
+{"ops": 6696, "ok": 2205, "refused": 4235, "in_doubt": 256, "commits_with_writes": 93, "writes_per_commit": 23.71, "max_batch": 63, "observations": 99, "p50_ms": 532.374, "p99_ms": 19184.314, "errors": [[["graph_unavailable", "graph is loading; wait for its startup attempt to complete"], 3474], [[null, "connect: Cannot connect to host 127.0.0.1:18081 ssl:default [Connect call failed"], 761], [[null, "ServerDisconnectedError: Server disconnected"], 200], [[null, "ClientOSError: [Errno 104] Connection reset by peer"], 56]], "violations": 0}
+ 
+[event] {"kind": "check_done", "code": 0, "root": "s3://omnigraph-stress/xf-crash-admitted-1794809139", "t": 1794809306.458}

@@ -993,12 +993,16 @@ pub struct CommitWriteOutput {
     pub rows: Vec<CommitWriteRowsOutput>,
 }
 
-/// The half-open range of stable row ids one write's rows received in one table.
+/// The rows one write of a batch commit inserted into one graph type, in
+/// graph vocabulary. The commit record keeps the write's stable row-id range
+/// per table; that physical range stays inside the engine, and the change
+/// rows of the commit name their write (`EntityChangeOutput::write`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct CommitWriteRowsOutput {
-    pub table_key: String,
-    pub start: u64,
-    pub end: u64,
+    pub kind: EntityKind,
+    #[serde(rename = "type")]
+    pub type_name: String,
+    pub rows: u64,
 }
 
 impl<'de> Deserialize<'de> for CommitOutput {
@@ -3146,10 +3150,17 @@ pub fn commit_output(commit: &GraphCommit) -> CommitOutput {
                 rows: write
                     .rows
                     .iter()
-                    .map(|rows| CommitWriteRowsOutput {
-                        table_key: rows.table_key.clone(),
-                        start: rows.start,
-                        end: rows.end,
+                    .map(|rows| {
+                        let (kind, type_name) = match rows.table_key.split_once(':') {
+                            Some(("edge", name)) => (EntityKind::Edge, name.to_string()),
+                            Some((_, name)) => (EntityKind::Node, name.to_string()),
+                            None => (EntityKind::Node, rows.table_key.clone()),
+                        };
+                        CommitWriteRowsOutput {
+                            kind,
+                            type_name,
+                            rows: rows.end - rows.start,
+                        }
                     })
                     .collect(),
             })
