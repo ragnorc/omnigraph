@@ -1,0 +1,8 @@
+test result: FAILED. 658 passed; 3 failed; 3 ignored; 0 measured; 0 filtered out; finished in 46.48s
+test result: ok. 704 passed; 0 failed; 9 ignored; 0 measured; 0 filtered out; finished in 36.95s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.06s
+test result: ok. 76 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.82s
+test result: ok. 51 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.82s
+test result: ok. 67 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 2.35s
+test db::upgrade::tests::interrupted::unreadable_legacy_object_asks_for_a_rerun ... FAILED
+test result: FAILED. 660 passed; 1 failed; 3 ignored; 0 measured; 0 filtered out; finished in 45.12s
