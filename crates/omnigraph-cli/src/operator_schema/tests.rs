@@ -739,20 +739,35 @@ fn http_exception_is_only_for_standalone_loopback() {
     }
     // A credential goes over HTTP only to a loopback address literal, never
     // to a name that resolution could send elsewhere, and never by proxy.
-    for endpoint in ["http://127.0.0.1", "http://127.10.20.30", "http://[::1]/api"] {
+    for endpoint in [
+        "http://127.0.0.1",
+        "http://127.10.20.30",
+        "http://[::1]/api",
+    ] {
         assert!(decode(&server(endpoint, "{provider: token, source: {env: TOKEN}}")).is_ok());
-        assert!(decode(&server(endpoint, "{provider: exec, command: [/missing/helper]}")).is_ok());
-        for proxy in ["{mode: environment}", "{mode: url, url: http://proxy.example}"] {
+        assert!(
+            decode(&server(
+                endpoint,
+                "{provider: exec, command: [/missing/helper]}"
+            ))
+            .is_ok()
+        );
+        for proxy in [
+            "{mode: environment}",
+            "{mode: url, url: http://proxy.example}",
+        ] {
             reject(
                 &(server(endpoint, "{provider: token, source: {env: TOKEN}}")
                     + &format!("    transport: {{proxy: {proxy}}}\n")),
             );
         }
-        assert!(decode(
-            &(server(endpoint, "{provider: token, source: {env: TOKEN}}")
-                + "    transport: {proxy: {mode: direct}}\n")
-        )
-        .is_ok());
+        assert!(
+            decode(
+                &(server(endpoint, "{provider: token, source: {env: TOKEN}}")
+                    + "    transport: {proxy: {mode: direct}}\n")
+            )
+            .is_ok()
+        );
     }
     reject(&server(
         "http://localhost:8080",
@@ -1030,7 +1045,11 @@ fn authenticated_loopback_http_server_target_is_accepted_issue_1419() {
             "{provider: token, source: {store: {}}}",
         ] {
             let text = server(endpoint, auth);
-            assert!(decode(&text).is_ok(), "refused:\n{text}\n{:?}", decode(&text).err());
+            assert!(
+                decode(&text).is_ok(),
+                "refused:\n{text}\n{:?}",
+                decode(&text).err()
+            );
         }
     }
 }
