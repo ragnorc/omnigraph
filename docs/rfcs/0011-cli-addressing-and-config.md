@@ -248,6 +248,9 @@ The two access paths are genuinely different — not two transports for one thin
   Cedar policy *is* still enforced when the graph selection provides a policy
   (enforcement is engine-wide; embedded `_as` writers call the same `enforce`).
   "Direct" means "no HTTP boundary," not "unpoliced."
+  *Amended:* the CLI's direct data writes install no graph policy; raw storage
+  access is their trust boundary, and `--as` is attribution only. A direct
+  `cluster apply` still loads every applied graph policy.
 
 Because they differ in authority, freshness, and availability, a graph reached via
 a server and that graph's raw storage are **different things you name

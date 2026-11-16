@@ -112,7 +112,8 @@ five more changes like this one?**
     resolves bearer tokens to actors; a client never supplies its trusted actor
     identity. Token plaintext is not retained. Server reads apply their policy,
     and every mutating engine `_as` entry point applies the action/scope/actor
-    gate so embedded and CLI-direct writers do not bypass it.
+    gate whenever its host installs a policy. CLI-direct data writes install
+    none: raw storage access is their trust boundary.
 
 11. **Failures and resource use are bounded and observable.** Conflict,
     timeout, OOM, backpressure, partial-effect, external dependency, and

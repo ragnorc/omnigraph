@@ -254,8 +254,11 @@ For direct CLI writes, actor resolution is:
 
 The version-1 operator document has no actor field.
 
-When a policy is installed, a missing actor is denied. Only the server
-resolves a served write's actor; there `--as` is an assertion the server checks
+Direct CLI data writes (`load`, `mutate`, branch, commit and Blob writes)
+record that actor on the commit but load no graph policy: storage access is
+the direct route's trust boundary, as for the maintenance commands. An
+embedded host that installs a policy checker denies a missing actor. Only the
+server resolves a served write's actor; there `--as` is an assertion the server checks
 against the token ([Assert the actor](server.md#assert-the-actor)).
 
 Successful graph commits record the actor for the whole atomic change. Inspect
@@ -286,6 +289,7 @@ static tokens are configured. Only the minimal identity discovery route is
 independent of policy membership; it exposes existence, not graph access.
 
 Policy is enforced for graph writes inside the engine as well as at the HTTP
-boundary. This keeps direct and embedded writers subject to the same action
-checks when a policy engine is installed. Per-entity and per-property
+boundary. This keeps embedded writers subject to the same action checks when
+their host installs a policy engine; the server and a direct `cluster apply`
+install the graph's applied policy, and direct CLI data writes do not. Per-entity and per-property
 authorization is not currently supported; authorization is graph/branch scoped.

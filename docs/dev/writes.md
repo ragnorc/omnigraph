@@ -931,8 +931,9 @@ captured target authority was re-probed unchanged.
 ## Policy and attribution
 
 Every public mutating `_as` entry point enforces its Cedar action/scope/actor
-gate in the engine. The trusted server resolves the actor; direct embedded
-callers must pass one when a policy checker is installed. Actor attribution
+gate in the engine when a policy checker is installed. The trusted server
+resolves the actor; direct embedded callers must pass one when they install a
+checker. The CLI's direct data writes install none. Actor attribution
 travels with the pre-minted graph lineage and is published with the same
 manifest CAS.
 

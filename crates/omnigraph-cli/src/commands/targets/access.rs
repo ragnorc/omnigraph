@@ -1,7 +1,8 @@
 //! `access`: who the caller is at a target and what it may do there. A server
 //! target decides through its access route; for direct storage the CLI
-//! evaluates the graph's installed policy for the declared actor, and a graph
-//! without one allows every action, as direct writes do.
+//! evaluates the graph's installed policy for the declared actor, which is
+//! the answer a server gives that actor. Direct data writes do not enforce
+//! it: storage access is the direct route's trust boundary.
 
 use std::io::Write;
 

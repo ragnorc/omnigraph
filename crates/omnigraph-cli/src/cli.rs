@@ -63,8 +63,9 @@ pub(crate) struct Cli {
     /// On a served write, and on every request `mcp` relays, it is an assertion:
     /// the request carries `omnigraph-if-actor`, and the server refuses it
     /// before anything runs when the bearer token resolves to another actor.
-    /// With a policy configured but no actor set, a direct operation is
-    /// denied — see docs/user/operations/policy.md.
+    /// A direct target records ACTOR on the commit and does not check it:
+    /// direct data writes load no graph policy, because storage access is
+    /// that route's trust boundary — see docs/user/operations/policy.md.
     #[arg(long = "as", global = true, value_name = "ACTOR", value_parser = crate::invocation::single_selector("--as"))]
     pub(crate) as_actor: Option<String>,
 
