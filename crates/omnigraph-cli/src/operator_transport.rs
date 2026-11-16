@@ -341,6 +341,7 @@ mod tests {
                             file: "/nonexistent/ca.pem".into(),
                         }),
                     }),
+                    loopback_http: None,
                 };
                 let error = CapturedTransport::capture(
                     "https://graph.example.com",
@@ -375,6 +376,7 @@ mod tests {
                     file: ca_file.clone(),
                 }),
             }),
+            loopback_http: None,
         };
         let captured =
             CapturedTransport::capture(&gateway.origin, Some(&transport), &BTreeMap::new())
@@ -431,6 +433,7 @@ mod tests {
                     file: crate::tls_gateway::ca_path().into(),
                 }),
             }),
+            loopback_http: None,
         };
         let endpoint = Url::parse(&gateway.origin).unwrap();
         let authority = format!("127.0.0.1:{}", endpoint.port().unwrap());
@@ -521,6 +524,7 @@ mod tests {
                     file: path.clone(),
                 }),
             }),
+            loopback_http: None,
         };
         for bytes in [
             Vec::new(),
@@ -559,6 +563,7 @@ mod tests {
                     file: path,
                 }),
             }),
+            loopback_http: None,
         };
         let error = CapturedTransport::capture(
             "https://graph.example.com",

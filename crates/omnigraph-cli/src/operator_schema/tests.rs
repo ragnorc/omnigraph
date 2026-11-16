@@ -741,7 +741,11 @@ fn http_exception_is_only_for_standalone_loopback() {
     // loopback address literal, never to a name resolution could send
     // elsewhere, and never by proxy.
     let allow = "    transport: {loopback_http: allow}\n";
-    for endpoint in ["http://127.0.0.1", "http://127.10.20.30", "http://[::1]/api"] {
+    for endpoint in [
+        "http://127.0.0.1",
+        "http://127.10.20.30",
+        "http://[::1]/api",
+    ] {
         let token = server(endpoint, "{provider: token, source: {env: TOKEN}}");
         reject(&token);
         assert!(decode(&(token.clone() + allow)).is_ok());
@@ -749,7 +753,10 @@ fn http_exception_is_only_for_standalone_loopback() {
             decode(&(server(endpoint, "{provider: exec, command: [/missing/helper]}") + allow))
                 .is_ok()
         );
-        for proxy in ["{mode: environment}", "{mode: url, url: http://proxy.example}"] {
+        for proxy in [
+            "{mode: environment}",
+            "{mode: url, url: http://proxy.example}",
+        ] {
             reject(
                 &(token.clone()
                     + &format!("    transport: {{loopback_http: allow, proxy: {proxy}}}\n")),
@@ -759,7 +766,10 @@ fn http_exception_is_only_for_standalone_loopback() {
         reject(&(server(endpoint, "{provider: anonymous}") + allow));
     }
     reject(
-        &(server("https://example.com", "{provider: token, source: {env: TOKEN}}") + allow),
+        &(server(
+            "https://example.com",
+            "{provider: token, source: {env: TOKEN}}",
+        ) + allow),
     );
     reject(&COMPLETE.replace(
         "      tls: {ca: {mode: append, file: ca.pem}}\n",
@@ -1043,7 +1053,11 @@ fn authenticated_loopback_http_server_target_is_accepted_issue_1419() {
             "{provider: token, source: {store: {}}}",
         ] {
             let text = server(endpoint, auth) + "    transport: {loopback_http: allow}\n";
-            assert!(decode(&text).is_ok(), "refused:\n{text}\n{:?}", decode(&text).err());
+            assert!(
+                decode(&text).is_ok(),
+                "refused:\n{text}\n{:?}",
+                decode(&text).err()
+            );
             // Without the explicit consent the credential stays HTTPS-only.
             reject(&server(endpoint, auth));
         }
