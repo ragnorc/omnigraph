@@ -2894,6 +2894,17 @@ pub fn normalize_root_uri(uri: &str) -> Result<String> {
     match storage_kind_for_uri(uri)? {
         StorageKind::Local => {
             let path = local_path_from_uri(uri)?;
+            // Option C (#907): Lance splits a dataset location at its first
+            // '?', so a branch fork of a root holding one lands outside it.
+            if path.to_string_lossy().contains('?') {
+                return Err(StorageError::backend(
+                    StorageFailureKind::Configuration,
+                    format!(
+                        "local storage path '{}' may not contain '?'; move the directory",
+                        path.display()
+                    ),
+                ));
+            }
             Ok(normalize_local_path(&path))
         }
         StorageKind::S3 => Ok(trim_trailing_slashes(uri)),
@@ -3037,14 +3048,13 @@ fn file_uri_from_path_text(text: &str, windows: bool) -> Result<String> {
     };
     let mut uri = String::with_capacity(FILE_SCHEME_PREFIX.len() + body.len());
     uri.push_str(FILE_SCHEME_PREFIX);
-    for ch in body.chars() {
-        match ch {
-            '%' => uri.push_str("%25"),
-            '?' => uri.push_str("%3F"),
-            '#' => uri.push_str("%23"),
-            other => uri.push(other),
-        }
+    // Option C: a local root holding a URI delimiter is refused, never encoded.
+    if let Some(ch) = body.chars().find(|ch| matches!(ch, '%' | '?' | '#')) {
+        return Err(refuse(&format!(
+            "local storage paths may not contain '{ch}'; move the directory"
+        )));
     }
+    uri.push_str(&body);
     Ok(uri)
 }
 
@@ -5965,15 +5975,8 @@ mod tests {
         // Spellings that already round-trip stay byte-identical.
         assert_eq!(unix("/data/og 13"), "file:///data/og 13");
         assert_eq!(unix("/data/ensayo-ñ"), "file:///data/ensayo-ñ");
-        // URI delimiters are encoded and decode back to the same path.
-        for (path, uri) in [
-            ("/data/og?13", "file:///data/og%3F13"),
-            ("/data/og#13", "file:///data/og%2313"),
-            ("/data/og%2513", "file:///data/og%252513"),
-            ("/data/og 13", "file:///data/og 13"),
-        ] {
-            assert_eq!(unix(path), uri);
-            assert_eq!(local_path_from_uri(uri).unwrap(), PathBuf::from(path));
+        for path in ["/data/og?13", "/data/og#13", "/data/og%2513"] {
+            assert!(file_uri_from_path_text(path, false).is_err(), "{path}");
         }
         assert!(file_uri_from_path_text("relative", false).is_err());
 
@@ -5991,7 +5994,7 @@ mod tests {
             windows(r"\\server\share\og").unwrap(),
             "file://server/share/og"
         );
-        assert_eq!(windows(r"C:\og#13").unwrap(), "file:///C:/og%2313");
+        assert!(windows(r"C:\og#13").is_err());
         assert!(windows(r"\\?\Volume{0}\og").is_err());
         assert!(windows(r"\\.\C:\og").is_err());
     }

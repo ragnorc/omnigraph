@@ -5367,25 +5367,16 @@ async fn branch_merge_reports_divergent_insert_for_keyed_edge() {
     }
 }
 
-/// Issue #907: a branch fork lands under the graph root even when the local
-/// path holds a character that a URI reads as a delimiter (`?` here; on
-/// Windows the verbatim `\\?\` prefix takes the same path).
+/// Issue #907 (option C): a local root holding '?' is refused before any
+/// write, because Lance would place its branch forks outside the root.
 #[tokio::test]
-async fn branch_create_keeps_forks_inside_a_root_whose_path_has_a_question_mark_issue_907() {
+async fn init_refuses_a_root_whose_path_has_a_question_mark_issue_907() {
     let parent = tempfile::tempdir().unwrap();
     let root = parent.path().join("og?13").join("graph.omni");
     fs::create_dir_all(&root).unwrap();
-    let main = init_and_load_at(root.to_str().unwrap(), TEST_SCHEMA).await;
-
-    main.branch_create("feature").await.unwrap();
-
-    let outside: Vec<_> = fs::read_dir(parent.path())
-        .unwrap()
-        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
-        .filter(|name| name != "og?13")
-        .collect();
-    assert!(
-        outside.is_empty(),
-        "branch create wrote outside the graph root, next to it: {outside:?}"
-    );
+    let error = match Omnigraph::init(root.to_str().unwrap(), TEST_SCHEMA).await {
+        Ok(_) => panic!("init accepted a root holding '?'"),
+        Err(error) => error.to_string(),
+    };
+    assert!(error.contains("may not contain '?'"), "{error}");
 }

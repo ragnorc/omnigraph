@@ -4748,7 +4748,7 @@ async fn plan_observes_graph_removal_and_policy_rebinding() {
 }
 
 #[tokio::test]
-async fn plan_accepts_a_config_dir_path_with_uri_delimiters_issue_907() {
+async fn plan_refuses_a_config_dir_path_with_uri_delimiters_issue_907() {
     for name in ["og?13", "og#13", "og%2513"] {
         let parent = tempdir().unwrap();
         let dir = parent.path().join(name);
@@ -4762,17 +4762,16 @@ async fn plan_accepts_a_config_dir_path_with_uri_delimiters_issue_907() {
         ] {
             fs::copy(source.path().join(file), dir.join(file)).unwrap();
         }
-        let root = store::ClusterStore::for_config_dir(&dir)
-            .canonical_root()
-            .unwrap();
-        let reopened =
-            store::ClusterStore::for_storage_root(&root).and_then(|store| store.canonical_root());
-        assert_eq!(
-            reopened.as_deref().ok(),
-            Some(root.as_str()),
-            "{name}: canonical root {root}: {reopened:?}"
-        );
         let out = plan_config_dir(&dir).await;
-        assert!(out.ok, "{name}: {:?}", out.diagnostics);
+        assert!(!out.ok, "{name}: planned a root no file URI names");
+        let diagnostic = &out.diagnostics[0];
+        assert_eq!(
+            diagnostic.code, "storage_root_invalid",
+            "{name}: {diagnostic:?}"
+        );
+        assert!(
+            diagnostic.message.contains("may not contain"),
+            "{name}: {diagnostic:?}"
+        );
     }
 }
