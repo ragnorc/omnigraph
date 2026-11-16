@@ -51,7 +51,7 @@ pub(super) fn validate(config: &mut OperatorConfig, base: &Path) -> Result<(), C
             128,
             &format!("{path}.organization_id"),
         )?;
-        profile.api = endpoint(&profile.api, false, &format!("{path}.api"))?;
+        profile.api = endpoint(&profile.api, PlainHttp::Refused, &format!("{path}.api"))?;
         auth_provider(&mut profile.auth, true, base, &format!("{path}.auth"))?;
         transport(&mut profile.transport, base, &path)?;
     }
@@ -75,7 +75,7 @@ pub(super) fn validate(config: &mut OperatorConfig, base: &Path) -> Result<(), C
                     &format!("{path}.cluster_incarnation"),
                 )?;
                 if let Some(route) = route {
-                    *route = endpoint(route, false, &format!("{path}.endpoint"))?;
+                    *route = endpoint(route, PlainHttp::Refused, &format!("{path}.endpoint"))?;
                 }
                 transport(network, base, &path)?;
                 graph(default_graph, true, &path)?;
@@ -87,9 +87,16 @@ pub(super) fn validate(config: &mut OperatorConfig, base: &Path) -> Result<(), C
                 default_graph,
             } => {
                 auth_provider(auth, false, base, &format!("{path}.auth"))?;
-                let anonymous = matches!(auth, AuthProfile::Anonymous);
-                *route = endpoint(route, anonymous, &format!("{path}.endpoint"))?;
+                let plain_http = if matches!(auth, AuthProfile::Anonymous) {
+                    PlainHttp::Loopback
+                } else {
+                    PlainHttp::LoopbackAddress
+                };
+                *route = endpoint(route, plain_http, &format!("{path}.endpoint"))?;
                 transport(network, base, &path)?;
+                if plain_http == PlainHttp::LoopbackAddress && route.starts_with("http:") {
+                    credential_over_http_is_direct(network.as_ref(), &path)?;
+                }
                 graph(default_graph, true, &path)?;
             }
             Target::Direct {
@@ -375,21 +382,40 @@ fn validate_path(value: &str, path: &str) -> Result<(), ConfigError> {
     Ok(())
 }
 
-fn endpoint(value: &str, allow_loopback: bool, path: &str) -> Result<String, ConfigError> {
+/// Which `http://` endpoints a field admits. Every other endpoint needs HTTPS.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PlainHttp {
+    Refused,
+    /// An anonymous standalone server: `localhost` or a loopback address.
+    Loopback,
+    /// A standalone server that receives a credential: a loopback address
+    /// literal only, so name resolution cannot send the bearer token elsewhere.
+    LoopbackAddress,
+}
+
+fn endpoint(value: &str, plain_http: PlainHttp, path: &str) -> Result<String, ConfigError> {
     let mut parsed = checked_url(value, path)?;
-    let loopback = match parsed.host() {
-        Some(Host::Domain(host)) => host == "localhost",
+    let address = match parsed.host() {
         Some(Host::Ipv4(ip)) => IpAddr::V4(ip).is_loopback(),
         Some(Host::Ipv6(ip)) => IpAddr::V6(ip).is_loopback(),
-        None => false,
+        _ => false,
+    };
+    let name = matches!(parsed.host(), Some(Host::Domain("localhost")));
+    let allowed = match plain_http {
+        PlainHttp::Refused => false,
+        PlainHttp::Loopback => address || name,
+        PlainHttp::LoopbackAddress => address,
     };
     if parsed.host().is_none()
-        || !(parsed.scheme() == "https"
-            || (parsed.scheme() == "http" && allow_loopback && loopback))
+        || !(parsed.scheme() == "https" || (parsed.scheme() == "http" && allowed))
     {
         return Err(invalid(
             path,
-            "endpoint requires HTTPS; HTTP is only allowed for anonymous loopback servers",
+            if plain_http == PlainHttp::LoopbackAddress && name {
+                "endpoint requires HTTPS; a server target with a credential may use HTTP only at a loopback address (127.0.0.1 or [::1]), not localhost"
+            } else {
+                "endpoint requires HTTPS; HTTP is only allowed for standalone servers at a loopback address"
+            },
         ));
     }
     if !parsed.path().ends_with('/') {
@@ -397,6 +423,21 @@ fn endpoint(value: &str, allow_loopback: bool, path: &str) -> Result<String, Con
         parsed.set_path(&prefix);
     }
     Ok(parsed.to_string())
+}
+
+/// A bearer token sent over plain HTTP must not pass through a proxy, where
+/// it would travel in the clear off the machine.
+fn credential_over_http_is_direct(
+    value: Option<&Transport>,
+    path: &str,
+) -> Result<(), ConfigError> {
+    if value.is_some_and(|value| value.proxy != Proxy::Direct) {
+        return Err(invalid(
+            &format!("{path}.transport.proxy"),
+            "a credential sent over loopback HTTP requires proxy mode direct",
+        ));
+    }
+    Ok(())
 }
 
 fn local_uri(value: &str, path: &str) -> Result<String, ConfigError> {

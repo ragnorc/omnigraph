@@ -726,7 +726,7 @@ fn remote_routes_refuse_ambiguous_or_credential_leaking_urls() {
 }
 
 #[test]
-fn http_exception_is_only_for_anonymous_standalone_loopback() {
+fn http_exception_is_only_for_standalone_loopback() {
     for endpoint in [
         "http://localhost:8080",
         "http://127.0.0.1",
@@ -734,10 +734,30 @@ fn http_exception_is_only_for_anonymous_standalone_loopback() {
         "http://[::1]/api",
     ] {
         assert!(decode(&server(endpoint, "{provider: anonymous}")).is_ok());
-        reject(&server(endpoint, "{provider: token, source: {env: TOKEN}}"));
         reject(&COMPLETE.replace("HTTPS://Platform.Example:443/Control/V1", endpoint));
         reject(&COMPLETE.replace("https://Private.Example/Data/V1", endpoint));
     }
+    // A credential goes over HTTP only to a loopback address literal, never
+    // to a name that resolution could send elsewhere, and never by proxy.
+    for endpoint in ["http://127.0.0.1", "http://127.10.20.30", "http://[::1]/api"] {
+        assert!(decode(&server(endpoint, "{provider: token, source: {env: TOKEN}}")).is_ok());
+        assert!(decode(&server(endpoint, "{provider: exec, command: [/missing/helper]}")).is_ok());
+        for proxy in ["{mode: environment}", "{mode: url, url: http://proxy.example}"] {
+            reject(
+                &(server(endpoint, "{provider: token, source: {env: TOKEN}}")
+                    + &format!("    transport: {{proxy: {proxy}}}\n")),
+            );
+        }
+        assert!(decode(
+            &(server(endpoint, "{provider: token, source: {env: TOKEN}}")
+                + "    transport: {proxy: {mode: direct}}\n")
+        )
+        .is_ok());
+    }
+    reject(&server(
+        "http://localhost:8080",
+        "{provider: token, source: {env: TOKEN}}",
+    ));
     for endpoint in [
         "http://localhost.example",
         "http://example.localhost",
@@ -745,6 +765,7 @@ fn http_exception_is_only_for_anonymous_standalone_loopback() {
         "http://[::]",
     ] {
         reject(&server(endpoint, "{provider: anonymous}"));
+        reject(&server(endpoint, "{provider: token, source: {env: TOKEN}}"));
     }
     let mixed = server("http://localhost", "{provider: anonymous}")
         + "      secret: {provider: token, source: {store: {}}}\n";

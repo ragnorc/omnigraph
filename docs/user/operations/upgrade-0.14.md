@@ -76,6 +76,10 @@ Use your actual endpoint and graph name. Install its token again:
 printf '%s\n' "$SERVER_TOKEN" | omnigraph credentials set --target prod --stdin
 ```
 
+A server on loopback HTTP keeps its `http://` endpoint, written as a loopback
+address (`http://127.0.0.1:8080`, not `http://localhost:8080`) when the target
+has a credential.
+
 Old resource profiles become targets too. `login NAME` and implicit token
 environment overrides are gone; credentials must have an explicit source.
 For other target kinds and managed sign-in, use the

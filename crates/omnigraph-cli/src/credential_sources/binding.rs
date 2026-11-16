@@ -28,7 +28,7 @@ impl OwnerBinding {
     ) -> Result<Self> {
         if !valid_field(&owner_id)
             || !valid_field(&profile_id)
-            || !valid_route(&canonical_route)
+            || !valid_route(&canonical_route, kind == OwnerKind::Server)
             || organization_id
                 .as_deref()
                 .is_some_and(|value| !valid_field(value))
@@ -84,7 +84,7 @@ impl CredentialRequest {
         audience: Option<String>,
         resource: Option<ResourceIdentity>,
     ) -> Result<Self> {
-        if !valid_route(&canonical_endpoint)
+        if !valid_route(&canonical_endpoint, owner.kind == OwnerKind::Server)
             || audience.as_deref().is_some_and(|value| !valid_field(value))
             || resource.as_ref().is_some_and(|value| {
                 !valid_field(&value.cluster_id) || !valid_field(&value.cluster_incarnation)
@@ -132,10 +132,19 @@ fn valid_field(value: &str) -> bool {
     !value.is_empty() && value.len() <= 8192 && !value.chars().any(char::is_control)
 }
 
-fn valid_route(value: &str) -> bool {
+/// A route is HTTPS, or, for a standalone server, plain HTTP at a loopback
+/// address literal (operator validation admits nothing wider).
+fn valid_route(value: &str, server: bool) -> bool {
     valid_field(value)
         && url::Url::parse(value).is_ok_and(|url| {
-            url.scheme() == "https"
+            (url.scheme() == "https"
+                || (server
+                    && url.scheme() == "http"
+                    && match url.host() {
+                        Some(url::Host::Ipv4(ip)) => ip.is_loopback(),
+                        Some(url::Host::Ipv6(ip)) => ip.is_loopback(),
+                        _ => false,
+                    }))
                 && url.host_str().is_some()
                 && url.username().is_empty()
                 && url.password().is_none()

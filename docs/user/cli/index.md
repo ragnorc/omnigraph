@@ -155,7 +155,8 @@ only asserts it. Register remote endpoints rather than passing inline URLs.
 ### Use a server through a Unix socket
 
 Operator version 1 does not accept `unix://` targets. Register an HTTPS server
-endpoint instead; anonymous loopback HTTP is the only plain-HTTP exception.
+endpoint instead; a standalone server on loopback HTTP is the only plain-HTTP
+exception (see [transport](targets.md#transport-and-capability-boundaries)).
 Other clients with Unix socket support may use a
 [TCP relay gateway](../deployment.md#unix-socket-access). This does not enable
 Unix socket access in the current CLI.

@@ -1,0 +1,1 @@
+- A `kind: server` target with a credential can now use `http://` at a loopback address such as `127.0.0.1` or `[::1]`, so the CLI reaches an authenticated local server again; the token is never sent through a proxy, and every other endpoint still needs HTTPS.

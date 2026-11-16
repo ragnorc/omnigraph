@@ -504,4 +504,27 @@ fn server_binding_accepts_a_loopback_http_route_issue_1419() {
         None,
     );
     assert!(owner.is_ok(), "{owner:?}");
+    for route in ["http://localhost:8080/", "http://192.168.1.1/"] {
+        assert!(
+            OwnerBinding::new(
+                OwnerKind::Server,
+                "owner-binding-1".into(),
+                "profile-binding-1".into(),
+                route.into(),
+                None,
+            )
+            .is_err(),
+            "{route}"
+        );
+    }
+    assert!(
+        OwnerBinding::new(
+            OwnerKind::Profile,
+            "owner-binding-1".into(),
+            "profile-binding-1".into(),
+            "http://127.0.0.1:8080".into(),
+            Some("org".into()),
+        )
+        .is_err()
+    );
 }
