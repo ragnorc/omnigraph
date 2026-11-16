@@ -1,0 +1,19 @@
+{
+ "summary": {
+  "commits": 354,
+  "batch_commits": 307,
+  "mixed_actor_commits": 0,
+  "actors_per_batch_commit": {
+   "1": 307
+  },
+  "entries": 4911,
+  "batch_rows": 5426,
+  "feed_polls": 6,
+  "in_doubt_attempts": 0,
+  "in_doubt_attempts_published": 0,
+  "in_doubt_attempts_lost": 0,
+  "in_doubt_without_attempt": 0,
+  "violations": 0
+ },
+ "violations": []
+}

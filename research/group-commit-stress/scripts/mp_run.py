@@ -45,6 +45,8 @@ def main():
     p.add_argument("--claim-at", type=int, default=0, help="process 0 claims main at this second")
     p.add_argument("--kill-at", type=float, default=0, help="kill -9 process 1 at this second, restart it")
     p.add_argument("--group-commit", default="1")
+    p.add_argument("--actors", type=int, default=1, help="actors per process")
+    p.add_argument("--attr-bin", default="", help="harness binary for the engine attribution oracle")
     args = p.parse_args()
     out = os.path.join(ROOT, "research", "group-commit-stress", "mp", args.label)
     os.makedirs(out, exist_ok=True)
@@ -71,6 +73,7 @@ def main():
             "OG_GS_URI": root, "OG_GS_TAG": f"p{i}{suffix}-", "OG_GS_WRITERS": str(args.writers),
             "OG_GS_SECS": str(secs), "OG_GS_SEED": str(100 + i), "OG_GS_READERS": "0",
             "OG_GS_RYW_PCT": "0", "OG_GS_MIX": args.mix, "OG_GS_HOT": "64", "OG_GS_PEOPLE": "24",
+            "OG_GS_ACTORS": str(args.actors),
             "OG_GS_OUT": os.path.join(out, f"history-{i}{suffix}.jsonl"),
         })
         if i == 0 and args.claim_at:
@@ -111,9 +114,20 @@ def main():
                            capture_output=True, text=True)
     with open(os.path.join(out, "check.txt"), "w") as f:
         f.write("\n".join(events) + "\n" + check.stdout + check.stderr)
+    attr_code = 0
+    if args.attr_bin:
+        env = dict(os.environ, OG_GS_URI=root, OG_GS_OPS=",".join(histories), RUST_MIN_STACK="16777216")
+        attr = subprocess.run([args.attr_bin, "--ignored", "--nocapture", "--exact", "gc_attribution_offline"],
+                              env=env, capture_output=True, text=True, cwd=os.path.join(ROOT, "crates", "omnigraph"))
+        lines = [l for l in (attr.stdout + attr.stderr).splitlines()
+                 if l.startswith("[attr-") or "test result" in l or "panicked" in l]
+        with open(os.path.join(out, "attr-engine.txt"), "w") as f:
+            f.write("\n".join(lines) + "\n")
+        print("[attr-engine]", "\n".join(lines[-45:]))
+        attr_code = attr.returncode
     print("\n".join(events))
     print(check.stdout[-5000:], check.stderr[-2000:])
-    sys.exit(check.returncode)
+    sys.exit(check.returncode or attr_code)
 
 
 if __name__ == "__main__":

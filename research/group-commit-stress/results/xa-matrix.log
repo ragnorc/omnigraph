@@ -1,0 +1,72 @@
+[matrix] xa-on-a1 rtt=33.4ms 03:16:46
+[matrix] xa-on-a1 exit=0 [run] {"type": "run_summary", "ok": 8534, "refused": 0, "throttled": 0, "in_doubt": 0, "secs": 60.0}
+[matrix] xa-on-a1 check {"ops": 8534, "ok": 8534, "refused": 0, "in_doubt": 0, "commits_with_writes": 281, "writes_per_commit": 30.37, "max_batch": 63, "observations": 174, "p50_ms": 421.744, "p99_ms": 759.166, "errors": [], "violations": 0}
+[matrix] xa-on-a1 attr-http {"commits": 327, "batch_commits": 278, "mixed_actor_commits": 0, "actors_per_batch_commit": {"1": 278}, "entries": 8531, "batch_rows": 9402, "feed_polls": 10, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 0, "violations": 0}
+[matrix] xa-on-a1 attr-engine test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 229.30s
+[matrix] xa-on-a1 attr-engine [attr-summary] ops 8534 {"commits":327,"batch_commits":278,"mixed_actor_commits":0,"entries":8531,"actors_per_batch_commit":{"1":278},"batch_rows_checked":9402,"head_rows_checked":9402,"feed_polls":10,"violations":0}
+[matrix] xa-one-a1 rtt=32.7ms 03:22:56
+[matrix] xa-one-a1 exit=0 [run] {"type": "run_summary", "ok": 8470, "refused": 0, "throttled": 0, "in_doubt": 0, "secs": 60.0}
+[matrix] xa-one-a1 check {"ops": 8470, "ok": 8470, "refused": 0, "in_doubt": 0, "commits_with_writes": 278, "writes_per_commit": 30.47, "max_batch": 63, "observations": 171, "p50_ms": 423.724, "p99_ms": 767.272, "errors": [], "violations": 0}
+[matrix] xa-one-a1 attr-http {"commits": 324, "batch_commits": 276, "mixed_actor_commits": 0, "actors_per_batch_commit": {"1": 276}, "entries": 8468, "batch_rows": 9334, "feed_polls": 10, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 0, "violations": 0}
+[matrix] xa-one-a1 attr-engine test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 228.77s
+[matrix] xa-one-a1 attr-engine [attr-summary] ops 8470 {"commits":324,"batch_commits":276,"mixed_actor_commits":0,"entries":8468,"actors_per_batch_commit":{"1":276},"batch_rows_checked":9334,"head_rows_checked":9334,"feed_polls":10,"violations":0}
+[matrix] xa-off-a1 rtt=32.0ms 03:29:07
+[matrix] xa-off-a1 exit=0 [run] {"type": "run_summary", "ok": 195, "refused": 0, "throttled": 0, "in_doubt": 0, "secs": 60.0}
+[matrix] xa-off-a1 check {"ops": 195, "ok": 195, "refused": 0, "in_doubt": 0, "commits_with_writes": 195, "writes_per_commit": 1.0, "max_batch": 1, "observations": 194, "p50_ms": 28407.819, "p99_ms": 30743.569, "errors": [], "violations": 0}
+[matrix] xa-off-a1 attr-http {"commits": 241, "batch_commits": 0, "mixed_actor_commits": 0, "actors_per_batch_commit": {}, "entries": 0, "batch_rows": 0, "feed_polls": 2, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 0, "violations": 0}
+[matrix] xa-off-a1 attr-engine test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 1.88s
+[matrix] xa-off-a1 attr-engine [attr-summary] ops 195 {"commits":241,"batch_commits":0,"mixed_actor_commits":0,"entries":0,"actors_per_batch_commit":{},"batch_rows_checked":0,"head_rows_checked":0,"feed_polls":2,"violations":0}
+[matrix] xa-on-a4 rtt=32.3ms 03:31:02
+[matrix] xa-on-a4 exit=0 [run] {"type": "run_summary", "ok": 8516, "refused": 0, "throttled": 0, "in_doubt": 0, "secs": 60.0}
+[matrix] xa-on-a4 check {"ops": 8516, "ok": 8516, "refused": 0, "in_doubt": 0, "commits_with_writes": 282, "writes_per_commit": 30.2, "max_batch": 63, "observations": 173, "p50_ms": 422.471, "p99_ms": 766.637, "errors": [], "violations": 0}
+[matrix] xa-on-a4 attr-http {"commits": 328, "batch_commits": 280, "mixed_actor_commits": 280, "actors_per_batch_commit": {"2": 1, "4": 279}, "entries": 8514, "batch_rows": 9385, "feed_polls": 10, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 0, "violations": 0}
+[matrix] xa-on-a4 attr-engine test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 234.49s
+[matrix] xa-on-a4 attr-engine [attr-summary] ops 8516 {"commits":328,"batch_commits":280,"mixed_actor_commits":280,"entries":8514,"actors_per_batch_commit":{"2":1,"4":279},"batch_rows_checked":9385,"head_rows_checked":9385,"feed_polls":10,"violations":0}
+[matrix] xa-one-a4 rtt=32.7ms 03:37:20
+[matrix] xa-one-a4 exit=0 [run] {"type": "run_summary", "ok": 4912, "refused": 0, "throttled": 0, "in_doubt": 0, "secs": 60.0}
+[matrix] xa-one-a4 check {"ops": 4912, "ok": 4912, "refused": 0, "in_doubt": 0, "commits_with_writes": 308, "writes_per_commit": 15.95, "max_batch": 16, "observations": 182, "p50_ms": 788.077, "p99_ms": 880.367, "errors": [], "violations": 0}
+[matrix] xa-one-a4 attr-http {"commits": 354, "batch_commits": 307, "mixed_actor_commits": 0, "actors_per_batch_commit": {"1": 307}, "entries": 4911, "batch_rows": 5426, "feed_polls": 6, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 0, "violations": 0}
+[matrix] xa-one-a4 attr-engine test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 212.19s
+[matrix] xa-one-a4 attr-engine [attr-summary] ops 4912 {"commits":354,"batch_commits":307,"mixed_actor_commits":0,"entries":4911,"actors_per_batch_commit":{"1":307},"batch_rows_checked":5426,"head_rows_checked":5426,"feed_polls":6,"violations":0}
+[matrix] xa-off-a4 rtt=32.5ms 03:42:59
+[matrix] xa-off-a4 exit=0 [run] {"type": "run_summary", "ok": 195, "refused": 0, "throttled": 0, "in_doubt": 0, "secs": 60.0}
+[matrix] xa-off-a4 check {"ops": 195, "ok": 195, "refused": 0, "in_doubt": 0, "commits_with_writes": 195, "writes_per_commit": 1.0, "max_batch": 1, "observations": 197, "p50_ms": 28452.292, "p99_ms": 31003.511, "errors": [], "violations": 0}
+[matrix] xa-off-a4 attr-http {"commits": 241, "batch_commits": 0, "mixed_actor_commits": 0, "actors_per_batch_commit": {}, "entries": 0, "batch_rows": 0, "feed_polls": 2, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 0, "violations": 0}
+[matrix] xa-off-a4 attr-engine test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 1.86s
+[matrix] xa-off-a4 attr-engine [attr-summary] ops 195 {"commits":241,"batch_commits":0,"mixed_actor_commits":0,"entries":0,"actors_per_batch_commit":{},"batch_rows_checked":0,"head_rows_checked":0,"feed_polls":2,"violations":0}
+[matrix] xa-on-a16 rtt=32.2ms 03:44:54
+[matrix] xa-on-a16 exit=0 [run] {"type": "run_summary", "ok": 8477, "refused": 0, "throttled": 0, "in_doubt": 0, "secs": 60.0}
+[matrix] xa-on-a16 check {"ops": 8477, "ok": 8477, "refused": 0, "in_doubt": 0, "commits_with_writes": 278, "writes_per_commit": 30.49, "max_batch": 63, "observations": 174, "p50_ms": 424.293, "p99_ms": 753.936, "errors": [], "violations": 0}
+[matrix] xa-on-a16 attr-http {"commits": 324, "batch_commits": 276, "mixed_actor_commits": 276, "actors_per_batch_commit": {"4": 1, "6": 1, "10": 1, "11": 3, "12": 9, "13": 22, "14": 57, "15": 95, "16": 87}, "entries": 8475, "batch_rows": 9340, "feed_polls": 10, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 0, "violations": 0}
+[matrix] xa-on-a16 attr-engine test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 229.94s
+[matrix] xa-on-a16 attr-engine [attr-summary] ops 8477 {"commits":324,"batch_commits":276,"mixed_actor_commits":276,"entries":8475,"actors_per_batch_commit":{"4":1,"6":1,"10":1,"11":3,"12":9,"13":22,"14":57,"15":95,"16":87},"batch_rows_checked":9340,"head_rows_checked":9340,"feed_polls":10,"violations":0}
+[matrix] xa-one-a16 rtt=32.9ms 03:51:05
+[matrix] xa-one-a16 exit=0 [run] {"type": "run_summary", "ok": 1329, "refused": 0, "throttled": 0, "in_doubt": 0, "secs": 60.0}
+[matrix] xa-one-a16 check {"ops": 1329, "ok": 1329, "refused": 0, "in_doubt": 0, "commits_with_writes": 333, "writes_per_commit": 3.99, "max_batch": 4, "observations": 176, "p50_ms": 2978.566, "p99_ms": 3988.127, "errors": [], "violations": 0}
+[matrix] xa-one-a16 attr-http {"commits": 379, "batch_commits": 332, "mixed_actor_commits": 0, "actors_per_batch_commit": {"1": 332}, "entries": 1328, "batch_rows": 1460, "feed_polls": 3, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 0, "violations": 0}
+[matrix] xa-one-a16 attr-engine test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 125.55s
+[matrix] xa-one-a16 attr-engine [attr-summary] ops 1329 {"commits":379,"batch_commits":332,"mixed_actor_commits":0,"entries":1328,"actors_per_batch_commit":{"1":332},"batch_rows_checked":1460,"head_rows_checked":1460,"feed_polls":3,"violations":0}
+[matrix] xa-off-a16 rtt=31.8ms 03:54:58
+[matrix] xa-off-a16 exit=0 [run] {"type": "run_summary", "ok": 195, "refused": 0, "throttled": 0, "in_doubt": 0, "secs": 60.0}
+[matrix] xa-off-a16 check {"ops": 195, "ok": 195, "refused": 0, "in_doubt": 0, "commits_with_writes": 195, "writes_per_commit": 1.0, "max_batch": 1, "observations": 193, "p50_ms": 28513.867, "p99_ms": 31810.298, "errors": [], "violations": 0}
+[matrix] xa-off-a16 attr-http {"commits": 241, "batch_commits": 0, "mixed_actor_commits": 0, "actors_per_batch_commit": {}, "entries": 0, "batch_rows": 0, "feed_polls": 2, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 0, "violations": 0}
+[matrix] xa-off-a16 attr-engine test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 1.85s
+[matrix] xa-off-a16 attr-engine [attr-summary] ops 195 {"commits":241,"batch_commits":0,"mixed_actor_commits":0,"entries":0,"actors_per_batch_commit":{},"batch_rows_checked":0,"head_rows_checked":0,"feed_polls":2,"violations":0}
+[matrix] xa-on-a64 rtt=32.4ms 03:56:54
+[matrix] xa-on-a64 exit=0 [run] {"type": "run_summary", "ok": 8558, "refused": 0, "throttled": 0, "in_doubt": 0, "secs": 60.0}
+[matrix] xa-on-a64 check {"ops": 8558, "ok": 8558, "refused": 0, "in_doubt": 0, "commits_with_writes": 283, "writes_per_commit": 30.24, "max_batch": 63, "observations": 175, "p50_ms": 423.707, "p99_ms": 800.857, "errors": [], "violations": 0}
+[matrix] xa-on-a64 attr-http {"commits": 329, "batch_commits": 281, "mixed_actor_commits": 281, "actors_per_batch_commit": {"2": 1, "5": 1, "8": 1, "9": 3, "10": 1, "11": 1, "12": 1, "13": 1, "14": 2, "15": 1, "16": 2, "17": 1, "18": 2, "19": 3, "21": 4, "22": 4, "23": 7, "24": 9, "25": 16, "26": 12, "27": 17, "28": 16, "29": 21, "30": 11, "31": 20, "32": 22, "33": 11, "34": 11, "35": 18, "36": 13, "37": 15, "38": 5, "39": 3, "40": 7, "41": 2, "43": 2, "44": 2, "45": 1, "46": 1, "47": 1, "49": 1, "50": 2, "51": 1, "53": 1, "55": 3, "63": 1}, "entries": 8556, "batch_rows": 9432, "feed_polls": 10, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 0, "violations": 0}
+[matrix] xa-on-a64 attr-engine test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 229.55s
+[matrix] xa-on-a64 attr-engine [attr-summary] ops 8558 {"commits":329,"batch_commits":281,"mixed_actor_commits":281,"entries":8556,"actors_per_batch_commit":{"2":1,"5":1,"8":1,"9":3,"10":1,"11":1,"12":1,"13":1,"14":2,"15":1,"16":2,"17":1,"18":2,"19":3,"21":4,"22":4,"23":7,"24":9,"25":16,"26":12,"27":17,"28":16,"29":21,"30":11,"31":20,"32":22,"33":11,"34":11,"35":18,"36":13,"37":15,"38":5,"39":3,"40":7,"41":2,"43":2,"44":2,"45":1,"46":1,"47":1,"49":1,"50":2,"51":1,"53":1,"55":3,"63":1},"batch_rows_checked":9432,"head_rows_chec
+[matrix] xa-one-a64 rtt=33.2ms 04:03:06
+[matrix] xa-one-a64 exit=0 [run] {"type": "run_summary", "ok": 394, "refused": 0, "throttled": 0, "in_doubt": 0, "secs": 60.0}
+[matrix] xa-one-a64 check {"ops": 394, "ok": 394, "refused": 0, "in_doubt": 0, "commits_with_writes": 394, "writes_per_commit": 1.0, "max_batch": 1, "observations": 175, "p50_ms": 11571.81, "p99_ms": 12043.109, "errors": [], "violations": 0}
+[matrix] xa-one-a64 attr-http {"commits": 440, "batch_commits": 0, "mixed_actor_commits": 0, "actors_per_batch_commit": {}, "entries": 0, "batch_rows": 0, "feed_polls": 4, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 0, "violations": 0}
+[matrix] xa-one-a64 attr-engine test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 4.04s
+[matrix] xa-one-a64 attr-engine [attr-summary] ops 394 {"commits":440,"batch_commits":0,"mixed_actor_commits":0,"entries":0,"actors_per_batch_commit":{},"batch_rows_checked":0,"head_rows_checked":0,"feed_polls":4,"violations":0}
+[matrix] xa-off-a64 rtt=32.0ms 04:04:46
+[matrix] xa-off-a64 exit=0 [run] {"type": "run_summary", "ok": 195, "refused": 0, "throttled": 0, "in_doubt": 0, "secs": 60.0}
+[matrix] xa-off-a64 check {"ops": 195, "ok": 195, "refused": 0, "in_doubt": 0, "commits_with_writes": 195, "writes_per_commit": 1.0, "max_batch": 1, "observations": 193, "p50_ms": 28528.024, "p99_ms": 32091.47, "errors": [], "violations": 0}
+[matrix] xa-off-a64 attr-http {"commits": 241, "batch_commits": 0, "mixed_actor_commits": 0, "actors_per_batch_commit": {}, "entries": 0, "batch_rows": 0, "feed_polls": 2, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 0, "violations": 0}
+[matrix] xa-off-a64 attr-engine test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 1.82s
+[matrix] xa-off-a64 attr-engine [attr-summary] ops 195 {"commits":241,"batch_commits":0,"mixed_actor_commits":0,"entries":0,"actors_per_batch_commit":{},"batch_rows_checked":0,"head_rows_checked":0,"feed_polls":2,"violations":0}

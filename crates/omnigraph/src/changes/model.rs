@@ -438,7 +438,10 @@ pub(crate) async fn attribute_batch_inserts(
         } else {
             "id"
         };
-        let ids: Vec<String> = indices.iter().map(|index| changes[*index].id.clone()).collect();
+        let ids: Vec<String> = indices
+            .iter()
+            .map(|index| changes[*index].id.clone())
+            .collect();
         let mut scanner = dataset.scan();
         scanner.with_fragments(fragments);
         scanner
@@ -446,8 +449,12 @@ pub(crate) async fn attribute_batch_inserts(
             .map_err(crate::error::OmniError::storage)?;
         scanner.with_row_id();
         scanner.filter_expr(
-            datafusion::prelude::col(id_column)
-                .in_list(ids.iter().map(|id| datafusion::prelude::lit(id.clone())).collect(), false),
+            datafusion::prelude::col(id_column).in_list(
+                ids.iter()
+                    .map(|id| datafusion::prelude::lit(id.clone()))
+                    .collect(),
+                false,
+            ),
         );
         let batches: Vec<arrow_array::RecordBatch> = scanner
             .try_into_stream()

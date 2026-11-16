@@ -30,7 +30,7 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 use arrow_array::{Array, RecordBatch, StringArray, UInt64Array};
-use futures::TryStreamExt as _;
+use futures::{StreamExt as _, TryStreamExt as _};
 use omnigraph::changes::{
     ChangeEntityKind, ChangeFeedContinuation, ChangeFeedPosition, ChangeFeedRequest,
     ChangeFeedScope, ChangeFeedStart, ChangeOpKind, GraphEntityChange,
@@ -198,15 +198,21 @@ async fn table_rows_with_ids(
     let snapshot = db.snapshot_of(target).await?;
     let entry = snapshot
         .dataset(table_key)
-        .ok_or_else(|| omnigraph::error::OmniError::manifest_internal(format!("no table {table_key}")))?
+        .ok_or_else(|| {
+            omnigraph::error::OmniError::manifest_internal(format!("no table {table_key}"))
+        })?
         .clone();
-    let pinned = snapshot.open_dataset(table_key).await?.published_dataset_version();
+    let pinned = snapshot
+        .open_dataset(table_key)
+        .await?
+        .published_dataset_version();
     let uri = format!("{}/{}", db.uri().trim_end_matches('/'), entry.dataset_path);
-    let dataset = super::helpers::open_dataset_head_exact(&uri, entry.native_dataset_branch.as_deref())
-        .await
-        .checkout_version(pinned)
-        .await
-        .map_err(omnigraph::error::OmniError::storage)?;
+    let dataset =
+        super::helpers::open_dataset_head_exact(&uri, entry.native_dataset_branch.as_deref())
+            .await
+            .checkout_version(pinned)
+            .await
+            .map_err(omnigraph::error::OmniError::storage)?;
     let edge = table_key.starts_with("edge:");
     let columns: Vec<&str> = if edge {
         if dataset.schema().field("__src").is_some() {
@@ -223,8 +229,10 @@ async fn table_rows_with_ids(
             .fragments()
             .iter()
             .filter(|fragment| match fragment.row_id_meta.as_ref() {
-                Some(lance_table::format::RowIdMeta::Inline(bytes)) => lance_table::rowids::read_row_ids(&bytes[..])
-                    .map_or(true, |ids| ids.iter().any(|id| id >= start && id < end)),
+                Some(lance_table::format::RowIdMeta::Inline(bytes)) => {
+                    lance_table::rowids::read_row_ids(&bytes[..])
+                        .map_or(true, |ids| ids.iter().any(|id| id >= start && id < end))
+                }
                 _ => true,
             })
             .cloned()
@@ -234,7 +242,9 @@ async fn table_rows_with_ids(
             .filter(&format!("_rowid >= {start} AND _rowid < {end}"))
             .map_err(omnigraph::error::OmniError::storage)?;
     }
-    scanner.project(&columns).map_err(omnigraph::error::OmniError::storage)?;
+    scanner
+        .project(&columns)
+        .map_err(omnigraph::error::OmniError::storage)?;
     scanner.with_row_id();
     let batches: Vec<RecordBatch> = scanner
         .try_into_stream()
@@ -390,7 +400,15 @@ pub async fn check(db: &Omnigraph, ops: &[AttrOp]) -> AttrReport {
     // (commit index, write index, table) -> sigs
     let mut groups: HashMap<(usize, usize, String), Vec<String>> = HashMap::new();
     let mut rows_checked = 0usize;
-    for (ci, commit) in batch_commits.iter().enumerate() {
+    // One commit's checks; commits are checked 16 at a time.
+    let scope = &scope;
+    let acked_by_commit = &acked_by_commit;
+    let in_doubt = &in_doubt;
+    let refused = &refused;
+    let per_commit = futures::stream::iter(batch_commits.iter().copied().enumerate())
+        .map(|(ci, commit)| async move {
+        let mut lv: Vec<String> = Vec::new();
+        let mut lgroups: HashMap<(usize, usize, String), Vec<String>> = HashMap::new();
         let cid = commit.graph_commit_id.as_str();
         let mut changes = Vec::new();
         let mut token: Option<String> = None;
@@ -407,7 +425,7 @@ pub async fn check(db: &Omnigraph, ops: &[AttrOp]) -> AttrReport {
                     }
                 }
                 Err(error) => {
-                    v.push(format!("commit {cid}: commit get failed: {error}"));
+                    lv.push(format!("commit {cid}: commit get failed: {error}"));
                     break;
                 }
             }
@@ -423,42 +441,42 @@ pub async fn check(db: &Omnigraph, ops: &[AttrOp]) -> AttrReport {
                 change.actor_id.clone(),
             ));
             if change.op != ChangeOpKind::Insert {
-                v.push(format!(
+                lv.push(format!(
                     "commit {cid}: a {:?} of {table} {sig} in a batch commit",
                     change.op
                 ));
                 continue;
             }
             let Some(wi) = change.write.map(|w| w as usize) else {
-                v.push(format!(
+                lv.push(format!(
                     "commit {cid}: {table} {sig} has no write (unattributed)"
                 ));
                 continue;
             };
             let Some(write) = commit.writes.get(wi) else {
-                v.push(format!(
+                lv.push(format!(
                     "commit {cid}: {table} {sig} names write {wi} of {}",
                     commit.writes.len()
                 ));
                 continue;
             };
             if change.actor_id != write.actor_id {
-                v.push(format!(
+                lv.push(format!(
                     "commit {cid}: {table} {sig} actor {:?}, write {wi} is {:?}",
                     change.actor_id, write.actor_id
                 ));
             }
-            groups.entry((ci, wi, table)).or_default().push(sig);
+            lgroups.entry((ci, wi, table)).or_default().push(sig);
         }
-        rows_checked += changes.len();
+        let checked = changes.len();
         // Widths.
         for (wi, write) in commit.writes.iter().enumerate() {
             for rows in &write.rows {
-                let got = groups
+                let got = lgroups
                     .get(&(ci, wi, rows.table_key.clone()))
                     .map_or(0, Vec::len) as u64;
                 if got != rows.end - rows.start {
-                    v.push(format!(
+                    lv.push(format!(
                         "commit {cid} write {wi} {}: range {}..{} holds {} ids but {got} rows were reported",
                         rows.table_key,
                         rows.start,
@@ -468,13 +486,13 @@ pub async fn check(db: &Omnigraph, ops: &[AttrOp]) -> AttrReport {
                 }
             }
         }
-        for key in groups.keys().filter(|k| k.0 == ci) {
+        for key in lgroups.keys().filter(|k| k.0 == ci) {
             let named = commit.writes[key.1]
                 .rows
                 .iter()
                 .any(|r| r.table_key == key.2);
             if !named {
-                v.push(format!(
+                lv.push(format!(
                     "commit {cid} write {}: rows in {} but no range for it",
                     key.1, key.2
                 ));
@@ -502,12 +520,12 @@ pub async fn check(db: &Omnigraph, ops: &[AttrOp]) -> AttrReport {
             )
             .await
             {
-                Err(error) => v.push(format!(
+                Err(error) => lv.push(format!(
                     "commit {cid} {table}: coverage read failed: {error}"
                 )),
                 Ok(rows) => {
                     if rows.len() as u64 != width {
-                        v.push(format!(
+                        lv.push(format!(
                             "commit {cid} {table}: {} rows hold ids in {lo}..{hi}, ranges are {width} wide",
                             rows.len()
                         ));
@@ -516,16 +534,16 @@ pub async fn check(db: &Omnigraph, ops: &[AttrOp]) -> AttrReport {
                         let Some(&(_, _, wi)) =
                             ranges.iter().find(|r| row_id >= r.0 && row_id < r.1)
                         else {
-                            v.push(format!(
+                            lv.push(format!(
                                 "commit {cid} {table}: row {sig} id {row_id} lies between ranges"
                             ));
                             continue;
                         };
-                        let ok = groups
+                        let ok = lgroups
                             .get(&(ci, wi, table.to_string()))
                             .is_some_and(|sigs| sigs.contains(&sig));
                         if !ok {
-                            v.push(format!(
+                            lv.push(format!(
                                 "commit {cid} {table}: row {sig} id {row_id} is in write {wi}'s range but commit get does not report it for that write"
                             ));
                         }
@@ -538,7 +556,7 @@ pub async fn check(db: &Omnigraph, ops: &[AttrOp]) -> AttrReport {
             .map(|wi| {
                 let mut rows = BTreeMap::new();
                 for r in &commit.writes[wi].rows {
-                    let mut sigs = groups
+                    let mut sigs = lgroups
                         .get(&(ci, wi, r.table_key.clone()))
                         .cloned()
                         .unwrap_or_default();
@@ -560,7 +578,7 @@ pub async fn check(db: &Omnigraph, ops: &[AttrOp]) -> AttrReport {
                         .filter(|wi| entry_rows[*wi] == op.rows)
                         .map(|wi| (wi, commit.writes[wi].actor_id.clone()))
                         .collect();
-                    v.push(format!(
+                    lv.push(format!(
                         "op {} (actor {:?}, rows {:?}): no write of its commit {cid} carries its actor and exactly its rows (entries with its rows: {same_rows:?})",
                         op.id, op.actor, op.rows
                     ));
@@ -576,7 +594,7 @@ pub async fn check(db: &Omnigraph, ops: &[AttrOp]) -> AttrReport {
                 let refused_match = refused
                     .iter()
                     .any(|op| &op.actor == actor && op.rows == entry_rows[wi]);
-                v.push(format!(
+                lv.push(format!(
                     "commit {cid} write {wi} (actor {actor:?}, rows {:?}) matches no acknowledged or in-doubt write{}",
                     entry_rows[wi],
                     if refused_match { " (it matches a refused write)" } else { "" }
@@ -584,7 +602,16 @@ pub async fn check(db: &Omnigraph, ops: &[AttrOp]) -> AttrReport {
             }
         }
         reported.sort();
-        commit_get.insert(cid.to_string(), reported);
+        (cid.to_string(), lv, lgroups, reported, checked)
+        })
+        .buffered(16)
+        .collect::<Vec<_>>()
+        .await;
+    for (cid, lv, lgroups, reported, checked) in per_commit {
+        v.extend(lv);
+        groups.extend(lgroups);
+        rows_checked += checked;
+        commit_get.insert(cid, reported);
     }
 
     // The change feed.

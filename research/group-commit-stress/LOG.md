@@ -620,3 +620,86 @@ RustFS-configured engine tests (`integration … s3`, RustFS direct): 23 pass,
 `durable_head_lookup_cost::s3_durable_head_lookup_matrix_is_correct_and_observable`
 and `checkpoint_retention_cost::s3_checkpoint_retention_matrix_is_exact_and_records_the_current_no_go`.
 Not classified against `origin/main` in this pass.
+
+## 2026-11-16 — cross-actor batches: implementation
+
+RFC #1405 at `2f82b02b` (Part 2 rules 6 and 19, "The batch", "Attribution").
+Changes (commit `7f59b2f1` and later):
+
+- `drain_batch` takes queued entries in arrival order whatever their actors,
+  up to `MAX_BATCH_ENTRIES` (512) and the write list's byte budget
+  (`HISTORY_RELEASE_BYTES / 2`, `OMNIGRAPH_GROUP_COMMIT_WRITE_LIST_BYTES` for
+  tests); once one entry does not fit, every later one keeps its place.
+  `OMNIGRAPH_GROUP_COMMIT_ONE_ACTOR=1` restores one-actor batches for the
+  comparison.
+- The write list is persisted in the commit record. Research encoding: the
+  existing `actor_id` column holds `"\u{1}gcw1" + JSON {"a": common|null,
+  "w": [{"a": actor, "r": [[table, start, end], ...]}]}` for a commit of two
+  or more writes, so it counts toward the record's byte budget and survives
+  history release without a format change. `GraphCommit::decoded()` turns it
+  into `actor_id` (the common actor or none) plus `writes` at every outward
+  door: `list_commits`, receipts, HTTP `CommitOutput.writes`, the change
+  feed's cause.
+- Ranges: the leader records each member's staged data files before
+  composing, and after each table's detached commit reads the inline row-id
+  sequence of every one of those fragments from the committed manifest
+  (`fragment_row_ranges`); a member's ranges must be one consecutive run whose
+  width equals the rows it wrote, or the batch fails with `Unpublished`
+  evidence before its publication.
+- Change feed and commit get: `attribute_batch_inserts` looks up the
+  `_rowid` of every row a batch commit inserted, at the commit's own
+  snapshot, and gives the row the actor (`actor_id`) and the write-list index
+  (`write`) of the range that holds it. HTTP `EntityChangeOutput` carries
+  both.
+- Server research knob: `OMNIGRAPH_WRITE_OBSERVERS_MAX` raises the hard-coded
+  64 write observers so served `optimize` is admitted beside 64 writers (O1).
+
+Oracle (`tests/group_commit_stress/attribution.rs`, used by the focused
+tests, the embedded harness and `gc_attribution_offline` for served roots;
+`scripts/attr_http_check.py` over HTTP): per batch commit, the common actor
+rule; one range per table per write, non-empty, disjoint across all commits;
+commit get reports every row with a write index and that write's actor, and
+each (write, table) has exactly as many rows as its range is wide; at the
+commit's snapshot every row with an id in the ranges is a row commit get
+reports for that write; each acknowledged write matches exactly one entry
+with its actor and exactly its rows; entries that match no acknowledged
+write match an in-doubt one; the feed from the beginning reports the same
+(write, actor) per row as commit get; at the head, every surviving row whose
+id lies in a batch range is a row that write inserted. HTTP side also: every
+in-doubt write names its batch's attempted commit; if that commit is
+published each such write is in its list, if not none of its rows exist.
+
+## 2026-11-16 — focused tests (debug build)
+
+`gc_mixed_actor_batch_attributes_every_row`: 7 writes of 5 actors (one
+without an actor; node, two-table and edge inserts) in one commit, exact;
+again after an update and a delete of batched rows and an `optimize`.
+`gc_write_list_budget_splits_batches_of_long_actor_ids`: 12 writers with
+300-byte actor ids, budget 1,400 bytes: batches of 2 (711–715 bytes), all
+published in arrival order, exact. `gc_cross_actor_conflicts_in_one_batch`:
+act-a and act-b insert the same absent key into one batch: act-b is sent
+back and publishes alone (as an update of the key) under its own actor; no
+write list names act-b; two Tags with one `@unique` label: one publishes,
+the other gets the typed `@unique violation` (on the ordinary path: non-key
+`@unique` tables never batch in the prototype).
+
+Defects found here:
+
+- D1: the publisher's `debug_assert_eq!(lineage_intent.actor_id, actor_id)`
+  fired for the first mixed batch (debug builds panic; release unaffected).
+  Fixed: the group hands the publisher the recorded form.
+- D5: the write-list size estimate left out the common actor the header
+  carries. Fixed: exact JSON lengths, the header counts the first entry's
+  actor, and an encoded list over the budget fails the batch before its
+  publication.
+- D2–D4 on the pipelined path (`OMNIGRAPH_GROUP_COMMIT_PIPELINE=1`, an
+  inherited #1401 experiment, off by default): it published with the first
+  member's actor and no write list (rule 19: a mixed batch credited to one
+  member); its drain ignored the budget and closed callers (the new
+  post-encode guard refused a 3,823-byte list against a 1,400-byte budget);
+  it had no drop guard, so a dropped embedded leader hung the group
+  (`gc_dropped_leader_hands_the_lead_on` timed out). Fixed: one
+  `build_write_list` and one `drain_batch` for both paths, and a `LeadGuard`
+  on the pipelined lead that answers every drained member and hands the lead
+  on only if it has not handed it already. All 11 focused tests pass with
+  pipelining on and off.

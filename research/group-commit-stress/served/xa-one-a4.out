@@ -1,0 +1,15 @@
+[seed] optimize {"status": 200, "answer": {"lookup": "found", "operation": {"operation_id": "01M7H6X2JCXRF5CSDDR9FQNBM2", "request_digest": "sha256:f38a7fb4e858371f6634ac5536e78422e23d0c878b143eed6e677f647c90d265", "graph": "stress", "schema_identity_domain": "01M7H6WKNX533Z6RVSDNQFBNZ2", "settlement_branch": "main", "request": {"kind": "optimize"}, "principal": "act-0", "accepted_at": "2026-11-16T03:37:37.708409168Z", "state": "succeeded", "nonce": "01M7H6X481MFPMK9KQ4C2SBTM8", "input_commit": "hb1.01M7H6WPNCF784A7SJZG6WN3BR.44.01M7H6X2F6N5VPJ6CH4D143FNG", "input_manifest_version": 45, "published_commit": "h
+[event] {"kind": "driver_start", "cmd": ["run", "--base", "http://127.0.0.1:18080", "--graph", "stress", "--hot", "64", "--people", "24", "--out", "/src/omnigraph/research/group-commit-stress/served/xa-one-a4/history.jsonl", "--server-pid", "47199", "--writers", "64", "--secs", "60", "--actors", "4", "--mix", "fresh=80,fmulti=10,sknows=10", "--reader-count", "1", "--readers", "1"], "root": "s3://omnigraph-stress/xa-one-a4-1794800241", "t": 1794800260.44}
+task failed: ModuleNotFoundError("No module named 'psutil'")
+[run] {"type": "run_summary", "ok": 4912, "refused": 0, "throttled": 0, "in_doubt": 0, "secs": 60.0}
+[event] {"kind": "driver_done", "code": 0, "t": 1794800321.431}
+[event] {"kind": "check_server", "endpoint": "direct", "pid": 47366, "t": 1794800322.551}
+[attr-http] {"commits": 354, "batch_commits": 307, "mixed_actor_commits": 0, "actors_per_batch_commit": {"1": 307}, "entries": 4911, "batch_rows": 5426, "feed_polls": 6, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 0, "violations": 0}
+ 
+[event] {"kind": "attr_http_done", "code": 0, "t": 1794800366.709}
+[attr-engine] test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 212.19s
+[attr-summary] ops 4912 {"commits":354,"batch_commits":307,"mixed_actor_commits":0,"entries":4911,"actors_per_batch_commit":{"1":307},"batch_rows_checked":5426,"head_rows_checked":5426,"feed_polls":6,"violations":0}
+[event] {"kind": "attr_engine_done", "code": 0, "t": 1794800579.07}
+{"ops": 4912, "ok": 4912, "refused": 0, "in_doubt": 0, "commits_with_writes": 308, "writes_per_commit": 15.95, "max_batch": 16, "observations": 182, "p50_ms": 788.077, "p99_ms": 880.367, "errors": [], "violations": 0}
+ 
+[event] {"kind": "check_done", "code": 0, "root": "s3://omnigraph-stress/xa-one-a4-1794800241", "t": 1794800579.312}

@@ -1,0 +1,6 @@
+{"kind": "driver_start", "cmd": ["run", "--base", "http://127.0.0.1:18080", "--graph", "stress", "--hot", "64", "--people", "24", "--out", "/src/omnigraph/research/group-commit-stress/served/xa-one-a1/history.jsonl", "--server-pid", "45491", "--writers", "64", "--secs", "60", "--actors", "1", "--mix", "fresh=80,fmulti=10,sknows=10", "--reader-count", "1", "--readers", "1"], "root": "s3://omnigraph-stress/xa-one-a1-1794799376", "t": 1794799395.743}
+{"kind": "driver_done", "code": 0, "t": 1794799456.409}
+{"kind": "check_server", "endpoint": "direct", "pid": 46094, "t": 1794799458.598}
+{"kind": "attr_http_done", "code": 0, "t": 1794799518.413}
+{"kind": "attr_engine_done", "code": 0, "t": 1794799747.365}
+{"kind": "check_done", "code": 0, "root": "s3://omnigraph-stress/xa-one-a1-1794799376", "t": 1794799747.69}

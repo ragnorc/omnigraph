@@ -1,0 +1,1 @@
+{"commits": 324, "batch_commits": 276, "mixed_actor_commits": 0, "actors_per_batch_commit": {"1": 276}, "entries": 8468, "batch_rows": 9334, "feed_polls": 10, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 0, "violations": 0}
