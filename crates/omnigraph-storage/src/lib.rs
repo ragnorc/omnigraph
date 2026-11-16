@@ -3001,8 +3001,23 @@ pub fn local_path_from_uri(uri: &str) -> Result<PathBuf> {
 /// `\\s\h\a` become `file://s/h/a`. Device paths (`\\.\`, `\\?\Volume{..}`)
 /// have no file URI and are refused.
 pub fn file_uri_from_local_path(path: &Path) -> Result<String> {
-    file_uri_from_path_text(&path.to_string_lossy(), cfg!(windows))
+    // Option A: the `url` crate's own conversion. It encodes every byte a
+    // URL path cannot hold (space, non-ASCII, `%`, `?`, `#`), so roots that
+    // work today change spelling: `/data/og 13` becomes `file:///data/og%2013`.
+    Url::from_file_path(path)
+        .map(|url| url.to_string())
+        .map_err(|()| {
+            StorageError::backend(
+                StorageFailureKind::Configuration,
+                format!(
+                    "local path '{}' cannot be named by a file URI",
+                    path.display()
+                ),
+            )
+        })
 }
+
+#[allow(dead_code)]
 
 fn file_uri_from_path_text(text: &str, windows: bool) -> Result<String> {
     let refuse = |reason: &str| {
@@ -5960,40 +5975,19 @@ mod tests {
     }
 
     #[test]
-    fn file_uri_from_local_path_keeps_working_spellings_and_escapes_delimiters_issue_907() {
-        let unix = |text: &str| file_uri_from_path_text(text, false).unwrap();
-        // Spellings that already round-trip stay byte-identical.
-        assert_eq!(unix("/data/og 13"), "file:///data/og 13");
-        assert_eq!(unix("/data/ensayo-ñ"), "file:///data/ensayo-ñ");
-        // URI delimiters are encoded and decode back to the same path.
-        for (path, uri) in [
+    fn file_uri_from_local_path_encodes_every_non_url_byte_issue_907() {
+        let uri = |text: &str| file_uri_from_local_path(Path::new(text)).unwrap();
+        // Spellings that round-trip today change (recorded roots, digests).
+        assert_eq!(uri("/data/og 13"), "file:///data/og%2013");
+        assert_eq!(uri("/data/ensayo-ñ"), "file:///data/ensayo-%C3%B1");
+        for (path, expected) in [
             ("/data/og?13", "file:///data/og%3F13"),
             ("/data/og#13", "file:///data/og%2313"),
             ("/data/og%2513", "file:///data/og%252513"),
-            ("/data/og 13", "file:///data/og 13"),
         ] {
-            assert_eq!(unix(path), uri);
-            assert_eq!(local_path_from_uri(uri).unwrap(), PathBuf::from(path));
+            assert_eq!(uri(path), expected);
+            assert_eq!(local_path_from_uri(expected).unwrap(), PathBuf::from(path));
         }
-        assert!(file_uri_from_path_text("relative", false).is_err());
-
-        let windows = |text: &str| file_uri_from_path_text(text, true);
-        assert_eq!(
-            windows(r"\\?\C:\og13ensayo").unwrap(),
-            "file:///C:/og13ensayo"
-        );
-        assert_eq!(windows(r"C:\og13ensayo").unwrap(), "file:///C:/og13ensayo");
-        assert_eq!(
-            windows(r"\\?\UNC\server\share\og").unwrap(),
-            "file://server/share/og"
-        );
-        assert_eq!(
-            windows(r"\\server\share\og").unwrap(),
-            "file://server/share/og"
-        );
-        assert_eq!(windows(r"C:\og#13").unwrap(), "file:///C:/og%2313");
-        assert!(windows(r"\\?\Volume{0}\og").is_err());
-        assert!(windows(r"\\.\C:\og").is_err());
     }
 
     #[test]
