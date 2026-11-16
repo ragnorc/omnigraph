@@ -1,0 +1,18 @@
+version: 1
+groups:
+  writers: [act-0, act-1, act-2, act-3, act-4, act-5, act-6, act-7, act-8, act-9, act-10, act-11, act-12, act-13, act-14, act-15]
+rules:
+  - id: writers-branch-scoped
+    allow:
+      actors: { group: writers }
+      actions: [read, export, change, maintain]
+      branch_scope: any
+  - id: writers-target-scoped
+    allow:
+      actors: { group: writers }
+      actions: [branch_create, schema_apply, branch_delete, branch_merge, branch_claim, commit_publish, commit_drop]
+      target_branch_scope: any
+  - id: writers-unscoped
+    allow:
+      actors: { group: writers }
+      actions: [reclaim, invoke_query]

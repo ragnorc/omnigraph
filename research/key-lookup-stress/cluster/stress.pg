@@ -1,0 +1,19 @@
+node Item {
+    slug: String @key
+    n: I64
+}
+node Person {
+    name: String @key
+}
+edge Knows: Person -> Person
+edge Follows: Person -> Person @card(0..3)
+node Tag {
+    slug: String @key
+    label: String @unique
+}
+node Pair {
+    k: String @key
+    a: String?
+    b: I64?
+    @unique(a, b)
+}

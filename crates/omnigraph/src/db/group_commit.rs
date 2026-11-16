@@ -732,9 +732,11 @@ impl Omnigraph {
                         .map(|group| (group.queue.len(), group.log.len()))
                         .unwrap_or((0, 0))
                 };
-                let (kk_files, kk_ids) = crate::table_store::known_keys::stats();
+                let (kk_files, kk_bytes, kk_budget) = crate::key_lookup::known_keys_stats();
+                let [lookups, index_parts, from_map, scanned, tail_rows, evicted, dropped] =
+                    crate::key_lookup::lookup_stats();
                 eprintln!(
-                    "[gc-stats] {{\"unix\":{},\"branch\":\"{}\",\"batches\":{batches},\"entries\":{entries},\"refused\":{refused},\"failed_batches\":{failed},\"max_batch\":{max_batch},\"queue\":{queue},\"log\":{log},\"known_key_files\":{kk_files},\"known_key_ids\":{kk_ids}}}",
+                    "[gc-stats] {{\"unix\":{},\"branch\":\"{}\",\"batches\":{batches},\"entries\":{entries},\"refused\":{refused},\"failed_batches\":{failed},\"max_batch\":{max_batch},\"queue\":{queue},\"log\":{log},\"known_key_files\":{kk_files},\"known_key_bytes\":{kk_bytes},\"known_key_budget\":{kk_budget},\"lookups\":{lookups},\"index_parts\":{index_parts},\"frags_from_map\":{from_map},\"frags_scanned\":{scanned},\"tail_rows\":{tail_rows},\"evicted\":{evicted},\"dropped\":{dropped}}}",
                     std::time::SystemTime::now()
                         .duration_since(std::time::UNIX_EPOCH)
                         .map(|elapsed| elapsed.as_secs())

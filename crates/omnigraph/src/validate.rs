@@ -22,7 +22,7 @@ pub(crate) mod plan;
 use std::collections::{HashMap, HashSet};
 
 use arrow_array::{Array, RecordBatch, StringArray};
-use datafusion::prelude::{Expr, col, ident, lit};
+use datafusion::prelude::{Expr, col, lit};
 use datafusion::scalar::ScalarValue;
 use futures::TryStreamExt;
 use lance::Dataset;
@@ -107,10 +107,6 @@ pub(crate) enum AccessPath {
     Scan,
 }
 
-/// Keys per batched committed probe: uniqueness holders and `@card` edges.
-/// Bounds the pushed-down filter size, since a merge delta is not row-capped
-/// and a load holds many keyed batches of `KEYED_WRITE_MAX_ROWS` rows.
-const PROBE_CHUNK_KEYS: usize = 8_192;
 
 /// Index-backed view of committed target state for the merge delta's lookups.
 /// Every method reads the (indexed) target table via a structured `filter_expr`
@@ -211,17 +207,13 @@ impl<'a> CommittedState<'a> {
         let mut present = HashSet::new();
         match access {
             AccessPath::Probe => {
-                let expr = col(system_columns.id)
-                    .in_list(ids.iter().map(|k| lit(k.clone())).collect(), false);
-                let batches = scan_filtered(&ds, &[system_columns.id], expr).await?;
-                for batch in &batches {
-                    let column = string_col(batch, system_columns.id)?;
-                    for i in 0..column.len() {
-                        if !column.is_null(i) {
-                            present.insert(column.value(i).to_string());
-                        }
-                    }
-                }
+                let holders = crate::key_lookup::lookup(
+                    &ds,
+                    &crate::key_lookup::KeySpace::ids(system_columns.id),
+                    &crate::key_lookup::utf8_keys(ids),
+                )
+                .await?;
+                present.extend(holders.into_keys().map(|mut key| key.swap_remove(0)));
             }
             AccessPath::Scan => {
                 let wanted: HashSet<&str> = ids.iter().map(String::as_str).collect();
@@ -263,10 +255,19 @@ impl<'a> CommittedState<'a> {
         if let Some(ds) = ds.filter(|_| bound > 0) {
             match access {
                 AccessPath::Probe => {
-                    let expr = col(system_columns.id)
-                        .in_list(wanted.iter().map(|k| lit(k.clone())).collect(), false);
-                    for batch in &scan_filtered(&ds, &[system_columns.id], expr).await? {
-                        push_int_ids(batch, system_columns.id, &mut keys, bound, &|_| true)?;
+                    let holders = crate::key_lookup::lookup(
+                        &ds,
+                        &crate::key_lookup::KeySpace::ids(system_columns.id),
+                        &crate::key_lookup::utf8_keys(wanted),
+                    )
+                    .await?;
+                    for key in holders.into_keys() {
+                        if let Some(value) = canonical_i64(&key[0]) {
+                            if keys.len() >= bound {
+                                return Err(integer_capacity_error(keys.len() + 1));
+                            }
+                            keys.push(value);
+                        }
                     }
                 }
                 AccessPath::Scan => {
@@ -287,7 +288,7 @@ impl<'a> CommittedState<'a> {
     }
 
     /// Committed holders of the `columns` tuples in `table_key`, holder lists in
-    /// scan order: `Probe` filters per [`PROBE_CHUNK_KEYS`] chunk, `Scan`
+    /// scan order: `Probe` runs the two-part key lookup, `Scan`
     /// reads the id and group columns once; both match exact tuples in Rust.
     async fn unique_holders(
         &self,
@@ -304,27 +305,22 @@ impl<'a> CommittedState<'a> {
         let Some(ds) = self.open(table_key).await? else {
             return Ok(holders);
         };
+        crate::key_lookup::declare_unique_groups(ds.uri(), &[columns.to_vec()]);
         let projection: Vec<&str> = std::iter::once(system_columns.id)
             .chain(columns.iter().map(String::as_str))
             .collect();
         match access {
             AccessPath::Probe => {
-                for chunk in keys.chunks(PROBE_CHUNK_KEYS) {
-                    let wanted: HashSet<&Vec<String>> =
-                        chunk.iter().map(|(canonical, _)| canonical).collect();
-                    let batches =
-                        scan_filtered(&ds, &projection, unique_probe_filter(columns, chunk))
-                            .await?;
-                    for batch in &batches {
-                        match_unique_holders(
-                            batch,
-                            table_key,
-                            columns,
-                            system_columns,
-                            &wanted,
-                            &mut holders,
-                        )?;
-                    }
+                // Research (key lookups): the two-part lookup in the group's
+                // key space, through the BTREE on its first column where one
+                // covers fragments, the tail once (or from the known keys).
+                let space = crate::key_lookup::KeySpace::of(columns, system_columns.id);
+                let wanted: Vec<(Vec<String>, ScalarValue)> = keys
+                    .iter()
+                    .map(|(canonical, typed)| (canonical.clone(), typed[0].clone()))
+                    .collect();
+                for (key, found) in crate::key_lookup::lookup(&ds, &space, &wanted).await? {
+                    holders.entry(key).or_default().extend(found);
                 }
             }
             AccessPath::Scan => {
@@ -347,7 +343,7 @@ impl<'a> CommittedState<'a> {
     }
 
     /// Committed edges `(id, src)` in `edge_table` whose id is one of `ids`,
-    /// probed in filtered scans of at most [`PROBE_CHUNK_KEYS`] ids each. An id
+    /// read by the two-part key lookup of the id → src space. An id
     /// names at most one edge, so the result is bounded by `ids`.
     async fn committed_edges_by_id(
         &self,
@@ -363,17 +359,23 @@ impl<'a> CommittedState<'a> {
         let Some(ds) = self.open_cardinality(edge_table).await? else {
             return Ok(Vec::new());
         };
+        // Research (key lookups): the edge table's id → src key space, whose
+        // holder is each edge's src, through the two-part lookup.
+        let space = crate::key_lookup::KeySpace::of(
+            &[system_columns.id.to_string()],
+            system_columns.src,
+        );
+        let holders = crate::key_lookup::lookup(
+            &ds,
+            &space,
+            &crate::key_lookup::utf8_keys(ids),
+        )
+        .await?;
         let mut out = Vec::new();
-        for chunk in ids.chunks(PROBE_CHUNK_KEYS) {
-            let expr = col(system_columns.id)
-                .in_list(chunk.iter().map(|id| lit(id.clone())).collect(), false);
-            let batches =
-                scan_filtered(&ds, &[system_columns.id, system_columns.src], expr).await?;
-            for batch in &batches {
-                let ids = string_col(batch, system_columns.id)?;
-                let srcs = string_col(batch, system_columns.src)?;
-                for i in 0..batch.num_rows() {
-                    out.push((ids.value(i).to_string(), srcs.value(i).to_string()));
+        for id in ids {
+            if let Some(srcs) = holders.get(&vec![id.clone()]) {
+                for src in srcs {
+                    out.push((id.clone(), src.clone()));
                 }
             }
         }
@@ -383,7 +385,7 @@ impl<'a> CommittedState<'a> {
     /// Committed edges of `edge_table` per source among `srcs`, an edge whose
     /// id `excluded` names (removed or re-placed by the change) left out.
     /// The sources are probed in sorted filtered scans of at most
-    /// [`PROBE_CHUNK_KEYS`] each and the edges stream past batch by batch, so
+    /// the two-part key lookup of the src space, whose holders are the edge ids, so
     /// memory holds one count per source, never the edges themselves.
     async fn committed_source_counts(
         &self,
@@ -399,38 +401,27 @@ impl<'a> CommittedState<'a> {
         let Some(ds) = self.open_cardinality(edge_table).await? else {
             return Ok(counts);
         };
+        // Research (key lookups): the src key space's two-part lookup; its
+        // holders are the edge ids, so the exclusion applies per holder.
         let mut sorted: Vec<&String> = srcs.iter().collect();
         sorted.sort();
-        for chunk in sorted.chunks(PROBE_CHUNK_KEYS) {
-            let expr = col(system_columns.src)
-                .in_list(chunk.iter().map(|src| lit((*src).clone())).collect(), false);
-            let projection = [system_columns.id, system_columns.src];
-            let mut stream = TableStore::scan_stream_with(
-                &ds,
-                Some(&projection),
-                None,
-                None,
-                false,
-                move |scanner| {
-                    scanner.filter_expr(expr);
-                    Ok(())
-                },
-            )
-            .await?;
-            while let Some(batch) = stream.try_next().await.map_err(OmniError::storage)? {
-                let ids = string_col(&batch, system_columns.id)?;
-                let batch_srcs = string_col(&batch, system_columns.src)?;
-                for i in 0..batch.num_rows() {
-                    if excluded(ids.value(i)) {
-                        continue;
-                    }
-                    let count = counts
-                        .entry(batch_srcs.value(i).to_string())
-                        .or_insert(0u32);
-                    *count = count.checked_add(1).ok_or_else(|| {
-                        OmniError::manifest_internal("@card edge count overflows u32")
-                    })?;
+        let space =
+            crate::key_lookup::KeySpace::of(&[system_columns.src.to_string()], system_columns.id);
+        let holders = crate::key_lookup::lookup(
+            &ds,
+            &space,
+            &crate::key_lookup::utf8_keys(sorted.iter().copied()),
+        )
+        .await?;
+        for (key, edge_ids) in holders {
+            for edge_id in edge_ids {
+                if excluded(&edge_id) {
+                    continue;
                 }
+                let count = counts.entry(key[0].clone()).or_insert(0u32);
+                *count = count.checked_add(1).ok_or_else(|| {
+                    OmniError::manifest_internal("@card edge count overflows u32")
+                })?;
             }
         }
         Ok(counts)
@@ -544,20 +535,6 @@ impl<'a> CommittedState<'a> {
     }
 }
 
-/// Scan `ds` projecting `projection`, filtered by a structured `expr` applied via
-/// `Scanner::filter_expr` so Lance can route it through the scalar index. The one
-/// place the index-backed scan boilerplate lives.
-async fn scan_filtered(ds: &Dataset, projection: &[&str], expr: Expr) -> Result<Vec<RecordBatch>> {
-    TableStore::scan_stream_with(ds, Some(projection), None, None, false, move |scanner| {
-        scanner.filter_expr(expr);
-        Ok(())
-    })
-    .await?
-    .try_collect()
-    .await
-    .map_err(OmniError::storage)
-}
-
 /// Stream `ds` projecting `projection` in bounded batches, unfiltered. The
 /// `Scan` access path and the overwrite id sweep read whole tables this way.
 async fn scan_bounded(
@@ -574,27 +551,6 @@ async fn scan_bounded(
         ID_SCAN_BATCH_BYTES,
     )
     .await
-}
-
-/// The `Probe` filter for one chunk of keys: an AND of per-column IN-lists of
-/// typed literals, one BTREE `IsIn` per indexed column; for a composite group a
-/// superset that may hold another chunk's tuple, so Rust matches the chunk's own.
-fn unique_probe_filter(columns: &[String], chunk: &[(Vec<String>, Vec<ScalarValue>)]) -> Expr {
-    let mut expr: Option<Expr> = None;
-    for (i, column) in columns.iter().enumerate() {
-        let mut seen: HashSet<&str> = HashSet::new();
-        let values: Vec<Expr> = chunk
-            .iter()
-            .filter(|(canonical, _)| seen.insert(canonical[i].as_str()))
-            .map(|(_, typed)| lit(typed[i].clone()))
-            .collect();
-        let in_list = ident(column.as_str()).in_list(values, false);
-        expr = Some(match expr {
-            Some(acc) => acc.and(in_list),
-            None => in_list,
-        });
-    }
-    expr.expect("invariant: a unique group names at least one column")
 }
 
 /// Ids a replacement of `table_key` removes: committed ids in `base` that are

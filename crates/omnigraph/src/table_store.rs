@@ -1392,263 +1392,6 @@ pub(crate) fn key_filters_may_overlap(
     a.field_ids != b.field_ids || a.intersects(b).map_or(true, |(overlap, _)| overlap)
 }
 
-/// Research (write throughput): the exact ids of the rows this process wrote
-/// into each data file of an absence-proven insert, keyed by the file's path.
-/// A data file is immutable and its name random, so the entry is true for
-/// every version that lists the file. A key-absence probe checks a fragment
-/// the id index does not cover against it instead of reading the fragment,
-/// when the fragment has that one data file and no deletion file; anything
-/// else is read as before. Bounded; an evicted entry only costs the read.
-pub(crate) mod known_keys {
-    use std::collections::{HashMap, HashSet, VecDeque};
-    use std::sync::{Arc, LazyLock, Mutex};
-
-    const MAX_IDS: usize = 4_000_000;
-
-    #[derive(Default)]
-    struct Cache {
-        files: HashMap<String, Arc<HashSet<String>>>,
-        order: VecDeque<String>,
-        ids: usize,
-    }
-
-    static CACHE: LazyLock<Mutex<Cache>> = LazyLock::new(Mutex::default);
-
-    /// Research switch, on unless `OMNIGRAPH_KNOWN_KEYS=0`.
-    pub(crate) fn enabled() -> bool {
-        std::env::var("OMNIGRAPH_KNOWN_KEYS").map_or(true, |value| value != "0")
-    }
-
-    pub(crate) fn record(path: &str, ids: &[String]) {
-        if !enabled() || ids.is_empty() {
-            return;
-        }
-        let mut cache = CACHE.lock().unwrap();
-        if cache.files.contains_key(path) {
-            return;
-        }
-        cache.ids += ids.len();
-        cache
-            .files
-            .insert(path.to_string(), Arc::new(ids.iter().cloned().collect()));
-        cache.order.push_back(path.to_string());
-        while cache.ids > MAX_IDS {
-            let Some(oldest) = cache.order.pop_front() else {
-                break;
-            };
-            if let Some(evicted) = cache.files.remove(&oldest) {
-                cache.ids -= evicted.len();
-            }
-        }
-    }
-
-    pub(crate) fn get(path: &str) -> Option<Arc<HashSet<String>>> {
-        CACHE.lock().unwrap().files.get(path).cloned()
-    }
-
-    /// Research (stress stats): files and ids the map holds.
-    pub(crate) fn stats() -> (usize, usize) {
-        let cache = CACHE.lock().unwrap();
-        (cache.files.len(), cache.ids)
-    }
-}
-
-/// Research (stress improvement 3, `OMNIGRAPH_KNOWN_KEYS_TAIL_CACHE`, on):
-/// the known-tail analysis of one immutable table version, computed once per
-/// manifest file and shared by every writer that probes that pin. `None` in
-/// `known` when some uncovered fragment is not answerable from the known
-/// keys.
-mod known_tail_memo {
-    use std::collections::{HashMap, HashSet, VecDeque};
-    use std::sync::{Arc, LazyLock, Mutex};
-
-    pub(super) struct KnownTail {
-        /// The union of the ids of every uncovered fragment, when all known.
-        pub(super) known: Option<Arc<HashSet<String>>>,
-    }
-
-    const ENTRIES: usize = 256;
-
-    #[derive(Default)]
-    struct Memo {
-        map: HashMap<String, Arc<KnownTail>>,
-        order: VecDeque<String>,
-    }
-
-    static MEMO: LazyLock<Mutex<Memo>> = LazyLock::new(Mutex::default);
-
-    pub(super) fn enabled() -> bool {
-        std::env::var("OMNIGRAPH_KNOWN_KEYS_TAIL_CACHE").map_or(true, |value| value != "0")
-    }
-
-    pub(super) fn get(key: &str) -> Option<Arc<KnownTail>> {
-        MEMO.lock().unwrap().map.get(key).cloned()
-    }
-
-    pub(super) fn put(key: String, tail: Arc<KnownTail>) {
-        let mut memo = MEMO.lock().unwrap();
-        if memo.map.insert(key.clone(), tail).is_none() {
-            memo.order.push_back(key);
-        }
-        while memo.order.len() > ENTRIES {
-            if let Some(oldest) = memo.order.pop_front() {
-                memo.map.remove(&oldest);
-            }
-        }
-    }
-}
-
-/// The known-tail analysis of `ds`'s pinned version (memoized per manifest
-/// file when enabled): `Ok(None)` when there is no id index or an empty tail,
-/// `Some(KnownTail { known: None })` when a fragment of the tail is not known.
-async fn known_tail(
-    ds: &Dataset,
-    system_columns: SystemColumns,
-) -> Result<Option<std::sync::Arc<known_tail_memo::KnownTail>>> {
-    let key = known_tail_memo::enabled().then(|| {
-        format!(
-            "{}\u{0}{}\u{0}{}",
-            ds.uri(),
-            ds.manifest_location().path,
-            system_columns.id
-        )
-    });
-    if let Some(key) = &key
-        && let Some(hit) = known_tail_memo::get(key)
-    {
-        return Ok(Some(hit));
-    }
-    let Some(uncovered) =
-        crate::dataset_index::key_column_uncovered_fragments(ds, system_columns.id).await?
-    else {
-        return Ok(None);
-    };
-    if uncovered.is_empty() {
-        return Ok(None);
-    }
-    let mut union: HashSet<String> = HashSet::new();
-    let mut all_known = true;
-    for fragment in ds
-        .fragments()
-        .iter()
-        .filter(|fragment| uncovered.contains(&fragment.id))
-    {
-        if fragment.deletion_file.is_some()
-            || fragment.files.len() != 1
-            || !fragment.overlays.is_empty()
-        {
-            all_known = false;
-            break;
-        }
-        match known_keys::get(&fragment.files[0].path) {
-            Some(ids) => union.extend(ids.iter().cloned()),
-            None => {
-                all_known = false;
-                break;
-            }
-        }
-    }
-    let tail = std::sync::Arc::new(known_tail_memo::KnownTail {
-        known: all_known.then(|| std::sync::Arc::new(union)),
-    });
-    if let Some(key) = key {
-        known_tail_memo::put(key, std::sync::Arc::clone(&tail));
-    }
-    Ok(Some(tail))
-}
-
-/// Research: whether the known keys answer every fragment the id index does
-/// not cover (each has exactly one known data file, no deletion file, no
-/// overlay); `false` with no id index or an empty tail.
-async fn known_keys_cover_tail(ds: &Dataset, system_columns: SystemColumns) -> Result<bool> {
-    if known_tail_memo::enabled() {
-        return Ok(known_tail(ds, system_columns)
-            .await?
-            .is_some_and(|tail| tail.known.is_some()));
-    }
-    let Some(uncovered) =
-        crate::dataset_index::key_column_uncovered_fragments(ds, system_columns.id).await?
-    else {
-        return Ok(false);
-    };
-    if uncovered.is_empty() {
-        return Ok(false);
-    }
-    Ok(ds
-        .fragments()
-        .iter()
-        .filter(|fragment| uncovered.contains(&fragment.id))
-        .all(|fragment| {
-            fragment.deletion_file.is_none()
-                && fragment.files.len() == 1
-                && fragment.overlays.is_empty()
-                && known_keys::get(&fragment.files[0].path).is_some()
-        }))
-}
-
-/// The members of `source_ids` in the fragments the id index does not cover,
-/// answered from [`known_keys`] when every such fragment is known; `None`
-/// when one is not (the caller then scans as before).
-async fn known_tail_members(
-    ds: &Dataset,
-    source_ids: &[String],
-    system_columns: SystemColumns,
-) -> Result<Option<HashSet<String>>> {
-    if !known_keys::enabled() {
-        return Ok(None);
-    }
-    if known_tail_memo::enabled() {
-        let Some(tail) = known_tail(ds, system_columns).await? else {
-            return Ok(None);
-        };
-        let Some(known) = tail.known.as_ref() else {
-            return Ok(None);
-        };
-        crate::instrumentation::record_known_tail_probe();
-        return Ok(Some(
-            source_ids
-                .iter()
-                .filter(|id| known.contains(*id))
-                .cloned()
-                .collect(),
-        ));
-    }
-    let Some(uncovered) =
-        crate::dataset_index::key_column_uncovered_fragments(ds, system_columns.id).await?
-    else {
-        return Ok(None);
-    };
-    if uncovered.is_empty() {
-        return Ok(None);
-    }
-    let mut present = HashSet::new();
-    for fragment in ds
-        .fragments()
-        .iter()
-        .filter(|fragment| uncovered.contains(&fragment.id))
-    {
-        // Only a fragment whose live rows are exactly its one data file's
-        // rows: no deletion file, no second data file (a patched or added
-        // column), no overlay (changes cell values on read).
-        if fragment.deletion_file.is_some()
-            || fragment.files.len() != 1
-            || !fragment.overlays.is_empty()
-        {
-            return Ok(None);
-        }
-        let Some(ids) = known_keys::get(&fragment.files[0].path) else {
-            return Ok(None);
-        };
-        for id in source_ids {
-            if ids.contains(id) {
-                present.insert(id.clone());
-            }
-        }
-    }
-    crate::instrumentation::record_known_tail_probe();
-    Ok(Some(present))
-}
-
 /// Compose insert-only staged writes of one table into one transaction read
 /// on `base` (research: group commit). Each component was staged against
 /// `base` or an earlier pin that `base` reaches only through insert-only
@@ -4372,19 +4115,14 @@ impl TableStore {
         // read every id. Lance plans the probe's IN list once per uncovered
         // fragment, so the probe runs only while those copies hold no more
         // ids than one keyed batch (#1225).
-        // Research (stress improvement 2, `OMNIGRAPH_KNOWN_KEYS_LIFT_CAP`,
-        // on by default): when the known keys answer every uncovered fragment,
-        // the probe scans only the indexed fragments (`fast_search`), so the
-        // per-uncovered-fragment IN-list copies the cap guards against are
-        // never planned; past the cap a keyed insert otherwise falls back to
-        // the full-table merge join, a scan of every fragment per write.
-        let known_tail = matches!(semantics, KeyedWriteSemantics::Upsert)
-            && known_keys::enabled()
-            && std::env::var("OMNIGRAPH_KNOWN_KEYS_LIFT_CAP").map_or(true, |value| value != "0")
-            && known_keys_cover_tail(&ds, system_columns).await?;
-        // Research (improvement 3): with the tail known, an all-new upsert
-        // needs nothing but the probe; skip the tail's metadata scan.
-        if known_tail && known_tail_memo::enabled() {
+        // Research (key lookups, RFC rule 18): the probe is a two-part key
+        // lookup (`crate::key_lookup`), which reads the covered fragments
+        // through the id BTREE only and the uncovered tail's id column once
+        // (or from the known keys), so it plans no key list per uncovered
+        // fragment and runs whatever the tail's length: the
+        // `KEYED_WRITE_MAX_ROWS` tail cap and its fall to the full-table merge
+        // join (C1) are gone.
+        if semantics == KeyedWriteSemantics::Upsert {
             let present = Self::existing_id_count(&ds, &source_ids, system_columns).await?;
             if present == 0 {
                 return self
@@ -4401,43 +4139,18 @@ impl TableStore {
                     )
                     .await;
             }
-        }
-        let tail = match semantics {
-            KeyedWriteSemantics::Upsert => {
-                crate::dataset_index::key_column_uncovered_tail(&ds, system_columns.id)
-                    .await?
-                    .filter(|tail| {
-                        known_tail
-                            || tail.fragments.saturating_mul(source_ids.len()) <= KEYED_WRITE_MAX_ROWS
-                    })
-            }
-            _ => None,
-        };
-        if let Some(tail) = tail {
-            let present = Self::existing_id_count(&ds, &source_ids, system_columns).await?;
-            if present == 0 {
-                return self
-                    .stage_absence_proven_strict_insert(
-                        ds,
-                        type_key,
-                        batch,
-                        source_ids,
-                        id_field_id,
-                        &expected_schema_preorder_ids,
-                        "stage_keyed_write",
-                        system_columns,
-                        write_budget,
-                    )
-                    .await;
-            }
-            let covered = ds.fragments().len().saturating_sub(tail.fragments);
             if present == source_ids.len()
-                && tail.fragments < covered
-                && tail
-                    .data_file_bytes
-                    .is_some_and(|bytes| bytes <= KNOWN_PRESENT_TAIL_MAX_BYTES)
+                && let Some(tail) =
+                    crate::dataset_index::key_column_uncovered_tail(&ds, system_columns.id).await?
             {
-                semantics = KeyedWriteSemantics::KnownPresentUpdate;
+                let covered = ds.fragments().len().saturating_sub(tail.fragments);
+                if tail.fragments < covered
+                    && tail
+                        .data_file_bytes
+                        .is_some_and(|bytes| bytes <= KNOWN_PRESENT_TAIL_MAX_BYTES)
+                {
+                    semantics = KeyedWriteSemantics::KnownPresentUpdate;
+                }
             }
         }
 
@@ -4637,6 +4350,7 @@ impl TableStore {
             skip_auto_cleanup: true,
             ..Default::default()
         };
+        let recorded_batch = batch.clone();
         let mut transaction = InsertBuilder::new(ds.clone())
             .with_params(&params)
             .execute_uncommitted(vec![batch])
@@ -4690,10 +4404,14 @@ impl TableStore {
         }
 
         crate::instrumentation::record_stage_fenced_insert(source_ids.len() as u64);
-        if let [fragment] = transaction_fragments_for_cache.as_slice()
-            && let [file] = fragment.files.as_slice()
-        {
-            known_keys::record(&file.path, &source_ids);
+        if let [fragment] = transaction_fragments_for_cache.as_slice() {
+            crate::key_lookup::record_insert(
+                &ds,
+                fragment,
+                &recorded_batch,
+                system_columns.id,
+                Some((system_columns.src, system_columns.dst)),
+            )?;
         }
         Ok(StagedWrite::with_commit_metadata(
             transaction,
@@ -4829,78 +4547,16 @@ impl TableStore {
         if source_ids.is_empty() {
             return Ok(None);
         }
-        let mut target_ids = match known_tail_members(ds, source_ids, system_columns).await? {
-            Some(known) => {
-                if let Some(id) = source_ids.iter().find(|id| known.contains(*id)) {
-                    return Ok(Some(id.clone()));
-                }
-                Self::exact_id_scan_indexed(ds, source_ids, system_columns).await?
-            }
-            None => Self::exact_id_scan(ds, source_ids, system_columns).await?,
-        };
-        while let Some(batch) = target_ids.try_next().await.map_err(OmniError::storage)? {
-            let ids =
-                string_id_column(&batch, system_columns, "stage_keyed_write strict preflight")?;
-            for row in 0..ids.len() {
-                if ids.is_valid(row) {
-                    return Ok(Some(ids.value(row).to_string()));
-                }
-            }
-        }
-        Ok(None)
-    }
-
-    /// The id column of the pinned table's rows whose id is a member of
-    /// `source_ids`: the one structured, scalar-index-eligible exact-id
-    /// predicate both id probes run, which Lance serves from a covering
-    /// BTREE and by a filtered scan of the fragments it leaves uncovered.
-    async fn exact_id_scan(
-        ds: &Dataset,
-        source_ids: &[String],
-        system_columns: SystemColumns,
-    ) -> Result<DatasetRecordBatchStream> {
-        use datafusion::prelude::{col, lit};
-
-        let filter = col(system_columns.id)
-            .in_list(source_ids.iter().map(|id| lit(id.clone())).collect(), false);
-        Self::scan_stream_with(
+        let holders = crate::key_lookup::lookup(
             ds,
-            Some(&[system_columns.id]),
-            None,
-            None,
-            false,
-            |scanner| {
-                scanner.filter_expr(filter);
-                Ok(())
-            },
+            &crate::key_lookup::KeySpace::ids(system_columns.id),
+            &crate::key_lookup::utf8_keys(source_ids),
         )
-        .await
-    }
-
-    /// [`Self::exact_id_scan`] over the fragments the id index covers only
-    /// (research: the rest are answered by [`known_tail_members`]).
-    async fn exact_id_scan_indexed(
-        ds: &Dataset,
-        source_ids: &[String],
-        system_columns: SystemColumns,
-    ) -> Result<DatasetRecordBatchStream> {
-        use datafusion::prelude::{col, lit};
-
-        let filter = col(system_columns.id)
-            .in_list(source_ids.iter().map(|id| lit(id.clone())).collect(), false);
-        Self::scan_stream_with(
-            ds,
-            Some(&[system_columns.id]),
-            None,
-            None,
-            false,
-            |scanner| {
-                scanner.filter_expr(filter);
-                scanner.fast_search();
-                Ok(())
-            },
-        )
-        .await
+        .await?;
+        Ok(source_ids
+            .iter()
+            .find(|id| holders.contains_key(&vec![(*id).clone()]))
+            .cloned())
     }
 
     /// How many members of `source_ids` the pinned table holds, through the
@@ -4913,26 +4569,13 @@ impl TableStore {
         if source_ids.is_empty() {
             return Ok(0);
         }
-        let (mut target_ids, mut present) =
-            match known_tail_members(ds, source_ids, system_columns).await? {
-                Some(known) => (
-                    Self::exact_id_scan_indexed(ds, source_ids, system_columns).await?,
-                    known,
-                ),
-                None => (
-                    Self::exact_id_scan(ds, source_ids, system_columns).await?,
-                    HashSet::new(),
-                ),
-            };
-        while let Some(batch) = target_ids.try_next().await.map_err(OmniError::storage)? {
-            let ids = string_id_column(&batch, system_columns, "stage_keyed_write upsert probe")?;
-            for row in 0..ids.len() {
-                if ids.is_valid(row) {
-                    present.insert(ids.value(row).to_string());
-                }
-            }
-        }
-        Ok(present.len())
+        let holders = crate::key_lookup::lookup(
+            ds,
+            &crate::key_lookup::KeySpace::ids(system_columns.id),
+            &crate::key_lookup::utf8_keys(source_ids),
+        )
+        .await?;
+        Ok(holders.len())
     }
 
     async fn stage_keyed_write_from_stream(
@@ -5306,6 +4949,9 @@ impl TableStore {
         declared_full_text: &[String],
     ) -> Result<(Dataset, StagedTransactionIdentity)> {
         witness.stamp(&mut staged.transaction);
+        // Research (known keys): a Rewrite removes its old files from every
+        // later version; drop their entries (cost only, never a result).
+        crate::key_lookup::forget_rewritten(&ds, &staged.transaction);
         let undeclared = full_text_columns_without_segment(
             &ds,
             Some(&staged.transaction.operation),

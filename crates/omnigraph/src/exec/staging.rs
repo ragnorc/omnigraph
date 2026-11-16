@@ -1033,6 +1033,27 @@ async fn stage_pending_table(
     // committed until `commit_all` runs `commit_staged_detached`.
     let staged = match table {
         PreparedPendingTable::Keyed { semantics, batch } => {
+            // Research (known keys): declare the table's `@unique` groups so
+            // the absence-proven writer records them beside its ids.
+            {
+                let catalog = db.catalog();
+                let groups = if let Some(name) = table_key.strip_prefix("node:") {
+                    catalog
+                        .node_types
+                        .get(name)
+                        .map(|node| node.unique_constraints.clone())
+                } else if let Some(name) = table_key.strip_prefix("edge:") {
+                    catalog
+                        .edge_types
+                        .get(name)
+                        .map(|edge| edge.unique_constraints.clone())
+                } else {
+                    None
+                };
+                if let Some(groups) = groups {
+                    crate::key_lookup::declare_unique_groups(ds.dataset().uri(), &groups);
+                }
+            }
             db.storage()
                 .stage_keyed_write(
                     ds.clone(),

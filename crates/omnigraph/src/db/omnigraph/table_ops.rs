@@ -392,8 +392,10 @@ async fn maintain_indices_for_branch(
         let ds = db.open_pinned_for_write(&full_path, entry).await?;
         let work = match mode {
             IndexMaintenanceMode::Ensure => {
+                let unique = edge_unique_lookup_columns(&catalog, &table_key);
                 let mut work =
-                    plan_index_work_edge_on_dataset(db, &ds, catalog.system_columns).await?;
+                    plan_index_work_edge_on_dataset(db, &ds, catalog.system_columns, &unique)
+                        .await?;
                 work.refresh = TableStore::has_foldable_unindexed_fragments(ds.dataset()).await?;
                 work
             }
@@ -1045,6 +1047,17 @@ async fn plan_index_work_node(
             Some(PropIndexKind::Btree) | None => {}
         }
     }
+    // Research (key lookups): `@unique` implies a BTREE on its group's first
+    // column, as `@key` implies an index, so the uniqueness lookup reads the
+    // covered fragments through it and only the tail beside it.
+    for column in node_type.unique_lookup_columns() {
+        if !db.storage().has_btree_index(ds, column).await? {
+            work.push_spec(crate::storage_layer::IndexBuildSpec::BTree {
+                column: column.to_string(),
+                name: None,
+            });
+        }
+    }
     Ok(work)
 }
 
@@ -1057,8 +1070,10 @@ pub(super) async fn index_work_status_on_dataset_for_catalog(
     let work = if let Some(type_name) = table_key.strip_prefix("node:") {
         plan_index_work_node(db, catalog, type_name, table_key, ds).await?
     } else if table_key.starts_with("edge:") {
-        // Intentional asymmetry: edges only receive the id/src/dst BTREEs.
-        plan_index_work_edge_on_dataset(db, ds, catalog.system_columns).await?
+        // Edges receive the id/src/dst BTREEs, and (research: key lookups)
+        // the BTREE a property-led `@unique` group implies.
+        let unique = edge_unique_lookup_columns(catalog, table_key);
+        plan_index_work_edge_on_dataset(db, ds, catalog.system_columns, &unique).await?
     } else {
         return Err(OmniError::manifest(format!(
             "invalid table key '{}'",
@@ -1071,16 +1086,34 @@ pub(super) async fn index_work_status_on_dataset_for_catalog(
     })
 }
 
+/// The BTREE columns an edge table's property-led `@unique` groups imply.
+fn edge_unique_lookup_columns(catalog: &Catalog, table_key: &str) -> Vec<String> {
+    table_key
+        .strip_prefix("edge:")
+        .and_then(|name| catalog.edge_types.get(name))
+        .map(|edge| {
+            edge.unique_lookup_columns()
+                .into_iter()
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 async fn plan_index_work_edge_on_dataset(
     db: &Omnigraph,
     ds: &SnapshotHandle,
     system_columns: SystemColumns,
+    unique: &[String],
 ) -> Result<PlannedIndexWork> {
     if db.storage().count_rows(ds, None).await? == 0 {
         return Ok(PlannedIndexWork::default());
     }
     let mut work = PlannedIndexWork::default();
-    for column in [system_columns.id, system_columns.src, system_columns.dst] {
+    for column in [system_columns.id, system_columns.src, system_columns.dst]
+        .into_iter()
+        .chain(unique.iter().map(String::as_str))
+    {
         if !db.storage().has_btree_index(ds, column).await? {
             work.push_spec(crate::storage_layer::IndexBuildSpec::BTree {
                 column: column.to_string(),
@@ -1296,7 +1329,8 @@ pub(super) async fn plan_index_work_on_dataset_for_catalog(
     if let Some(type_name) = table_key.strip_prefix("node:") {
         plan_index_work_node(db, catalog, type_name, table_key, ds).await
     } else if table_key.starts_with("edge:") {
-        plan_index_work_edge_on_dataset(db, ds, catalog.system_columns).await
+        let unique = edge_unique_lookup_columns(catalog, table_key);
+        plan_index_work_edge_on_dataset(db, ds, catalog.system_columns, &unique).await
     } else {
         Err(OmniError::manifest(format!(
             "invalid table key '{}'",

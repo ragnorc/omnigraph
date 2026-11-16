@@ -102,6 +102,18 @@ impl NodeType {
                 == Some(crate::types::PropIndexKind::FullText)
     }
 
+    /// Research (key lookups): the columns `@unique` implies a BTREE on,
+    /// as `@key` implies an index: the first column of each `@unique` group
+    /// whose type a BTREE can index (every scalar except `Blob`, `Vector` and
+    /// lists). A free-text String takes the BTREE too, beside any full-text
+    /// index a declared `@index` builds: an equality lookup is never served
+    /// by an inverted index. Index maintenance builds single-column indexes
+    /// only, so a composite group narrows on its first column and matches the
+    /// rest in memory.
+    pub fn unique_lookup_columns(&self) -> Vec<&str> {
+        unique_lookup_columns(&self.unique_constraints, &self.properties)
+    }
+
     /// Backward-compatible accessor: returns the first (and typically only) key property name.
     pub fn key_property(&self) -> Option<&str> {
         self.key
@@ -186,6 +198,41 @@ pub struct EdgeType {
     pub indices: Vec<Vec<String>>,
     pub blob_properties: HashSet<String>,
     pub arrow_schema: SchemaRef,
+}
+
+impl EdgeType {
+    /// [`NodeType::unique_lookup_columns`] for an edge type: `src` and `dst`
+    /// already carry their BTREEs, so only a group led by a property adds one.
+    pub fn unique_lookup_columns(&self) -> Vec<&str> {
+        unique_lookup_columns(&self.unique_constraints, &self.properties)
+    }
+}
+
+fn unique_lookup_columns<'a>(
+    groups: &'a [Vec<String>],
+    properties: &HashMap<String, PropType>,
+) -> Vec<&'a str> {
+    let mut columns: Vec<&str> = Vec::new();
+    for group in groups {
+        let Some(first) = group.first() else {
+            continue;
+        };
+        let Some(property) = properties.get(first) else {
+            continue;
+        };
+        if property.list
+            || matches!(
+                property.scalar,
+                crate::types::ScalarType::Blob | crate::types::ScalarType::Vector(_)
+            )
+        {
+            continue;
+        }
+        if !columns.contains(&first.as_str()) {
+            columns.push(first.as_str());
+        }
+    }
+    columns
 }
 
 impl Catalog {

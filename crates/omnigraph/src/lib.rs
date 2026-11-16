@@ -45,6 +45,7 @@ pub mod seams;
 pub mod session;
 pub mod storage;
 pub(crate) mod storage_layer;
+pub mod key_lookup;
 pub(crate) mod table_store;
 pub(crate) mod validate;
 

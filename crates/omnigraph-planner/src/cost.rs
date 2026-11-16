@@ -642,12 +642,14 @@ pub fn choose_validate_access(check: &ValidateCheck, inputs: ValidateCostInputs)
 }
 
 /// The access of a committed lookup when the write keeps the consulted table
-/// (append, merge): `Probe` only under full BTREE coverage, where the index
-/// answers the key list and no fragment reads a filter. Lance hands an
-/// unindexed or partly covered table one copy of the whole key list per
-/// uncovered fragment, and its probe reads the id column whole anyway, so
-/// every other coverage scans. Cardinality and retained-edge checks only
-/// implement `Probe`.
+/// (append, merge): `Probe` under full or partial BTREE coverage. Research
+/// (key lookups): `Probe` is the engine's two-part key lookup, which reads
+/// the covered fragments through the index only and the uncovered tail's key
+/// columns once (or from the known keys), so it plans no key list per
+/// uncovered fragment and never reads more than the tail beside the index.
+/// Without a usable BTREE every fragment is the tail, which `Scan` reads the
+/// same way (and the endpoint sweep requires). Cardinality and retained-edge
+/// checks only implement `Probe`.
 pub fn coverage_validate_access(
     check: &ValidateCheck,
     coverage: ValidateIndexCoverage,
@@ -657,7 +659,7 @@ pub fn coverage_validate_access(
         ValidateCheck::RetainedEdges { .. }
             | ValidateCheck::Cardinality { .. }
             | ValidateCheck::SourceCardinality { .. }
-    ) || coverage == ValidateIndexCoverage::Full
+    ) || coverage != ValidateIndexCoverage::Absent
     {
         ValidateAccess::Probe
     } else {
@@ -767,7 +769,7 @@ mod tests {
             );
             assert_eq!(
                 coverage_validate_access(check, ValidateIndexCoverage::Partial),
-                ValidateAccess::Scan
+                ValidateAccess::Probe
             );
             assert_eq!(
                 coverage_validate_access(check, ValidateIndexCoverage::Absent),

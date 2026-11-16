@@ -90,7 +90,12 @@ impl OperationRuntime {
                 state: Mutex::new(State::default()),
                 changed: Notify::new(),
                 read_limit,
-                write_response_limit: DEFAULT_WRITE_OBSERVERS,
+                // Research (key-lookup stress, O1): an override so a served
+                // `optimize` is admitted beside 64 writers.
+                write_response_limit: std::env::var("OMNIGRAPH_WRITE_OBSERVERS")
+                    .ok()
+                    .and_then(|value| value.parse().ok())
+                    .unwrap_or(DEFAULT_WRITE_OBSERVERS),
             }),
         }
     }
