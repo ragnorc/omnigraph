@@ -74,7 +74,9 @@ use axum::routing::{any, get, post};
 use axum::{Json, Router};
 use color_eyre::eyre::{Result, WrapErr, bail, eyre};
 use omnigraph::db::{Omnigraph, ReadTarget};
-use omnigraph::error::{BranchStartRefusal, ManifestConflictDetails, ManifestErrorKind, OmniError};
+use omnigraph::error::{
+    BranchStartRefusal, ManifestConflictDetails, ManifestError, ManifestErrorKind, OmniError,
+};
 use omnigraph::storage::normalize_root_uri;
 use omnigraph_compiler::catalog::Catalog;
 use omnigraph_compiler::json_params_to_param_map;
@@ -1693,6 +1695,16 @@ impl ApiError {
     /// an internal error, which takes no completion evidence from it.
     fn translated(err: OmniError) -> Self {
         let (err, evidence) = err.into_completion_evidence();
+        // PROTOTYPE (#1413, option B): a typed request refusal from the engine
+        // (a validation or parse `bad_request`) states that the write did not
+        // publish, as `OmniError::unpublished` documents for typed outcomes.
+        let typed_request_refusal = matches!(
+            &err,
+            OmniError::Manifest(ManifestError {
+                kind: ManifestErrorKind::BadRequest,
+                ..
+            }) | OmniError::Compiler(_)
+        );
         let storage_outcome = err.is_manifest_publish_in_doubt()
             || matches!(&err, OmniError::Storage(_) | OmniError::Io(_));
         // Keep completion classification separate from HTTP status. Generic
@@ -2010,6 +2022,9 @@ impl ApiError {
                     response.completion_uncertain = false;
                     response.unpublished = true;
                 }
+            }
+            None if typed_request_refusal && !response.completion_uncertain => {
+                response.unpublished = true;
             }
             None => {}
         }
