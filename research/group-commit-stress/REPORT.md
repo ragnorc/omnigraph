@@ -72,6 +72,22 @@ improvement (the S3 soak's minute-2 rate from 2.35 to ~114 writes/s,
 sustained). Lance upstream asks with exact code locations are in §8.
 
 
+**Cross-actor batches (§11, 2026-11-16).** Batches now take writes of any
+actors, the commit record persists a write list (each write's actor and
+stable row-id range per table), and commit get and the change feed
+attribute every inserted row through those ranges. Attribution was exact in
+every cell: 0 violations from the HTTP check and the engine oracle across
+the actor-mix matrix, crash points, kill -9, toxiproxy faults, cancellation,
+an in-doubt publication, a writer-epoch claim, write-list budget stops,
+policy refusals and a 30-minute soak (202,860 writes, 223,034 rows). On
+RustFS +30 ms with 64 writers, cross-actor batches hold ~142 writes/s from 1
+to 64 actors, where one-actor batches fall from 141 to 6.6 (off: 3.2).
+Seven defects, all fixed: three on the inherited pipelined path (a mixed
+batch credited to one actor, a hang when its leader is dropped, the budget
+ignored), a whole-table scan per batch commit in the new attribution read,
+storage vocabulary in the HTTP write list, a debug assertion, and an
+undercounted list size.
+
 ## 1. Setup and method
 
 - **Merges.** `research/group-commit-stress` = `ad39204a` (prototype) + PR #1407
@@ -584,6 +600,7 @@ none of its rows exist.
 | D4 | high (liveness, pipelined) | The pipelined lead had no drop guard: a dropped embedded leader hung its group (rule 10, H3 again) | `gc_dropped_leader_hands_the_lead_on` with pipelining timed out | fixed: `LeadGuard` on the pipelined lead, handing the lead on only if not yet handed |
 | D3 | medium (pipelined) | The pipelined drain ignored the write-list budget and closed callers (H4 again) | `gc_write_list_budget_…` with pipelining: the new post-encode guard refused a 3,823-byte list against a 1,400-byte budget | fixed: one `drain_batch` |
 | D6 | medium (cost) | Attribution looked rows up by key over the whole table for each batch commit page: one scan of every uncovered fragment per page. The HTTP check of a 60 s run took 9 min for 317 commits | first served matrix cell | fixed: read only the batch's fragments (58 s for the same check) |
+| D7 | medium (API contract) | The HTTP write list exposed storage vocabulary (`table_key`) and raw stable row ids on schemas reachable from the change routes, which the OpenAPI vocabulary gate refuses (`openapi_change_operations_reach_only_graph_vocabulary_schemas`) | server OpenAPI suite | fixed: each write lists `{kind, type, rows}`; the ranges stay in the engine; per-row attribution is the change row's `actor_id` and `write`; `openapi.json` regenerated, 107/107 |
 | D1 | medium (debug builds) | The publisher's `debug_assert_eq!` of the actor against the lineage intent panicked on the first mixed batch | first focused test | fixed: the group hands the publisher the recorded form |
 | D5 | low | The write-list size estimate left out the common actor the header carries; a batch of long, equal actor ids could pass admission and exceed the budget | review of the budget code | fixed: exact JSON lengths, header counted, post-encode guard |
 
@@ -606,6 +623,7 @@ focused tests.
 | actor mixes 1/4/16/64 × on/one/off (12 runs, §11.4) | served, RustFS +30 ms | 49,970 | 837 | 53,779 | exact |
 | embedded, 16 actors (on/one/off) | release harness, RustFS +30 ms | 7,339 | 230 | 6,324 | exact |
 | crash points (`batch_committed`, `batch_published`; watchdog restart) | served | 3,212 (+22 in-doubt that landed) | 108 | 3,552 | exact |
+| crash point `batch_admitted` (4 crashes) | served | 2,205 | 78 | 2,410 | exact |
 | kill -9 every ~6 s / ~13 s (14 and 7 kills) | served | 1,249 / 4,019 | 42 / 131 | 1,389 / 4,385 | exact |
 | toxiproxy resets, truncated acks, stalls (0.3 and 0.8 toxicity) | served | 9,773 / 8,182 | 324 / 269 | 10,780 / 9,016 | exact; every fault absorbed by re-issue and pre-effect retries, none reached a client |
 | client cancellation, 20% of writes | served (owned writes) | 11,563 (+744 cancelled that landed) | 386 | 13,605 | exact |
@@ -678,6 +696,13 @@ the commit's ranges. A lookup by key over the table costs a scan of every
 uncovered fragment per batch commit. The block's cause carries no actor when
 the writes' actors differ."
 
+What users see, last bullet: "The commit and change-feed responses gain the
+list" should say in what vocabulary: "The commit responses gain the list as
+each write's actor and its row count per graph type; the row-id ranges stay
+in the record. Each change row a batch commit inserted names its write and
+actor." Row ids and table keys are physical state, and the HTTP contract
+already refuses storage properties on everything the change routes reach.
+
 What users see, third bullet: "The change feed reports each row with the
 actor that wrote it" should read "The change feed reports each row a batch
 commit inserted with the actor and the index of the write that inserted
@@ -728,6 +753,20 @@ python research/group-commit-stress/scripts/served_run.py r03a-gated --backend s
 python research/group-commit-stress/scripts/mp_run.py mp02-claim --procs 4 --writers 6 \
   --secs 30 --claim-at 10
 
+# Cross-actor batches (§11): throughput matrix, failure cells, soak
+research/group-commit-stress/scripts/xactor-matrix.sh /srv/bins/xa2 <release gc_stress binary> 60 "on one off" "1 4 16 64"
+research/group-commit-stress/scripts/xactor-faults.sh /srv/bins/xa3 <release gc_stress binary> 90 \
+  "crash kill9 kill9-30 toxics toxics-hard cancel budget policy"
+python research/group-commit-stress/scripts/served_run.py xs-soak-a16 --backend s3 --bins /srv/bins/xa3 \
+  --attr-bin <release gc_stress binary> --optimize-secs 60 --server-env OMNIGRAPH_WRITE_OBSERVERS_MAX=512 \
+  --server-env OMNIGRAPH_PER_ACTOR_INFLIGHT_MAX=128 --server-env OMNIGRAPH_GLOBAL_INFLIGHT_MAX=512 \
+  --server-env OMNIGRAPH_INGRESS_INFLIGHT_MAX=512 -- --writers 64 --secs 1800 --actors 16 \
+  --mix fresh=80,fmulti=10,sknows=10 --reader-count 1 --readers 1
+# offline engine oracle on any root: OG_GS_URI=<graph root> OG_GS_OPS=<history.jsonl,...>
+#   <gc_stress binary> --ignored --exact gc_attribution_offline
+python research/group-commit-stress/scripts/mp_run.py xm-claim-a4 --procs 4 --writers 16 --actors 4 \
+  --secs 40 --claim-at 15 --mix fresh=80,fmulti=10,sknows=10 --attr-bin <gc_stress binary>
+
 # Suites with batching forced on
 research/group-commit-stress/scripts/suites-on.sh <label> 1
 research/group-commit-stress/scripts/per-test.sh <failpoints-binary> <label> 180 OMNIGRAPH_GROUP_COMMIT=1
@@ -737,6 +776,8 @@ research/group-commit-stress/scripts/per-test.sh <failpoints-binary> <label> 180
 
 Switches on this branch (research only): `OMNIGRAPH_GROUP_COMMIT=1`,
 `OMNIGRAPH_GROUP_COMMIT_EXACT_TOUCHED=1`, `OMNIGRAPH_GROUP_COMMIT_UNGATED_RETRIES=N`,
+`OMNIGRAPH_GROUP_COMMIT_ONE_ACTOR=1`, `OMNIGRAPH_GROUP_COMMIT_WRITE_LIST_BYTES=N`,
+`OMNIGRAPH_WRITE_OBSERVERS_MAX=N` (server),
 `OMNIGRAPH_KNOWN_KEYS_LIFT_CAP` (default on), `OMNIGRAPH_KNOWN_KEYS_TAIL_CACHE`
 (default on), `OMNIGRAPH_GROUP_COMMIT_STATS_SECS=N`, `OMNIGRAPH_STRESS_CRASH=point:per_mille,…`,
 plus the prototype's own (`OMNIGRAPH_KNOWN_KEYS`, `OMNIGRAPH_PUBLISH_TRUST_ACKNOWLEDGED`,

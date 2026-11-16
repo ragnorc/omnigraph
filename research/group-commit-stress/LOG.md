@@ -789,3 +789,29 @@ process 0 claims main at 15 s: 7,066 ok, 235 `WriterFenced` (the same typed
 error for every fenced member; no evidence attached, so the harness counts
 them in doubt), none of their keys exist; 961 mixed batch commits, 7,790
 rows, exact.
+
+## 2026-11-16 — soak, crash at `batch_admitted`, API vocabulary
+
+Soak `served/xs-soak-a16` (`xa3`): 64 writers × 16 actors, 30 min, served
+optimize every minute (26 runs, all 200, 8.4–10.7 s), RustFS 31.7–32.5 ms.
+202,860 writes, 0 refused, 0 in doubt, 31.1 writes/commit. Per 5 min:
+124.9, 116.2, 109.3, 110.8, 109.1, 105.7 writes/s (last/first 85%); p99
+873–1,601 ms. 6,487 of 6,604 commits are batch commits.
+
+`served/xf-crash-admitted` (`xa3`, `OMNIGRAPH_STRESS_CRASH=batch_admitted:15`,
+watchdog): 4 crashes at `batch_admitted`; 2,205 ok, 4,235 refused (503 while
+loading, refused connections), 256 in doubt; 78 mixed batch commits; model,
+HTTP and engine attribution 0.
+
+D7: the server OpenAPI suite (2 of 107 failing) refused the write list's
+`table_key` on schemas the change routes reach
+(`openapi_change_operations_reach_only_graph_vocabulary_schemas`), and the
+spec drifted. Fixed: `CommitWriteRowsOutput` is `{kind, type, rows}`; the
+row-id ranges stay in the record; `openapi.json` regenerated; 107/107.
+`xa4` serves the toxics-hard root: `attr_http_check.py` (now reading
+`kind`/`type`/`rows`) 0 violations over 9,016 rows.
+
+Suites touched by the change, debug build: engine `integration`
+`changes::`, `changes_cost::`, `lineage_projection::` 74/74 and `writes`
+67/67, each with batching on and off; focused group-commit tests 13/13 with
+pipelining on and off.

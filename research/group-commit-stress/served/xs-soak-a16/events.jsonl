@@ -27,3 +27,4 @@
 {"kind": "optimize", "status": 200, "secs": 9.89, "answer": "{\"lookup\": \"found\", \"operation\": {\"operation_id\": \"01M7HERGKA5K7KNNB27C3P62M6\", \"request_digest\": \"sha256:d476bac3febeec1c986c73710a6635b2167df1fe8e3ba9cd2053d3c4c68726aa\", \"graph\": \"stress\", \"schema_identity_domain\": \"01M7HD12KHMX581Q3D19GEQ7Z9\", \"settlement_branch\": \"main\", \"request\": {\"kind\": \"optimize\"}, \"principal\": \"act-0\", \"accepted_at\": \"2026-11-16T05:54:56.843617169Z\", \"state\": \"succeeded", "t": 1794808506.639}
 {"kind": "driver_done", "code": 0, "t": 1794808506.731}
 {"kind": "check_server", "endpoint": "direct", "pid": 11139, "t": 1794808510.584}
+{"kind": "attr_http_done", "code": 0, "t": 1794810755.817}
