@@ -901,7 +901,7 @@ carried stored external reference the policy refuses fails as
 
 | Observation | Outcome |
 |---|---|
-| Parse, validation, policy, limit, or authority failure before effects | Typed error; no graph movement |
+| Parse, validation, policy, limit, or authority failure before effects | Typed error; no graph movement. A mutation's or load's first attempt that fails before its first staged file carries `CompletionEvidence::BeforeEffect` (`WriteAttempt::begin_effects` marks that boundary), so a server answers it `effects: none` as the direct route does |
 | Authority movement before effects through publications that changed no row (optimize, index builds) | Carry the attempt over them: re-anchor on the current head, rebase each moved staged table with Lance's resolver; when Lance refuses a table, send the attempt back |
 | Any other authority movement before effects | Discard the complete attempt and prepare again from the request under the writer gates, whatever the write's kind, boundedly |
 | A later attempt sees another branch incarnation or accepted schema than the first, or the bound is reached | `ReadSetChanged` |
