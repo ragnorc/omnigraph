@@ -192,8 +192,21 @@ async fn table_rows_with_ids(
     table_key: &str,
     range: Option<(u64, u64)>,
 ) -> omnigraph::error::Result<Vec<(String, u64)>> {
+    // The raw Lance dataset at the version the target pins (test support's
+    // raw opener), so a range read can pick fragments by their inline row-id
+    // sequences instead of scanning the table.
     let snapshot = db.snapshot_of(target).await?;
-    let dataset = snapshot.open_dataset(table_key).await?;
+    let entry = snapshot
+        .dataset(table_key)
+        .ok_or_else(|| omnigraph::error::OmniError::manifest_internal(format!("no table {table_key}")))?
+        .clone();
+    let pinned = snapshot.open_dataset(table_key).await?.published_dataset_version();
+    let uri = format!("{}/{}", db.uri().trim_end_matches('/'), entry.dataset_path);
+    let dataset = super::helpers::open_dataset_head_exact(&uri, entry.native_dataset_branch.as_deref())
+        .await
+        .checkout_version(pinned)
+        .await
+        .map_err(omnigraph::error::OmniError::storage)?;
     let edge = table_key.starts_with("edge:");
     let columns: Vec<&str> = if edge {
         if dataset.schema().field("__src").is_some() {
@@ -205,14 +218,28 @@ async fn table_rows_with_ids(
         vec![sig_column(table_key)]
     };
     let mut scanner = dataset.scan();
-    scanner.project(&columns)?;
-    scanner.with_row_id();
     if let Some((start, end)) = range {
-        scanner.filter(&format!("_rowid >= {start} AND _rowid < {end}"))?;
+        let fragments: Vec<_> = dataset
+            .fragments()
+            .iter()
+            .filter(|fragment| match fragment.row_id_meta.as_ref() {
+                Some(lance_table::format::RowIdMeta::Inline(bytes)) => lance_table::rowids::read_row_ids(&bytes[..])
+                    .map_or(true, |ids| ids.iter().any(|id| id >= start && id < end)),
+                _ => true,
+            })
+            .cloned()
+            .collect();
+        scanner.with_fragments(fragments);
+        scanner
+            .filter(&format!("_rowid >= {start} AND _rowid < {end}"))
+            .map_err(omnigraph::error::OmniError::storage)?;
     }
+    scanner.project(&columns).map_err(omnigraph::error::OmniError::storage)?;
+    scanner.with_row_id();
     let batches: Vec<RecordBatch> = scanner
         .try_into_stream()
-        .await?
+        .await
+        .map_err(omnigraph::error::OmniError::storage)?
         .try_collect()
         .await
         .map_err(omnigraph::error::OmniError::storage)?;

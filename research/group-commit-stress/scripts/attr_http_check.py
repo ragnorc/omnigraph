@@ -21,6 +21,7 @@ commit's `actor_id`.
 """
 import argparse
 import json
+import re
 import sys
 import urllib.parse
 import urllib.request
@@ -90,6 +91,7 @@ def main():
     p.add_argument("--token", default="tok-0-stress")
     p.add_argument("--history", nargs="+", required=True)
     p.add_argument("--out")
+    p.add_argument("--export", help="final export (JSONL): rows of unpublished in-doubt batches must be absent")
     args = p.parse_args()
     ops = []
     for path in args.history:
@@ -183,6 +185,58 @@ def main():
             params = {"cursor": body["cursor"]}
         else:
             break
+    # In-doubt writes name their batch's attempted commit (H7): a published
+    # attempt holds each of them with its actor and rows; an unpublished one
+    # left none of their rows.
+    commit_re = re.compile(r"hb1\.[0-9A-Z]{26}\.\d+\.[0-9A-Z]{26}")
+    present = None
+    if args.export:
+        present = defaultdict(set)
+        for line in open(args.export):
+            try:
+                d = json.loads(line)
+            except ValueError:
+                continue
+            data = d.get("data") or {}
+            if d.get("type") == "Item":
+                present["node:Item"].add(data.get("slug"))
+            elif d.get("type") == "Person":
+                present["node:Person"].add(data.get("name"))
+    attempts = defaultdict(list)
+    for op in doubtful:
+        found = commit_re.findall(op.get("error") or "")
+        if found:
+            attempts[found[0]].append(op)
+    landed = lost = 0
+    for attempt, members in attempts.items():
+        c = by_id.get(attempt)
+        codes = {(op.get("code"), op.get("effects")) for op in members}
+        if len(codes) > 1:
+            v.append(f"attempt {attempt}: members got different outcomes {codes}")
+        if c is not None:
+            landed += 1
+            entries = [(w.get("actor_id"), r) for w, r in zip(c.get("writes") or [], [None] * 10**6)]
+            rows_by_entry = []
+            got = defaultdict(list)
+            for table, sig, wi, actor in commit_get.get(attempt, []):
+                got[(wi, table)].append(sig)
+            for wi, w in enumerate(c.get("writes") or []):
+                rows_by_entry.append((w.get("actor_id"), {r["table_key"]: sorted(got.get((wi, r["table_key"]), [])) for r in w["rows"]}))
+            for op in members:
+                want = inserted_rows(op)
+                if c.get("writes"):
+                    if (op["actor"], want) not in rows_by_entry:
+                        v.append(f"op {op['id']} in doubt on published {attempt}: no entry with its actor and rows")
+                elif c.get("actor_id") != op["actor"]:
+                    v.append(f"op {op['id']} in doubt on published one-write {attempt}: actor {c.get('actor_id')}")
+        else:
+            lost += 1
+            if present is not None:
+                for op in members:
+                    for table, sigs in inserted_rows(op).items():
+                        for sig in sigs:
+                            if table in present and sig in present[table] and sig.startswith(("f", "q")):
+                                v.append(f"op {op['id']} in doubt on unpublished {attempt}: its row {sig} exists")
     for cid, want in commit_get.items():
         got = sorted(feed.get(cid, []), key=lambda r: tuple("" if x is None else str(x) for x in r))
         if got != want:
@@ -192,7 +246,10 @@ def main():
                "actors_per_batch_commit": dict(sorted(actors_hist.items())),
                "entries": sum(len(c["writes"]) for c in batch),
                "batch_rows": sum(len(r) for r in commit_get.values()),
-               "feed_polls": polls, "violations": len(v)}
+               "feed_polls": polls, "in_doubt_attempts": len(attempts),
+               "in_doubt_attempts_published": landed, "in_doubt_attempts_lost": lost,
+               "in_doubt_without_attempt": sum(1 for op in doubtful if not commit_re.findall(op.get("error") or "")),
+               "violations": len(v)}
     print(json.dumps(summary))
     for line in v[:40]:
         print("VIOLATION", line)

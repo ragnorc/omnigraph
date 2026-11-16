@@ -407,30 +407,52 @@ pub(crate) async fn attribute_batch_inserts(
         if ranges.is_empty() {
             continue;
         }
-        let dataset = child.open_dataset(&table_key).await?;
+        // Read only the fragments whose stable row ids meet the commit's
+        // ranges for this table (the batch's own fragments at the commit's
+        // snapshot), from the manifest's inline row-id sequences: the cost is
+        // the batch's rows, not the table's.
+        let dataset = child.open_lance_dataset(&table_key).await?;
+        let lo = ranges.iter().map(|range| range.0).min().unwrap_or(0);
+        let hi = ranges.iter().map(|range| range.1).max().unwrap_or(0);
+        let mut fragments = Vec::new();
+        for fragment in dataset.fragments().iter() {
+            let meets = match fragment.row_id_meta.as_ref() {
+                Some(lance_table::format::RowIdMeta::Inline(bytes)) => {
+                    match lance_table::rowids::read_row_ids(&bytes[..]) {
+                        Ok(sequence) => sequence.iter().any(|id| id >= lo && id < hi),
+                        Err(_) => true,
+                    }
+                }
+                // No inline sequence to judge by: read the fragment.
+                _ => true,
+            };
+            if meets {
+                fragments.push(fragment.clone());
+            }
+        }
+        if fragments.is_empty() {
+            continue;
+        }
         let id_column = if dataset.schema().field("__id").is_some() {
             "__id"
         } else {
             "id"
         };
-        let ids: Vec<String> = indices
-            .iter()
-            .map(|index| changes[*index].id.clone())
-            .collect();
+        let ids: Vec<String> = indices.iter().map(|index| changes[*index].id.clone()).collect();
         let mut scanner = dataset.scan();
-        scanner.project(&[id_column])?;
+        scanner.with_fragments(fragments);
+        scanner
+            .project(&[id_column])
+            .map_err(crate::error::OmniError::storage)?;
         scanner.with_row_id();
         scanner.filter_expr(
-            datafusion::prelude::col(id_column).in_list(
-                ids.iter()
-                    .map(|id| datafusion::prelude::lit(id.clone()))
-                    .collect(),
-                false,
-            ),
+            datafusion::prelude::col(id_column)
+                .in_list(ids.iter().map(|id| datafusion::prelude::lit(id.clone())).collect(), false),
         );
         let batches: Vec<arrow_array::RecordBatch> = scanner
             .try_into_stream()
-            .await?
+            .await
+            .map_err(crate::error::OmniError::storage)?
             .try_collect()
             .await
             .map_err(crate::error::OmniError::storage)?;

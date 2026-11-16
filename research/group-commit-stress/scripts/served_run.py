@@ -382,6 +382,7 @@ def main():
         # Attribution through the server: commit get and the change feed.
         attr_http = subprocess.run([PY, os.path.join(HERE, "attr_http_check.py"), "--base", server.base(),
                                     "--graph", args.graph, "--history", history,
+                                    "--export", os.path.join(outdir, "final-export.jsonl"),
                                     "--out", os.path.join(outdir, "attr-http.json")],
                                    capture_output=True, text=True)
         with open(os.path.join(outdir, "attr-http.txt"), "w") as f:
