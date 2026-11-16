@@ -1063,8 +1063,8 @@ async fn kl_rewrite_drops_known_files() {
 
 /// RFC rule 16: only the absence-proven insert writer records known keys.
 /// Every `record_insert(` call in the engine sources sits in
-/// `stage_absence_proven_strict_insert`, and the research scan fill is off
-/// unless its switch is set.
+/// `stage_absence_proven_strict_insert`. (The research scan fill, a proposed
+/// change to rule 16, records inside `key_lookup` alone.)
 #[test]
 fn kl_only_the_absence_proven_writer_records() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");

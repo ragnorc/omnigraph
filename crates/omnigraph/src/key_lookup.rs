@@ -30,7 +30,8 @@
 //! The known keys are a process-wide map from a data file's resolved location
 //! to the exact keys this process wrote into it, per key space, recorded only
 //! by the absence-proven insert writer for a staged write with exactly one
-//! data file. They answer only a fragment with one data file that lists every
+//! data file, and (research, a change to RFC rule 16) by a tail scan for
+//! each whole fragment it read that the map could answer. They answer only a fragment with one data file that lists every
 //! field of the space, no deletion file and no overlay. A byte budget bounds
 //! them, oldest first; a `Rewrite` this process commits drops the files it
 //! removed. The map changes cost, never a result.
@@ -526,11 +527,15 @@ pub(crate) fn forget_rewritten(ds: &Dataset, transaction: &Transaction) {
 }
 
 
-/// Research switch (`OMNIGRAPH_KNOWN_KEYS_FILL_FROM_SCAN=1`, off by default).
+/// Research switch (`OMNIGRAPH_KNOWN_KEYS_FILL_FROM_SCAN`, on unless `0`).
+/// The stress study found the cap removal alone leaves a cold process (a
+/// restart, another process's files) reading one request per uncovered
+/// fragment on every insert, the cliff's cost; filling from the first tail
+/// scan answers the next lookup from memory.
 fn fill_from_scan() -> bool {
     static ENABLED: LazyLock<bool> = LazyLock::new(|| {
         known_keys_enabled()
-            && std::env::var("OMNIGRAPH_KNOWN_KEYS_FILL_FROM_SCAN").is_ok_and(|value| value == "1")
+            && std::env::var("OMNIGRAPH_KNOWN_KEYS_FILL_FROM_SCAN").map_or(true, |value| value != "0")
     });
     *ENABLED
 }
@@ -1018,8 +1023,8 @@ async fn lookup_inner(
             .cloned()
             .collect();
         FRAGMENTS_SCANNED.fetch_add(fragments.len() as u64, Ordering::Relaxed);
-        // Research (`OMNIGRAPH_KNOWN_KEYS_FILL_FROM_SCAN=1`, off by default:
-        // RFC rule 16 lets only the absence-proven writer record): a scanned
+        // Research (`OMNIGRAPH_KNOWN_KEYS_FILL_FROM_SCAN`, on unless `0`; RFC
+        // rule 16 as written lets only the absence-proven writer record): a scanned
         // fragment the map could answer (one data file listing the space's
         // fields, no deletion file, no overlay) has all its rows in this scan,
         // so its keys in this space are recorded, and the next lookup answers

@@ -1,2 +1,12 @@
 OMNIGRAPH_LISTEN_ADDR=127.0.0.1:18080
 [gc-stats] {"unix":1794795306,"branch":"main","batches":1,"entries":1,"refused":0,"failed_batches":0,"max_batch":1,"queue":0,"log":0,"known_key_files":0,"known_key_ids":0}
+[gc-stats] {"unix":1794795336,"branch":"main","batches":107,"entries":107,"refused":0,"failed_batches":0,"max_batch":1,"queue":0,"log":107,"known_key_files":0,"known_key_ids":0}
+[gc-stats] {"unix":1794795367,"branch":"main","batches":3,"entries":16,"refused":2,"failed_batches":0,"max_batch":11,"queue":39,"log":128,"known_key_files":107,"known_key_ids":107}
+[gc-stats] {"unix":1794795410,"branch":"main","batches":5,"entries":17,"refused":43,"failed_batches":0,"max_batch":8,"queue":19,"log":128,"known_key_files":257,"known_key_ids":257}
+[gc-stats] {"unix":1794795453,"branch":"main","batches":3,"entries":11,"refused":14,"failed_batches":0,"max_batch":7,"queue":26,"log":128,"known_key_files":364,"known_key_ids":364}
+[gc-stats] {"unix":1794795496,"branch":"main","batches":3,"entries":15,"refused":15,"failed_batches":0,"max_batch":8,"queue":25,"log":128,"known_key_files":461,"known_key_ids":461}
+[gc-stats] {"unix":1794795530,"branch":"main","batches":3,"entries":1,"refused":30,"failed_batches":0,"max_batch":1,"queue":22,"log":128,"known_key_files":560,"known_key_ids":560}
+[gc-stats] {"unix":1794795566,"branch":"main","batches":2,"entries":1,"refused":19,"failed_batches":0,"max_batch":1,"queue":21,"log":128,"known_key_files":638,"known_key_ids":638}
+[gc-stats] {"unix":1794795606,"branch":"main","batches":2,"entries":0,"refused":16,"failed_batches":0,"max_batch":0,"queue":20,"log":128,"known_key_files":712,"known_key_ids":712}
+[gc-stats] {"unix":1794795649,"branch":"main","batches":2,"entries":0,"refused":17,"failed_batches":0,"max_batch":0,"queue":16,"log":128,"known_key_files":787,"known_key_ids":787}
+[gc-stats] {"unix":1794795697,"branch":"main","batches":2,"entries":2,"refused":10,"failed_batches":0,"max_batch":2,"queue":6,"log":128,"known_key_files":834,"known_key_ids":834}

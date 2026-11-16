@@ -1,0 +1,22 @@
+
+running 1 test
+[klc] new2-timing built tail 1000 rows (100 writes in 0.7s, 136.2 writes/s; total 1s)
+[kl-timing] lookups 200 analyses 200 analysis_ms 17 lookup_ms 181 stats [200, 200, 19900, 0, 0, 0, 0] known (199, 278858, 268435456)
+[klc] {"label":"new2-timing","kind":"item","phase":"warm","tail_rows":1000,"fragments":101,"table_rows":11000,"rows_per_write":10,"writers":1,"writes":100,"secs":1.160660121,"writes_per_s":86.15786670937064,"p50_ms":10.685,"p99_ms":20.421,"requests_per_write":1.04,"gets_per_write":0.0,"heads_per_write":0.04,"puts_per_write":1.0,"lists_per_write":0.0,"store_read_iops_per_write":1.02,"store_read_bytes_per_write":4150.4,"store_write_bytes_per_write":89374.34}
+[kl-timing] lookups 400 analyses 400 analysis_ms 68 lookup_ms 422 stats [400, 400, 79800, 0, 0, 0, 0] known (399, 555308, 268435456)
+[klc] new2-timing built tail 5000 rows (300 writes in 3.9s, 76.5 writes/s; total 6s)
+[kl-timing] lookups 600 analyses 600 analysis_ms 137 lookup_ms 691 stats [600, 600, 179700, 0, 0, 0, 0] known (599, 836658, 268435456)
+[klc] {"label":"new2-timing","kind":"item","phase":"warm","tail_rows":5000,"fragments":501,"table_rows":15000,"rows_per_write":10,"writers":1,"writes":100,"secs":1.2563441850000001,"writes_per_s":79.59602248646536,"p50_ms":12.45,"p99_ms":20.53,"requests_per_write":1.04,"gets_per_write":0.0,"heads_per_write":0.04,"puts_per_write":1.0,"lists_per_write":0.0,"store_read_iops_per_write":1.02,"store_read_bytes_per_write":4150.6,"store_write_bytes_per_write":144970.98}
+[kl-timing] lookups 800 analyses 800 analysis_ms 253 lookup_ms 1066 stats [800, 800, 319600, 0, 0, 0, 0] known (799, 1113108, 268435456)
+[kl-timing] lookups 1000 analyses 1000 analysis_ms 376 lookup_ms 1451 stats [1000, 1000, 499500, 0, 0, 0, 0] known (999, 1389508, 268435456)
+[kl-timing] lookups 1200 analyses 1200 analysis_ms 547 lookup_ms 1942 stats [1200, 1200, 719400, 0, 0, 0, 0] known (1199, 1667898, 268435456)
+[kl-timing] lookups 1400 analyses 1400 analysis_ms 727 lookup_ms 2451 stats [1400, 1400, 979300, 0, 0, 0, 0] known (1399, 1946298, 268435456)
+[kl-timing] lookups 1600 analyses 1600 analysis_ms 974 lookup_ms 3107 stats [1600, 1600, 1279200, 0, 0, 0, 0] known (1599, 2224698, 268435456)
+[kl-timing] lookups 1800 analyses 1800 analysis_ms 1238 lookup_ms 3799 stats [1800, 1800, 1619100, 0, 0, 0, 0] known (1799, 2503098, 268435456)
+[kl-timing] lookups 2000 analyses 2000 analysis_ms 1572 lookup_ms 4621 stats [2000, 2000, 1999000, 0, 0, 0, 0] known (1999, 2781498, 268435456)
+[klc] new2-timing built tail 20000 rows (1400 writes in 23.7s, 59.1 writes/s; total 31s)
+[klc] {"label":"new2-timing","kind":"item","phase":"warm","tail_rows":20000,"fragments":2001,"table_rows":30000,"rows_per_write":10,"writers":1,"writes":100,"secs":1.785522602,"writes_per_s":56.006011846608935,"p50_ms":17.787,"p99_ms":22.881,"requests_per_write":1.04,"gets_per_write":0.0,"heads_per_write":0.04,"puts_per_write":1.0,"lists_per_write":0.0,"store_read_iops_per_write":1.02,"store_read_bytes_per_write":4150.52,"store_write_bytes_per_write":356294.83}
+test key_lookup_cliff ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 32.67s
+

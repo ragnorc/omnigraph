@@ -6,5 +6,5 @@ cd "$(dirname "$0")/.."
   --server-env OMNIGRAPH_WRITE_OBSERVERS=160 --server-env OMNIGRAPH_PER_ACTOR_INFLIGHT_MAX=64 \
   --server-env OMNIGRAPH_GLOBAL_INFLIGHT_MAX=160 --server-env OMNIGRAPH_INGRESS_INFLIGHT_MAX=256 \
   --server-env OMNIGRAPH_GROUP_COMMIT_STATS_SECS=30 \
-  -- --writers "$3" --secs "$4" --actors 4 --seed 5 --reader-count 1 --metrics-secs 30 \
-  --mix "fresh=30,ftag=15,dtag=5,ffollow=15,xfollow=4,fpair=10,npair=5,dpair=3,person=3,del_person=2,knows=4,hot=4"
+  -- --writers "$3" --secs "$4" --actors ${ACTORS:-4} --seed 5 --reader-count 1 --metrics-secs 30 \
+  --mix "${MIX:-fresh=30,ftag=15,dtag=5,ffollow=15,xfollow=4,fpair=10,npair=5,dpair=3,person=3,del_person=2,knows=4,hot=4}"
