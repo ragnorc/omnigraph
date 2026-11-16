@@ -1,0 +1,31 @@
+{
+ "summary": {
+  "commits": 449,
+  "batch_commits": 394,
+  "mixed_actor_commits": 394,
+  "actors_per_batch_commit": {
+   "2": 2,
+   "3": 4,
+   "4": 4,
+   "5": 5,
+   "6": 10,
+   "7": 3,
+   "8": 5,
+   "9": 6,
+   "10": 7,
+   "11": 26,
+   "12": 85,
+   "13": 121,
+   "14": 116
+  },
+  "entries": 10378,
+  "batch_rows": 11436,
+  "feed_polls": 12,
+  "in_doubt_attempts": 0,
+  "in_doubt_attempts_published": 0,
+  "in_doubt_attempts_lost": 0,
+  "in_doubt_without_attempt": 0,
+  "violations": 0
+ },
+ "violations": []
+}

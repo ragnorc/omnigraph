@@ -1,0 +1,1 @@
+{"ops": 12309, "ok": 11563, "refused": 0, "in_doubt": 746, "commits_with_writes": 388, "writes_per_commit": 29.8, "max_batch": 61, "observations": 264, "p50_ms": 410.275, "p99_ms": 4341.187, "errors": [[[null, "client cancelled"], 746]], "violations": 0}

@@ -1,0 +1,32 @@
+[faults] xf-crash rtt=32.2ms 04:18:39
+[faults] xf-crash exit=1 
+[faults] xf-kill9 rtt=32.5ms 04:18:45
+[faults] xf-kill9 exit=0 [run] {"type": "run_summary", "ok": 1249, "refused": 17911, "throttled": 0, "in_doubt": 832, "secs": 90.0}
+[faults] xf-kill9 model "violations": 0
+[faults] xf-kill9 attr-http {"commits": 102, "batch_commits": 42, "mixed_actor_commits": 42, "actors_per_batch_commit": {"4": 2, "7": 3, "8": 2, "11": 3, "12": 2, "13": 2, "14": 1, "15": 7, "16": 20}, "entries": 1256, "batch_rows": 1389, "feed_polls": 2, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 832, "violations": 0}
+[faults] xf-kill9 attr-engine test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 8.27s
+[faults] xf-kill9 attr-engine [attr-summary] ops 19992 {"commits":102,"batch_commits":42,"mixed_actor_commits":42,"entries":1256,"actors_per_batch_commit":{"4":2,"7":3,"8":2,"11":3,"12":2,"13":2,"14":1,"15":7,"16":20},"batch_rows_checked":1389,"head_rows_checked":1389,"feed_polls":2,"violations":0}
+[faults] xf-toxics rtt=32.4ms 04:20:52
+[faults] xf-toxics exit=0 [run] {"type": "run_summary", "ok": 9773, "refused": 0, "throttled": 0, "in_doubt": 0, "secs": 90.0}
+[faults] xf-toxics model "violations": 0
+[faults] xf-toxics attr-http {"commits": 374, "batch_commits": 324, "mixed_actor_commits": 324, "actors_per_batch_commit": {"2": 1, "3": 2, "4": 1, "5": 1, "6": 1, "7": 2, "9": 1, "10": 12, "11": 5, "12": 9, "13": 13, "14": 32, "15": 101, "16": 143}, "entries": 9769, "batch_rows": 10780, "feed_polls": 11, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 0, "violations": 0}
+[faults] xf-toxics attr-engine test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 110.85s
+[faults] xf-toxics attr-engine [attr-summary] ops 9773 {"commits":374,"batch_commits":324,"mixed_actor_commits":324,"entries":9769,"actors_per_batch_commit":{"2":1,"3":2,"4":1,"5":1,"6":1,"7":2,"9":1,"10":12,"11":5,"12":9,"13":13,"14":32,"15":101,"16":143},"batch_rows_checked":10780,"head_rows_checked":10780,"feed_polls":11,"violations":0}
+[faults] xf-cancel rtt=33.0ms 04:25:47
+[faults] xf-cancel exit=0 [run] {"type": "run_summary", "ok": 11563, "refused": 0, "throttled": 0, "in_doubt": 746, "secs": 90.0}
+[faults] xf-cancel model "violations": 0
+[faults] xf-cancel attr-http {"commits": 436, "batch_commits": 386, "mixed_actor_commits": 386, "actors_per_batch_commit": {"2": 1, "3": 1, "8": 4, "9": 4, "10": 1, "11": 6, "12": 10, "13": 41, "14": 75, "15": 124, "16": 119}, "entries": 12307, "batch_rows": 13605, "feed_polls": 14, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 746, "violations": 0}
+[faults] xf-cancel attr-engine test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 120.05s
+[faults] xf-cancel attr-engine [attr-summary] ops 12309 {"commits":436,"batch_commits":386,"mixed_actor_commits":386,"entries":12307,"actors_per_batch_commit":{"2":1,"3":1,"8":4,"9":4,"10":1,"11":6,"12":10,"13":41,"14":75,"15":124,"16":119},"batch_rows_checked":13605,"head_rows_checked":13605,"feed_polls":14,"violations":0}
+[faults] xf-budget rtt=31.5ms 04:30:48
+[faults] xf-budget exit=0 [run] {"type": "run_summary", "ok": 14764, "refused": 0, "throttled": 0, "in_doubt": 0, "secs": 90.0}
+[faults] xf-budget model "violations": 0
+[faults] xf-budget attr-http {"commits": 301, "batch_commits": 253, "mixed_actor_commits": 253, "actors_per_batch_commit": {"2": 1, "6": 1, "8": 2, "9": 1, "11": 1, "12": 3, "13": 1, "20": 1, "23": 2, "26": 1, "28": 1, "29": 3, "30": 1, "32": 3, "33": 3, "34": 2, "35": 8, "36": 5, "37": 8, "38": 7, "39": 10, "40": 4, "41": 9, "42": 9, "43": 20, "44": 9, "45": 18, "46": 10, "47": 16, "48": 23, "49": 20, "50": 9, "51": 9, "52": 7, "53": 7, "54": 3, "55": 2, "56": 2, "57": 2, "58": 1, "60": 1, "61": 2, "62": 1, "63": 4}, "entries": 14762, "batch_rows": 16260, "feed_polls": 17, "in_doubt_attempts": 0, "in_doubt_attempts_publi
+[faults] xf-budget attr-engine test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 114.80s
+[faults] xf-budget attr-engine [attr-summary] ops 14764 {"commits":301,"batch_commits":253,"mixed_actor_commits":253,"entries":14762,"actors_per_batch_commit":{"2":1,"6":1,"8":2,"9":1,"11":1,"12":3,"13":1,"20":1,"23":2,"26":1,"28":1,"29":3,"30":1,"32":3,"33":3,"34":2,"35":8,"36":5,"37":8,"38":7,"39":10,"40":4,"41":9,"42":9,"43":20,"44":9,"45":18,"46":10,"47":16,"48":23,"49":20,"50":9,"51":9,"52":7,"53":7,"54":3,"55":2,"56":2,"57":2,"58":1,"60":1,"61":2,"62":1,"63":4},"batch_rows_checked":16260,"head_rows_checked":16260,"feed_
+[faults] xf-policy rtt=31.9ms 04:36:00
+[faults] xf-policy exit=0 [run] {"type": "run_summary", "ok": 10387, "refused": 260976, "throttled": 0, "in_doubt": 0, "secs": 90.0}
+[faults] xf-policy model "violations": 0
+[faults] xf-policy attr-http {"commits": 449, "batch_commits": 394, "mixed_actor_commits": 394, "actors_per_batch_commit": {"2": 2, "3": 4, "4": 4, "5": 5, "6": 10, "7": 3, "8": 5, "9": 6, "10": 7, "11": 26, "12": 85, "13": 121, "14": 116}, "entries": 10378, "batch_rows": 11436, "feed_polls": 12, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 0, "violations": 0}
+[faults] xf-policy attr-engine test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 144.47s
+[faults] xf-policy attr-engine [attr-summary] ops 271363 {"commits":449,"batch_commits":394,"mixed_actor_commits":394,"entries":10378,"actors_per_batch_commit":{"2":2,"3":4,"4":4,"5":5,"6":10,"7":3,"8":5,"9":6,"10":7,"11":26,"12":85,"13":121,"14":116},"batch_rows_checked":11436,"head_rows_checked":11436,"feed_polls":12,"violations":0}

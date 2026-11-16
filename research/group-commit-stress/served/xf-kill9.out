@@ -1,0 +1,100 @@
+[seed] optimize {"status": 200, "answer": {"lookup": "found", "operation": {"operation_id": "01M7H98WSP6AHDF1MMHZJYC8ST", "request_digest": "sha256:a305d683966a16e431d2a4ea46b7f1bd79bb1dafb73cefc9ac8c22e145879d9f", "graph": "stress", "schema_identity_domain": "01M7H98E0AENKNBKMACG13TWV7", "settlement_branch": "main", "request": {"kind": "optimize"}, "principal": "act-0", "accepted_at": "2026-11-16T04:19:02.168932116Z", "state": "succeeded", "nonce": "01M7H98YFCNGYM62ABV8YK8ZSQ", "input_commit": "hb1.01M7H98GWDBKVYYXQW1DCGX7EW.44.01M7H98WPG8M4WJCTA9MDHANVR", "input_manifest_version": 45, "published_commit": "h
+[event] {"kind": "driver_start", "cmd": ["run", "--base", "http://127.0.0.1:18080", "--graph", "stress", "--hot", "64", "--people", "24", "--out", "/src/omnigraph/research/group-commit-stress/served/xf-kill9/history.jsonl", "--server-pid", "55700", "--writers", "64", "--secs", "90", "--actors", "16", "--mix", "fresh=80,fmulti=10,sknows=10", "--reader-count", "1", "--readers", "1"], "root": "s3://omnigraph-stress/xf-kill9-1794802725", "t": 1794802744.902}
+[event] {"kind": "kill9", "pid": 55700, "t": 1794802750.772}
+[event] {"kind": "unlock", "lock": "01M7H98FP4YXRX9010J1T7CKB8", "t": 1794802751.065}
+[event] {"kind": "restarted", "pid": 55892, "t": 1794802751.97}
+[event] {"kind": "kill9", "pid": 55892, "t": 1794802754.424}
+[event] {"kind": "unlock", "lock": "01M7H995P0XMG022JBSMBW6KMV", "t": 1794802754.772}
+[event] {"kind": "restarted", "pid": 55998, "t": 1794802755.677}
+[event] {"kind": "kill9", "pid": 55998, "t": 1794802771.465}
+[event] {"kind": "unlock", "lock": "01M7H9999W2D41KA1EWPT9H5F8", "t": 1794802771.84}
+[event] {"kind": "restarted", "pid": 56118, "t": 1794802772.745}
+[event] {"kind": "kill9", "pid": 56118, "t": 1794802773.873}
+[event] {"kind": "unlock", "lock": "01M7H99SZ8SWH2C9JKXSYJQ4BT", "t": 1794802774.216}
+[event] {"kind": "optimize", "status": 503, "secs": 0.0014376640319824219, "answer": "{\"error\": \"graph is loading; wait for its startup attempt to complete\", \"code\": \"graph_unavailable\", \"disposition\": {\"effects\": \"none\", \"action\": \"retry\"}}", "t": 1794802774.903}
+[event] {"kind": "restarted", "pid": 56221, "t": 1794802775.121}
+[event] {"kind": "kill9", "pid": 56221, "t": 1794802786.635}
+[event] {"kind": "unlock", "lock": "01M7H99W9FA9ZPXZNQQAVGHM32", "t": 1794802787.016}
+[event] {"kind": "restarted", "pid": 56335, "t": 1794802787.921}
+[event] {"kind": "kill9", "pid": 56335, "t": 1794802794.751}
+[event] {"kind": "unlock", "lock": "01M7H9A8SRY42NJ8A6V2JZMJZZ", "t": 1794802795.128}
+[event] {"kind": "restarted", "pid": 56444, "t": 1794802796.032}
+[event] {"kind": "kill9", "pid": 56444, "t": 1794802796.929}
+[event] {"kind": "unlock", "lock": "01M7H9AGPXGF9QPWP7WTB9PY63", "t": 1794802797.24}
+[event] {"kind": "restarted", "pid": 56544, "t": 1794802798.145}
+[event] {"kind": "kill9", "pid": 56544, "t": 1794802808.767}
+Exception in thread Thread-1 (maintenance):
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/threading.py", line 1075, in _bootstrap_inner
+    self.run()
+  File "/usr/local/lib/python3.12/threading.py", line 1012, in run
+    self._target(*self._args, **self._kwargs)
+  File "/src/omnigraph/research/group-commit-stress/scripts/served_run.py", line 274, in maintenance
+    stop = threading.Event()
+                     ^^^^^^^^
+  File "/src/omnigraph/research/group-commit-stress/scripts/served_run.py", line 187, in optimize
+    status, answer = http("GET", f"{g}/operations/{op_id}", timeout=600)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/src/omnigraph/research/group-commit-stress/scripts/served_run.py", line 53, in http
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/urllib/request.py", line 215, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/urllib/request.py", line 515, in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/urllib/request.py", line 532, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/urllib/request.py", line 492, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/urllib/request.py", line 1386, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/urllib/request.py", line 1361, in do_open
+    r = h.getresponse()
+        ^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/http/client.py", line 1478, in getresponse
+    response.begin()
+  File "/usr/local/lib/python3.12/http/client.py", line 343, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/http/client.py", line 304, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/socket.py", line 720, in readinto
+    return self._sock.recv_into(b)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+ConnectionResetError: [Errno 104] Connection reset by peer
+[event] {"kind": "unlock", "lock": "01M7H9AJRYG9WG9DDN8X407CPW", "t": 1794802809.128}
+[event] {"kind": "restarted", "pid": 56655, "t": 1794802810.033}
+[event] {"kind": "kill9", "pid": 56655, "t": 1794802810.607}
+[event] {"kind": "unlock", "lock": "01M7H9AYCFHNX604VXTYZF8KBQ", "t": 1794802810.905}
+[event] {"kind": "restarted", "pid": 56762, "t": 1794802811.81}
+[event] {"kind": "kill9", "pid": 56762, "t": 1794802820.339}
+[event] {"kind": "unlock", "lock": "01M7H9B040EGGJA6JSPQXBM4R1", "t": 1794802820.721}
+[event] {"kind": "restarted", "pid": 56876, "t": 1794802821.627}
+[event] {"kind": "kill9", "pid": 56876, "t": 1794802822.714}
+[event] {"kind": "unlock", "lock": "01M7H9B9PR1PQC4W260BH67HQT", "t": 1794802823.069}
+[event] {"kind": "restarted", "pid": 56976, "t": 1794802823.974}
+[event] {"kind": "kill9", "pid": 56976, "t": 1794802825.401}
+[event] {"kind": "unlock", "lock": "01M7H9BC055PT39VMYTVFZABCN", "t": 1794802825.77}
+[event] {"kind": "restarted", "pid": 57076, "t": 1794802826.675}
+[event] {"kind": "kill9", "pid": 57076, "t": 1794802834.964}
+[event] {"kind": "unlock", "lock": "01M7H9BEMEE8SVMDZGRXCJSKNX", "t": 1794802835.381}
+task failed: ModuleNotFoundError("No module named 'psutil'")
+[run] {"type": "run_summary", "ok": 1249, "refused": 17911, "throttled": 0, "in_doubt": 832, "secs": 90.0}
+[event] {"kind": "restarted", "pid": 57185, "t": 1794802836.384}
+[event] {"kind": "driver_done", "code": 0, "t": 1794802836.384}
+[event] {"kind": "check_server", "endpoint": "direct", "pid": 57253, "t": 1794802837.089}
+[attr-http] {"commits": 102, "batch_commits": 42, "mixed_actor_commits": 42, "actors_per_batch_commit": {"4": 2, "7": 3, "8": 2, "11": 3, "12": 2, "13": 2, "14": 1, "15": 7, "16": 20}, "entries": 1256, "batch_rows": 1389, "feed_polls": 2, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 832, "violations": 0}
+ 
+[event] {"kind": "attr_http_done", "code": 0, "t": 1794802843.276}
+[attr-engine] test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 8.27s
+[attr-summary] ops 19992 {"commits":102,"batch_commits":42,"mixed_actor_commits":42,"entries":1256,"actors_per_batch_commit":{"4":2,"7":3,"8":2,"11":3,"12":2,"13":2,"14":1,"15":7,"16":20},"batch_rows_checked":1389,"head_rows_checked":1389,"feed_polls":2,"violations":0}
+[event] {"kind": "attr_engine_done", "code": 0, "t": 1794802851.698}
+{"ops": 19992, "ok": 1249, "refused": 17911, "in_doubt": 832, "commits_with_writes": 55, "writes_per_commit": 22.71, "max_batch": 63, "observations": 78, "p50_ms": 382.211, "p99_ms": 12513.047, "errors": [[["graph_unavailable", "graph is loading; wait for its startup attempt to complete"], 15639], [[null, "connect: Cannot connect to host 127.0.0.1:18080 ssl:default [Connect call failed"], 2272], [[null, "ServerDisconnectedError: Server disconnected"], 832]], "violations": 0}
+ 
+[event] {"kind": "check_done", "code": 0, "root": "s3://omnigraph-stress/xf-kill9-1794802725", "t": 1794802852.014}

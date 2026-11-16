@@ -1,0 +1,46 @@
+{"kind": "driver_start", "cmd": ["run", "--base", "http://127.0.0.1:18080", "--graph", "stress", "--hot", "64", "--people", "24", "--out", "/src/omnigraph/research/group-commit-stress/served/xf-kill9/history.jsonl", "--server-pid", "55700", "--writers", "64", "--secs", "90", "--actors", "16", "--mix", "fresh=80,fmulti=10,sknows=10", "--reader-count", "1", "--readers", "1"], "root": "s3://omnigraph-stress/xf-kill9-1794802725", "t": 1794802744.902}
+{"kind": "kill9", "pid": 55700, "t": 1794802750.772}
+{"kind": "unlock", "lock": "01M7H98FP4YXRX9010J1T7CKB8", "t": 1794802751.065}
+{"kind": "restarted", "pid": 55892, "t": 1794802751.97}
+{"kind": "kill9", "pid": 55892, "t": 1794802754.424}
+{"kind": "unlock", "lock": "01M7H995P0XMG022JBSMBW6KMV", "t": 1794802754.772}
+{"kind": "restarted", "pid": 55998, "t": 1794802755.677}
+{"kind": "kill9", "pid": 55998, "t": 1794802771.465}
+{"kind": "unlock", "lock": "01M7H9999W2D41KA1EWPT9H5F8", "t": 1794802771.84}
+{"kind": "restarted", "pid": 56118, "t": 1794802772.745}
+{"kind": "kill9", "pid": 56118, "t": 1794802773.873}
+{"kind": "unlock", "lock": "01M7H99SZ8SWH2C9JKXSYJQ4BT", "t": 1794802774.216}
+{"kind": "optimize", "status": 503, "secs": 0.0014376640319824219, "answer": "{\"error\": \"graph is loading; wait for its startup attempt to complete\", \"code\": \"graph_unavailable\", \"disposition\": {\"effects\": \"none\", \"action\": \"retry\"}}", "t": 1794802774.903}
+{"kind": "restarted", "pid": 56221, "t": 1794802775.121}
+{"kind": "kill9", "pid": 56221, "t": 1794802786.635}
+{"kind": "unlock", "lock": "01M7H99W9FA9ZPXZNQQAVGHM32", "t": 1794802787.016}
+{"kind": "restarted", "pid": 56335, "t": 1794802787.921}
+{"kind": "kill9", "pid": 56335, "t": 1794802794.751}
+{"kind": "unlock", "lock": "01M7H9A8SRY42NJ8A6V2JZMJZZ", "t": 1794802795.128}
+{"kind": "restarted", "pid": 56444, "t": 1794802796.032}
+{"kind": "kill9", "pid": 56444, "t": 1794802796.929}
+{"kind": "unlock", "lock": "01M7H9AGPXGF9QPWP7WTB9PY63", "t": 1794802797.24}
+{"kind": "restarted", "pid": 56544, "t": 1794802798.145}
+{"kind": "kill9", "pid": 56544, "t": 1794802808.767}
+{"kind": "unlock", "lock": "01M7H9AJRYG9WG9DDN8X407CPW", "t": 1794802809.128}
+{"kind": "restarted", "pid": 56655, "t": 1794802810.033}
+{"kind": "kill9", "pid": 56655, "t": 1794802810.607}
+{"kind": "unlock", "lock": "01M7H9AYCFHNX604VXTYZF8KBQ", "t": 1794802810.905}
+{"kind": "restarted", "pid": 56762, "t": 1794802811.81}
+{"kind": "kill9", "pid": 56762, "t": 1794802820.339}
+{"kind": "unlock", "lock": "01M7H9B040EGGJA6JSPQXBM4R1", "t": 1794802820.721}
+{"kind": "restarted", "pid": 56876, "t": 1794802821.627}
+{"kind": "kill9", "pid": 56876, "t": 1794802822.714}
+{"kind": "unlock", "lock": "01M7H9B9PR1PQC4W260BH67HQT", "t": 1794802823.069}
+{"kind": "restarted", "pid": 56976, "t": 1794802823.974}
+{"kind": "kill9", "pid": 56976, "t": 1794802825.401}
+{"kind": "unlock", "lock": "01M7H9BC055PT39VMYTVFZABCN", "t": 1794802825.77}
+{"kind": "restarted", "pid": 57076, "t": 1794802826.675}
+{"kind": "kill9", "pid": 57076, "t": 1794802834.964}
+{"kind": "unlock", "lock": "01M7H9BEMEE8SVMDZGRXCJSKNX", "t": 1794802835.381}
+{"kind": "restarted", "pid": 57185, "t": 1794802836.384}
+{"kind": "driver_done", "code": 0, "t": 1794802836.384}
+{"kind": "check_server", "endpoint": "direct", "pid": 57253, "t": 1794802837.089}
+{"kind": "attr_http_done", "code": 0, "t": 1794802843.276}
+{"kind": "attr_engine_done", "code": 0, "t": 1794802851.698}
+{"kind": "check_done", "code": 0, "root": "s3://omnigraph-stress/xf-kill9-1794802725", "t": 1794802852.014}

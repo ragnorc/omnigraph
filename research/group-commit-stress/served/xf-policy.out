@@ -1,0 +1,15 @@
+[seed] optimize {"status": 200, "answer": {"lookup": "found", "operation": {"operation_id": "01M7HA8FPHMYJQ30WW2QRTDDF5", "request_digest": "sha256:d0219d0af6e649aafde7070f58e8234cda7e09494c8ac42b8c1e29305644c567", "graph": "stress", "schema_identity_domain": "01M7HA80PQQYY6EX7KYPDGCSPX", "settlement_branch": "main", "request": {"kind": "optimize"}, "principal": "act-0", "accepted_at": "2026-11-16T04:36:18.335307854Z", "state": "succeeded", "nonce": "01M7HA8JK03AC2DVC2XZQBP509", "input_commit": "hb1.01M7HA83Q90TP9237FD2NXCDXC.44.01M7HA8FK71WRAQEPY37BJZTB5", "input_manifest_version": 45, "published_commit": "h
+[event] {"kind": "driver_start", "cmd": ["run", "--base", "http://127.0.0.1:18080", "--graph", "stress", "--hot", "64", "--people", "24", "--out", "/src/omnigraph/research/group-commit-stress/served/xf-policy/history.jsonl", "--server-pid", "58772", "--writers", "64", "--secs", "90", "--actor-names", "act-0,act-1,act-2,act-3,act-4,act-5,act-6,act-7,act-8,act-9,act-10,act-11,act-12,act-13,act-ro,act-unprot", "--mix", "fresh=80,fmulti=10,sknows=10", "--reader-count", "1", "--readers", "1"], "root": "s3://omnigraph-stress/xf-policy-1794803760", "t": 1794803781.539}
+task failed: ModuleNotFoundError("No module named 'psutil'")
+[run] {"type": "run_summary", "ok": 10387, "refused": 260976, "throttled": 0, "in_doubt": 0, "secs": 90.0}
+[event] {"kind": "driver_done", "code": 0, "t": 1794803872.362}
+[event] {"kind": "check_server", "endpoint": "direct", "pid": 58960, "t": 1794803873.491}
+[attr-http] {"commits": 449, "batch_commits": 394, "mixed_actor_commits": 394, "actors_per_batch_commit": {"2": 2, "3": 4, "4": 4, "5": 5, "6": 10, "7": 3, "8": 5, "9": 6, "10": 7, "11": 26, "12": 85, "13": 121, "14": 116}, "entries": 10378, "batch_rows": 11436, "feed_polls": 12, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 0, "violations": 0}
+ 
+[event] {"kind": "attr_http_done", "code": 0, "t": 1794803962.875}
+[attr-engine] test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 144.47s
+[attr-summary] ops 271363 {"commits":449,"batch_commits":394,"mixed_actor_commits":394,"entries":10378,"actors_per_batch_commit":{"2":2,"3":4,"4":4,"5":5,"6":10,"7":3,"8":5,"9":6,"10":7,"11":26,"12":85,"13":121,"14":116},"batch_rows_checked":11436,"head_rows_checked":11436,"feed_polls":12,"violations":0}
+[event] {"kind": "attr_engine_done", "code": 0, "t": 1794804107.598}
+{"ops": 271363, "ok": 10387, "refused": 260976, "in_doubt": 0, "commits_with_writes": 403, "writes_per_commit": 25.77, "max_batch": 55, "observations": 251, "p50_ms": 442.239, "p99_ms": 980.373, "errors": [[["forbidden", "policy denied action 'change' on branch 'main' for actor 'act-ro'"], 130543], [["forbidden", "policy denied action 'change' on branch 'main' for actor 'act-unprot'"], 130433]], "violations": 0}
+ 
+[event] {"kind": "check_done", "code": 0, "root": "s3://omnigraph-stress/xf-policy-1794803760", "t": 1794804111.547}

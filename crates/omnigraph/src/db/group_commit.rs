@@ -762,12 +762,13 @@ impl Omnigraph {
                 };
                 let (kk_files, kk_ids) = crate::table_store::known_keys::stats();
                 eprintln!(
-                    "[gc-stats] {{\"unix\":{},\"branch\":\"{}\",\"batches\":{batches},\"entries\":{entries},\"refused\":{refused},\"failed_batches\":{failed},\"max_batch\":{max_batch},\"queue\":{queue},\"log\":{log},\"known_key_files\":{kk_files},\"known_key_ids\":{kk_ids}}}",
+                    "[gc-stats] {{\"unix\":{},\"branch\":\"{}\",\"batches\":{batches},\"entries\":{entries},\"refused\":{refused},\"failed_batches\":{failed},\"max_batch\":{max_batch},\"queue\":{queue},\"log\":{log},\"known_key_files\":{kk_files},\"known_key_ids\":{kk_ids},\"budget_stops\":{}}}",
                     std::time::SystemTime::now()
                         .duration_since(std::time::UNIX_EPOCH)
                         .map(|elapsed| elapsed.as_secs())
                         .unwrap_or(0),
                     key,
+                    stats::BUDGET_STOPS.load(std::sync::atomic::Ordering::Relaxed),
                 );
             }
         }

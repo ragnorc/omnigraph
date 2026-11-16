@@ -249,10 +249,20 @@ def main():
     else:
         root = f"s3://omnigraph-stress/{args.label}-{int(time.time())}"
     server = Server(args, root, outdir)
+    # Crash points apply to the drive only: seed on a server without them.
+    crash = {k: v for k, v in server.env.items() if k.startswith("OMNIGRAPH_STRESS_CRASH")}
+    for key in crash:
+        del server.env[key]
     server.bootstrap()
     server.start()
     seed(server, args)
     export(server, args, os.path.join(outdir, "seed-export.jsonl"))
+    if crash:
+        server.stop()
+        server.unlock_stale()
+        server.env.update(crash)
+        server.restarts += 1
+        server.start()
     history = os.path.join(outdir, "history.jsonl")
     if os.path.exists(history):
         os.remove(history)

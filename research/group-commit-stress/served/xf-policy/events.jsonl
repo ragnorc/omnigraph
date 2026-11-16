@@ -1,0 +1,6 @@
+{"kind": "driver_start", "cmd": ["run", "--base", "http://127.0.0.1:18080", "--graph", "stress", "--hot", "64", "--people", "24", "--out", "/src/omnigraph/research/group-commit-stress/served/xf-policy/history.jsonl", "--server-pid", "58772", "--writers", "64", "--secs", "90", "--actor-names", "act-0,act-1,act-2,act-3,act-4,act-5,act-6,act-7,act-8,act-9,act-10,act-11,act-12,act-13,act-ro,act-unprot", "--mix", "fresh=80,fmulti=10,sknows=10", "--reader-count", "1", "--readers", "1"], "root": "s3://omnigraph-stress/xf-policy-1794803760", "t": 1794803781.539}
+{"kind": "driver_done", "code": 0, "t": 1794803872.362}
+{"kind": "check_server", "endpoint": "direct", "pid": 58960, "t": 1794803873.491}
+{"kind": "attr_http_done", "code": 0, "t": 1794803962.875}
+{"kind": "attr_engine_done", "code": 0, "t": 1794804107.598}
+{"kind": "check_done", "code": 0, "root": "s3://omnigraph-stress/xf-policy-1794803760", "t": 1794804111.547}

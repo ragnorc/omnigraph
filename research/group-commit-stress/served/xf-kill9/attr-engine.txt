@@ -1,0 +1,2 @@
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 8.27s
+[attr-summary] ops 19992 {"commits":102,"batch_commits":42,"mixed_actor_commits":42,"entries":1256,"actors_per_batch_commit":{"4":2,"7":3,"8":2,"11":3,"12":2,"13":2,"14":1,"15":7,"16":20},"batch_rows_checked":1389,"head_rows_checked":1389,"feed_polls":2,"violations":0}

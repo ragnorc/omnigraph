@@ -1,0 +1,12 @@
+OMNIGRAPH_LISTEN_ADDR=127.0.0.1:18080
+[gc-stats] {"unix":1794803453,"branch":"main","batches":1,"entries":1,"refused":0,"failed_batches":0,"max_batch":1,"queue":0,"log":0,"known_key_files":0,"known_key_ids":0}
+[gc-stats] {"unix":1794803463,"branch":"main","batches":36,"entries":36,"refused":0,"failed_batches":0,"max_batch":1,"queue":0,"log":36,"known_key_files":0,"known_key_ids":0}
+[gc-stats] {"unix":1794803473,"branch":"main","batches":26,"entries":1129,"refused":0,"failed_batches":0,"max_batch":119,"queue":73,"log":63,"known_key_files":1317,"known_key_ids":1317}
+[gc-stats] {"unix":1794803483,"branch":"main","batches":46,"entries":2811,"refused":0,"failed_batches":0,"max_batch":74,"queue":72,"log":109,"known_key_files":4407,"known_key_ids":4407}
+[gc-stats] {"unix":1794803493,"branch":"main","batches":36,"entries":2193,"refused":0,"failed_batches":0,"max_batch":72,"queue":56,"log":128,"known_key_files":6798,"known_key_ids":6798}
+[gc-stats] {"unix":1794803503,"branch":"main","batches":25,"entries":1397,"refused":0,"failed_batches":0,"max_batch":116,"queue":52,"log":128,"known_key_files":8344,"known_key_ids":8344}
+[gc-stats] {"unix":1794803514,"branch":"main","batches":30,"entries":1786,"refused":0,"failed_batches":0,"max_batch":81,"queue":35,"log":128,"known_key_files":10285,"known_key_ids":10285}
+[gc-stats] {"unix":1794803524,"branch":"main","batches":26,"entries":1483,"refused":0,"failed_batches":0,"max_batch":88,"queue":80,"log":128,"known_key_files":11969,"known_key_ids":11969}
+[gc-stats] {"unix":1794803534,"branch":"main","batches":24,"entries":1385,"refused":0,"failed_batches":0,"max_batch":80,"queue":75,"log":128,"known_key_files":13478,"known_key_ids":13478}
+[gc-stats] {"unix":1794803545,"branch":"main","batches":21,"entries":1139,"refused":0,"failed_batches":0,"max_batch":82,"queue":40,"log":128,"known_key_files":14696,"known_key_ids":14696}
+[gc-stats] {"unix":1794803555,"branch":"main","batches":20,"entries":1079,"refused":0,"failed_batches":0,"max_batch":111,"queue":41,"log":128,"known_key_files":15897,"known_key_ids":15897}
