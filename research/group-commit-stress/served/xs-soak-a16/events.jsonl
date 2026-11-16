@@ -28,3 +28,5 @@
 {"kind": "driver_done", "code": 0, "t": 1794808506.731}
 {"kind": "check_server", "endpoint": "direct", "pid": 11139, "t": 1794808510.584}
 {"kind": "attr_http_done", "code": 0, "t": 1794810755.817}
+{"kind": "attr_engine_done", "code": 0, "t": 1794814450.153}
+{"kind": "check_done", "code": 0, "root": "s3://omnigraph-stress/xs-soak-a16-1794806678", "t": 1794814496.421}

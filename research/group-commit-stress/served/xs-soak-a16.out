@@ -33,3 +33,9 @@ task failed: ModuleNotFoundError("No module named 'psutil'")
 [attr-http] {"commits": 6604, "batch_commits": 6487, "mixed_actor_commits": 6487, "actors_per_batch_commit": {"2": 28, "3": 58, "4": 21, "5": 48, "6": 9, "7": 36, "8": 19, "9": 46, "10": 28, "11": 90, "12": 215, "13": 525, "14": 1084, "15": 2027, "16": 2253}, "entries": 202815, "batch_rows": 223034, "feed_polls": 224, "in_doubt_attempts": 0, "in_doubt_attempts_published": 0, "in_doubt_attempts_lost": 0, "in_doubt_without_attempt": 0, "violations": 0}
  
 [event] {"kind": "attr_http_done", "code": 0, "t": 1794810755.817}
+[attr-engine] test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 3691.59s
+[attr-summary] ops 202860 {"commits":6604,"batch_commits":6487,"mixed_actor_commits":6487,"entries":202815,"actors_per_batch_commit":{"2":28,"3":58,"4":21,"5":48,"6":9,"7":36,"8":19,"9":46,"10":28,"11":90,"12":215,"13":525,"14":1084,"15":2027,"16":2253},"batch_rows_checked":223034,"head_rows_checked":223034,"feed_polls":224,"violations":0}
+[event] {"kind": "attr_engine_done", "code": 0, "t": 1794814450.153}
+{"ops": 202860, "ok": 202860, "refused": 0, "in_doubt": 0, "commits_with_writes": 6532, "writes_per_commit": 31.06, "max_batch": 63, "observations": 4181, "p50_ms": 491.598, "p99_ms": 997.209, "errors": [], "violations": 0}
+ 
+[event] {"kind": "check_done", "code": 0, "root": "s3://omnigraph-stress/xs-soak-a16-1794806678", "t": 1794814496.421}

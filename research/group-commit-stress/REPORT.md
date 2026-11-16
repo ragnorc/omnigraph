@@ -634,7 +634,7 @@ focused tests.
 | policy: 2 of 16 actors without `change` on `main` | served | 10,387 (260,976 refused, 403) | 394 | 11,436 | exact; no commit or list names the refused actors, none of their rows exist |
 | same key from two actors in one batch; equal `@unique` labels | focused test | — | 1 | 3 | second key insert sent back, published alone under its own actor, absent from the list; one Tag wins, the other gets `@unique violation` |
 | later versions: update and delete of batched rows, optimize (served optimize every minute in the soak) | focused test, soak | — | — | head re-check | exact at the commit and at the head |
-| soak, 30 min, 64 writers × 16 actors, served optimize every minute | served, RustFS +30 ms | SOAK_OK | SOAK_BATCHES | SOAK_ROWS | SOAK_RESULT |
+| soak, 30 min, 64 writers × 16 actors, served optimize every minute (26 runs, all landed) | served, RustFS +30 ms | 202,860 | 6,487 | 223,034 | exact at every commit and at the head after 26 compactions; 4,181 reader snapshots match the model; 124.9 → 105.7 writes/s first to last 5 min (85%), p99 ≤ 1.6 s |
 
 ### 11.4 Throughput by actor mix
 
