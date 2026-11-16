@@ -395,6 +395,40 @@ async fn cluster_graph_impl(
     Ok(None)
 }
 
+/// The graph policy a cluster's applied ledger binds to the graph stored at
+/// `graph_binding`, for an embedded writer to install on its handle, as a
+/// direct `cluster apply` installs it on the graphs it changes. `None` for a
+/// store outside a cluster's layout and for a cluster graph no policy binds:
+/// there is nothing to enforce. Like `resolve_graph_storage_uri`, it reads
+/// the ledger and the applied policy payloads only, so a graph the serving
+/// snapshot quarantines for an unrelated reason still gets its policy.
+pub async fn applied_graph_policy_for_graph_binding(
+    graph_binding: &omnigraph_storage::CapturedStorageBinding,
+) -> Result<Option<std::sync::Arc<omnigraph_policy::PolicyEngine>>, Diagnostic> {
+    let Some(location) = cluster_graph_for_graph_binding(graph_binding).await? else {
+        return Ok(None);
+    };
+    let root = graph_binding.for_uri(&location.root).map_err(|error| {
+        Diagnostic::error("storage_root_invalid", "storage", error.to_string())
+    })?;
+    let backend = ClusterStore::for_storage_binding(&root)?;
+    let mut observations = backend.observations();
+    let snapshot = backend.read_state(&mut observations).await?;
+    let state = snapshot
+        .state
+        .ok_or_else(|| missing_state_diagnostic(backend.display_root()))?;
+    if state.version != 2 {
+        return Err(Diagnostic::error(
+            "ledger_upgrade_required",
+            CLUSTER_STATE_FILE,
+            "convert the stopped cluster ledger to v2 before using its graphs",
+        ));
+    }
+    let policies =
+        crate::authorization::AppliedPolicies::load_optional(&backend, &state).await?;
+    Ok(policies.graph(&location.graph_id))
+}
+
 /// Resolve a graph's **storage URI** (`<root>/graphs/<id>.omni`) from a cluster's
 /// applied state ledger — the lightweight path for storage-plane maintenance
 /// (`optimize`/`cleanup`).

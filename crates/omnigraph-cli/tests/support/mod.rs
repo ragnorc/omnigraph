@@ -799,14 +799,19 @@ pub fn converged_loaded_cluster(graph_id: &str, policy_yaml: Option<&str>) -> Cl
         }
         None => String::new(),
     };
-    fs::write(
-        dir.join("cluster.yaml"),
-        format!(
-            "version: 1\nmetadata:\n  name: sys\nstate:\n  backend: cluster\n  lock: true\ngraphs:\n  {graph_id}:\n    schema: ./graph.pg\n{policy_block}"
-        ),
-    )
-    .unwrap();
+    let config = |policy_block: &str| {
+        fs::write(
+            dir.join("cluster.yaml"),
+            format!(
+                "version: 1\nmetadata:\n  name: sys\nstate:\n  backend: cluster\n  lock: true\ngraphs:\n  {graph_id}:\n    schema: ./graph.pg\n{policy_block}"
+            ),
+        )
+        .unwrap();
+    };
 
+    // Seed `main` before the policy applies: a direct write to a cluster
+    // graph answers to its applied policy, and these policies protect `main`.
+    config("");
     apply_cluster_fixture(&dir);
 
     let served_root = dir.join("graphs").join(format!("{graph_id}.omni"));
@@ -822,6 +827,10 @@ pub fn converged_loaded_cluster(graph_id: &str, policy_yaml: Option<&str>) -> Cl
     );
 
     unlock_cluster_fixture(&dir);
+    if !policy_block.is_empty() {
+        config(&policy_block);
+        apply_cluster_fixture(&dir);
+    }
     ClusterFixture { _temp: temp, dir }
 }
 

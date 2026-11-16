@@ -203,8 +203,8 @@ pub(crate) fn parse_set_flags(flags: &[String]) -> Result<Vec<(SettingId, Settin
 pub(crate) enum GraphClient {
     /// Local engine at `uri`. Reads (`resolve()`) leave `actor` empty;
     /// writes (`resolve_with_policy()`) attribute the resolved actor.
-    /// Direct-store access carries no Cedar policy (RFC-011: policy lives
-    /// in the cluster/server, not in per-operator addressing).
+    /// A write to a graph in a cluster's layout enforces the graph's applied
+    /// Cedar policy for that actor; a standalone store carries no policy.
     Embedded {
         uri: String,
         actor: Option<String>,
@@ -412,8 +412,8 @@ impl GraphClient {
         matches!(self, GraphClient::Remote { .. })
     }
 
-    /// Writable verbs alone acquire durable cluster admission. Direct-store
-    /// access carries no Cedar policy (RFC-011), the actor rides the `_as` APIs.
+    /// Writable verbs alone acquire durable cluster admission. The actor
+    /// rides the `_as` APIs, checked against a cluster graph's applied policy.
     async fn open_write(
         uri: &str,
         binding: &CapturedStorageBinding,
@@ -494,6 +494,24 @@ impl GraphClient {
         .await?;
         let db = match external_blob_policy {
             Some(policy) => db.with_external_blob_policy(policy)?,
+            None => db,
+        };
+        // A graph in a cluster's layout is written under the policy its
+        // applied ledger binds to it, as a direct `cluster apply` and the
+        // server write it: "direct" means no HTTP boundary, not unpoliced
+        // (RFC 0011). The engine then checks the `--as` actor at every write
+        // and refuses a write that names none.
+        let db = match omnigraph_cluster::applied_graph_policy_for_graph_binding(binding)
+            .await
+            .map_err(|diagnostic| {
+                eyre!(
+                    "[{}] {}: {}",
+                    diagnostic.code,
+                    diagnostic.path,
+                    diagnostic.message
+                )
+            })? {
+            Some(policy) => db.with_policy(policy),
             None => db,
         };
         let mut session = Arc::new(db).session(defaults, sources);
