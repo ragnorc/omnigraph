@@ -1,0 +1,7 @@
+
+running 1 test
+[gs-summary] {"ops":121,"ok":44,"refused":0,"in_doubt":77,"errors":{"writer fenced on branch 'main': the branch is at writer epoch 1 and this process held no e":77}}
+test gc_stress_harness ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 46.16s
+

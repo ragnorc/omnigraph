@@ -1,0 +1,3 @@
+OMNIGRAPH_LISTEN_ADDR=127.0.0.1:18080
+[gc-stats] {"unix":1794806683,"branch":"main","batches":1,"entries":1,"refused":0,"failed_batches":0,"max_batch":1,"queue":0,"log":0,"known_key_files":0,"known_key_ids":0,"budget_stops":0}
+[gc-stats] {"unix":1794806743,"branch":"main","batches":261,"entries":6715,"refused":0,"failed_batches":0,"max_batch":63,"queue":31,"log":128,"known_key_files":7392,"known_key_ids":7392,"budget_stops":0}

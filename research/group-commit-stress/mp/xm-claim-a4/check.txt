@@ -1,0 +1,2 @@
+exit codes [0, 0, 0, 0]
+{"ops": 7301, "ok": 7066, "refused": 0, "in_doubt": 235, "commits_with_writes": 973, "writes_per_commit": 7.26, "max_batch": 15, "observations": 0, "p50_ms": 79.835, "p99_ms": 266.673, "errors": [[[null, "writer fenced on branch 'main': the branch is at writer epoch 1 and this process"], 235]], "violations": 0}

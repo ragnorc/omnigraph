@@ -703,3 +703,89 @@ Defects found here:
   on the pipelined lead that answers every drained member and hands the lead
   on only if it has not handed it already. All 11 focused tests pass with
   pipelining on and off.
+
+## 2026-11-16 — environment rebuilt
+
+The box had restarted (`/srv`, `/opt` gone). Reinstalled RustFS
+1.0.0-beta.12 (`rustfs-linux-x86_64-gnu-v1.0.0-beta.12.zip`, SHA256
+`9b9a17fb…7fb8` matches `SHA256SUMS`) and toxiproxy v2.13.0 (SHA256
+`bf529e8b…de89` matches `checksums.txt`), `s3-up.sh`, buckets, venv. Proxy
+RTT 32–33 ms throughout. Cold release build 20 min (32 cores available).
+
+## 2026-11-16 — served attribution plumbing
+
+- `served_run.py`: `--attr-bin` runs `gc_attribution_offline` on the graph
+  root (`<root>/graphs/<graph>.omni`) after the run; `attr_http_check.py`
+  runs against the live server first; the post-run checks are served from
+  the direct RustFS endpoint (`--check-direct`, toxics cleared, crash points
+  off); crash points apply to the drive only (seeding runs without them —
+  the first crash cell died while seeding).
+- `http_stress.py`: `--actor-names`, `--actor-style long` (1,000-byte ids),
+  insert-only kinds `fmulti` (fresh Item + fresh Person) and `sknows` (edge
+  between seeded people); the harness has the same kinds.
+- `cluster/tokens.json` and `graph.policy.yaml`: act-0..act-63, 64 long
+  actors, `act-ro` (read only) and `act-unprot` (change only on unprotected
+  branches; `protected_branches: [main]`).
+- First served cell (`xa-on-a16`, 64 writers, 60 s, before the matrix):
+  the default mix with upserts of present keys batched 4 of 219 commits
+  (R1 from §5.2), so the matrix uses the insert-only mix. The HTTP check
+  took 9 min for 317 commits: D6, attribution scanned the table per batch
+  commit page. Fixed (only the batch's fragments): 58 s.
+
+## 2026-11-16 — throughput matrix (`xa2`)
+
+`scripts/xactor-matrix.sh /srv/bins/xa2 … 60 "on one off" "1 4 16 64"`,
+mix `fresh=80,fmulti=10,sknows=10`, 64 writers, one reader, server caps
+raised (`OMNIGRAPH_PER_ACTOR_INFLIGHT_MAX=128`, global and ingress 512,
+`OMNIGRAPH_WRITE_OBSERVERS_MAX=512`). Table in `results/xa-matrix-table.md`
+(REPORT §11.4). Every run: model 0, HTTP attribution 0, engine oracle 0;
+49,970 acknowledged writes, 837 mixed-actor batch commits, 53,779 batch rows
+checked.
+
+## 2026-11-16 — failure cells (`xa2`, reruns on `xa3`)
+
+`scripts/xactor-faults.sh`, 64 writers × 16 actors, 90 s, RustFS +30 ms.
+
+| cell | ack'd | refused / in doubt | batch commits | rows | model / http / engine |
+|---|---:|---|---:|---:|---|
+| crash (`xa3`; `batch_committed` and `batch_published` fired once each) | 3,212 | 2,552 / 128 | 108 | 3,552 | 0/0/0 |
+| kill -9, mean 15 s (14 kills) | 1,249 | 17,911 / 832 | 42 | 1,389 | 0/0/0 |
+| kill -9, mean 30 s (7 kills, `xa3`) | 4,019 | 7,974 / 320 | 131 | 4,385 | 0/0/0 |
+| toxics 0.3 | 9,773 | 0 / 0 | 324 | 10,780 | 0/0/0 |
+| toxics 0.8, 4 s windows (`xa3`) | 8,182 | 0 / 0 | 269 | 9,016 | 0/0/0 |
+| client cancel 20% | 11,563 | 0 / 746 | 386 | 13,605 | 0/0/0 |
+| budget, 128 writers, 1,000-byte ids (`xa3`: 8 budget stops) | 14,572 | 0 / 0 | 249 | 16,048 | 0/0/0 |
+| policy, act-ro + act-unprot among 16 | 10,387 | 260,976 (403) / 0 | 394 | 11,436 | 0/0/0 |
+
+Refusals in the crash and kill cells are 503 `graph_unavailable` while the
+graph loads and refused connections while the server is down. Toxics never
+reached a client: manifest PUTs failed (`storage request failed on an
+immutable key`) and were re-issued (`manifest request outcome unknown;
+re-issuing`), and failed batches re-prepared under the pre-effect bound.
+Budget: largest list 124,953 bytes (119 writes) against 131,072. Policy: no
+commit names act-ro or act-unprot, none of their keys exist.
+
+Focused `gc_mixed_actor_batch_in_doubt_names_one_commit_for_every_member`:
+`PUBLISH_POST_MERGE_PRE_ACK` (2nd crossing) and `PUBLISH_READ_BACK` fail; all
+6 members (6 actors, node, two-table, pair and edge writes) get
+`manifest_publish_in_doubt` naming one attempt; it landed with all 6
+writes, exact; the handle writes on.
+
+## 2026-11-16 — embedded and multi-process cells
+
+Release harness (`--release --features failpoints`), RustFS +30 ms, 64
+writers × 16 actors, 60 s, one reader, 10% read-your-writes. Seed rows (44)
+are counted as ops by the harness and removed here: on 96.2 writes/s (p50
+499, p99 1,544 ms, 24.7 writes/commit, 230 mixed batch commits, exact); one
+22.7 (2,905 / 3,299 ms, 4.0); off 3.35 (26,875 / 29,580 ms, 1.0).
+
+Embedded cancellation (`xe-cancel-a16`, debug, 20% of writes under a 1–1,500
+ms timeout, optimize every 20 s): 3,251 ok, 556 in doubt (399 own
+cancellations, 157 members of batches whose leader was cancelled), 114 mixed
+batch commits, 3,314 entries, exact.
+
+`mp_run.py xm-claim-a4`: 4 processes × 16 writers × 4 actors, local root,
+process 0 claims main at 15 s: 7,066 ok, 235 `WriterFenced` (the same typed
+error for every fenced member; no evidence attached, so the harness counts
+them in doubt), none of their keys exist; 961 mixed batch commits, 7,790
+rows, exact.

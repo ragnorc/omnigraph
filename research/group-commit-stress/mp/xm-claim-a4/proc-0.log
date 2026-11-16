@@ -1,0 +1,8 @@
+
+running 1 test
+[gs-maint] t=15s claimed main at epoch 1 in 71.763276ms
+[gs-summary] {"ops":7110,"ok":7110,"refused":0,"in_doubt":0,"errors":{}}
+test gc_stress_harness ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 59.01s
+

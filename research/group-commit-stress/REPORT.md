@@ -527,6 +527,169 @@ field).
     lists are what lets those suites cover batching at all.
 
 
+## 11. Batches that hold writes of different actors (2026-11-16)
+
+**Subject:** RFC #1405 revised at `2f82b02b` (rules 6 and 19, "The batch",
+"Attribution"). **Builds:** `xa2`/`xa3` (release, line tables), commits
+`7f59b2f1` → this one. Raw numbers and every step are in [`LOG.md`](LOG.md)
+(2026-11-16 entries); runs under `served/xa-*`, `served/xf-*`,
+`served/xs-soak-a16`, `histories/xe-*`, `mp/xm-claim-a4`.
+
+### 11.1 What was implemented
+
+- One drain for both lead paths (`drain_batch`): queued entries in arrival
+  order whatever their actors, up to 512 entries and the write list's byte
+  budget (half of `HISTORY_RELEASE_BYTES`, 131,072 bytes); once an entry does
+  not fit, no later entry is taken. `OMNIGRAPH_GROUP_COMMIT_ONE_ACTOR=1`
+  restores one-actor batches for comparison.
+- The write list is persisted in the commit record and read back from it,
+  never kept in memory. Research encoding, no format change: a commit of two
+  or more writes stores `"\u{1}gcw1" + {"a": common actor or null, "w":
+  [{"a": actor, "r": [[table, start, end], ...]}]}` in its `actor_id` column,
+  so the list counts toward the record budget and survives history release.
+  `GraphCommit::decoded()` turns it into `actor_id` (the common actor, or
+  none) plus `writes` at every outward door: `list_commits`, receipts, HTTP
+  `commits` and `commits/{id}`, and the change feed's cause.
+- Ranges: before composing, the leader notes each member's staged data files;
+  after each table's detached commit it reads those fragments' inline row-id
+  sequences from the committed manifest. Each member's rows in a table must
+  be one consecutive run as wide as the rows it wrote, and the encoded list
+  must fit the budget, or the batch fails with `Unpublished` evidence before
+  its publication.
+- Commit get and the change feed give every row a batch commit inserted the
+  actor and the write-list index (`write`) of the range holding its
+  `_rowid`, read at the commit's own snapshot from only the fragments whose
+  row-id sequences meet the commit's ranges.
+
+The oracle (`tests/group_commit_stress/attribution.rs`, run by the focused
+tests, the embedded harness and `gc_attribution_offline` on every served
+root; `scripts/attr_http_check.py` over HTTP) checks, per batch commit: the
+common-actor rule; one non-empty range per table per write, disjoint across
+every commit; commit get and the feed report every row with a write index
+and that write's actor, and the same pair; each (write, table) has exactly
+as many rows as its range is wide; at the commit's snapshot every row whose
+id lies in the ranges is a row commit get reports for that write; every
+acknowledged write matches exactly one entry with its own actor and exactly
+its rows; unmatched entries match an in-doubt write, never a refused one; at
+the current head every surviving row whose id lies in a batch range is a row
+that write inserted. Over HTTP also: every in-doubt write names its batch's
+attempted commit, and if that commit landed the write is in its list, if not
+none of its rows exist.
+
+### 11.2 Defects found
+
+| # | Severity | Defect | Found by | Status |
+|---|---|---|---|---|
+| D2 | high (with `OMNIGRAPH_GROUP_COMMIT_PIPELINE=1`) | The pipelined lead (an inherited #1401 experiment, off by default) published with the first member's actor and no write list: a batch of several actors credited to one of them (rule 19) | code reading while adding the list; the fix runs every focused test with pipelining on | fixed: one `build_write_list` for both paths |
+| D4 | high (liveness, pipelined) | The pipelined lead had no drop guard: a dropped embedded leader hung its group (rule 10, H3 again) | `gc_dropped_leader_hands_the_lead_on` with pipelining timed out | fixed: `LeadGuard` on the pipelined lead, handing the lead on only if not yet handed |
+| D3 | medium (pipelined) | The pipelined drain ignored the write-list budget and closed callers (H4 again) | `gc_write_list_budget_…` with pipelining: the new post-encode guard refused a 3,823-byte list against a 1,400-byte budget | fixed: one `drain_batch` |
+| D6 | medium (cost) | Attribution looked rows up by key over the whole table for each batch commit page: one scan of every uncovered fragment per page. The HTTP check of a 60 s run took 9 min for 317 commits | first served matrix cell | fixed: read only the batch's fragments (58 s for the same check) |
+| D1 | medium (debug builds) | The publisher's `debug_assert_eq!` of the actor against the lineage intent panicked on the first mixed batch | first focused test | fixed: the group hands the publisher the recorded form |
+| D5 | low | The write-list size estimate left out the common actor the header carries; a batch of long, equal actor ids could pass admission and exceed the budget | review of the budget code | fixed: exact JSON lengths, header counted, post-encode guard |
+
+Not fixed, outside batching: validation refusals (a missing edge endpoint, a
+non-key `@unique` violation) and `WriterFenced` carry no completion evidence
+although nothing was published, so HTTP reports `effects: unknown` for them
+(the harness and driver count them in doubt). Non-key `@unique` tables still
+never batch in the prototype (`insert_carry_allowed`), so a cross-actor
+`@unique` conflict inside one batch cannot arise there; it was tested on the
+ordinary path.
+
+### 11.3 Was attribution exact?
+
+Yes, in every cell: 0 attribution violations from both the HTTP check and
+the engine oracle, and 0 model violations, in every run below; 0 in the 13
+focused tests.
+
+| cell | where | writes ack'd | mixed-actor batch commits | rows checked | result |
+|---|---|---:|---:|---:|---|
+| actor mixes 1/4/16/64 × on/one/off (12 runs, §11.4) | served, RustFS +30 ms | 49,970 | 837 | 53,779 | exact |
+| embedded, 16 actors (on/one/off) | release harness, RustFS +30 ms | 7,339 | 230 | 6,324 | exact |
+| crash points (`batch_committed`, `batch_published`; watchdog restart) | served | 3,212 (+22 in-doubt that landed) | 108 | 3,552 | exact |
+| kill -9 every ~6 s / ~13 s (14 and 7 kills) | served | 1,249 / 4,019 | 42 / 131 | 1,389 / 4,385 | exact |
+| toxiproxy resets, truncated acks, stalls (0.3 and 0.8 toxicity) | served | 9,773 / 8,182 | 324 / 269 | 10,780 / 9,016 | exact; every fault absorbed by re-issue and pre-effect retries, none reached a client |
+| client cancellation, 20% of writes | served (owned writes) | 11,563 (+744 cancelled that landed) | 386 | 13,605 | exact |
+| cancellation of members, 20%, optimize every 20 s | embedded, debug | 3,251 | 114 | 3,643 | exact; a cancelled leader fails its whole batch `Uncertain` (157 members, 4%) |
+| in-doubt publication of a 6-actor batch (lost ack + failed read-back) | focused test | 0 (6 in doubt) | 1 | 8 | every member names the same attempt; it landed; exact |
+| writer-epoch claim at 15 s, 4 processes × 4 actors | embedded, local | 7,066 (235 fenced) | 961 | 7,790 | exact; every fenced member `WriterFenced`, none of their rows exist |
+| write-list budget, 128 writers × 1,000-byte actor ids | served | 14,572 | 249 | 16,048 | exact; 8 budget stops; largest list 124,953 of 131,072 bytes |
+| policy: 2 of 16 actors without `change` on `main` | served | 10,387 (260,976 refused, 403) | 394 | 11,436 | exact; no commit or list names the refused actors, none of their rows exist |
+| same key from two actors in one batch; equal `@unique` labels | focused test | — | 1 | 3 | second key insert sent back, published alone under its own actor, absent from the list; one Tag wins, the other gets `@unique violation` |
+| later versions: update and delete of batched rows, optimize (served optimize every minute in the soak) | focused test, soak | — | — | head re-check | exact at the commit and at the head |
+| soak, 30 min, 64 writers × 16 actors, served optimize every minute | served, RustFS +30 ms | SOAK_OK | SOAK_BATCHES | SOAK_ROWS | SOAK_RESULT |
+
+### 11.4 Throughput by actor mix
+
+Served release, RustFS behind toxiproxy at 32–33 ms, 64 closed-loop writers,
+60 s, insert-only mix (80% fresh Items, 10% fresh Item + Person, 10% edges
+between seeded people), one reader, no maintenance. "on": batches of any
+actors; "one": batches of one actor; "off": group commit off.
+
+| actors | mode | writes/s | p50 ms | p99 ms | writes/commit |
+|---:|---|---:|---:|---:|---:|
+| 1 | on | 142.2 | 422 | 759 | 30.4 |
+| 1 | one | 141.2 | 424 | 767 | 30.5 |
+| 1 | off | 3.2 | 28,408 | 30,744 | 1.00 |
+| 4 | on | 141.9 | 422 | 767 | 30.2 |
+| 4 | one | 81.9 | 788 | 880 | 16.0 |
+| 4 | off | 3.2 | 28,452 | 31,004 | 1.00 |
+| 16 | on | 141.3 | 424 | 754 | 30.5 |
+| 16 | one | 22.1 | 2,979 | 3,988 | 4.0 |
+| 16 | off | 3.2 | 28,514 | 31,810 | 1.00 |
+| 64 | on | 142.6 | 424 | 801 | 30.2 |
+| 64 | one | 6.6 | 11,571 | 12,043 | 1.00 |
+| 64 | off | 3.2 | 28,528 | 32,091 | 1.00 |
+| 16 | embedded, on | 96.2 | 499 | 1,544 | 24.7 |
+| 16 | embedded, one | 22.7 | 2,905 | 3,299 | 4.0 |
+| 16 | embedded, off | 3.4 | 26,875 | 29,580 | 1.00 |
+
+Cross-actor batches make throughput independent of the actor mix: 141–143
+writes/s from 1 to 64 actors. One-actor batches divide the batch by the
+number of actors (writes/commit ≈ 64 / actors) and fall to the off path's
+order at 64 actors (6.6 against 3.2). The embedded run is a release build of
+the harness with failpoints compiled in and 10% read-your-writes reads.
+
+### 11.5 What the RFC needs
+
+Attribution, fourth bullet. Replace "The list counts toward the commit
+record's byte budget. Admission stops adding members when the next one would
+exceed it." with: "The list counts toward the commit record's byte budget,
+measured exactly: the header with the common actor, and each member's
+JSON-escaped actor and one `[table, start, end]` per table. Admission stops
+at the first member that would exceed it and takes no later member, so
+arrival order holds. The leader checks the encoded list against the budget
+before the publication and fails the batch with `Unpublished` evidence if it
+does not fit."
+
+Attribution, fifth bullet. Replace "Stable row ids survive compaction and
+updates, so the ranges attribute rows at every later version." with:
+"Stable row ids survive compaction and updates, so the ranges attribute the
+insertion of a row at every later version. A later update keeps the row id,
+so a range names the actor who inserted the row, not the last one who wrote
+it."
+
+Attribution, sixth bullet. Replace "The change feed (`changes/model.rs`)
+reports each row that a batch commit inserted with the actor of the write
+whose range holds its `_rowid`." with: "Commit get and the change feed
+(`changes/model.rs`) report each row that a batch commit inserted with the
+actor and the list index of the write whose range holds its `_rowid`, read
+at the commit's snapshot from only the fragments whose row-id sequences meet
+the commit's ranges. A lookup by key over the table costs a scan of every
+uncovered fragment per batch commit. The block's cause carries no actor when
+the writes' actors differ."
+
+What users see, third bullet: "The change feed reports each row with the
+actor that wrote it" should read "The change feed reports each row a batch
+commit inserted with the actor and the index of the write that inserted
+it."
+
+Rule 19 holds as written. Rule 9's outcome table ("`WriterFenced` |
+`WriterFenced`, not retried") should add "with `Unpublished` evidence": the
+error says nothing was published but carries no evidence, so HTTP reports
+`effects: unknown` and a client must treat it as in doubt. The prototype's
+pipelined experiment broke rules 10, 11 and 19 until fixed here; any
+pipelining the RFC later adopts needs the same drain, guard and write list.
+
 ## Appendix: reproducing
 
 ```bash
