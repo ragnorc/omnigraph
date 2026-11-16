@@ -1050,7 +1050,9 @@ async fn plan_index_work_node(
     // Research (key lookups): `@unique` implies a BTREE on its group's first
     // column, as `@key` implies an index, so the uniqueness lookup reads the
     // covered fragments through it and only the tail beside it.
-    for column in node_type.unique_lookup_columns() {
+    // `OMNIGRAPH_UNIQUE_IMPLIES_INDEX=0` turns it off (research A/B).
+    let implied = std::env::var("OMNIGRAPH_UNIQUE_IMPLIES_INDEX").map_or(true, |value| value != "0");
+    for column in node_type.unique_lookup_columns().into_iter().filter(|_| implied) {
         if !db.storage().has_btree_index(ds, column).await? {
             work.push_spec(crate::storage_layer::IndexBuildSpec::BTree {
                 column: column.to_string(),
@@ -1088,6 +1090,9 @@ pub(super) async fn index_work_status_on_dataset_for_catalog(
 
 /// The BTREE columns an edge table's property-led `@unique` groups imply.
 fn edge_unique_lookup_columns(catalog: &Catalog, table_key: &str) -> Vec<String> {
+    if std::env::var("OMNIGRAPH_UNIQUE_IMPLIES_INDEX").is_ok_and(|value| value == "0") {
+        return Vec::new();
+    }
     table_key
         .strip_prefix("edge:")
         .and_then(|name| catalog.edge_types.get(name))

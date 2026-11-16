@@ -408,6 +408,14 @@ FALSE = {}
 
 def check(args):
     ops, obs, merges = load_history(args.history)
+    # P1 (pre-existing): validation refusals answer 400 with disposition
+    # `effects: unknown`. A validation refusal publishes nothing, so read a
+    # bad_request naming a uniqueness, endpoint, @card or key refusal as refused.
+    for op in ops:
+        if op["outcome"] == "in_doubt" and op.get("code") == "bad_request" and any(
+                word in (op.get("error") or "") for word in ("@unique", "not found in", "@card", "cardinality", "already exists", "key conflict")):
+            op["outcome"] = "refused"
+            op["p1_reclassified"] = True
     violations = []
     commits = json.load(open(args.commits))["commits"]
     by_id = {c["graph_commit_id"]: c for c in commits}

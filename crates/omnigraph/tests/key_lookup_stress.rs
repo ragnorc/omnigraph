@@ -1080,9 +1080,9 @@ fn kl_only_the_absence_proven_writer_records() {
                 for (i, line) in text.lines().enumerate() {
                     if line.contains("key_lookup::record_insert(") && !line.trim_start().starts_with("//") {
                         // The enclosing function: the nearest `fn` above.
-                        let owner = text
-                            .lines()
-                            .take(i)
+                        let lines: Vec<&str> = text.lines().take(i).collect();
+                        let owner = lines
+                            .iter()
                             .rev()
                             .find_map(|l| l.trim_start().strip_prefix("async fn ").or(l.trim_start().strip_prefix("fn ")))
                             .map(|l| l.split('(').next().unwrap().to_string())

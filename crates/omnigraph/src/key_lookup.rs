@@ -143,12 +143,25 @@ pub(crate) static TAIL_ROWS_SCANNED: AtomicU64 = AtomicU64::new(0);
 /// Lookups that ran an index part.
 pub(crate) static INDEX_PARTS: AtomicU64 = AtomicU64::new(0);
 pub(crate) static EVICTED_FILES: AtomicU64 = AtomicU64::new(0);
+/// Nanoseconds in tail analyses (memo misses) and in whole lookups.
+pub(crate) static ANALYSIS_NANOS: AtomicU64 = AtomicU64::new(0);
+pub(crate) static ANALYSES: AtomicU64 = AtomicU64::new(0);
+pub(crate) static LOOKUP_NANOS: AtomicU64 = AtomicU64::new(0);
 pub(crate) static DROPPED_FILES: AtomicU64 = AtomicU64::new(0);
 
 /// `(files, bytes, budget)` of the known keys.
 pub fn known_keys_stats() -> (usize, usize, usize) {
     let map = MAP.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     (map.files.len(), map.bytes, map.budget)
+}
+
+/// `(analyses, analysis ns, lookup ns)`, for the research harness.
+pub fn lookup_timing() -> [u64; 3] {
+    [
+        ANALYSES.load(Ordering::Relaxed),
+        ANALYSIS_NANOS.load(Ordering::Relaxed),
+        LOOKUP_NANOS.load(Ordering::Relaxed),
+    ]
 }
 
 /// The lookup counters, for the research harness.
@@ -748,6 +761,7 @@ async fn tail_analysis(ds: &Dataset, space: &KeySpace, fields: &[i32]) -> Result
     {
         return Ok(hit);
     }
+    let analysis_started = std::time::Instant::now();
     let coverage = btree_coverage(ds, &space.columns[0]).await?;
     let indexed = coverage.is_some();
     let covered = coverage.unwrap_or_default();
@@ -787,6 +801,8 @@ async fn tail_analysis(ds: &Dataset, space: &KeySpace, fields: &[i32]) -> Result
             }
         }
     }
+    ANALYSES.fetch_add(1, Ordering::Relaxed);
+    ANALYSIS_NANOS.fetch_add(analysis_started.elapsed().as_nanos() as u64, Ordering::Relaxed);
     let analysis = Arc::new(TailAnalysis {
         indexed,
         covered: covered.len(),
@@ -913,6 +929,30 @@ pub(crate) async fn lookup(
         return Ok(holders);
     }
     LOOKUPS.fetch_add(1, Ordering::Relaxed);
+    let lookup_started = std::time::Instant::now();
+    let result = lookup_inner(ds, space, wanted).await;
+    LOOKUP_NANOS.fetch_add(lookup_started.elapsed().as_nanos() as u64, Ordering::Relaxed);
+    static TIMING: LazyLock<bool> = LazyLock::new(|| std::env::var("OG_KL_TIMING").is_ok());
+    if *TIMING && LOOKUPS.load(Ordering::Relaxed) % 200 == 0 {
+        let [analyses, analysis_ns, lookup_ns] = lookup_timing();
+        eprintln!(
+            "[kl-timing] lookups {} analyses {analyses} analysis_ms {} lookup_ms {} stats {:?} known {:?}",
+            LOOKUPS.load(Ordering::Relaxed),
+            analysis_ns / 1_000_000,
+            lookup_ns / 1_000_000,
+            lookup_stats(),
+            known_keys_stats()
+        );
+    }
+    result
+}
+
+async fn lookup_inner(
+    ds: &Dataset,
+    space: &KeySpace,
+    wanted: &[(Vec<String>, ScalarValue)],
+) -> Result<Holders> {
+    let mut holders = Holders::new();
     let fields = space.field_ids(ds)?;
     let wanted_set: HashSet<&Vec<String>> = wanted.iter().map(|(key, _)| key).collect();
     let projection = space.projection();

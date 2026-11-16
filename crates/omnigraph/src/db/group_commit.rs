@@ -735,13 +735,16 @@ impl Omnigraph {
                 let (kk_files, kk_bytes, kk_budget) = crate::key_lookup::known_keys_stats();
                 let [lookups, index_parts, from_map, scanned, tail_rows, evicted, dropped] =
                     crate::key_lookup::lookup_stats();
+                let [analyses, analysis_ns, lookup_ns] = crate::key_lookup::lookup_timing();
                 eprintln!(
-                    "[gc-stats] {{\"unix\":{},\"branch\":\"{}\",\"batches\":{batches},\"entries\":{entries},\"refused\":{refused},\"failed_batches\":{failed},\"max_batch\":{max_batch},\"queue\":{queue},\"log\":{log},\"known_key_files\":{kk_files},\"known_key_bytes\":{kk_bytes},\"known_key_budget\":{kk_budget},\"lookups\":{lookups},\"index_parts\":{index_parts},\"frags_from_map\":{from_map},\"frags_scanned\":{scanned},\"tail_rows\":{tail_rows},\"evicted\":{evicted},\"dropped\":{dropped}}}",
+                    "[gc-stats] {{\"unix\":{},\"branch\":\"{}\",\"batches\":{batches},\"entries\":{entries},\"refused\":{refused},\"failed_batches\":{failed},\"max_batch\":{max_batch},\"queue\":{queue},\"log\":{log},\"known_key_files\":{kk_files},\"known_key_bytes\":{kk_bytes},\"known_key_budget\":{kk_budget},\"lookups\":{lookups},\"index_parts\":{index_parts},\"frags_from_map\":{from_map},\"frags_scanned\":{scanned},\"tail_rows\":{tail_rows},\"evicted\":{evicted},\"dropped\":{dropped},\"analyses\":{analyses},\"analysis_ms\":{},\"lookup_ms\":{}}}",
                     std::time::SystemTime::now()
                         .duration_since(std::time::UNIX_EPOCH)
                         .map(|elapsed| elapsed.as_secs())
                         .unwrap_or(0),
                     key,
+                    analysis_ns / 1_000_000,
+                    lookup_ns / 1_000_000,
                 );
             }
         }

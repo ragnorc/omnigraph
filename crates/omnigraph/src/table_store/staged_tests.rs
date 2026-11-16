@@ -900,10 +900,13 @@ async fn upsert_skips_the_merge_join_when_the_id_btree_decides_its_rows_issue_12
     };
 
     let (_, unindexed) = upsert(ds.clone(), &[("carol", Some(40))]).await;
+    // Research (key lookups): without the BTREE the two-part lookup reads
+    // the id column once, what the join would read, and the all-new upsert
+    // takes the absence-proven writer instead of the join.
     assert_eq!(
         routes(&unindexed),
-        (1, 0, 0),
-        "without the BTREE the probe would read every id, so the join stays"
+        (0, 1, 0),
+        "without the BTREE the lookup reads the ids once and the insert skips the join"
     );
 
     ds.create_index_builder(&["id"], IndexType::BTree, &ScalarIndexParams::default())
@@ -1107,10 +1110,17 @@ async fn upsert_probe_runs_only_while_its_in_list_copies_fit_one_keyed_batch_iss
         (0, 1, 0),
         "at the edge the probe runs and the new rows take the fenced insert"
     );
+    // Research (key lookups, RFC rule 18): no cap; past the old edge the
+    // lookup still runs and the insert stays on the absence-proven writer.
     assert_eq!(
         route(edge + 1).await,
-        (1, 0, 0),
-        "one id past the edge skips the probe and keeps the join"
+        (0, 1, 0),
+        "one id past the old edge still takes the fenced insert"
+    );
+    assert_eq!(
+        route(KEYED_WRITE_MAX_ROWS).await,
+        (0, 1, 0),
+        "a full keyed batch over the tail takes the fenced insert"
     );
 }
 
