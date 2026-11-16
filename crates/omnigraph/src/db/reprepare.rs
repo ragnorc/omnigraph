@@ -114,13 +114,15 @@ impl AttemptIdentity {
 
 /// What one attempt of a write carries: the writer gates it prepared under,
 /// if any, the identity of the write's first attempt, whether this attempt
-/// was admitted, and whether its admission found that identity changed.
+/// was admitted, whether its admission found that identity changed, and
+/// whether it has reached its first durable effect.
 #[derive(Default)]
 pub(crate) struct WriteAttempt {
     gates: Option<BranchWriteGates>,
     first: Option<AttemptIdentity>,
     admitted: bool,
     identity_changed: bool,
+    effects_begun: bool,
 }
 
 impl WriteAttempt {
@@ -173,6 +175,15 @@ impl WriteAttempt {
         self.admitted = true;
         Ok(())
     }
+
+    /// From here on this attempt may leave durable effects: a staged file, a
+    /// detached table version, a publication. A writer whose loop answers its
+    /// failures through [`PreEffectReprepares::failed`] calls this before its
+    /// first such step; everything before it reads, parses, validates and
+    /// accumulates in memory.
+    pub(crate) fn begin_effects(&mut self) {
+        self.effects_begun = true;
+    }
 }
 
 /// One write that may prepare again: its attempt count and the state of its
@@ -219,6 +230,23 @@ impl<'a> PreEffectReprepares<'a> {
             && !self.current.identity_changed
     }
 
+    /// The error a write returns when its attempt failed and will not
+    /// prepare again. A first attempt that failed before
+    /// [`WriteAttempt::begin_effects`] attempted no durable effect, so its
+    /// failure, a refusal of the request's own values included, carries
+    /// `BeforeEffect`, and a server answers it as the direct route does
+    /// rather than as an outcome it cannot establish. A later attempt
+    /// follows earlier ones that may have staged, so it claims nothing.
+    /// Evidence the failure already carries composes as usual: uncertainty
+    /// stays.
+    pub(crate) fn failed(&self, error: OmniError) -> OmniError {
+        if self.is_first() && !self.current.effects_begun {
+            error.before_effect()
+        } else {
+            error
+        }
+    }
+
     /// Go round again: take the branch's writer gates for the next attempt,
     /// then refresh the coordinator it prepares from under them.
     pub(crate) async fn prepare_again(&mut self) -> Result<()> {
@@ -244,6 +272,7 @@ impl<'a> PreEffectReprepares<'a> {
             first,
             admitted: false,
             identity_changed: false,
+            effects_begun: false,
         };
         self.db.refresh_coordinator_only().await
     }

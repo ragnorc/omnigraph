@@ -1319,6 +1319,7 @@ impl Omnigraph {
                 Err(err) if reprepares.may_prepare_again(&err) => {
                     reprepares.prepare_again().await?;
                 }
+                Err(err) => return Err(reprepares.failed(err)),
                 result => return result,
             }
         }
@@ -1498,6 +1499,7 @@ impl Omnigraph {
     ) -> Result<CommittedStagedMutation> {
         let requested = txn.branch.as_deref();
         let plans = self.validate_staged_mutation(&staging, txn).await?;
+        attempt.begin_effects();
         // From the first staged file to the publisher call, every durable
         // effect is a fresh file or a detached version no manifest names: a
         // failure here is definite (`Unpublished`), whatever its cause, and a

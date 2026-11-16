@@ -777,6 +777,7 @@ async fn load_jsonl_data(
             Err(err) if reprepares.may_prepare_again(&err) => {
                 reprepares.prepare_again().await?;
             }
+            Err(err) => return Err(reprepares.failed(err)),
             result => return result,
         }
     }
@@ -864,6 +865,8 @@ async fn load_jsonl_reader_once<R: BufRead>(
         )
         .await?;
         if mode == LoadMode::Overwrite {
+            // The plan reads, judges and stages in one pass.
+            attempt.begin_effects();
             return Box::pin(load_csv_overwrite_plan(
                 handle,
                 txn,
@@ -1343,8 +1346,10 @@ async fn load_jsonl_reader_once<R: BufRead>(
     if let Some(staging_charge) = &staging_charge {
         staging_charge.grow(staged_bytes)?;
     }
-    // From the first staged file to the publisher call nothing is
-    // graph-visible: a failure is definite (`Unpublished`) whatever its cause.
+    // Everything above parsed, validated and accumulated in memory. From the
+    // first staged file to the publisher call nothing is graph-visible: a
+    // failure is definite (`Unpublished`) whatever its cause.
+    attempt.begin_effects();
     let staged = staging
         .stage_all_with_concurrency(db, branch, stage_write_concurrency)
         .await

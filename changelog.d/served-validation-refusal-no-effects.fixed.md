@@ -1,0 +1,1 @@
+- A served load or mutation refused for an invalid value before it staged anything reports `effects: none` and `action: fix`, as the direct route does, not `unknown` and `reconcile`.
