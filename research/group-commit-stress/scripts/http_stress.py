@@ -128,6 +128,15 @@ async def writer_loop(session, args, rec, writer, deadline, tokens, stats):
             name, params = "knows", {"from": pa, "to": pb}; op["edge"] = [pa, pb]
         elif kind == "multi":
             name, params = "multi", {"slug": fresh, "n": n, "name": pa}; op["items"] = [fresh]; op["person"] = pa
+        elif kind == "fmulti":
+            # Insert-only, two tables: a fresh Item and a fresh Person.
+            fp = f"q{args.run_tag}{writer}-{seq}"
+            name, params = "multi", {"slug": fresh, "n": n, "name": fp}; op["items"] = [fresh]; op["person"] = fp
+        elif kind == "sknows":
+            # Insert-only edge between seeded people (present, never deleted).
+            sa = f"p{rng.randrange(max(1, args.people // 2))}"
+            sb = f"p{rng.randrange(max(1, args.people // 2))}"
+            name, params = "knows", {"from": sa, "to": sb}; op["edge"] = [sa, sb]
         else:
             label = f"l{rng.randrange(args.hot)}"
             name, params = "tag", {"slug": f"t{args.run_tag}{writer}-{seq}", "label": label}
@@ -321,10 +330,10 @@ def load_export(path):
 def apply(model, op):
     items, people, edges = model
     kind = op["kind"]
-    if kind in ("fresh", "hot", "pair", "multi"):
+    if kind in ("fresh", "hot", "pair", "multi", "fmulti"):
         for key in op["items"]:
             items[key] = op["n"]
-        if kind == "multi" and op.get("person"):
+        if kind in ("multi", "fmulti") and op.get("person"):
             people.add(op["person"])
     elif kind == "update":
         for key in op["items"]:
@@ -339,7 +348,7 @@ def apply(model, op):
         people.discard(op["person"])
         for pair in [p for p in edges if op["person"] in p]:
             del edges[pair]
-    elif kind == "knows":
+    elif kind in ("knows", "sknows"):
         edges[tuple(op["edge"])] += 1
 
 

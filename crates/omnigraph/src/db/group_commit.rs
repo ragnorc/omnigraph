@@ -209,7 +209,7 @@ pub(crate) struct GroupCommits {
 
 fn group_key(branch: Option<&str>, _actor: Option<&str>) -> String {
     // Stress fix (H2): one group, and so one effect log, per branch; a batch
-    // still holds one actor's entries (`lead_group`).
+    // holds entries of any actors (rule 19).
     branch.unwrap_or("main").to_string()
 }
 
@@ -295,6 +295,8 @@ struct StagedBatch {
     predecessor: Option<std::sync::Arc<InFlight>>,
     branch: Option<String>,
     actor: Option<String>,
+    /// The encoded write list of a batch of several writes (rule 19).
+    write_list: Option<String>,
     history_release_bytes: HistoryReleaseBytes,
     /// The pins this batch will publish, for the batch after it.
     new_pins: HashMap<String, crate::db::DatasetEntry>,
@@ -401,8 +403,9 @@ impl Omnigraph {
         let (batch, log, in_flight) = {
             let mut groups = self.group_commits().groups.lock().unwrap();
             let group = groups.get_mut(key).expect("a leading group exists");
-            let take = group.queue.len().min(MAX_BATCH_ENTRIES);
-            let batch: Vec<Waiting> = group.queue.drain(..take).collect();
+            // The same drain as the ordinary lead: closed callers leave,
+            // and the cap and the write list's budget apply.
+            let batch = drain_batch(group);
             (
                 batch,
                 group.log.iter().cloned().collect::<Vec<_>>(),
@@ -416,11 +419,25 @@ impl Omnigraph {
             return;
         }
         let started = std::time::Instant::now();
+        // Rule 10 on the pipelined path: a dropped leader answers every
+        // member it drained and hands the lead on. Stage A makes detached
+        // commits, so a drop from here on is uncertain for its members.
+        let effects = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
+        let mut guard = LeadGuard {
+            db: self,
+            key: key.to_string(),
+            replies: batch.iter().map(|waiting| waiting.reply.clone()).collect(),
+            effects,
+            armed: true,
+            hand_on: true,
+            in_flight: None,
+        };
         let mut replies = Vec::new();
         let staged = self.stage_batch(batch, &log, in_flight, &mut replies).await;
         let staged_at = started.elapsed();
         let Some(staged) = staged else {
             // Nothing admitted (or stage A failed): answer and pass the lead.
+            guard.armed = false;
             for (reply, result) in replies {
                 let _ = reply.send(Signal::Done(result));
             }
@@ -439,6 +456,7 @@ impl Omnigraph {
             predecessor,
             branch,
             actor,
+            write_list,
             history_release_bytes,
             new_pins,
         } = staged;
@@ -542,6 +560,7 @@ impl Omnigraph {
                 );
             }
             drop(gates);
+            guard.armed = false;
             for waiting in admitted {
                 let error = follower_error(&error, &waiting.entry.txn);
                 replies.push((waiting.reply, Err(error)));
@@ -571,6 +590,8 @@ impl Omnigraph {
             group.in_flight = Some(std::sync::Arc::clone(&mine));
             Self::hand_lead(group);
         }
+        guard.hand_on = false;
+        guard.in_flight = Some(std::sync::Arc::clone(&mine));
         let published = self
             .publish_staged(
                 &current,
@@ -578,6 +599,7 @@ impl Omnigraph {
                 detached,
                 &expected,
                 actor.as_deref(),
+                write_list,
                 history_release_bytes,
                 publish_coordinator.as_mut(),
             )
@@ -602,6 +624,7 @@ impl Omnigraph {
                 predecessor.is_some(),
             );
         }
+        guard.armed = false;
         let admitted_count = admitted.len();
         match &published {
             Ok(commit) => {
@@ -689,42 +712,7 @@ impl Omnigraph {
             // list's byte budget; the rest keep their places. The research
             // switch `OMNIGRAPH_GROUP_COMMIT_ONE_ACTOR=1` restores batches of
             // the first entry's actor, for comparison.
-            let one_actor = one_actor_batches();
-            let budget = write_list_budget();
-            let mut used = WRITE_LIST_HEADER_BYTES;
-            let mut batch: Vec<Waiting> = Vec::new();
-            let mut rest = VecDeque::new();
-            let mut actor: Option<Option<String>> = None;
-            let mut full = false;
-            while let Some(waiting) = group.queue.pop_front() {
-                if waiting.reply.is_closed() {
-                    continue;
-                }
-                let first = actor.get_or_insert_with(|| waiting.entry.actor.clone());
-                // The header names the common actor, at most the first's.
-                if batch.is_empty() {
-                    used = WRITE_LIST_HEADER_BYTES + json_actor_bytes(first.as_deref());
-                }
-                let cost = write_list_entry_bytes(&waiting.entry);
-                let fits = batch.is_empty() || used + cost <= budget;
-                if !full
-                    && batch.len() < MAX_BATCH_ENTRIES
-                    && fits
-                    && (!one_actor || *first == waiting.entry.actor)
-                {
-                    used += cost;
-                    batch.push(waiting);
-                } else {
-                    if !fits {
-                        // Arrival order: nothing overtakes the first entry
-                        // the budget left out.
-                        full = true;
-                        stats::BUDGET_STOPS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                    }
-                    rest.push_back(waiting);
-                }
-            }
-            group.queue = rest;
+            let batch = drain_batch(group);
             (batch, group.log.iter().cloned().collect::<Vec<_>>())
         };
         let effects = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
@@ -734,6 +722,8 @@ impl Omnigraph {
             replies: batch.iter().map(|waiting| waiting.reply.clone()).collect(),
             effects: std::sync::Arc::clone(&effects),
             armed: true,
+            hand_on: true,
+            in_flight: None,
         };
         let outcome = if batch.is_empty() {
             BatchOutcome {
@@ -1068,6 +1058,11 @@ impl Omnigraph {
                     OmniError::manifest_read_set_changed(format!("table:{table_key}"), None, None)
                 })?;
                 let base = self.open_pinned_for_write(&full_path, &pin).await?;
+                let staged_files: HashSet<String> = writes
+                    .iter()
+                    .flat_map(|write| write.new_fragment_files())
+                    .map(|(path, _)| path)
+                    .collect();
                 let composed = StagedHandle::compose_insert_only(&base, writes)?;
                 let declared_full_text =
                     crate::db::omnigraph::table_ops::declared_full_text_columns(
@@ -1079,6 +1074,7 @@ impl Omnigraph {
                     .commit_staged_detached(base, composed, witness, &declared_full_text)
                     .await?;
                 let state = self.storage().table_state(&full_path, &detached).await?;
+                let ranges = fragment_row_ranges(detached.dataset(), &staged_files)?;
                 let target = pin.published_dataset_version + 1;
                 let version_metadata = state
                     .version_metadata
@@ -1104,17 +1100,27 @@ impl Omnigraph {
                     entity_count: state.row_count,
                     version_metadata,
                 };
-                Ok::<_, OmniError>((table_key, pin, update, detached))
+                Ok::<_, OmniError>((table_key, pin, update, detached, ranges))
             });
         let committed = match futures::future::try_join_all(commits).await {
             Ok(committed) => committed,
+            Err(error) => return fail(admitted, error, replies),
+        };
+        // Rule 19 on the pipelined path too: the write list from the
+        // committed manifests, before the publication.
+        let ranges_by_table: HashMap<String, HashMap<String, (u64, u64)>> = committed
+            .iter()
+            .map(|(table_key, _, _, _, ranges)| (table_key.clone(), ranges.clone()))
+            .collect();
+        let write_list = match build_write_list(&admitted, &ranges_by_table) {
+            Ok(list) => list,
             Err(error) => return fail(admitted, error, replies),
         };
         let mut updates = Vec::with_capacity(committed.len());
         let mut detached = Vec::with_capacity(committed.len());
         let mut assumed = HashMap::new();
         let mut new_pins = HashMap::new();
-        for (table_key, pin, update, handle) in committed {
+        for (table_key, pin, update, handle, _) in committed {
             new_pins.insert(
                 table_key.clone(),
                 crate::db::DatasetEntry {
@@ -1135,6 +1141,7 @@ impl Omnigraph {
         let first = &admitted[0].entry;
         Some(StagedBatch {
             actor: first.actor.clone(),
+            write_list,
             history_release_bytes: first.history_release_bytes,
             admitted,
             updates,
@@ -1157,13 +1164,18 @@ impl Omnigraph {
         detached: Vec<crate::storage_layer::SnapshotHandle>,
         expected: &ExpectedTableVersions,
         actor: Option<&str>,
+        write_list: Option<String>,
         history_release_bytes: HistoryReleaseBytes,
         coordinator: Option<&mut crate::db::graph_coordinator::GraphCoordinator>,
     ) -> Result<GraphCommit> {
-        let lineage_intent = self
+        let mut lineage_intent = self
             .new_lineage_intent_for_branch(current.branch.as_deref(), actor, history_release_bytes)
             .await
             .map_err(OmniError::unpublished)?;
+        if let Some(encoded) = write_list {
+            lineage_intent.actor_id = Some(encoded);
+        }
+        let publish_actor = lineage_intent.actor_id.clone();
         let publish = async {
             match coordinator {
                 Some(coordinator) => {
@@ -1181,7 +1193,7 @@ impl Omnigraph {
                         current.branch.as_deref(),
                         &updates,
                         expected,
-                        actor,
+                        publish_actor.as_deref(),
                         current,
                         lineage_intent,
                     )
@@ -1498,73 +1510,7 @@ impl Omnigraph {
         // row-id range read from the committed detached manifests; members
         // in batch order. A range that is not one contiguous run, or rows
         // that do not add up, fail the batch before its publication.
-        let write_list = if admitted.len() > 1 {
-            let mut writes = Vec::with_capacity(admitted.len());
-            for waiting in admitted {
-                let mut rows = Vec::new();
-                for write in &waiting.entry.writes {
-                    let table = ranges_by_table.get(&write.table_key).ok_or_else(|| {
-                        OmniError::manifest_internal("a batch table has no committed ranges")
-                    })?;
-                    let mut start = u64::MAX;
-                    let mut end = 0u64;
-                    let mut total = 0u64;
-                    let mut expected = 0u64;
-                    for (path, physical) in write.staged.new_fragment_files() {
-                        let (lo, hi) = *table.get(&path).ok_or_else(|| {
-                            OmniError::manifest_internal(format!(
-                                "a member's fragment {path} is missing from the committed {}",
-                                write.table_key
-                            ))
-                        })?;
-                        start = start.min(lo);
-                        end = end.max(hi);
-                        total += hi - lo;
-                        expected += physical;
-                    }
-                    if total == 0 {
-                        continue;
-                    }
-                    if end - start != total || total != expected {
-                        return Err(OmniError::manifest_internal(format!(
-                            "a member's rows in {} are not one contiguous row-id range ({start}..{end}, {total} rows, {expected} written)",
-                            write.table_key
-                        ))
-                        .with_completion_evidence(crate::error::CompletionEvidence::Unpublished));
-                    }
-                    rows.push(omnigraph_catalog::commit_graph::CommitWriteRows {
-                        table_key: write.table_key.clone(),
-                        start,
-                        end,
-                    });
-                }
-                writes.push(omnigraph_catalog::commit_graph::CommitWrite {
-                    actor_id: waiting.entry.actor.clone(),
-                    rows,
-                });
-            }
-            let common = writes[0].actor_id.clone();
-            let common = writes
-                .iter()
-                .all(|write| write.actor_id == common)
-                .then_some(common)
-                .flatten();
-            let encoded =
-                omnigraph_catalog::commit_graph::encode_write_list(common.as_deref(), &writes);
-            // Admission sized the list; a list over its budget is a defect,
-            // refused before the publication.
-            if encoded.len() > write_list_budget().max(WRITE_LIST_HEADER_BYTES) && writes.len() > 1 {
-                return Err(OmniError::manifest_internal(format!(
-                    "a batch's write list is {} bytes, over its budget of {}",
-                    encoded.len(),
-                    write_list_budget()
-                ))
-                .with_completion_evidence(crate::error::CompletionEvidence::Unpublished));
-            }
-            Some(encoded)
-        } else {
-            None
-        };
+        let write_list = build_write_list(&admitted, &ranges_by_table)?;
         crash_point("batch_committed");
         if timing_enabled() {
             eprintln!(
@@ -1875,6 +1821,11 @@ struct LeadGuard<'a> {
     replies: Vec<mpsc::UnboundedSender<Signal>>,
     effects: std::sync::Arc<std::sync::atomic::AtomicBool>,
     armed: bool,
+    /// Whether the lead is still this leader's to hand on (a pipelined
+    /// leader hands it on when its batch enters stage B).
+    hand_on: bool,
+    /// A pipelined batch's in-flight slot, cleared if still its own.
+    in_flight: Option<std::sync::Arc<InFlight>>,
 }
 
 impl Drop for LeadGuard<'_> {
@@ -1901,7 +1852,17 @@ impl Drop for LeadGuard<'_> {
         let mut groups = self.db.group_commits().groups.lock().unwrap();
         if let Some(group) = groups.get_mut(&self.key) {
             group.log.clear();
-            Omnigraph::hand_lead(group);
+            if let Some(mine) = &self.in_flight
+                && group
+                    .in_flight
+                    .as_ref()
+                    .is_some_and(|flight| std::sync::Arc::ptr_eq(flight, mine))
+            {
+                group.in_flight = None;
+            }
+            if self.hand_on {
+                Omnigraph::hand_lead(group);
+            }
         }
     }
 }
@@ -2163,6 +2124,130 @@ fn json_actor_bytes(actor: Option<&str>) -> usize {
 
 fn json_string_bytes(value: &str) -> usize {
     serde_json::to_string(value).map_or(value.len() * 6 + 2, |encoded| encoded.len())
+}
+
+/// Take the next batch off a group's queue: entries whose callers are gone
+/// leave (H4); the rest are taken in arrival order whatever their actors
+/// (rule 19), up to the batch cap and the write list's byte budget; once one
+/// entry does not fit, every later one keeps its place.
+/// `OMNIGRAPH_GROUP_COMMIT_ONE_ACTOR=1` restores one-actor batches.
+fn drain_batch(group: &mut Group) -> Vec<Waiting> {
+    let one_actor = one_actor_batches();
+    let budget = write_list_budget();
+    let mut used = WRITE_LIST_HEADER_BYTES;
+    let mut batch: Vec<Waiting> = Vec::new();
+    let mut rest = VecDeque::new();
+    let mut actor: Option<Option<String>> = None;
+    let mut full = false;
+    while let Some(waiting) = group.queue.pop_front() {
+        if waiting.reply.is_closed() {
+            continue;
+        }
+        let first = actor.get_or_insert_with(|| waiting.entry.actor.clone());
+        // The header names the common actor, at most the first's.
+        if batch.is_empty() {
+            used = WRITE_LIST_HEADER_BYTES + json_actor_bytes(first.as_deref());
+        }
+        let cost = write_list_entry_bytes(&waiting.entry);
+        let fits = batch.is_empty() || used + cost <= budget;
+        if !full
+            && batch.len() < MAX_BATCH_ENTRIES
+            && fits
+            && (!one_actor || *first == waiting.entry.actor)
+        {
+            used += cost;
+            batch.push(waiting);
+        } else {
+            if !fits {
+                // Arrival order: nothing overtakes the first entry
+                // the budget left out.
+                full = true;
+                stats::BUDGET_STOPS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            }
+            rest.push_back(waiting);
+        }
+    }
+    group.queue = rest;
+    batch
+}
+
+/// Rule 19: the encoded write list of a batch of several writes: every
+/// member's actor and its rows per table, as one half-open stable row-id
+/// range read from the committed detached manifests (`ranges_by_table`:
+/// table -> data file -> range); members in batch order. A range that is not
+/// one contiguous run, rows that do not add up, or a list over its budget
+/// fail the batch before its publication. `None` for a batch of one.
+fn build_write_list(
+    admitted: &[Waiting],
+    ranges_by_table: &HashMap<String, HashMap<String, (u64, u64)>>,
+) -> Result<Option<String>> {
+    if admitted.len() > 1 {
+        let mut writes = Vec::with_capacity(admitted.len());
+        for waiting in admitted.iter() {
+            let mut rows = Vec::new();
+            for write in &waiting.entry.writes {
+                let table = ranges_by_table.get(&write.table_key).ok_or_else(|| {
+                    OmniError::manifest_internal("a batch table has no committed ranges")
+                })?;
+                let mut start = u64::MAX;
+                let mut end = 0u64;
+                let mut total = 0u64;
+                let mut expected = 0u64;
+                for (path, physical) in write.staged.new_fragment_files() {
+                    let (lo, hi) = *table.get(&path).ok_or_else(|| {
+                        OmniError::manifest_internal(format!(
+                            "a member's fragment {path} is missing from the committed {}",
+                            write.table_key
+                        ))
+                    })?;
+                    start = start.min(lo);
+                    end = end.max(hi);
+                    total += hi - lo;
+                    expected += physical;
+                }
+                if total == 0 {
+                    continue;
+                }
+                if end - start != total || total != expected {
+                    return Err(OmniError::manifest_internal(format!(
+                        "a member's rows in {} are not one contiguous row-id range ({start}..{end}, {total} rows, {expected} written)",
+                        write.table_key
+                    ))
+                    .with_completion_evidence(crate::error::CompletionEvidence::Unpublished));
+                }
+                rows.push(omnigraph_catalog::commit_graph::CommitWriteRows {
+                    table_key: write.table_key.clone(),
+                    start,
+                    end,
+                });
+            }
+            writes.push(omnigraph_catalog::commit_graph::CommitWrite {
+                actor_id: waiting.entry.actor.clone(),
+                rows,
+            });
+        }
+        let common = writes[0].actor_id.clone();
+        let common = writes
+            .iter()
+            .all(|write| write.actor_id == common)
+            .then_some(common)
+            .flatten();
+        let encoded =
+            omnigraph_catalog::commit_graph::encode_write_list(common.as_deref(), &writes);
+        // Admission sized the list; a list over its budget is a defect,
+        // refused before the publication.
+        if encoded.len() > write_list_budget().max(WRITE_LIST_HEADER_BYTES) && writes.len() > 1 {
+            return Err(OmniError::manifest_internal(format!(
+                "a batch's write list is {} bytes, over its budget of {}",
+                encoded.len(),
+                write_list_budget()
+            ))
+            .with_completion_evidence(crate::error::CompletionEvidence::Unpublished));
+        }
+        Ok(Some(encoded))
+    } else {
+        Ok(None)
+    }
 }
 
 /// Research: the stable row-id range of each listed data file's fragment in

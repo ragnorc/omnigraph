@@ -152,6 +152,10 @@ pub enum OpKind {
     Multi,
     /// A Tag with a non-key `@unique` label (ineligible).
     Tag,
+    /// Insert-only, two tables: a fresh Item and a fresh Person.
+    FMulti,
+    /// Insert-only edge between seeded people (present, never deleted).
+    SKnows,
 }
 
 impl OpKind {
@@ -167,6 +171,8 @@ impl OpKind {
             Self::Knows => "knows",
             Self::Multi => "multi",
             Self::Tag => "tag",
+            Self::FMulti => "fmulti",
+            Self::SKnows => "sknows",
         }
     }
 }
@@ -191,6 +197,8 @@ impl Mix {
                 "knows" => OpKind::Knows,
                 "multi" => OpKind::Multi,
                 "tag" => OpKind::Tag,
+                "fmulti" => OpKind::FMulti,
+                "sknows" => OpKind::SKnows,
                 other => panic!("unknown op kind {other}"),
             };
             out.push((kind, weight.parse().expect("weight is a number")));
@@ -524,6 +532,22 @@ async fn run_writer(shared: Arc<Shared>, sessions: Arc<Vec<Session>>, writer: us
                     mixed_params(&[("$slug", &fresh), ("$name", &person_a)], &[("$n", n)]),
                 )
             }
+            OpKind::FMulti => {
+                let person = format!("q{}{writer}-{seq}", cfg.tag);
+                op.items = vec![fresh.clone()];
+                op.person = Some(person.clone());
+                (
+                    "multi",
+                    mixed_params(&[("$slug", &fresh), ("$name", &person)], &[("$n", n)]),
+                )
+            }
+            OpKind::SKnows => {
+                let half = (cfg.people / 2).max(1);
+                let a = format!("p{}", rng.below(half));
+                let b = format!("p{}", rng.below(half));
+                op.edge = Some((a.clone(), b.clone()));
+                ("knows", params(&[("$from", &a), ("$to", &b)]))
+            }
             OpKind::Tag => {
                 let label = format!("l{}", rng.below(cfg.hot));
                 let slug = format!("t{}{writer}-{seq}", cfg.tag);
@@ -569,8 +593,10 @@ async fn run_writer(shared: Arc<Shared>, sessions: Arc<Vec<Session>>, writer: us
                     if obs.version < version {
                         problems.push(format!("read v{} below receipt v{version}", obs.version));
                     }
-                    if matches!(kind, OpKind::Fresh | OpKind::Multi | OpKind::Pair)
-                        && !obs.items.contains_key(&fresh)
+                    if matches!(
+                        kind,
+                        OpKind::Fresh | OpKind::Multi | OpKind::FMulti | OpKind::Pair
+                    ) && !obs.items.contains_key(&fresh)
                     {
                         problems.push(format!("own fresh key {fresh} missing at v{}", obs.version));
                     }
@@ -760,7 +786,7 @@ impl Model {
                     self.items.insert(key.clone(), op.n);
                 }
             }
-            OpKind::Multi => {
+            OpKind::Multi | OpKind::FMulti => {
                 for key in &op.items {
                     self.items.insert(key.clone(), op.n);
                 }
@@ -792,7 +818,7 @@ impl Model {
                         .retain(|(src, dst), _| src != person && dst != person);
                 }
             }
-            OpKind::Knows => {
+            OpKind::Knows | OpKind::SKnows => {
                 if let Some(edge) = &op.edge {
                     *self.edges.entry(edge.clone()).or_default() += 1;
                 }

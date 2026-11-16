@@ -46,13 +46,13 @@ def inserted_rows(op):
     rows = defaultdict(list)
     if kind in ("fresh", "hot", "pair"):
         rows["node:Item"] = list(op.get("items") or [])
-    elif kind == "multi":
+    elif kind in ("multi", "fmulti"):
         rows["node:Item"] = list(op.get("items") or [])
         if op.get("person"):
             rows["node:Person"] = [op["person"]]
     elif kind == "person" and op.get("person"):
         rows["node:Person"] = [op["person"]]
-    elif kind == "knows" and op.get("edge"):
+    elif kind in ("knows", "sknows") and op.get("edge"):
         rows["edge:Knows"] = [f"{op['edge'][0]}->{op['edge'][1]}"]
     elif kind == "tag" and op.get("tag"):
         rows["node:Tag"] = [op["tag"][0]]

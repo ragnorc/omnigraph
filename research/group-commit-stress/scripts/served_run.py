@@ -231,6 +231,7 @@ def main():
     p.add_argument("--latency-ms", type=int, default=15)
     p.add_argument("--watchdog", type=int, default=0, help="restart the server whenever it dies")
     p.add_argument("--attribution", type=int, default=1, help="run the attribution checks after the run")
+    p.add_argument("--check-direct", type=int, default=1, help="serve the post-run checks from direct RustFS")
     p.add_argument("--attr-bin", default=os.environ.get("GS_ATTR_BIN", ""),
                    help="the group_commit_stress test binary (engine attribution oracle)")
     argv = sys.argv[1:]
@@ -359,6 +360,18 @@ def main():
     for thread in threads:
         thread.join(timeout=900)
     event(kind="driver_done", code=driver_proc.returncode)
+    if args.backend == "s3" and args.check_direct:
+        # Checks read a lot of history: serve them from the direct RustFS
+        # endpoint (no added latency, no toxics), same root.
+        server.stop()
+        server.unlock_stale()
+        toxi("DELETE", "/proxies/rustfs/toxics/chaos")
+        server.env["AWS_ENDPOINT_URL"] = server.env["AWS_ENDPOINT_URL_S3"] = "http://127.0.0.1:9000"
+        for key in [k for k in server.env if k.startswith("OMNIGRAPH_STRESS_CRASH")]:
+            del server.env[key]
+        server.restarts += 1
+        server.start()
+        event(kind="check_server", endpoint="direct", pid=server.proc.pid)
     if server.proc.poll() is not None:
         server.unlock_stale()
         server.start()
@@ -381,7 +394,7 @@ def main():
         # The engine oracle on the root: row-id coverage at every batch
         # commit and at the head, commit get and the change feed.
         env = dict(os.environ)
-        env.update({"OG_GS_URI": root, "OG_GS_OPS": history, "RUST_MIN_STACK": "16777216"})
+        env.update({"OG_GS_URI": f"{root}/graphs/{args.graph}.omni", "OG_GS_OPS": history, "RUST_MIN_STACK": "16777216"})
         if root.startswith("s3://"):
             env.update(S3_ENV)
             env["AWS_ENDPOINT_URL"] = env["AWS_ENDPOINT_URL_S3"] = "http://127.0.0.1:9000"

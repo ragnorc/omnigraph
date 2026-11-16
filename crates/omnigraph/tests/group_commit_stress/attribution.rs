@@ -63,7 +63,7 @@ pub fn inserted_rows(
         "fresh" | "hot" | "pair" => {
             rows.insert("node:Item".into(), items.to_vec());
         }
-        "multi" => {
+        "multi" | "fmulti" => {
             rows.insert("node:Item".into(), items.to_vec());
             if let Some(person) = person {
                 rows.insert("node:Person".into(), vec![person.to_string()]);
@@ -74,7 +74,7 @@ pub fn inserted_rows(
                 rows.insert("node:Person".into(), vec![person.to_string()]);
             }
         }
-        "knows" => {
+        "knows" | "sknows" => {
             if let Some((from, to)) = edge {
                 rows.insert("edge:Knows".into(), vec![format!("{from}->{to}")]);
             }
