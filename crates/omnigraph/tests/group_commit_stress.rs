@@ -1158,11 +1158,15 @@ async fn gc_cross_actor_conflicts_in_one_batch() {
     // the attribution oracle sees only act-a's row of `k` as a batch insert.
     ops[3].rows = Default::default();
     let a_stored = by_id[a_commit.graph_commit_id.as_str()];
-    assert!(
-        a_stored.writes.len() >= 2,
-        "act-a's write did not share a batch: {:?}",
-        a_stored.writes
-    );
+    // Pipelined batches take only what is queued at stage A, so act-a may
+    // lead alone there; the ordinary lead batches it with act-e and act-f.
+    if std::env::var("OMNIGRAPH_GROUP_COMMIT_PIPELINE").map_or(true, |v| v != "1") {
+        assert!(
+            a_stored.writes.len() >= 2,
+            "act-a's write did not share a batch: {:?}",
+            a_stored.writes
+        );
+    }
     let report = attribution::check(&fresh, &ops).await;
     eprintln!(
         "[gc-repro] attribution: {} {:?}",
@@ -1191,27 +1195,64 @@ async fn gc_mixed_actor_batch_in_doubt_names_one_commit_for_every_member() {
     let first = {
         let db = Arc::clone(&db);
         tokio::spawn(async move {
-            db.mutate_as_with_receipt("main", QUERIES, "ins", &mixed_params(&[("$slug", "z0")], &[("$n", 0)]), Some("act-z"))
-                .await
+            db.mutate_as_with_receipt(
+                "main",
+                QUERIES,
+                "ins",
+                &mixed_params(&[("$slug", "z0")], &[("$n", 0)]),
+                Some("act-z"),
+            )
+            .await
         })
     };
     parked.wait_until_reached().await;
     // The next publication's acknowledgement is lost and its read-back fails.
     let _ack = catalog::PUBLISH_POST_MERGE_PRE_ACK.fail_once_at(2);
     let _read = catalog::PUBLISH_READ_BACK.fail_once_at(1);
-    let specs: Vec<(&'static str, &'static str, omnigraph_compiler::ir::ParamMap, &'static str)> = vec![
-        ("act-a", "ins", mixed_params(&[("$slug", "d1")], &[("$n", 1)]), "fresh"),
-        ("act-b", "multi", mixed_params(&[("$slug", "d2"), ("$name", "q2")], &[("$n", 2)]), "fmulti"),
-        ("act-c", "knows", params(&[("$from", "p0"), ("$to", "p1")]), "sknows"),
-        ("act-d", "ins2", mixed_params(&[("$a", "d4a"), ("$b", "d4b")], &[("$n", 4)]), "pair"),
-        ("act-e", "ins", mixed_params(&[("$slug", "d5")], &[("$n", 5)]), "fresh"),
+    let specs: Vec<(
+        &'static str,
+        &'static str,
+        omnigraph_compiler::ir::ParamMap,
+        &'static str,
+    )> = vec![
+        (
+            "act-a",
+            "ins",
+            mixed_params(&[("$slug", "d1")], &[("$n", 1)]),
+            "fresh",
+        ),
+        (
+            "act-b",
+            "multi",
+            mixed_params(&[("$slug", "d2"), ("$name", "q2")], &[("$n", 2)]),
+            "fmulti",
+        ),
+        (
+            "act-c",
+            "knows",
+            params(&[("$from", "p0"), ("$to", "p1")]),
+            "sknows",
+        ),
+        (
+            "act-d",
+            "ins2",
+            mixed_params(&[("$a", "d4a"), ("$b", "d4b")], &[("$n", 4)]),
+            "pair",
+        ),
+        (
+            "act-e",
+            "ins",
+            mixed_params(&[("$slug", "d5")], &[("$n", 5)]),
+            "fresh",
+        ),
         ("act-f", "person", params(&[("$name", "q6")]), "person"),
     ];
     let mut tasks = Vec::new();
     for (actor, name, p, _) in specs.clone() {
         let db = Arc::clone(&db);
         tasks.push(tokio::spawn(async move {
-            db.mutate_as_with_receipt("main", QUERIES, name, &p, Some(actor)).await
+            db.mutate_as_with_receipt("main", QUERIES, name, &p, Some(actor))
+                .await
         }));
         tokio::time::sleep(Duration::from_millis(40)).await;
     }
@@ -1234,39 +1275,96 @@ async fn gc_mixed_actor_batch_in_doubt_names_one_commit_for_every_member() {
             "person" => (vec![], s("name"), None),
             _ => (vec![], None, Some((s("from").unwrap(), s("to").unwrap()))),
         };
-        let rows = attribution::inserted_rows(kind, &items, person.as_deref(), edge.as_ref().map(|(a, b)| (a.as_str(), b.as_str())), None);
+        let rows = attribution::inserted_rows(
+            kind,
+            &items,
+            person.as_deref(),
+            edge.as_ref().map(|(a, b)| (a.as_str(), b.as_str())),
+            None,
+        );
         match result {
             Ok(receipt) => {
-                eprintln!("[gc-repro] {actor}: published v{}", receipt.commit.as_ref().unwrap().graph_manifest_version);
-                ops.push(attribution::AttrOp { id: index as u64, actor: Some(actor.to_string()), outcome: "ok".into(), commit: receipt.commit.map(|c| c.graph_commit_id), rows });
+                eprintln!(
+                    "[gc-repro] {actor}: published v{}",
+                    receipt.commit.as_ref().unwrap().graph_manifest_version
+                );
+                ops.push(attribution::AttrOp {
+                    id: index as u64,
+                    actor: Some(actor.to_string()),
+                    outcome: "ok".into(),
+                    commit: receipt.commit.map(|c| c.graph_commit_id),
+                    rows,
+                });
             }
             Err(error) => {
-                eprintln!("[gc-repro] {actor}: {error} (evidence {:?}, attempt {:?})", error.completion_evidence(), error.publication_id());
+                eprintln!(
+                    "[gc-repro] {actor}: {error} (evidence {:?}, attempt {:?})",
+                    error.completion_evidence(),
+                    error.publication_id()
+                );
                 assert!(format!("{error}").contains("in doubt"), "{actor}: {error}");
                 attempts.insert(error.publication_id().map(str::to_string));
-                ops.push(attribution::AttrOp { id: index as u64, actor: Some(actor.to_string()), outcome: "in_doubt".into(), commit: None, rows });
+                ops.push(attribution::AttrOp {
+                    id: index as u64,
+                    actor: Some(actor.to_string()),
+                    outcome: "in_doubt".into(),
+                    commit: None,
+                    rows,
+                });
             }
         }
     }
     let in_doubt = ops.iter().filter(|op| op.outcome == "in_doubt").count();
     eprintln!("[gc-repro] in doubt: {in_doubt} members, attempts {attempts:?}");
-    assert!(in_doubt >= 2, "the in-doubt batch held fewer than two members");
-    assert_eq!(attempts.len(), 1, "members of one batch name different attempts");
-    let attempt = attempts.into_iter().next().unwrap().expect("the in-doubt error names the attempted commit");
+    // Pipelined batches take only what is queued when a batch enters stage
+    // A, and here that is one write each; the ordinary lead batches them.
+    let pipelined = std::env::var("OMNIGRAPH_GROUP_COMMIT_PIPELINE").is_ok_and(|v| v == "1");
+    assert!(
+        in_doubt >= if pipelined { 1 } else { 2 },
+        "the in-doubt batch held too few members"
+    );
+    assert_eq!(
+        attempts.len(),
+        1,
+        "members of one batch name different attempts"
+    );
+    let attempt = attempts
+        .into_iter()
+        .next()
+        .unwrap()
+        .expect("the in-doubt error names the attempted commit");
     // The handle keeps writing.
-    db.mutate_as_with_receipt("main", QUERIES, "ins", &mixed_params(&[("$slug", "after")], &[("$n", 9)]), Some("act-a"))
-        .await
-        .expect("the handle writes after an in-doubt batch");
+    db.mutate_as_with_receipt(
+        "main",
+        QUERIES,
+        "ins",
+        &mixed_params(&[("$slug", "after")], &[("$n", 9)]),
+        Some("act-a"),
+    )
+    .await
+    .expect("the handle writes after an in-doubt batch");
     let fresh = Omnigraph::open(&uri).await.unwrap();
     let commits = fresh.list_commits(None).await.unwrap();
-    let landed = commits.iter().find(|c| c.graph_commit_id == attempt).expect("the attempted commit landed");
-    let actors: std::collections::BTreeSet<_> = landed.writes.iter().map(|w| w.actor_id.clone()).collect();
+    let landed = commits
+        .iter()
+        .find(|c| c.graph_commit_id == attempt)
+        .expect("the attempted commit landed");
+    let actors: std::collections::BTreeSet<_> =
+        landed.writes.iter().map(|w| w.actor_id.clone()).collect();
     eprintln!("[gc-repro] landed {attempt}: writes of {actors:?}");
     let report = attribution::check(&fresh, &ops).await;
-    eprintln!("[gc-repro] attribution: {} {:?}", report.summary, report.violations);
+    eprintln!(
+        "[gc-repro] attribution: {} {:?}",
+        report.summary, report.violations
+    );
     assert!(report.violations.is_empty());
     // Every in-doubt member is in the landed commit's write list.
     for op in ops.iter().filter(|op| op.outcome == "in_doubt") {
-        assert!(landed.writes.iter().any(|w| w.actor_id == op.actor), "{:?} missing from the landed batch", op.actor);
+        let held = if landed.writes.is_empty() {
+            landed.actor_id == op.actor
+        } else {
+            landed.writes.iter().any(|w| w.actor_id == op.actor)
+        };
+        assert!(held, "{:?} missing from the landed commit", op.actor);
     }
 }

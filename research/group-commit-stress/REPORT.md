@@ -615,8 +615,8 @@ ordinary path.
 ### 11.3 Was attribution exact?
 
 Yes, in every cell: 0 attribution violations from both the HTTP check and
-the engine oracle, and 0 model violations, in every run below; 0 in the 13
-focused tests.
+the engine oracle, and 0 model violations, in every run below; 0 in the 12
+focused tests (with pipelining on and off).
 
 | cell | where | writes ack'd | mixed-actor batch commits | rows checked | result |
 |---|---|---:|---:|---:|---|

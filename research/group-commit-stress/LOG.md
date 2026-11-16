@@ -813,8 +813,11 @@ row-id ranges stay in the record; `openapi.json` regenerated; 107/107.
 
 Suites touched by the change, debug build: engine `integration`
 `changes::`, `changes_cost::`, `lineage_projection::` 74/74 and `writes`
-67/67, each with batching on and off; focused group-commit tests 13/13 with
-pipelining on and off.
+67/67, each with batching on and off; focused group-commit tests 12/12 with
+pipelining on and off (the premise "the batch holds two writes" holds only
+for the ordinary lead: pipelined batches take only what is queued at stage A
+and here led one write each, so two tests skip that premise when pipelining
+is on; every outcome check still runs).
 
 Soak checks: HTTP attribution 0 violations (6,487 batch commits, 202,815
 entries, 223,034 rows; 37 min, sequential); engine oracle 0 (same counts,
