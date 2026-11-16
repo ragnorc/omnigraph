@@ -996,3 +996,20 @@ fn scanner_preserves_literal_bangs_without_expanding_yaml_simple_keys() {
     }
     reject("%TAG !e! tag:example.com,2026:\n---\nversion: 1\n");
 }
+
+// Issue #1419: a standalone server on loopback can serve plain HTTP with
+// bearer tokens and a Cedar policy, but the CLI refuses every credentialed
+// `http://` loopback target, so only the unauthenticated setup is reachable.
+#[test]
+fn authenticated_loopback_http_server_target_is_accepted_issue_1419() {
+    for endpoint in ["http://127.0.0.1:8080", "http://[::1]:8080/api"] {
+        for auth in [
+            "{provider: token, source: {env: TOKEN}}",
+            "{provider: token, source: {file: secrets/token}}",
+            "{provider: token, source: {store: {}}}",
+        ] {
+            let text = server(endpoint, auth);
+            assert!(decode(&text).is_ok(), "refused:\n{text}\n{:?}", decode(&text).err());
+        }
+    }
+}

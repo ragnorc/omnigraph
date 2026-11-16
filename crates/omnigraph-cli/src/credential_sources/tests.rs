@@ -491,3 +491,17 @@ fn profile_store_never_substitutes_a_control_token_for_data() {
     );
     assert_eq!(store.reads.get(), 0);
 }
+
+// Issue #1419: the credential binding is the second place that refuses an
+// `http://` route, so relaxing configuration alone cannot reach the server.
+#[test]
+fn server_binding_accepts_a_loopback_http_route_issue_1419() {
+    let owner = OwnerBinding::new(
+        OwnerKind::Server,
+        "owner-binding-1".into(),
+        "profile-binding-1".into(),
+        "http://127.0.0.1:8080/".into(),
+        None,
+    );
+    assert!(owner.is_ok(), "{owner:?}");
+}
