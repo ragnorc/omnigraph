@@ -6246,6 +6246,95 @@ fn studio_opens_a_server_target_whose_digests_target_inspect_reports() {
     assert!(probe.accept().is_err(), "an endpoint was contacted");
 }
 
+/// A direct write to a cluster graph answers to the graph's applied policy,
+/// as `access` reports it for the same actor and the server enforces it:
+/// a `load` or `mutate` on the protected `main` is refused for an actor
+/// outside the policy, for an actor the policy lets write only unprotected
+/// branches, and for a write that names no actor, and none of them lands.
+#[test]
+fn direct_writes_to_a_cluster_graph_follow_its_applied_policy_issue_1414() {
+    let cluster = converged_loaded_cluster("knowledge", Some(POLICY_YAML));
+    let people = |cluster: &ClusterFixture| -> Vec<String> {
+        let output = output_success(
+            cli()
+                .arg("query")
+                .arg("--target")
+                .arg(cluster.path())
+                .args([
+                    "--graph",
+                    "knowledge",
+                    "-e",
+                    "query q() { match { $p: Person } return { $p.name } order { $p.name } }",
+                    "--json",
+                ]),
+        );
+        parse_stdout_json(&output)["rows"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|row| row["p.name"].as_str().unwrap().to_string())
+            .collect()
+    };
+    let before = people(&cluster);
+    let data = cluster.path().join("mallory.jsonl");
+    fs::write(
+        &data,
+        "{\"type\":\"Person\",\"data\":{\"name\":\"Mallory\",\"age\":40}}\n",
+    )
+    .unwrap();
+
+    let load = |actor: Option<&str>| {
+        let mut command = cli();
+        command
+            .arg("load")
+            .arg("--target")
+            .arg(cluster.path())
+            .args(["--graph", "knowledge", "--mode", "append", "--json"])
+            .arg("--data")
+            .arg(&data);
+        if let Some(actor) = actor {
+            command.args(["--as", actor]);
+        }
+        command
+    };
+    let mut mutate = cli();
+    mutate
+        .arg("mutate")
+        .arg("--target")
+        .arg(cluster.path())
+        .args([
+            "--graph",
+            "knowledge",
+            "-e",
+            "query add($name: String) { insert Person { name: $name } }",
+            "--params",
+            r#"{"name":"Mallory"}"#,
+            "--as",
+            "act-bruno",
+            "--json",
+        ]);
+    for (case, mut command) in [
+        ("outsider load", load(Some("act-outsider"))),
+        ("actorless load", load(None)),
+        ("main mutate by an unprotected-only writer", mutate),
+    ] {
+        let output = command.output().unwrap();
+        unlock_cluster_fixture(cluster.path());
+        assert!(
+            !output.status.success(),
+            "{case}: a write the applied policy denies landed: {}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+        let text = format!(
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(text.contains("polic"), "{case}: {text}");
+    }
+    assert_eq!(people(&cluster), before, "a refused write changed main");
+}
+
 /// `access` says what the caller may do at a target. A cluster graph's
 /// applied policy decides for the declared actor, whether a root target with
 /// `--graph` or the graph's own store is addressed; a standalone graph
