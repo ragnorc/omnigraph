@@ -8765,3 +8765,85 @@ async fn removed_routes_and_legacy_query_fields_refuse_without_graph_effects() {
     }
     assert_eq!(main_head_commit_id(&app).await, before);
 }
+
+const ENUM_TASK_SCHEMA: &str = r#"
+node Task {
+    name: String @key
+    status: enum(open, done)
+}
+"#;
+
+/// A served load or mutation refused at input or value validation never
+/// staged anything, so it answers what the direct route answers: no effects,
+/// fix the request. The engine proves the refusal came before any effect;
+/// without that proof the server must call an owned write's `400` unknown.
+#[tokio::test(flavor = "multi_thread")]
+async fn served_write_refused_at_validation_reports_no_effects_issue_1413() {
+    let temp = init_graph_with_schema_and_data(
+        ENUM_TASK_SCHEMA,
+        r#"{"type":"Task","data":{"name":"t1","status":"open"}}"#,
+    )
+    .await;
+    let graph = graph_path(temp.path());
+    let app = build_app(
+        AppState::open(graph.to_string_lossy().to_string())
+            .await
+            .unwrap(),
+    );
+    let before = main_head_commit_id(&app).await;
+    let load = |data: &str| {
+        json_post(
+            "/load",
+            &json!({"branch": "main", "mode": "append", "data": data}),
+        )
+    };
+    let refused = [
+        (
+            "load of an enum value outside its domain",
+            load(r#"{"type":"Task","data":{"name":"t9","status":"closed"}}"#),
+            "invalid enum value 'closed' for Task.status",
+        ),
+        (
+            "load of an unknown node type",
+            load(r#"{"type":"Ghost","data":{"name":"g1"}}"#),
+            "unknown node type 'Ghost'",
+        ),
+        (
+            "mutation inserting an enum value outside its domain",
+            json_post(
+                "/mutate",
+                &json!({
+                    "branch": "main",
+                    "query": "query add_task($name: String, $status: String) {\n  insert Task { name: $name, status: $status }\n}\n",
+                    "name": "add_task",
+                    "params": {"name": "t9", "status": "closed"},
+                }),
+            ),
+            "invalid enum value 'closed' for Task.status",
+        ),
+    ];
+    for (what, request, needle) in refused {
+        let (status, body) = json_response(&app, request).await;
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{what}: {body}");
+        assert_eq!(body["code"], "bad_request", "{what}: {body}");
+        assert!(
+            body["error"].as_str().unwrap_or_default().contains(needle),
+            "{what}: {body}"
+        );
+        assert_eq!(
+            body["disposition"],
+            json!({"effects": "none", "action": "fix"}),
+            "{what}: {body}"
+        );
+        assert_eq!(main_head_commit_id(&app).await, before, "{what}");
+    }
+
+    // The same route lands a valid row, so the refusals above were the values'.
+    let (status, body) = json_response(
+        &app,
+        load(r#"{"type":"Task","data":{"name":"t8","status":"done"}}"#),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert_ne!(main_head_commit_id(&app).await, before);
+}
