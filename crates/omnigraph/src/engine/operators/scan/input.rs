@@ -98,7 +98,7 @@ impl Lookup {
     ) -> DfResult<()> {
         let held = memory.child("scan candidate input")?;
         held.hold(&batch)?;
-        let rows = memory.ctx.session_config().batch_size().clamp(1, 256);
+        let rows = memory.ctx.session_config().batch_size().max(1);
         for offset in (0..batch.num_rows()).step_by(rows) {
             let work = Arc::new(memory.child("destination scan batch")?);
             let candidates = batch.slice(offset, rows.min(batch.num_rows() - offset));
