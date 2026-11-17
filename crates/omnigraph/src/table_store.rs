@@ -4400,6 +4400,7 @@ impl TableStore {
                 )));
             }
         };
+        let changed_condition = unchanged_rows_skipped(&ds, semantics, system_columns);
         let mut builder =
             MergeInsertBuilder::try_new(Arc::new(ds), vec![system_columns.id.to_string()])
                 .map_err(OmniError::lance_internal)?;
@@ -4407,7 +4408,7 @@ impl TableStore {
         // stored values differ from the source; a row equal value for value
         // stays where it is. Blob columns are not comparable here (the target
         // holds descriptors), so a table with one keeps rewriting every match.
-        match unchanged_rows_skipped(&ds, semantics, system_columns) {
+        match changed_condition {
             Some(changed) => builder.when_matched(WhenMatched::UpdateIfExpr(changed)),
             None => builder.when_matched(WhenMatched::UpdateAll),
         };
