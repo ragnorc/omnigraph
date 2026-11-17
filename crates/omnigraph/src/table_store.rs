@@ -2101,6 +2101,35 @@ decide_seam! {
     pub static CHANGE_FEED_ETAG_WITNESS = ("change_feed.etag_witness", Unreachable, [Skip]);
 }
 
+/// #1430 prototype: `source.c IS DISTINCT FROM target.c` over every stored
+/// column but the id, joined by `OR`, for an upsert into a table without Blob
+/// columns; `None` otherwise.
+fn unchanged_rows_skipped(
+    ds: &Dataset,
+    semantics: KeyedWriteSemantics,
+    system_columns: SystemColumns,
+) -> Option<Expr> {
+    use datafusion::common::Column;
+    use datafusion::logical_expr::{Operator, binary_expr};
+    if semantics != KeyedWriteSemantics::Upsert
+        || ds.schema().fields_pre_order().any(|field| field.is_blob())
+    {
+        return None;
+    }
+    ds.schema()
+        .fields
+        .iter()
+        .filter(|field| field.name != system_columns.id)
+        .map(|field| {
+            binary_expr(
+                Expr::Column(Column::new(Some("source"), field.name.clone())),
+                Operator::IsDistinctFrom,
+                Expr::Column(Column::new(Some("target"), field.name.clone())),
+            )
+        })
+        .reduce(Expr::or)
+}
+
 impl TableStore {
     pub(crate) fn session(&self) -> Arc<lance::session::Session> {
         self.session.clone()
@@ -4374,7 +4403,14 @@ impl TableStore {
         let mut builder =
             MergeInsertBuilder::try_new(Arc::new(ds), vec![system_columns.id.to_string()])
                 .map_err(OmniError::lance_internal)?;
-        builder.when_matched(WhenMatched::UpdateAll);
+        // #1430 prototype: an upsert rewrites only the matched rows whose
+        // stored values differ from the source; a row equal value for value
+        // stays where it is. Blob columns are not comparable here (the target
+        // holds descriptors), so a table with one keeps rewriting every match.
+        match unchanged_rows_skipped(&ds, semantics, system_columns) {
+            Some(changed) => builder.when_matched(WhenMatched::UpdateIfExpr(changed)),
+            None => builder.when_matched(WhenMatched::UpdateAll),
+        };
         builder.when_not_matched(when_not_matched);
         let update_only = matches!(
             semantics,

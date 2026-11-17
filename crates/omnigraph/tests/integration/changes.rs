@@ -167,6 +167,73 @@ async fn write_receipts_identify_exact_commits_and_mutation_noops() {
     );
 }
 
+/// Issue #1430: an update that matches a row but assigns the value it already
+/// holds changes nothing, so it publishes no commit and leaves the head.
+#[tokio::test]
+async fn unchanged_update_publishes_nothing_issue_1430() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = init_and_load(&dir).await;
+    db.mutate_with_receipt(
+        "main",
+        MUTATION_QUERIES,
+        "insert_person",
+        &mixed_params(&[("$name", "Eve")], &[("$age", 22)]),
+    )
+    .await
+    .unwrap();
+
+    let head_before = snapshot_id(&db, "main").await.unwrap();
+    let receipt = db
+        .mutate_with_receipt(
+            "main",
+            MUTATION_QUERIES,
+            "set_age",
+            &mixed_params(&[("$name", "Eve")], &[("$age", 22)]),
+        )
+        .await
+        .unwrap();
+    if let Some(commit) = &receipt.commit {
+        let changes = graph_diff(
+            &db,
+            commit.parent_commit_id.as_deref().unwrap(),
+            &commit.graph_commit_id,
+            &ChangeFeedScope::default(),
+        )
+        .await
+        .unwrap();
+        assert!(changes.changes.is_empty(), "the update changed no row");
+    }
+    assert!(
+        receipt.commit.is_none(),
+        "an update that assigns the stored value published {:?}",
+        receipt.commit.as_ref().map(|c| &c.graph_commit_id)
+    );
+    assert_eq!(snapshot_id(&db, "main").await.unwrap(), head_before);
+}
+
+/// Issue #1430: a merge load of rows already stored, value for value, changes
+/// nothing, so it should leave the head where it was.
+#[tokio::test]
+async fn unchanged_merge_load_publishes_nothing_issue_1430() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = init_and_load(&dir).await;
+    let row = r#"{"type":"Person","data":{"name":"Eve","age":22}}"#;
+    db.load_with_receipt("main", row, LoadMode::Merge)
+        .await
+        .unwrap();
+    let head_before = snapshot_id(&db, "main").await.unwrap();
+    let receipt = db
+        .load_with_receipt("main", row, LoadMode::Merge)
+        .await
+        .unwrap();
+    assert_eq!(
+        snapshot_id(&db, "main").await.unwrap(),
+        head_before,
+        "a merge load of a stored row published {}",
+        receipt.commit.graph_commit_id
+    );
+}
+
 /// A chain commit `__history` no longer holds answers the ancestry question
 /// `false`: a two-point diff whose walk from the head meets the missing block
 /// before `from`'s generation takes the exact merge instead of refusing.
