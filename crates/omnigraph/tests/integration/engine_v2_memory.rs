@@ -2321,3 +2321,137 @@ query pairs() {
         );
     }
 }
+
+const ANCHOR_FANOUT_SCHEMA: &str = r#"
+node Filing { accession: String @key  period: String }
+node Holding { holding_id: String @key  note: String }
+edge InFiling: Holding -> Filing { @key(@src, @dst) }
+"#;
+
+const ANCHOR_FANOUT_QUERY: &str = r#"query held($p: String) {
+    match {
+        $f: Filing
+        $f.period = $p
+        $h inFiling $f
+    }
+    return { count($h) as n, max($h.note) as top }
+}"#;
+
+/// A selective anchor whose one hop reaches most of a large destination
+/// (issue #1432: 2,420 filings reaching ~900k of 1.3M holdings). The table
+/// holds fewer than `HASH_JOIN_RATIO` rows per frontier row, but its build
+/// estimate (about 2.2 MB here) exceeds a quarter of the 8 MiB pool. The
+/// destination must still be read a bounded number of times, never once per
+/// 256-row slice of the traversal: neither a planned `id_lookup` nor a hash
+/// join that falls back to one.
+#[tokio::test]
+#[serial]
+async fn selective_anchor_fanout_reads_the_destination_once_issue_1432() {
+    const FILINGS: usize = 16;
+    const HOLDINGS: usize = 16_384;
+    let dir = tempfile::tempdir().unwrap();
+    let db = session(
+        Omnigraph::init(dir.path().to_str().unwrap(), ANCHOR_FANOUT_SCHEMA)
+            .await
+            .unwrap(),
+    );
+    // Incompressible notes, so the compressed column bytes the estimate
+    // reads are close to the decoded bytes the build holds.
+    let mut state: u64 = 0x1432;
+    let mut note = || {
+        (0..25)
+            .map(|_| {
+                state = state
+                    .wrapping_mul(6364136223846793005)
+                    .wrapping_add(1442695040888963407);
+                format!("{:08x}", state >> 32)
+            })
+            .collect::<String>()
+    };
+    let mut lines = Vec::new();
+    for f in 0..FILINGS {
+        let period = if f < FILINGS * 3 / 4 { "q3" } else { "q2" };
+        lines.push(
+            serde_json::json!({"type":"Filing","data":{"accession":format!("f{f:02}"),"period":period}})
+                .to_string(),
+        );
+    }
+    for h in 0..HOLDINGS {
+        lines.push(
+            serde_json::json!({"type":"Holding","data":{"holding_id":format!("h{h:05}"),"note":note()}})
+                .to_string(),
+        );
+        lines.push(
+            serde_json::json!({"edge":"InFiling","from":format!("h{h:05}"),"to":format!("f{:02}", h % FILINGS)})
+                .to_string(),
+        );
+    }
+    db.load_jsonl(&lines.join("\n"), LoadMode::Overwrite)
+        .await
+        .unwrap();
+    db.optimize_as(None, omnigraph::db::OptimizeRequest::default())
+        .await
+        .unwrap();
+    let v2 = with_setting(&db, "engine", "v2");
+    let limit = 8 * MIB;
+    let values = params(&[("$p", "q3")]);
+    let explain = with_query_memory_limit(
+        limit,
+        v2.explain_query("main", ANCHOR_FANOUT_QUERY, "held", &values),
+    )
+    .await
+    .unwrap();
+    let estimate = explain["statistics"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .find(|read| read["statistic"] == "hash_join_build_bytes(node:Holding)")
+        .map(|read| read["value"].clone());
+    let mut pending = vec![&explain["physical_plan"]];
+    let mut saw_hash_join = false;
+    while let Some(node) = pending.pop() {
+        assert_ne!(
+            node["id_restriction"], "input",
+            "a frontier covering the table looks ids up per slice ({estimate:?}): {explain}"
+        );
+        if node["node"] == "HashJoin" {
+            assert_eq!(node["fallback"], "id_lookup", "{explain}");
+            saw_hash_join = true;
+        }
+        pending.extend(node["inputs"].as_array().into_iter().flatten());
+    }
+    assert!(saw_hash_join, "{explain}");
+
+    let run = with_query_memory_limit(
+        limit,
+        v2.query_inspected(
+            ReadTarget::branch("main"),
+            ANCHOR_FANOUT_QUERY,
+            "held",
+            &values,
+        ),
+    )
+    .await
+    .unwrap();
+    let batch = run.result.concat_batches().unwrap();
+    let n = batch
+        .column(0)
+        .as_any()
+        .downcast_ref::<Int64Array>()
+        .unwrap()
+        .value(0);
+    assert_eq!(n as usize, HOLDINGS * 3 / 4);
+    let report = serde_json::to_value(&run.report).unwrap();
+    let sides: Vec<&serde_json::Value> = report["rows"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|row| row["operator"] == "HashJoinExec")
+        .map(|row| &row["attempts"][0]["ran"])
+        .collect();
+    assert_eq!(
+        sides,
+        [&serde_json::json!("hash_join")],
+        "the destination is read once, not looked up per slice: {report}"
+    );
+}
