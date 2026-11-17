@@ -84,7 +84,8 @@ def apply_write(r, g, d, br, st):
                 ps[k] = {**ps[k], **rec}
             else:
                 ps[k] = {f: rec.get(f) for f in ("email", "age", "code")}
-            data = {"slug": k, **{f: v for f, v in rec.items() if v is not None}}
+            # supply every property of the resulting row (#1278: an omitted one is erased)
+            data = {"slug": k, **{f: v for f, v in ps[k].items() if v is not None}}
             lines.append(json.dumps({"type": "P", "data": data}))
         open(f"{d}/w.jsonl", "w").write("\n".join(lines) + "\n")
         p = run(["load", "--data", f"{d}/w.jsonl", "--mode", "merge", "--branch", br, "--target", g])
