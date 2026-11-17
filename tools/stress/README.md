@@ -1,6 +1,6 @@
 # Stress and fuzz harness
 
-These scripts run Omnigraph user journeys through the built `omnigraph` CLI and server. They compare each result with a small Python model of the expected answer. The reports of the runs that wrote them are [docs/stress/20261106.md](../../docs/stress/20261106.md) and [docs/stress/20261108.md](../../docs/stress/20261108.md) and [docs/stress/20261111.md](../../docs/stress/20261111.md) and [docs/stress/20261116.md](../../docs/stress/20261116.md).
+These scripts run Omnigraph user journeys through the built `omnigraph` CLI and server. They compare each result with a small Python model of the expected answer. The reports of the runs that wrote them are [docs/stress/20261106.md](../../docs/stress/20261106.md) and [docs/stress/20261108.md](../../docs/stress/20261108.md) and [docs/stress/20261111.md](../../docs/stress/20261111.md) and [docs/stress/20261116.md](../../docs/stress/20261116.md) and [docs/stress/20261117.md](../../docs/stress/20261117.md).
 
 The scripts are not part of CI. They write scratch graphs under `/tmp/og/`. Set `OG` to the CLI binary under test. The default is `omnigraph` on `PATH`.
 
@@ -33,6 +33,9 @@ The scripts are not part of CI. They write scratch graphs under `/tmp/og/`. Set 
 | `hfuzz.py` | Reads of commits by id on one long-lived server (#1184): snapshot queries, commit changes and diff for commits on branches that are merged, deleted and recreated |
 | `optloop.py` | A recorded `optimize` every few seconds beside `sserve.py` |
 | `tlsproxy.py` | A TLS proxy for a local server, with fault modes in `/tmp/og/proxy_mode` (`pass`, `drop_post`, `drop_response`, `marker:<text>`, `delay:<seconds>`) |
+| `s3merge.py` | On an S3 cluster root (RustFS) behind toxiproxy: writers on main and on short-lived branches, merges while the branch writers run, branch deletes, and served `cluster apply` through the CLI that adds a nullable property and a stored query, whenever only main is live. Each merge answered 200 must carry every row acknowledged on its branch before it was sent; no acknowledged row or applied property may be lost, and nothing may appear that nobody attempted. `HARSH=1` adds long outages; `KILL_APPLY=1` SIGKILLs the server during half of the applies and observes each by its deployment id after the lease takeover |
+| `optresume.py` | Bounded recorded `optimize` over four node and three edge tables with a small run byte budget, writes between and during runs, and `--kill` to SIGKILL the server mid-run: every operation reaches a terminal state, a run starts at the recorded `resume_at`, every table is reached, and no row is lost |
+| `cread.py` | `cleanup` beside reader processes in the supported topology (write bursts and cleanups alternate): a count, a full export and Blob reads of main's head during which no write happened must succeed with the exact answer |
 
 Each fuzzer takes a first seed and a count, for example `OG=target/debug/omnigraph python3 tools/stress/qfuzz.py 100 400`. A failing seed writes its case to the directory that the script names.
 
@@ -40,4 +43,4 @@ The served scripts need an operator configuration in each `OMNIGRAPH_HOME` they 
 
 `repros/` holds the GQT cases of the bugs this run filed. They fail on the base commit. They are outside `crates/omnigraph-gqt/cases/`, so CI does not discover them. Run one with `target/debug/omnigraph-gqt tools/stress/repros/<case>.gqt`.
 
-`repros/server_boot_refusal_keeps_lock.sh` and `repros/csv_null_and_string_null.sh` reproduce two findings of the 2026-11-16 run. `repros/export_blocks_branch_control.py` and `repros/optimize_state_read_409.py` reproduce #1355 and #1356 against a running build. The second needs RustFS on `127.0.0.1:9000` and `toxiproxy-server` on `127.0.0.1:8474`. Without Docker, download both as release binaries.
+`repros/server_boot_refusal_keeps_lock.sh` and `repros/csv_null_and_string_null.sh` reproduce two findings of the 2026-11-16 run. `repros/optimize_table_over_run_budget.py` reproduces the 2026-11-17 documentation finding: a table larger than the optimize run byte budget is deferred on every served run. `repros/export_blocks_branch_control.py` and `repros/optimize_state_read_409.py` reproduce #1355 and #1356 against a running build. The second needs RustFS on `127.0.0.1:9000` and `toxiproxy-server` on `127.0.0.1:8474`. Without Docker, download both as release binaries.
