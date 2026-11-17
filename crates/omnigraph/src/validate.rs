@@ -6,7 +6,8 @@
 //! how each committed lookup reads ([`plan::plan_write`], the `load csv`
 //! plan), and the one judge in [`load`] executes them: the `load csv`
 //! operator over its partitions, the staged routes (a JSONL load, a
-//! mutation, a blob cell, a branch merge) over their batches in memory.
+//! mutation, a blob cell) over their batches in memory, and a branch merge
+//! over its delta streamed from storage ([`load::Sweep`]).
 //!
 //! This module holds what the judge reads: [`CommittedState`], the committed
 //! view behind the lookups, with one open per table shared between them,
@@ -63,30 +64,6 @@ impl Violation {
     }
 }
 
-/// Per-table change a branch merge computes for its target: the rows added
-/// or changed (as batches, projected to what the checks read) plus the ids
-/// removed. The merge's delta container, planned table by table.
-#[derive(Debug, Default)]
-pub(crate) struct TableChange {
-    /// Rows new in the result (absent from base).
-    pub added: Vec<RecordBatch>,
-    /// Rows present before but with changed values.
-    pub changed: Vec<RecordBatch>,
-    /// Ids removed in the result.
-    pub deleted_ids: Vec<String>,
-}
-
-impl TableChange {
-    /// Batches carrying field values a row-local constraint must check
-    /// (`added ∪ changed`). Unchanged rows were validated at write time.
-    pub fn value_batches(&self) -> impl Iterator<Item = &RecordBatch> {
-        self.added.iter().chain(self.changed.iter())
-    }
-}
-
-/// Per-table changes keyed by `table_key` (`node:Type` / `edge:Type`).
-pub(crate) type ChangeSet = HashMap<String, TableChange>;
-
 /// Wrap a leaf-check error as a value-constraint [`Violation`]; the message
 /// is the leaf's own text, which every route's refusal carries verbatim.
 fn value_violation(table_key: &str, err: OmniError) -> Violation {
@@ -133,10 +110,19 @@ pub(crate) struct CommittedState<'a> {
     /// snapshot for `@card` (the #298 stale-handle fix). This is the live
     /// committed graph view, not a raw Lance HEAD that may be unpublished or
     /// belong to an inherited source ref. `None` on merge/load.
-    live: Option<(&'a Omnigraph, Option<&'a str>)>,
+    live: Option<LiveCardinality<'a>>,
     /// The committed datasets this validation has opened, one open per
     /// table: the access choice and the lookups share the handle.
     opened: std::sync::Mutex<HashMap<String, Dataset>>,
+}
+
+/// Where a write counts `@card`: the live branch of `db`, and the graph head
+/// the caller's precondition names, when the write carries one (#1424).
+#[derive(Clone, Copy)]
+pub(crate) struct LiveCardinality<'a> {
+    pub(crate) db: &'a Omnigraph,
+    pub(crate) branch: Option<&'a str>,
+    pub(crate) caller_head: Option<&'a str>,
 }
 
 impl<'a> CommittedState<'a> {
@@ -170,6 +156,11 @@ impl<'a> CommittedState<'a> {
     /// through the fresh graph snapshot is load-bearing for first-touch named
     /// branches: their table still inherits another Lance ref until this write
     /// forks it, so opening the target ref directly would be invalid.
+    ///
+    /// The live read is the one read of a write that reaches past the head
+    /// it pinned. A write carrying a caller precondition promises that its
+    /// outcome is decided at the caller's head, so a live head that differs
+    /// is the caller's precondition failing, before any effect (#1424).
     async fn open_cardinality(&self, table_key: &str) -> Result<Option<Dataset>> {
         if self.overwritten.contains(table_key) {
             return Ok(None);
@@ -181,8 +172,21 @@ impl<'a> CommittedState<'a> {
             return Ok(None);
         };
         match self.live {
-            Some((db, branch)) => {
-                let live = db.fresh_snapshot_for_branch_unchecked(branch).await?;
+            Some(LiveCardinality {
+                db,
+                branch,
+                caller_head,
+            }) => {
+                let (live, live_head) = db.fresh_snapshot_for_branch_unchecked(branch).await?;
+                if let Some(expected) = caller_head
+                    && live_head != expected
+                {
+                    return Err(OmniError::precondition_failed(
+                        branch.unwrap_or("main"),
+                        expected,
+                        Some(live_head),
+                    ));
+                }
                 match live.dataset(table_key) {
                     Some(_) => Ok(Some(live.open_lance_dataset(table_key).await?)),
                     None => Ok(None),
