@@ -1,0 +1,48 @@
+// LDBC SNB Interactive v1 (CsvBasic) mapped to one Omnigraph graph.
+// Post and Comment share one Message type (LDBC ids are unique across both);
+// `kind` tells them apart. Edge types are named per endpoint pair.
+node Person {
+    id: I64 @key
+    firstName: String
+    lastName: String
+    gender: String
+    birthday: Date
+    creationDate: DateTime
+    locationIP: String
+    browserUsed: String
+}
+node Message {
+    id: I64 @key
+    kind: enum(post, comment)
+    creationDate: DateTime
+    locationIP: String
+    browserUsed: String
+    language: String?
+    imageFile: String?
+    content: String? @index
+    length: I32
+}
+node Forum { id: I64 @key title: String creationDate: DateTime }
+node Tag { id: I64 @key name: String url: String }
+node TagClass { id: I64 @key name: String url: String }
+node Place { id: I64 @key name: String url: String type: enum(city, country, continent) }
+node Organisation { id: I64 @key type: enum(university, company) name: String url: String }
+
+edge Knows: Person -> Person { creationDate: DateTime }
+edge HasCreator: Message -> Person
+edge ReplyOf: Message -> Message
+edge ContainerOf: Forum -> Message
+edge HasMember: Forum -> Person { joinDate: DateTime }
+edge HasModerator: Forum -> Person
+edge HasTag: Message -> Tag
+edge ForumHasTag: Forum -> Tag
+edge HasInterest: Person -> Tag
+edge PersonIsLocatedIn: Person -> Place
+edge MessageIsLocatedIn: Message -> Place
+edge OrgIsLocatedIn: Organisation -> Place
+edge IsPartOf: Place -> Place
+edge StudyAt: Person -> Organisation { classYear: I32 }
+edge WorkAt: Person -> Organisation { workFrom: I32 }
+edge Likes: Person -> Message { creationDate: DateTime }
+edge HasType: Tag -> TagClass
+edge IsSubclassOf: TagClass -> TagClass

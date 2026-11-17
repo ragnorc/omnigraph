@@ -1,0 +1,11 @@
+query h1($personId: I64, $q: String) {
+    match {
+        $p: Person { id: $personId }
+        $p <knows>{1,2} $f
+        $f.id != $personId
+        $m hasCreator $f
+    }
+    return { $m.id, bm25($m.content, $q) as score }
+    order { bm25($m.content, $q), $m.id }
+    limit 10
+}

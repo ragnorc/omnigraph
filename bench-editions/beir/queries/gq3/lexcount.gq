@@ -1,0 +1,5 @@
+query lexcount($q: String) {
+    match { $d: Doc }
+    where match_terms($d.text, terms($q, mode: any))
+    return { count($d) as n }
+}

@@ -1,0 +1,11 @@
+query ic9($personId: I64, $maxDate: DateTime) {
+    match {
+        $p: Person,
+        $p <knows>{1,2} $f,
+        $m hasCreator $f,
+    }
+    where $p.id = $personId and $f.id != $personId and $m.creationDate < $maxDate
+    return { $f.id, $f.firstName, $f.lastName, $m.id, $m.content, $m.imageFile, $m.creationDate }
+    order { $m.creationDate desc, $m.id }
+    limit 20
+}

@@ -1,0 +1,6 @@
+query h2($q: String) {
+    match { $m: Message }
+    return { $m.id, bm25($m.content, $q) as score }
+    order { bm25($m.content, $q), $m.id }
+    limit 10
+}

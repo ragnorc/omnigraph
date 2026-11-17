@@ -1,0 +1,6 @@
+query full784($q: Vector(784)) {
+    match { $i: Item }
+    return { $i.id, nearest($i.v, $q) as d }
+    order { nearest($i.v, $q) }
+    limit 10
+}

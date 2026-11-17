@@ -1,0 +1,9 @@
+query full128($q: Vector(128)) {
+    match {
+        let $pop = { match { $i: Item } return { $i } },
+        from nearest($pop, $i.v, $q, k: 10, recall: 1) as $distance,
+    }
+    return { $i.id, $distance as d }
+    order { $distance }
+    limit 10
+}

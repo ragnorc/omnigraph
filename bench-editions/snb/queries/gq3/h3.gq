@@ -1,0 +1,5 @@
+query h3($q: String) {
+    match { $m: Message }
+    where match_terms($m.content, terms($q, mode: any))
+    return { count($m) as n }
+}

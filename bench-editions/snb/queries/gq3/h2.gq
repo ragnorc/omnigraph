@@ -1,0 +1,9 @@
+query h2($q: String) {
+    match {
+        let $pop = { match { $m: Message } return { $m } },
+        from bm25($pop, $m.content, $q) as $score,
+    }
+    return { $m.id, $score as score }
+    order { $score desc, $m.id }
+    limit 10
+}

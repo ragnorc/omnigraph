@@ -1,0 +1,8 @@
+query is1($personId: I64) {
+    match {
+        $p: Person,
+        $p personIsLocatedIn $c,
+    }
+    where $p.id = $personId
+    return { $p.firstName, $p.lastName, $p.birthday, $p.locationIP, $p.browserUsed, $c.id as cityId, $p.gender, $p.creationDate }
+}

@@ -1,0 +1,8 @@
+query is3($personId: I64) {
+    match {
+        $p: Person { id: $personId }
+        $p $k:<knows> $f
+    }
+    return { $f.id, $f.firstName, $f.lastName, $k.creationDate }
+    order { $k.creationDate desc, $f.id }
+}

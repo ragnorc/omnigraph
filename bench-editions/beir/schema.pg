@@ -1,0 +1,5 @@
+// One BEIR corpus: a document is its title and text, as BEIR's BM25 baseline indexes them.
+node Doc {
+    id: String @key
+    text: String @index
+}

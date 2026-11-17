@@ -1,0 +1,9 @@
+query is7($messageId: I64) {
+    match {
+        $m: Message { id: $messageId }
+        $c replyOf $m
+        $c hasCreator $a
+    }
+    return { $c.id, $c.content, $c.creationDate, $a.id, $a.firstName, $a.lastName }
+    order { $c.creationDate desc, $a.id }
+}

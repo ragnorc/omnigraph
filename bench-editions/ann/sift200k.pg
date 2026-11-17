@@ -1,0 +1,4 @@
+node Item {
+    id: I64 @key
+    v: Vector(128) @index
+}

@@ -1,0 +1,11 @@
+query ic8($personId: I64) {
+    match {
+        $p: Person { id: $personId }
+        $m hasCreator $p
+        $c replyOf $m
+        $c hasCreator $a
+    }
+    return { $a.id, $a.firstName, $a.lastName, $c.creationDate, $c.id, $c.content }
+    order { $c.creationDate desc, $c.id }
+    limit 20
+}

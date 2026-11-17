@@ -1,0 +1,9 @@
+query is2($personId: I64) {
+    match {
+        $p: Person { id: $personId }
+        $m hasCreator $p
+    }
+    return { $m.id, $m.content, $m.imageFile, $m.creationDate }
+    order { $m.creationDate desc, $m.id desc }
+    limit 10
+}

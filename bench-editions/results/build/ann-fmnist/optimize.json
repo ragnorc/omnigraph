@@ -1,0 +1,32 @@
+{
+  "stats_version": 1,
+  "elapsed_ms": 19.666526,
+  "exit_code": 0,
+  "storage": {
+    "manifest": {
+      "get": 4,
+      "put": 0,
+      "put_part": 0,
+      "head": 6,
+      "list": 0,
+      "delete": 0,
+      "copy": 0,
+      "rename": 0,
+      "multipart_complete": 0,
+      "multipart_abort": 0
+    },
+    "table": {
+      "get": 1,
+      "put": 0,
+      "put_part": 0,
+      "head": 0,
+      "list": 0,
+      "delete": 0,
+      "copy": 0,
+      "rename": 0,
+      "multipart_complete": 0,
+      "multipart_abort": 0
+    }
+  },
+  "peak_rss_bytes": 307363840
+}

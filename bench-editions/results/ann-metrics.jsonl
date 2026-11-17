@@ -1,0 +1,10 @@
+{"label": "fmnist", "query": "exact784", "edition": "gq3", "n": 100, "recall@10": 1.0, "id_recall@10": 1.0, "max_rel_dist_err": 0, "exhaustive": ["None"]}
+{"label": "fmnist", "query": "full784", "edition": "e2", "n": 100, "recall@10": 1.0, "id_recall@10": 1.0, "max_rel_dist_err": 0, "exhaustive": ["True"]}
+{"label": "fmnist", "query": "full784", "edition": "gq3", "n": 100, "recall@10": 1.0, "id_recall@10": 1.0, "max_rel_dist_err": 0, "exhaustive": ["True"]}
+{"label": "fmnist", "query": "knn784", "edition": "e2", "n": 200, "recall@10": 1.0, "id_recall@10": 1.0, "max_rel_dist_err": 0, "exhaustive": ["True"]}
+{"label": "fmnist", "query": "knn784", "edition": "gq3", "n": 200, "recall@10": 1.0, "id_recall@10": 1.0, "max_rel_dist_err": 0, "exhaustive": ["True"]}
+{"label": "sift200k", "query": "exact128", "edition": "gq3", "n": 100, "recall@10": 1.0, "id_recall@10": 1.0, "max_rel_dist_err": 0, "exhaustive": ["None"]}
+{"label": "sift200k", "query": "full128", "edition": "e2", "n": 100, "recall@10": 1.0, "id_recall@10": 1.0, "max_rel_dist_err": 0, "exhaustive": ["True"]}
+{"label": "sift200k", "query": "full128", "edition": "gq3", "n": 100, "recall@10": 1.0, "id_recall@10": 1.0, "max_rel_dist_err": 0, "exhaustive": ["True"]}
+{"label": "sift200k", "query": "knn128", "edition": "e2", "n": 200, "recall@10": 1.0, "id_recall@10": 1.0, "max_rel_dist_err": 0, "exhaustive": ["True"]}
+{"label": "sift200k", "query": "knn128", "edition": "gq3", "n": 200, "recall@10": 1.0, "id_recall@10": 1.0, "max_rel_dist_err": 0, "exhaustive": ["True"]}

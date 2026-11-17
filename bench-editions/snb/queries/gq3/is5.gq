@@ -1,0 +1,8 @@
+query is5($messageId: I64) {
+    match {
+        $m: Message,
+        $m hasCreator $p,
+    }
+    where $m.id = $messageId
+    return { $p.id, $p.firstName, $p.lastName }
+}

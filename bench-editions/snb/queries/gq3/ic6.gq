@@ -1,0 +1,17 @@
+query ic6($personId: I64, $tagName: String) {
+    match {
+        $p: Person,
+        $p <knows>{1,2} $f,
+        $m hasCreator $f,
+        $m hasTag $t0,
+        $m hasTag $t,
+    }
+    where $p.id = $personId
+        and $f.id != $personId
+        and $m.kind = "post"
+        and $t0.name = $tagName
+        and $t.name != $tagName
+    return { $t.name, count($m) as postCount }
+    order { postCount desc, $t.name }
+    limit 10
+}

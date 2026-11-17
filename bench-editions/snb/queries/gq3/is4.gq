@@ -1,0 +1,5 @@
+query is4($messageId: I64) {
+    match { $m: Message }
+    where $m.id = $messageId
+    return { $m.creationDate, $m.content, $m.imageFile }
+}

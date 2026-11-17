@@ -1,0 +1,33 @@
+# issue: none
+# notes: GQ 3 (a514157c) debug build: the exact lexical scan panics with
+# notes: "attempt to subtract with overflow" when a letter directly precedes U+2122.
+# notes: Run with the GQ 3 commit's `omnigraph-gqt` (dev profile). Edition 2 has no exact scan.
+
+--- runner
+timeout_ms: 60000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+    id: String @key
+    text: String @index(fulltext, analyzer = "standard_v1")
+}
+
+--- seed
+{"type":"Doc","data":{"id":"a","text":"x™ vitamin"}}
+
+--- query
+query c($q: String) {
+    match { $d: Doc }
+    where match_terms($d.text, terms($q, mode: any))
+    return { count($d) as n }
+}
+--- params
+{"q": "vitamin"}
+
+--- expect unordered
+{"n":1}
+--- expect shape
+n: I64

@@ -1,0 +1,7 @@
+query h3($q: String) {
+    match {
+        $m: Message
+        search($m.content, $q)
+    }
+    return { count($m) as n }
+}

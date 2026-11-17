@@ -1,0 +1,9 @@
+query exact128($q: Vector(128)) {
+    match {
+        let $pop = { match { $i: Item } return { $i } },
+        from distance($pop, $i.v, $q) as $distance,
+    }
+    return { $i.id, $distance as d }
+    order { $distance }
+    limit 10
+}

@@ -1,0 +1,21 @@
+query ic4($personId: I64, $startDate: DateTime, $endDate: DateTime) {
+    match {
+        $p: Person { id: $personId }
+        $p <knows> $f
+        $m hasCreator $f
+        $m.kind = "post"
+        $m hasTag $t
+        $m.creationDate >= $startDate
+        $m.creationDate < $endDate
+        not {
+            $p <knows> $f2
+            $m2 hasCreator $f2
+            $m2.kind = "post"
+            $m2 hasTag $t
+            $m2.creationDate < $startDate
+        }
+    }
+    return { $t.name, count($m) as postCount }
+    order { postCount desc, $t.name }
+    limit 10
+}

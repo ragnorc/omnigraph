@@ -1,0 +1,11 @@
+query h1($personId: I64, $q: String) {
+    match {
+        let $pop = { match { $p: Person, $f: Person, $m: Message, $p <knows>{1,2} $f, $m hasCreator $f }
+                     where $p.id = $personId and $f.id != $personId
+                     return { $p, $f, $m } },
+        from bm25($pop, $m.content, $q) as $score,
+    }
+    return { $m.id, $score as score }
+    order { $score desc, $m.id }
+    limit 10
+}

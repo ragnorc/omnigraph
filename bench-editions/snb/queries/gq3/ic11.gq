@@ -1,0 +1,12 @@
+query ic11($personId: I64, $countryName: String, $workFromYear: I32) {
+    match {
+        $p: Person,
+        $p <knows>{1,2} $f,
+        $f $w:workAt $o,
+        $o orgIsLocatedIn $c,
+    }
+    where $p.id = $personId and $f.id != $personId and $c.name = $countryName and $w.workFrom < $workFromYear
+    return { $f.id, $f.firstName, $f.lastName, $o.name, $w.workFrom }
+    order { $w.workFrom, $f.id, $o.name desc }
+    limit 10
+}

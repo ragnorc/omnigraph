@@ -1,0 +1,6 @@
+query rank($q: String) {
+    match { $d: Doc }
+    return { $d.id, bm25($d.text, $q) as score }
+    order { bm25($d.text, $q), $d.id }
+    limit 100
+}

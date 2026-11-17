@@ -1,0 +1,9 @@
+query agg1() {
+    match {
+        $m: Message,
+        $m hasTag $t,
+    }
+    return { $t.name, count($m) as n }
+    order { n desc, $t.name }
+    limit 20
+}

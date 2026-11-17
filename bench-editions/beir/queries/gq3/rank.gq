@@ -1,0 +1,9 @@
+query rank($q: String) {
+    match {
+        let $pop = { match { $d: Doc } return { $d } },
+        from bm25($pop, $d.text, $q) as $score,
+    }
+    return { $d.id, $score as score }
+    order { $score desc, $d.id }
+    limit 100
+}

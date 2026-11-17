@@ -1,0 +1,12 @@
+query ic1($personId: I64, $firstName: String) {
+    match {
+        $p: Person { id: $personId }
+        $p <knows>{1,3} $f
+        $f.firstName = $firstName
+        $f.id != $personId
+        $f personIsLocatedIn $city
+    }
+    return { $f.id, $f.lastName, $f.birthday, $f.creationDate, $f.gender, $f.browserUsed, $f.locationIP, $city.name }
+    order { $f.lastName, $f.id }
+    limit 20
+}

@@ -1,0 +1,11 @@
+query ic2($personId: I64, $maxDate: DateTime) {
+    match {
+        $p: Person { id: $personId }
+        $p <knows> $f
+        $m hasCreator $f
+        $m.creationDate < $maxDate
+    }
+    return { $f.id, $f.firstName, $f.lastName, $m.id, $m.content, $m.imageFile, $m.creationDate }
+    order { $m.creationDate desc, $m.id }
+    limit 20
+}
