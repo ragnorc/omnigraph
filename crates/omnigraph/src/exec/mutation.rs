@@ -587,6 +587,48 @@ fn column_patch_plan(
     }))
 }
 
+/// The rows of `matched` that `assignments` change (#1430 prototype). A row
+/// whose every assigned column already holds the assigned value (null equal to
+/// null, floats by total order) is dropped. An assigned Blob is not compared:
+/// its stored bytes are not read here, so every row is kept.
+fn rows_the_update_changes(
+    matched: RecordBatch,
+    assignments: &HashMap<String, Literal>,
+    blob_properties: &HashSet<String>,
+) -> Result<RecordBatch> {
+    if matched.num_rows() == 0
+        || assignments
+            .keys()
+            .any(|name| blob_properties.contains(name))
+    {
+        return Ok(matched);
+    }
+    let rows = matched.num_rows();
+    let mut changed = vec![false; rows];
+    for (name, value) in assignments {
+        let Some(stored) = matched.column_by_name(name) else {
+            return Ok(matched);
+        };
+        let assigned = literal_to_typed_array(value, stored.data_type(), rows)?;
+        let compare = arrow_ord::ord::make_comparator(
+            stored.as_ref(),
+            assigned.as_ref(),
+            arrow_schema::SortOptions::default(),
+        )
+        .map_err(OmniError::arrow_internal)?;
+        for (row, row_changed) in changed.iter_mut().enumerate() {
+            if !*row_changed && compare(row, row) != std::cmp::Ordering::Equal {
+                *row_changed = true;
+            }
+        }
+    }
+    if changed.iter().all(|row_changed| *row_changed) {
+        return Ok(matched);
+    }
+    let mask = arrow_array::BooleanArray::from(changed);
+    arrow_select::filter::filter_record_batch(&matched, &mask).map_err(OmniError::arrow_internal)
+}
+
 /// `batches` with their columns in `schema`'s order, matched by name.
 fn rebind_by_name(schema: &SchemaRef, batches: Vec<RecordBatch>) -> Result<Vec<RecordBatch>> {
     batches
@@ -2006,7 +2048,6 @@ impl Omnigraph {
                         .scan_update_matches(&ds, &plan.request, pred_expr, budget),
                 )
                 .await?;
-            let affected_count = matches.batches.iter().map(RecordBatch::num_rows).sum();
             tracing::debug!(
                 table = %table_key,
                 mode = ?matches.mode,
@@ -2015,6 +2056,15 @@ impl Omnigraph {
                 rows_bytes = matches.cost.rows_bytes() as u64,
                 "update write mode"
             );
+            // #1430 prototype: a matched row whose assigned values equal its
+            // stored ones is not changed, so it is neither staged nor counted.
+            let mut matches = matches;
+            matches.batches = matches
+                .batches
+                .into_iter()
+                .map(|batch| rows_the_update_changes(batch, &resolved, &blob_props))
+                .collect::<Result<Vec<_>>>()?;
+            let affected_count: usize = matches.batches.iter().map(RecordBatch::num_rows).sum();
             if affected_count == 0 {
                 return Ok(MutationResult {
                     affected_nodes: 0,
@@ -2141,6 +2191,14 @@ impl Omnigraph {
         }
 
         let matched = concat_match_batches_to_schema(&scan_schema, batches)?;
+        // #1430 prototype: drop the rows the assignments leave unchanged.
+        let matched = rows_the_update_changes(matched, &resolved, &blob_props)?;
+        if matched.num_rows() == 0 {
+            return Ok(MutationResult {
+                affected_nodes: 0,
+                affected_edges: 0,
+            });
+        }
 
         let affected_count = matched.num_rows();
 
