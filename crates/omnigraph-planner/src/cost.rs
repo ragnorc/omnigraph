@@ -93,7 +93,7 @@ pub const HASH_JOIN_RATIO: u64 = 8;
 
 /// The hash join holds its build side twice plus the hash table, so the build
 /// side may take at most one part in this many of the memory pool.
-pub const HASH_JOIN_POOL_DIVISOR: u64 = 4;
+pub const HASH_JOIN_POOL_DIVISOR: u64 = 1;
 
 /// A query's return-only columns are fetched by row address for the rows a
 /// root `limit` keeps once the binding's table holds more than this many
