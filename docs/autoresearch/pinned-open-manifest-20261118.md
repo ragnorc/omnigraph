@@ -7,31 +7,32 @@ agent-devbox, model Claude Opus 5.5. Base: ModernRelay/omnigraph main
 
 ## Result
 
-One hypothesis was kept. A table open at a registered pin now reads the
-manifest at the path, size and ETag that the pin's registration recorded. The
-open no longer sends a HEAD to learn the size, and Lance can keep the manifest
-in its session metadata cache.
+One hypothesis was kept, in its second form (H1b). A table open that keeps no
+read cache now reads the manifest at the path, size and ETag that the pin's
+registration recorded. Such an open no longer sends a HEAD to learn the size.
+The opens that keep no read cache are reads pinned to a commit and the change
+feed's re-open of a named-branch table. The first form (H1) used the recorded
+location on every pinned open. A workspace test caught that it let a cached
+manifest answer for a version that `cleanup` had reclaimed, so it was dropped.
 
 | Operation (3-table graph) | Requests on main | Requests now | Model time on main (s3-like) | Model time now |
 |---|---:|---:|---:|---:|
 | Read pinned to a commit (DST) | 25 | 16 | 403 ms | 250 ms |
+| Same read, repeated | 25 | 16 | 403 ms | 250 ms |
 | Same read, against RustFS (real S3 protocol) | 25 | 17 | not timed | not timed |
-| Cold read after a restart | 8 | 6 | 104 ms | 70 ms |
-| Cold one-hop read after a restart | 16 | 12 | 228 ms | 160 ms |
-| Cold insert after a restart | 18 | 17 | 266 ms | 249 ms |
-| Cold `branch diff` | 35 | 31 | 564 ms | 496 ms |
-| Cold `branch merge` | 115 | 100 | 1,815 ms | 1,560 ms |
+| Cold `branch merge` of a named branch | 115 | 102 | 1,815 ms | 1,594 ms |
+| Cold read, insert or `branch diff` on main | unchanged | unchanged | unchanged | unchanged |
 
 Bytes read are unchanged in every row. Results are unchanged.
 
-The DST storage-cost golden moves 47 `l.get` lines, and all of them go down.
-Examples: `Optimize` 65 to 40, `MergeTargetHistory2` and `32` 91 to 80,
-`ReadColdLookupHistory*` 8 to 6, `DiffContinuationIdle*` 23 to 19, the
-whole-run `_verify` 1,387 to 1,270. No other verb moves. With the new path
-switched off, the regenerated golden is byte-identical to main's, so every
-moved line comes from this change. Two new labels pin a read at a commit:
-`ReadPinnedHop` and `ReadPinnedHopRepeat` cost 30 on main and 22 now, at 2 and
-at 32 commits of history.
+The DST storage-cost golden moves 13 `l.get` lines, and all of them go down.
+Examples: `MergeTargetHistory2` and `32` 91 to 82, `MergeBackAfterThreeWay`
+103 to 94, `RemovalOverwriteProbed` 13 to 11, `Optimize` 65 to 63, the
+whole-run `_verify` 1,387 to 1,355. No other verb moves. With the recorded
+location switched off, the regenerated golden is byte-identical to main's, so
+every moved line comes from this change. Two new labels pin a read at a
+commit: `ReadPinnedHop` and `ReadPinnedHopRepeat` cost 30 on main and 22 now,
+at 2 and at 32 commits of history.
 
 ## Why this cost
 
@@ -72,49 +73,74 @@ request count was not measured. This run measured it.
 
 On a local filesystem Lance reads manifests through direct paths, so the HEAD
 is a `stat` call and no counter sees it. This is why `warm_read_cost.rs` and
-the other local cost owners never showed it.
+the other local cost owners never showed it. The local tests still run the new
+path, including the repeat after a failure.
 
 ## Expected and measured growth
 
-Expected: the saved requests equal the number of cold manifest reads through a
-pinned location, one or two per open. They do not grow with history, rows or
+Expected: the saved requests equal the number of manifest reads through an
+uncached pinned open, one per open. They do not grow with history, rows or
 fragments. Measured: the pinned read saves exactly its 9 HEADs (9 opens of 3
-manifests), and the restart read saves its 2. The new golden rows are equal at
-2 and 32 commits, on main and now. The merge saves 15 of its 115 requests.
+manifests), and its repeat saves the same 9, because nothing is cached across
+reads. The new golden rows are equal at 2 and 32 commits, on main and now. The
+named-branch merge saves 13 of its 115 requests.
 
 ## Hypotheses
 
 | Id | Change | Counter | Gates | Outcome |
 |---|---|---|---|---|
-| H1 | The handler of a pinned open returns the recorded location for the one version whose V2 manifest path the recorded path ends with | pinned read 25 to 16 requests, 9 HEADs to 0. Golden: 47 lines down, none up | listed below | Kept, commit `72d2ca58` |
-| H1a | First form of H1: compare the recorded path with Lance's path for equality | no change. The row spells the path from the root URI (`shared-memory://gqt-dst/case/...`), and Lance spells it inside the store (`case/...`) | not run | Refined into H1 (suffix at a path-component boundary) |
+| H1a | The handler of every pinned open returns the recorded location when the recorded path equals Lance's path | no change. The row spells the path from the root URI (`shared-memory://gqt-dst/case/...`), and Lance spells it inside the store (`case/...`) | not run | Refined into H1 |
+| H1 | The same, matching the recorded path's suffix at a path-component boundary, on every pinned open (handle cache, `open_at_entry`, uncached opens) | pinned read 25 to 16, cold read 8 to 6, cold merge 115 to 100, golden 47 lines down | workspace tests: 3 new failures (`historical_read_of_reclaimed_version_is_typed`, `system_column_upgrade_history_survives_unrelated_reclaimed_tables`, `commit_changes_are_exact_ordered_and_bounded`) | Dropped, commit `72d2ca58` |
+| H1b | The recorded location only on opens that own a session which caches nothing, and a failed recorded open repeated through Lance's resolution | pinned read 25 to 16 (RustFS 25 to 17), named-branch merge 115 to 102, golden 13 lines down, none up | listed below | Kept, commit `95bfc47b` |
 | H2 | Share one statement-scoped handle cache across the opens of one pinned read | 9 manifest GETs for 3 tables would become 3 | not built | Proposal, see below |
 
-H1 does not trust the row more than Lance trusts its own cache. A manifest is
-written once with a put-if-absent and never rewritten. If the recorded size is
-wrong, Lance finds no trailing magic and reads again without the size. That is
-one wasted read, and it is pinned by the in-source test. The ETag is used only
-as Lance's cache key. A row without both size and ETag, another version that
-the RFC 0067 twin rule opens, another dataset or branch, or a V1 path resolves
-through Lance as before. Detached manifests now enter the shared session's
-metadata cache under its byte budget (`DEFAULT_METADATA_CACHE_SIZE`). Linear
-manifests were already cached there. A read without read caches still uses a
-zero-capacity statement session, so nothing is cached across pinned reads, and
-the cleanup-versus-cached-handle edge of #958 does not change.
+Why H1 failed. Lance's `Dataset::get_manifest` caches a manifest whose size it
+knows in the open's session, keyed by version and ETag. The graph's data
+session lives as long as the handle, and Lance gives no public call that
+evicts an entry. After `cleanup --keep 1` reclaimed `Person` history, the
+change feed reopened the reclaimed version through the data session
+(`TableStore::open_at_entry`), Lance served the cached manifest, and the feed
+returned the old commit's rows instead of the typed `ChangeFeedGap`. On main,
+detached manifests never reach that cache, because Lance does not know their
+size. The second failure was the error class: at a known size Lance reads a
+missing manifest with a ranged read and reports `lance::Error::IO`, not the
+`DatasetNotFound` that `open_dataset` turns into `HistoricalVersionReclaimed`.
+This holds on every store, not only on local files.
 
-## Proposal: one open per table in a pinned read (H2)
+How H1b holds. Only `open_pinned_dataset_uncached` passes the recorded
+location, and it builds its own statement session with zero cache capacity, so
+no manifest outlives the open. Opens on the data session (the handle cache and
+`TableStore::open_at_entry`) resolve through Lance as on main. If an open
+through the recorded location fails, `open_dataset` repeats it through Lance's
+resolution and returns that result, so every failure keeps the class it has on
+main. The repeat costs one extra open, and only on a failure. A wrong recorded
+size is caught by Lance's trailing-magic check. A row without both size and
+ETag, another version that the RFC 0067 twin rule opens, another dataset or
+branch, or a V1 path resolves through Lance.
 
-A read pinned to a commit opens `Person` 4 times, `Company` 3 times and
-`WorksAt` 2 times (step 5 of `pinned_open.gqt`). `Snapshot::open_lance_dataset`
-builds a new zero-cache session for each open, and nothing holds the result.
-Most of the opens happen while the planner reads index facts
-(`query_index_facts.pre_load`), before the statement's memory pool exists. A
-statement-scoped `SnapshotReadCaches`, admitted from the query pool as
-`loader::read_reuse::LoadReadReuse` does for loads, would make it 3 manifest
-GETs instead of 9 (16 requests to about 10, 250 ms to about 150 ms in the
-model). The admission order (planning before the pool) is the open design
-question. This also covers part of #1052. The same pattern costs the cold
-merge 15 manifest GETs and 4 listings.
+## Proposals
+
+H2, one open per table in a pinned read. A read pinned to a commit opens
+`Person` 4 times, `Company` 3 times and `WorksAt` 2 times (step 5 of
+`pinned_open.gqt`). `Snapshot::open_lance_dataset` builds a new zero-cache
+session for each open, and nothing holds the result. Most of the opens happen
+while the planner reads index facts (`query_index_facts.pre_load`), before the
+statement's memory pool exists. A statement-scoped `SnapshotReadCaches`,
+admitted from the query pool as `loader::read_reuse::LoadReadReuse` does for
+loads, would make it 3 manifest GETs instead of 9 (16 requests to about 10,
+250 ms to about 150 ms in the model). Because the caches end with the
+statement, the reclaimed-history problem of H1 would not arise. The admission
+order (planning before the pool) is the open design question. This covers part
+of #1052.
+
+H3, the HEAD on data-session opens. Cold reads, writes and merges on main
+still pay the HEAD (8 to 6 and 115 to 100 were measured under H1). Keeping that
+saving needs either a Lance call that evicts a dataset's manifests from a
+session (then `cleanup` evicts what it reclaims in this process, and the
+cross-process case stays as it is for the handle cache, #958), or a resolver
+that takes a size without caching. Both are Lance changes. The cold merge also
+reads the same two `Person` manifests about 7 times (four reads of the first
+4 KiB, three of the last block) across opens that share no cache.
 
 ## Timing evidence
 
@@ -154,7 +180,11 @@ the pull request.
   review). The handler adds no request on any path. Its worst case is one
   wasted read for a wrong size.
 - Do not edit sources while a gate compiles, and do not `pkill -f` a pattern
-  that matches the agent's own shell.
+  that matches the agent's own shell. This run stopped its gates by PID.
+- New from this run: a cost change that makes Lance cache something must be
+  checked against `cleanup`. Run the whole workspace graph before the first
+  push, because the focused cost owners did not catch the reclaimed-history
+  failures.
 - Keep a `.performance.md` note to 200 characters or fewer.
 - Prove a counter against main with the change switched off in the same tree.
   The 2026-11-09 run's reverse patches went stale.
@@ -193,6 +223,9 @@ the same with the size that the `__manifest` registration already holds.
 - Rows written by releases before the size and ETag were recorded: they have
   no recorded manifest and keep Lance's path. The in-source test covers this
   case, and no genuine old graph was opened.
+- `blob.rs` has one more zero-cache open of a named-branch pin
+  (`open_dataset_entry` on a fresh statement session). It keeps Lance's
+  resolution in this change.
 
 ## Instruments
 
