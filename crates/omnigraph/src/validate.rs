@@ -538,8 +538,11 @@ impl<'a> CommittedState<'a> {
     }
 
     /// Committed edges `(id, src)` in `edge_table` whose id is one of `ids`,
-    /// probed in filtered scans of at most [`PROBE_CHUNK_KEYS`] ids each. An id
-    /// names at most one edge, so the result is bounded by `ids`.
+    /// read through [`RemovalEdgeReads`] on the id column: probed in chunks of
+    /// at most [`PROBE_CHUNK_KEYS`] ids where a BTREE answers them, and read
+    /// once and matched in memory on the fragments it leaves uncovered, so the
+    /// filter copies Lance plans never grow with ids times fragments (#1445).
+    /// An id names at most one edge, so the result is bounded by `ids`.
     async fn committed_edges_by_id(
         &self,
         edge_table: &str,
@@ -554,27 +557,33 @@ impl<'a> CommittedState<'a> {
         let Some(ds) = self.open_cardinality(edge_table).await? else {
             return Ok(Vec::new());
         };
+        let reads =
+            RemovalEdgeReads::plan(&ds, (system_columns.id, ids), (system_columns.src, &[]))
+                .await?;
         let mut out = Vec::new();
-        for chunk in ids.chunks(PROBE_CHUNK_KEYS) {
-            let expr = col(system_columns.id)
-                .in_list(chunk.iter().map(|id| lit(id.clone())).collect(), false);
-            let batches =
-                scan_filtered(&ds, &[system_columns.id, system_columns.src], expr).await?;
-            for batch in &batches {
+        read_key_column(
+            &ds,
+            &reads,
+            &[system_columns.id, system_columns.src],
+            |batch| {
                 let ids = string_col(batch, system_columns.id)?;
                 let srcs = string_col(batch, system_columns.src)?;
                 for i in 0..batch.num_rows() {
                     out.push((ids.value(i).to_string(), srcs.value(i).to_string()));
                 }
-            }
-        }
+                Ok(())
+            },
+        )
+        .await?;
         Ok(out)
     }
 
     /// Committed edges of `edge_table` per source among `srcs`, an edge whose
     /// id `excluded` names (removed or re-placed by the change) left out.
-    /// The sources are probed in sorted filtered scans of at most
-    /// [`PROBE_CHUNK_KEYS`] each and the edges stream past batch by batch, so
+    /// The sources are read through [`RemovalEdgeReads`] on the src column,
+    /// sorted: probed in chunks of at most [`PROBE_CHUNK_KEYS`] where a BTREE
+    /// answers them, and read once and matched in memory on the fragments it
+    /// leaves uncovered (#1445). The edges stream past batch by batch, so
     /// memory holds one count per source, never the edges themselves.
     async fn committed_source_counts(
         &self,
@@ -590,27 +599,18 @@ impl<'a> CommittedState<'a> {
         let Some(ds) = self.open_cardinality(edge_table).await? else {
             return Ok(counts);
         };
-        let mut sorted: Vec<&String> = srcs.iter().collect();
+        let mut sorted: Vec<String> = srcs.iter().cloned().collect();
         sorted.sort();
-        for chunk in sorted.chunks(PROBE_CHUNK_KEYS) {
-            let expr = col(system_columns.src)
-                .in_list(chunk.iter().map(|src| lit((*src).clone())).collect(), false);
-            let projection = [system_columns.id, system_columns.src];
-            let mut stream = TableStore::scan_stream_with(
-                &ds,
-                Some(&projection),
-                None,
-                None,
-                false,
-                move |scanner| {
-                    scanner.filter_expr(expr);
-                    Ok(())
-                },
-            )
-            .await?;
-            while let Some(batch) = stream.try_next().await.map_err(OmniError::storage)? {
-                let ids = string_col(&batch, system_columns.id)?;
-                let batch_srcs = string_col(&batch, system_columns.src)?;
+        let reads =
+            RemovalEdgeReads::plan(&ds, (system_columns.src, &sorted), (system_columns.dst, &[]))
+                .await?;
+        read_key_column(
+            &ds,
+            &reads,
+            &[system_columns.id, system_columns.src],
+            |batch| {
+                let ids = string_col(batch, system_columns.id)?;
+                let batch_srcs = string_col(batch, system_columns.src)?;
                 for i in 0..batch.num_rows() {
                     if excluded(ids.value(i)) {
                         continue;
@@ -622,8 +622,10 @@ impl<'a> CommittedState<'a> {
                         OmniError::manifest_internal("@card edge count overflows u32")
                     })?;
                 }
-            }
-        }
+                Ok(())
+            },
+        )
+        .await?;
         Ok(counts)
     }
 
@@ -779,6 +781,48 @@ async fn scan_filtered(ds: &Dataset, projection: &[&str], expr: Expr) -> Result<
     .try_collect()
     .await
     .map_err(OmniError::storage)
+}
+
+/// Every row of `ds` that `reads` selects on its one key column, batch by
+/// batch: the probe filters on the fragments they are pushed to, then the
+/// fragments read whole, through the in-memory match. A key names its rows in
+/// exactly one chunk and the two fragment sets are disjoint, so each row is
+/// seen once.
+async fn read_key_column(
+    ds: &Dataset,
+    reads: &RemovalEdgeReads<'_>,
+    projection: &[&str],
+    mut each: impl FnMut(&RecordBatch) -> Result<()>,
+) -> Result<()> {
+    for expr in reads.probe_filters() {
+        let fragments = reads.probe_fragments();
+        let mut stream =
+            TableStore::scan_stream_with(ds, Some(projection), None, None, false, move |scanner| {
+                scanner.filter_expr(expr);
+                if let Some(fragments) = fragments {
+                    scanner.with_fragments(fragments);
+                }
+                Ok(())
+            })
+            .await?;
+        while let Some(batch) = stream.try_next().await.map_err(OmniError::storage)? {
+            each(&batch)?;
+        }
+    }
+    if let Some((fragments, matcher)) = reads.matched() {
+        let mut stream =
+            TableStore::scan_stream_with(ds, Some(projection), None, None, false, move |scanner| {
+                scanner.with_fragments(fragments);
+                scanner.batch_size(ID_SCAN_BATCH_ROWS);
+                scanner.batch_size_bytes(ID_SCAN_BATCH_BYTES);
+                Ok(())
+            })
+            .await?;
+        while let Some(batch) = stream.try_next().await.map_err(OmniError::storage)? {
+            each(&matcher.keep(&batch)?)?;
+        }
+    }
+    Ok(())
 }
 
 /// Stream `ds` projecting `projection` in bounded batches, unfiltered. The
