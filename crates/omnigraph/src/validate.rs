@@ -368,11 +368,28 @@ impl<'a> CommittedState<'a> {
             return Ok(Vec::new());
         };
         let mut out = Vec::new();
+        let projection = [system_columns.id, system_columns.src];
+        // Without full BTREE coverage Lance copies the IN list into every
+        // uncovered fragment (#1445): read the two columns once instead and
+        // match the ids in memory.
+        if !key_column_indexed(&ds, system_columns.id).await? {
+            let wanted: HashSet<&str> = ids.iter().map(String::as_str).collect();
+            let mut stream = scan_bounded(&ds, &projection).await?;
+            while let Some(batch) = stream.try_next().await.map_err(OmniError::storage)? {
+                let batch_ids = string_col(&batch, system_columns.id)?;
+                let srcs = string_col(&batch, system_columns.src)?;
+                for i in 0..batch.num_rows() {
+                    if wanted.contains(batch_ids.value(i)) {
+                        out.push((batch_ids.value(i).to_string(), srcs.value(i).to_string()));
+                    }
+                }
+            }
+            return Ok(out);
+        }
         for chunk in ids.chunks(PROBE_CHUNK_KEYS) {
             let expr = col(system_columns.id)
                 .in_list(chunk.iter().map(|id| lit(id.clone())).collect(), false);
-            let batches =
-                scan_filtered(&ds, &[system_columns.id, system_columns.src], expr).await?;
+            let batches = scan_filtered(&ds, &projection, expr).await?;
             for batch in &batches {
                 let ids = string_col(batch, system_columns.id)?;
                 let srcs = string_col(batch, system_columns.src)?;
@@ -403,6 +420,32 @@ impl<'a> CommittedState<'a> {
         let Some(ds) = self.open_cardinality(edge_table).await? else {
             return Ok(counts);
         };
+        let mut tally = |batch: &RecordBatch, wanted: Option<&HashSet<String>>| -> Result<()> {
+            let ids = string_col(batch, system_columns.id)?;
+            let batch_srcs = string_col(batch, system_columns.src)?;
+            for i in 0..batch.num_rows() {
+                if excluded(ids.value(i)) || wanted.is_some_and(|w| !w.contains(batch_srcs.value(i))) {
+                    continue;
+                }
+                let count = counts
+                    .entry(batch_srcs.value(i).to_string())
+                    .or_insert(0u32);
+                *count = count.checked_add(1).ok_or_else(|| {
+                    OmniError::manifest_internal("@card edge count overflows u32")
+                })?;
+            }
+            Ok(())
+        };
+        // Without full BTREE coverage Lance copies the IN list into every
+        // uncovered fragment (#1445): read the two columns once instead and
+        // count the wanted sources in memory.
+        if !key_column_indexed(&ds, system_columns.src).await? {
+            let mut stream = scan_bounded(&ds, &[system_columns.id, system_columns.src]).await?;
+            while let Some(batch) = stream.try_next().await.map_err(OmniError::storage)? {
+                tally(&batch, Some(srcs))?;
+            }
+            return Ok(counts);
+        }
         let mut sorted: Vec<&String> = srcs.iter().collect();
         sorted.sort();
         for chunk in sorted.chunks(PROBE_CHUNK_KEYS) {
@@ -422,19 +465,7 @@ impl<'a> CommittedState<'a> {
             )
             .await?;
             while let Some(batch) = stream.try_next().await.map_err(OmniError::storage)? {
-                let ids = string_col(&batch, system_columns.id)?;
-                let batch_srcs = string_col(&batch, system_columns.src)?;
-                for i in 0..batch.num_rows() {
-                    if excluded(ids.value(i)) {
-                        continue;
-                    }
-                    let count = counts
-                        .entry(batch_srcs.value(i).to_string())
-                        .or_insert(0u32);
-                    *count = count.checked_add(1).ok_or_else(|| {
-                        OmniError::manifest_internal("@card edge count overflows u32")
-                    })?;
-                }
+                tally(&batch, None)?;
             }
         }
         Ok(counts)
@@ -560,6 +591,15 @@ async fn scan_filtered(ds: &Dataset, projection: &[&str], expr: Expr) -> Result<
     .try_collect()
     .await
     .map_err(OmniError::storage)
+}
+
+/// Whether a BTREE serves a `column IN (...)` filter on every fragment of
+/// `ds`, so Lance plans no per-fragment copy of the key list.
+async fn key_column_indexed(ds: &Dataset, column: &str) -> Result<bool> {
+    Ok(matches!(
+        crate::dataset_index::key_column_index_coverage(ds, column).await?,
+        crate::dataset_index::IndexCoverage::Indexed
+    ))
 }
 
 /// Stream `ds` projecting `projection` in bounded batches, unfiltered. The
