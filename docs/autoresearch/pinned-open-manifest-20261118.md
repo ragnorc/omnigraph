@@ -159,17 +159,26 @@ no qualified benchmark environment was used.
 
 ## Gates
 
-- `cargo fmt --all --check`
-- `cargo dev-test --no-fail-fast` (canonical workspace graph with failpoints)
-- `cargo test -p omnigraph-gqt --locked` (full corpus)
-- `crates/omnigraph-dst`: `cargo test --locked`, including the regenerated
-  golden
-- Clippy: workspace default features, workspace failpoints superset, and GQT
-- RustFS (S3 protocol): `s3_storage::` and `write_cost_s3::` (23 tests plus
-  the new one)
+All on the final tree (`1813feb6`, the same code as the pull request):
 
-The results of each gate are in the run's summary in the personal graph and in
-the pull request.
+- `cargo fmt --all --check`: pass.
+- `cargo dev-test --no-fail-fast` (canonical workspace graph with failpoints):
+  5,437 passed, 10 failed. The 10 are the environmental failures that earlier
+  runs recorded on this box (root ignores `chmod 000`, symlink and
+  machine-identity checks in the benchmark crate, one CLI managed-lifecycle
+  symlink test). None reaches the changed code.
+- `cargo test -p omnigraph-gqt --locked` (full corpus): 582 passed.
+- `crates/omnigraph-dst`: `cargo test --locked`, including the regenerated
+  golden: pass.
+- Clippy: workspace default features, workspace failpoints superset, and GQT:
+  pass (the first run caught `unnecessary_literal_unwrap` in the new test).
+- RustFS 1.0.0-beta.12 (S3 protocol): `s3_storage::` and `write_cost_s3::`, 24
+  passed.
+
+The first full workspace run, on H1, failed three tests that this report
+describes under H1. That is how H1 was dropped.
+
+Pull request: https://github.com/ModernRelay/omnigraph/pull/1449
 
 ## Lessons taken from past runs
 
