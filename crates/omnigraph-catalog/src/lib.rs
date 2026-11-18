@@ -812,10 +812,7 @@ impl Snapshot {
                         &entry.dataset_path,
                         entry.native_dataset_branch.as_deref(),
                         entry.published_dataset_version,
-                        entry.version_metadata.e_tag(),
-                        entry.version_metadata.staged_version(),
-                        entry.version_metadata.transaction_uuid(),
-                        entry.version_metadata.last_linear_version(),
+                        &entry.version_metadata,
                         &location,
                         Some(&caches.session),
                         caches.table_wrapper.clone(),
@@ -1381,9 +1378,7 @@ pub async fn open_dataset_entry(
     crate::instrumentation::open_pinned_dataset(
         &location,
         entry.published_dataset_version,
-        entry.version_metadata.staged_version(),
-        entry.version_metadata.transaction_uuid(),
-        entry.version_metadata.last_linear_version(),
+        &entry.version_metadata,
         session,
         crate::instrumentation::table_wrapper(),
     )

@@ -2071,29 +2071,37 @@ pub use control_dataset::{current_control_dataset, retain_control_dataset};
 /// Open a table pin (RFC 0067): a pin without a staged version opens its
 /// target, a staged pin above `last_linear_version` opens its detached
 /// version, and any older pin keeps the v10 twin rule for historical rows.
+/// The version the pin's writer recorded resolves to its recorded manifest
+/// object (`TableVersionMetadata::recorded_manifest`); every other version
+/// the rule opens resolves through Lance.
 pub async fn open_pinned_dataset(
     uri: &str,
     target_version: u64,
-    staged_version: Option<u64>,
-    transaction_uuid: Option<&str>,
-    last_linear_version: Option<u64>,
+    pin: &crate::metadata::TableVersionMetadata,
     session: Option<&Arc<lance::session::Session>>,
     wrapper: Option<Arc<dyn WrappingObjectStore>>,
 ) -> Result<Dataset> {
+    let staged_version = pin.staged_version();
+    let transaction_uuid = pin.transaction_uuid();
+    let last_linear_version = pin.last_linear_version();
+    let recorded = pin.recorded_manifest();
+    let recorded = recorded.as_ref();
+    let open = |version: u64, wrapper: Option<Arc<dyn WrappingObjectStore>>| {
+        open_dataset_with(
+            uri,
+            VersionResolution::At(version),
+            recorded,
+            session,
+            wrapper,
+        )
+    };
     let Some(staged) = staged_version else {
-        return open_dataset(uri, VersionResolution::At(target_version), session, wrapper).await;
+        return open(target_version, wrapper).await;
     };
     if last_linear_version.is_some_and(|last| target_version > last) {
-        return open_dataset(uri, VersionResolution::At(staged), session, wrapper).await;
+        return open(staged, wrapper).await;
     }
-    match open_dataset(
-        uri,
-        VersionResolution::At(target_version),
-        session,
-        wrapper.clone(),
-    )
-    .await
-    {
+    match open(target_version, wrapper.clone()).await {
         Ok(dataset) => {
             let ours = crate::staging::StagedTransactionIdentity::recorded_by(&dataset)
                 .is_some_and(|identity| Some(identity.uuid.as_str()) == transaction_uuid);
@@ -2106,7 +2114,7 @@ pub async fn open_pinned_dataset(
                 staged,
                 "pin target carries a foreign or unreadable transaction; resolving the staged version"
             );
-            open_dataset(uri, VersionResolution::At(staged), session, wrapper).await
+            open(staged, wrapper).await
         }
         Err(error @ OmniError::HistoricalVersionReclaimed { .. }) => {
             let latest = open_dataset(uri, VersionResolution::Latest, session, wrapper.clone())
@@ -2114,22 +2122,13 @@ pub async fn open_pinned_dataset(
                 .version()
                 .version;
             if latest < target_version {
-                match open_dataset(uri, VersionResolution::At(staged), session, wrapper.clone())
-                    .await
-                {
+                match open(staged, wrapper.clone()).await {
                     Ok(dataset) => return Ok(dataset),
                     Err(OmniError::HistoricalVersionReclaimed { .. }) => {}
                     Err(other) => return Err(other),
                 }
             }
-            match open_dataset(
-                uri,
-                VersionResolution::At(target_version),
-                session,
-                wrapper.clone(),
-            )
-            .await
-            {
+            match open(target_version, wrapper.clone()).await {
                 Ok(dataset) => {
                     let ours = crate::staging::StagedTransactionIdentity::recorded_by(&dataset)
                         .is_some_and(|identity| Some(identity.uuid.as_str()) == transaction_uuid);
@@ -2142,7 +2141,7 @@ pub async fn open_pinned_dataset(
                         staged,
                         "pin target carries a foreign or unreadable transaction; resolving the staged version"
                     );
-                    open_dataset(uri, VersionResolution::At(staged), session, wrapper).await
+                    open(staged, wrapper).await
                 }
                 Err(OmniError::HistoricalVersionReclaimed { .. }) => Err(error),
                 Err(other) => Err(other),
@@ -2173,7 +2172,19 @@ pub async fn open_dataset(
     session: Option<&Arc<lance::session::Session>>,
     wrapper: Option<Arc<dyn WrappingObjectStore>>,
 ) -> Result<Dataset> {
-    load_recorded(uri, version, session, wrapper)
+    open_dataset_with(uri, version, None, session, wrapper).await
+}
+
+/// [`open_dataset`], resolving a pinned version to the manifest object its
+/// registration recorded when `recorded` is that version's own path.
+async fn open_dataset_with(
+    uri: &str,
+    version: VersionResolution,
+    recorded: Option<&crate::lance_clone::RecordedManifest>,
+    session: Option<&Arc<lance::session::Session>>,
+    wrapper: Option<Arc<dyn WrappingObjectStore>>,
+) -> Result<Dataset> {
+    load_recorded(uri, version, recorded, session, wrapper)
         .await?
         .map_err(|error| match error {
             // Only the two shapes cleanup/drop legitimately leaves behind for a
@@ -2217,7 +2228,7 @@ pub async fn open_dataset_at_version(
     session: Option<&Arc<lance::session::Session>>,
     wrapper: Option<Arc<dyn WrappingObjectStore>>,
 ) -> Result<Dataset> {
-    load_recorded(uri, VersionResolution::At(version), session, wrapper)
+    load_recorded(uri, VersionResolution::At(version), None, session, wrapper)
         .await?
         .map_err(OmniError::storage)
 }
@@ -2229,7 +2240,7 @@ pub async fn open_dataset_if_present(
     session: Option<&Arc<lance::session::Session>>,
     wrapper: Option<Arc<dyn WrappingObjectStore>>,
 ) -> Result<Option<Dataset>> {
-    match load_recorded(uri, VersionResolution::Latest, session, wrapper).await? {
+    match load_recorded(uri, VersionResolution::Latest, None, session, wrapper).await? {
         Ok(dataset) => Ok(Some(dataset)),
         Err(lance::Error::DatasetNotFound { .. }) => Ok(None),
         Err(error) => Err(OmniError::storage(error)),
@@ -2243,10 +2254,11 @@ pub async fn open_dataset_if_present(
 async fn load_recorded(
     uri: &str,
     version: VersionResolution,
+    recorded: Option<&crate::lance_clone::RecordedManifest>,
     session: Option<&Arc<lance::session::Session>>,
     wrapper: Option<Arc<dyn WrappingObjectStore>>,
 ) -> Result<std::result::Result<Dataset, lance::Error>> {
-    let builder = dataset_builder(uri, version, session, &wrapper).await?;
+    let builder = dataset_builder(uri, version, recorded, session, &wrapper).await?;
     let dataset = match builder.load().await {
         Ok(dataset) => dataset,
         Err(error) => return Ok(Err(error)),
@@ -2266,6 +2278,7 @@ async fn load_recorded(
 async fn dataset_builder(
     uri: &str,
     version: VersionResolution,
+    recorded: Option<&crate::lance_clone::RecordedManifest>,
     session: Option<&Arc<lance::session::Session>>,
     wrapper: &Option<Arc<dyn WrappingObjectStore>>,
 ) -> Result<DatasetBuilder> {
@@ -2282,10 +2295,14 @@ async fn dataset_builder(
     if let Some(wrapper) = wrapper {
         store_params.object_store_wrapper = Some(wrapper.clone());
     }
-    let handler =
-        crate::lance_clone::configured_commit_handler(uri, &Some(store_params.clone()), None)
-            .await
-            .map_err(OmniError::storage)?;
+    let params = Some(store_params.clone());
+    let handler = match (version, recorded) {
+        (VersionResolution::At(_), Some(recorded)) => {
+            crate::lance_clone::pinned_commit_handler(uri, &params, recorded.clone()).await
+        }
+        _ => crate::lance_clone::configured_commit_handler(uri, &params, None).await,
+    }
+    .map_err(OmniError::storage)?;
     Ok(builder
         .with_store_params(store_params)
         .with_commit_handler(handler))

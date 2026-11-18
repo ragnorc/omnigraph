@@ -71,14 +71,66 @@ impl CloneContext {
     }
 }
 
+/// The manifest object a table pin's registration recorded when its version
+/// was written: the object path, its size and the store's generation token.
+///
+/// Lance 13 resolves a detached version with neither size nor token
+/// (`default_resolve_version`), so a cold open asks the store for the size
+/// (a HEAD) before it reads, and `Dataset::get_manifest` skips the session
+/// metadata cache. A manifest object is written once with a put-if-absent and
+/// never rewritten, so the recorded size and token describe it for its whole
+/// life. A wrong size still opens: Lance finds no trailing magic and reads
+/// again without the size.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecordedManifest {
+    path: String,
+    size: u64,
+    e_tag: String,
+}
+
+impl RecordedManifest {
+    pub fn new(path: &str, size: u64, e_tag: &str) -> Self {
+        Self {
+            path: path.to_string(),
+            size,
+            e_tag: e_tag.to_string(),
+        }
+    }
+
+    /// The recorded location of `version` under `base_path`, only when the
+    /// recorded object is the path Lance names for that version. The row
+    /// spells the path from the graph's root URI (`/tmp/g/...` on a local
+    /// root, `memory://bucket/g/...`), and Lance from inside the store
+    /// (`tmp/g/...`, `g/...`), so the recorded path must end with Lance's at
+    /// a component boundary. Another version, dataset or branch, or a V1
+    /// path, resolves through Lance as before.
+    fn location(&self, base_path: &Path, version: u64) -> Option<ManifestLocation> {
+        let path = ManifestNamingScheme::V2.manifest_path(base_path, version);
+        let names_path = self
+            .path
+            .strip_suffix(path.as_ref())
+            .is_some_and(|root| root.is_empty() || root.ends_with('/'));
+        names_path.then(|| ManifestLocation {
+            version,
+            path,
+            size: Some(self.size),
+            naming_scheme: ManifestNamingScheme::V2,
+            e_tag: Some(self.e_tag.clone()),
+            identity: None,
+        })
+    }
+}
+
 /// The handler every OmniGraph dataset commits through. It reuses a clone
-/// source's location, normalizes local discovery tags, and resolves the
+/// source's location, resolves a pinned open's version to the manifest its
+/// registration recorded, normalizes local discovery tags, and resolves the
 /// manifest request of every commit (`manifest_request`).
 #[derive(Debug)]
 struct ManifestLocationCommitHandler {
     inner: Arc<dyn CommitHandler>,
     reuse_main_source_location: bool,
     normalize_local_discovery_etag: bool,
+    recorded: Option<RecordedManifest>,
     probe: Option<ManifestRequestProbe>,
 }
 
@@ -113,6 +165,7 @@ fn wrapped(
         inner,
         reuse_main_source_location: false,
         normalize_local_discovery_etag: false,
+        recorded: None,
         probe,
     }
 }
@@ -125,6 +178,20 @@ pub async fn configured_commit_handler(
     Ok(Arc::new(
         configured_handler(uri, params, existing, None).await?,
     ))
+}
+
+/// The configured handler for a dataset opened at a registered pin: it
+/// resolves the pin's version to `recorded` when that is the version's own
+/// manifest path, so the open reads the manifest without asking the store
+/// for its size and Lance can keep it in the session metadata cache.
+pub async fn pinned_commit_handler(
+    uri: &str,
+    params: &Option<lance::io::ObjectStoreParams>,
+    recorded: RecordedManifest,
+) -> Result<Arc<dyn CommitHandler>> {
+    let mut handler = configured_handler(uri, params, None, None).await?;
+    handler.recorded = Some(recorded);
+    Ok(Arc::new(handler))
 }
 
 /// The configured handler for one commit of `dataset`, recording what its
@@ -173,6 +240,7 @@ async fn configured_handler(
         inner: lance_table::io::commit::commit_handler_from_url(uri, params).await?,
         reuse_main_source_location,
         normalize_local_discovery_etag,
+        recorded: None,
         probe,
     })
 }
@@ -398,6 +466,13 @@ impl CommitHandler for ManifestLocationCommitHandler {
         if self.reuse_main_source_location
             && let Ok(Some(location)) =
                 CLONE_CONTEXT.try_with(|context| context.main_source_location(base_path, version))
+        {
+            return Ok(location);
+        }
+        if let Some(location) = self
+            .recorded
+            .as_ref()
+            .and_then(|recorded| recorded.location(base_path, version))
         {
             return Ok(location);
         }
@@ -1277,6 +1352,147 @@ mod tests {
         assert_eq!(raw_child.count_rows(None).await.unwrap(), 3);
         assert_eq!(engine_child.count_rows(None).await.unwrap(), 3);
         assert!(CLONE_CONTEXT.try_with(|_| ()).is_err());
+    }
+
+    /// Issue 1250: a pinned open of a detached version resolves to the
+    /// manifest object its registration recorded, so it reads the manifest
+    /// without a HEAD, and a repeat open on the same session takes it from
+    /// Lance's metadata cache. A stale size, a row from before the size was
+    /// recorded, and another version all still open through Lance.
+    #[tokio::test]
+    async fn pinned_open_resolves_the_recorded_manifest_issue_1250() {
+        use crate::logical_calls::LogicalCallCounter;
+        use crate::metadata::TableVersionMetadata;
+        use lance::dataset::CommitBuilder;
+        use lance::dataset::transaction::{Operation, Transaction};
+
+        let root = format!("shared-memory://pinned-open-1250-{}", std::process::id());
+        let uri = format!("{root}/t");
+        let base = fresh_dataset(&uri).await;
+        let detached = CommitBuilder::new(Arc::new(base.clone()))
+            .with_detached(true)
+            .with_skip_auto_cleanup(true)
+            .execute(Transaction::new(
+                base.version().version,
+                Operation::Project {
+                    schema: base.schema().clone(),
+                    preserves_nullability: true,
+                },
+                None,
+            ))
+            .await
+            .unwrap();
+        let version = detached.version().version;
+        assert!(lance_table::format::is_detached_version(version));
+        // The row a publication records for this pin, spelled from the root
+        // URI as `TableVersionMetadata::from_dataset` spells it.
+        let location = detached.manifest_location();
+        let row = |size: Option<u64>, e_tag: Option<&str>| {
+            TableVersionMetadata::from_json_str(
+                &serde_json::json!({
+                    "manifest_path": format!("{root}/{}", location.path),
+                    "manifest_size": size,
+                    "e_tag": e_tag,
+                    "naming_scheme": "V2",
+                })
+                .to_string(),
+            )
+            .unwrap()
+        };
+        let pin = row(location.size, location.e_tag.as_deref());
+        let recorded = pin
+            .recorded_manifest()
+            .expect("a detached commit records both");
+
+        // The opener `instrumentation::open_pinned_dataset` installs: the
+        // configured handler, given the row's recorded manifest when it has one.
+        // (The engine opener admits graph storage schemes only; the DST
+        // storage-cost golden counts the same opens through it.)
+        let counter = LogicalCallCounter::default();
+        let open = |pin: TableVersionMetadata, session: Arc<Session>| {
+            let uri = uri.clone();
+            let params = Some(lance::io::ObjectStoreParams {
+                object_store_wrapper: Some(counter.wrapper()),
+                ..Default::default()
+            });
+            async move {
+                let handler = match pin.recorded_manifest() {
+                    Some(recorded) => pinned_commit_handler(&uri, &params, recorded).await,
+                    None => configured_commit_handler(&uri, &params, None).await,
+                }
+                .unwrap();
+                DatasetBuilder::from_uri(&uri)
+                    .with_version(version)
+                    .with_session(session)
+                    .with_store_params(params.unwrap())
+                    .with_commit_handler(handler)
+                    .load()
+                    .await
+                    .unwrap()
+            }
+        };
+
+        // Lance alone: a detached version resolves with no size, so the open
+        // asks for one, and nothing is cached for the next open.
+        let legacy = row(None, None);
+        assert!(legacy.recorded_manifest().is_none());
+        assert!(row(location.size, None).recorded_manifest().is_none());
+        let session = Arc::new(Session::default());
+        open(legacy.clone(), session.clone()).await;
+        let cold = counter.take();
+        assert!(cold.head >= 1, "{cold:?}");
+        open(legacy, session).await;
+        assert_eq!(counter.take(), cold, "nothing cached without a size");
+
+        // The recorded manifest: no HEAD, the same object, and a repeat open
+        // on the session reads no manifest at all.
+        let session = Arc::new(Session::default());
+        let opened = open(pin.clone(), session.clone()).await;
+        let first = counter.take();
+        assert_eq!(first.head, 0, "{first:?}");
+        assert_eq!(first.get, cold.get, "{first:?} against {cold:?}");
+        assert_eq!(opened.version().version, version);
+        assert_eq!(
+            opened.manifest_location().size,
+            detached.manifest_location().size
+        );
+        assert_eq!(
+            opened.manifest_location().e_tag,
+            detached.manifest_location().e_tag
+        );
+        assert_eq!(opened.manifest(), detached.manifest());
+        open(pin.clone(), session).await;
+        assert_eq!(
+            counter.take(),
+            Default::default(),
+            "the session cache serves it"
+        );
+
+        // A stale size opens through Lance's own retry, and the location
+        // matches only the recorded version's own path.
+        let path = location.path.clone();
+        let stale_pin = row(
+            location.size.map(|size| size - 1),
+            location.e_tag.as_deref(),
+        );
+        let reopened = open(stale_pin, Arc::new(Session::default())).await;
+        assert_eq!(reopened.manifest(), detached.manifest());
+        let base_path = detached.branch_location().path;
+        assert_eq!(recorded.location(&base_path, version).unwrap().path, path);
+        assert!(
+            recorded
+                .location(&base_path, base.version().version)
+                .is_none()
+        );
+        assert!(recorded.location(&Path::from("other/t"), version).is_none());
+        assert!(
+            recorded
+                .location(&Path::from("t/tree/b"), version)
+                .is_none()
+        );
+        let elsewhere =
+            RecordedManifest::new(&format!("x{}", path), recorded.size, &recorded.e_tag);
+        assert!(elsewhere.location(&base_path, version).is_none());
     }
 
     #[tokio::test]
