@@ -182,8 +182,10 @@ pub async fn configured_commit_handler(
 
 /// The configured handler for a dataset opened at a registered pin: it
 /// resolves the pin's version to `recorded` when that is the version's own
-/// manifest path, so the open reads the manifest without asking the store
-/// for its size and Lance can keep it in the session metadata cache.
+/// manifest path, so the open reads the manifest without asking the store for
+/// its size. Lance caches a manifest whose size it knows in the open's
+/// session, so only an open whose session caches nothing passes `recorded`
+/// (`instrumentation::open_pinned_dataset_uncached`).
 pub async fn pinned_commit_handler(
     uri: &str,
     params: &Option<lance::io::ObjectStoreParams>,
@@ -1356,9 +1358,10 @@ mod tests {
 
     /// Issue 1250: a pinned open of a detached version resolves to the
     /// manifest object its registration recorded, so it reads the manifest
-    /// without a HEAD, and a repeat open on the same session takes it from
-    /// Lance's metadata cache. A stale size, a row from before the size was
-    /// recorded, and another version all still open through Lance.
+    /// without a HEAD. The opens that take the recorded location own a
+    /// session that caches nothing, so a repeat costs the same and a removed
+    /// manifest is read from the store again. A stale size, a row from before
+    /// the size was recorded and another version resolve through Lance.
     #[tokio::test]
     async fn pinned_open_resolves_the_recorded_manifest_issue_1250() {
         use crate::logical_calls::LogicalCallCounter;
@@ -1386,7 +1389,7 @@ mod tests {
         assert!(lance_table::format::is_detached_version(version));
         // The row a publication records for this pin, spelled from the root
         // URI as `TableVersionMetadata::from_dataset` spells it.
-        let location = detached.manifest_location();
+        let location = detached.manifest_location().clone();
         let row = |size: Option<u64>, e_tag: Option<&str>| {
             TableVersionMetadata::from_json_str(
                 &serde_json::json!({
@@ -1404,12 +1407,13 @@ mod tests {
             .recorded_manifest()
             .expect("a detached commit records both");
 
-        // The opener `instrumentation::open_pinned_dataset` installs: the
-        // configured handler, given the row's recorded manifest when it has one.
-        // (The engine opener admits graph storage schemes only; the DST
-        // storage-cost golden counts the same opens through it.)
+        // The open `instrumentation::open_pinned_dataset_uncached` makes: a
+        // session that caches nothing and the configured handler, given the
+        // row's recorded manifest when it has one. (The engine opener admits
+        // graph storage schemes only; the DST storage-cost golden counts the
+        // same opens through it.)
         let counter = LogicalCallCounter::default();
-        let open = |pin: TableVersionMetadata, session: Arc<Session>| {
+        let open = |pin: TableVersionMetadata| {
             let uri = uri.clone();
             let params = Some(lance::io::ObjectStoreParams {
                 object_store_wrapper: Some(counter.wrapper()),
@@ -1423,62 +1427,53 @@ mod tests {
                 .unwrap();
                 DatasetBuilder::from_uri(&uri)
                     .with_version(version)
-                    .with_session(session)
+                    .with_session(crate::lance_access::statement_session(
+                        crate::lance_access::store_registry(),
+                        0,
+                        0,
+                    ))
                     .with_store_params(params.unwrap())
                     .with_commit_handler(handler)
                     .load()
                     .await
-                    .unwrap()
             }
         };
 
         // Lance alone: a detached version resolves with no size, so the open
-        // asks for one, and nothing is cached for the next open.
+        // asks the store for one.
         let legacy = row(None, None);
         assert!(legacy.recorded_manifest().is_none());
         assert!(row(location.size, None).recorded_manifest().is_none());
-        let session = Arc::new(Session::default());
-        open(legacy.clone(), session.clone()).await;
+        open(legacy.clone()).await.unwrap();
         let cold = counter.take();
         assert!(cold.head >= 1, "{cold:?}");
-        open(legacy, session).await;
-        assert_eq!(counter.take(), cold, "nothing cached without a size");
 
-        // The recorded manifest: no HEAD, the same object, and a repeat open
-        // on the session reads no manifest at all.
-        let session = Arc::new(Session::default());
-        let opened = open(pin.clone(), session.clone()).await;
+        // The recorded manifest: the same object, read without a HEAD, and a
+        // repeat open pays the same reads again.
+        let opened = open(pin.clone()).await.unwrap();
         let first = counter.take();
         assert_eq!(first.head, 0, "{first:?}");
         assert_eq!(first.get, cold.get, "{first:?} against {cold:?}");
         assert_eq!(opened.version().version, version);
-        assert_eq!(
-            opened.manifest_location().size,
-            detached.manifest_location().size
-        );
-        assert_eq!(
-            opened.manifest_location().e_tag,
-            detached.manifest_location().e_tag
-        );
+        assert_eq!(opened.manifest_location().size, location.size);
+        assert_eq!(opened.manifest_location().e_tag, location.e_tag);
         assert_eq!(opened.manifest(), detached.manifest());
-        open(pin.clone(), session).await;
-        assert_eq!(
-            counter.take(),
-            Default::default(),
-            "the session cache serves it"
-        );
+        open(pin.clone()).await.unwrap();
+        assert_eq!(counter.take(), first, "nothing is cached across opens");
 
         // A stale size opens through Lance's own retry, and the location
         // matches only the recorded version's own path.
-        let path = location.path.clone();
         let stale_pin = row(
             location.size.map(|size| size - 1),
             location.e_tag.as_deref(),
         );
-        let reopened = open(stale_pin, Arc::new(Session::default())).await;
+        let reopened = open(stale_pin).await.unwrap();
         assert_eq!(reopened.manifest(), detached.manifest());
         let base_path = detached.branch_location().path;
-        assert_eq!(recorded.location(&base_path, version).unwrap().path, path);
+        assert_eq!(
+            recorded.location(&base_path, version).unwrap().path,
+            location.path
+        );
         assert!(
             recorded
                 .location(&base_path, base.version().version)
@@ -1490,9 +1485,27 @@ mod tests {
                 .location(&Path::from("t/tree/b"), version)
                 .is_none()
         );
-        let elsewhere =
-            RecordedManifest::new(&format!("x{}", path), recorded.size, &recorded.e_tag);
+        let elsewhere = RecordedManifest::new(
+            &format!("x{}", location.path),
+            recorded.size,
+            &recorded.e_tag,
+        );
         assert!(elsewhere.location(&base_path, version).is_none());
+
+        // A reclaimed manifest: nothing answers for it from a cache. Read at
+        // its recorded size, Lance reports the missing object as an IO error,
+        // and only its own resolution reports the not-found that
+        // `instrumentation::open_dataset` classifies as reclaimed history,
+        // which is why that opener repeats a failed recorded open without it.
+        let store = detached.object_store(None).await.unwrap();
+        store.inner.delete(&location.path).await.unwrap();
+        let error = open(pin).await.unwrap_err();
+        assert!(matches!(error, lance::Error::IO { .. }), "{error:?}");
+        let error = open(legacy).await.unwrap_err();
+        assert!(
+            matches!(error, lance::Error::DatasetNotFound { .. }),
+            "{error:?}"
+        );
     }
 
     #[tokio::test]

@@ -1,1 +1,1 @@
-- Opening a table at a commit's pinned version no longer asks the store for the manifest's size first, and repeat opens reuse the cached manifest. Results are unchanged.
+- A read pinned to a commit no longer asks the store for each table manifest's size before reading it, so it sends one request fewer per table it opens.

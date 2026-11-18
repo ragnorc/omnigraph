@@ -2071,9 +2071,7 @@ pub use control_dataset::{current_control_dataset, retain_control_dataset};
 /// Open a table pin (RFC 0067): a pin without a staged version opens its
 /// target, a staged pin above `last_linear_version` opens its detached
 /// version, and any older pin keeps the v10 twin rule for historical rows.
-/// The version the pin's writer recorded resolves to its recorded manifest
-/// object (`TableVersionMetadata::recorded_manifest`); every other version
-/// the rule opens resolves through Lance.
+/// Lance resolves every version this opens.
 pub async fn open_pinned_dataset(
     uri: &str,
     target_version: u64,
@@ -2081,11 +2079,50 @@ pub async fn open_pinned_dataset(
     session: Option<&Arc<lance::session::Session>>,
     wrapper: Option<Arc<dyn WrappingObjectStore>>,
 ) -> Result<Dataset> {
+    open_pin(uri, target_version, pin, None, session, wrapper).await
+}
+
+/// [`open_pinned_dataset`] on a statement session of its own that caches
+/// nothing, for an open that keeps no read cache (a read pinned to a commit,
+/// a change-feed re-open). The version the pin's writer recorded resolves to
+/// its recorded manifest object (`TableVersionMetadata::recorded_manifest`),
+/// so the open reads the manifest without first asking the store for its
+/// size. No manifest outlives the open, so a version `cleanup` reclaims is
+/// read from the store again and fails as
+/// [`OmniError::HistoricalVersionReclaimed`]: an open on a session that
+/// caches metadata must not take the recorded location, because Lance keeps
+/// a manifest whose size it knows, and no public call evicts it.
+pub async fn open_pinned_dataset_uncached(
+    uri: &str,
+    target_version: u64,
+    pin: &crate::metadata::TableVersionMetadata,
+    registry: Arc<lance::io::ObjectStoreRegistry>,
+    wrapper: Option<Arc<dyn WrappingObjectStore>>,
+) -> Result<Dataset> {
+    let session = crate::lance_access::statement_session(registry, 0, 0);
+    let recorded = pin.recorded_manifest();
+    open_pin(
+        uri,
+        target_version,
+        pin,
+        recorded.as_ref(),
+        Some(&session),
+        wrapper,
+    )
+    .await
+}
+
+async fn open_pin(
+    uri: &str,
+    target_version: u64,
+    pin: &crate::metadata::TableVersionMetadata,
+    recorded: Option<&crate::lance_clone::RecordedManifest>,
+    session: Option<&Arc<lance::session::Session>>,
+    wrapper: Option<Arc<dyn WrappingObjectStore>>,
+) -> Result<Dataset> {
     let staged_version = pin.staged_version();
     let transaction_uuid = pin.transaction_uuid();
     let last_linear_version = pin.last_linear_version();
-    let recorded = pin.recorded_manifest();
-    let recorded = recorded.as_ref();
     let open = |version: u64, wrapper: Option<Arc<dyn WrappingObjectStore>>| {
         open_dataset_with(
             uri,
@@ -2184,35 +2221,42 @@ async fn open_dataset_with(
     session: Option<&Arc<lance::session::Session>>,
     wrapper: Option<Arc<dyn WrappingObjectStore>>,
 ) -> Result<Dataset> {
-    load_recorded(uri, version, recorded, session, wrapper)
-        .await?
-        .map_err(|error| match error {
-            // Only the two shapes cleanup/drop legitimately leaves behind for a
-            // pinned historical read count as reclaimed history:
-            //   - VersionNotFound: the dataset exists, that version was GC'd.
-            //   - DatasetNotFound: the whole dataset directory is gone (a dropped
-            //     table's history fully GC'd).
-            // A bare NotFound is NOT a cleanup shape: it is a live manifest
-            // referencing a missing object — corruption or an object-store
-            // inconsistency — so it must stay loud rather than be masked as a benign
-            // retention gap (which the change feed would surface as a 410 "reset via
-            // baseline"). Residual: this cannot tell a corrupt CURRENT table's
-            // DatasetNotFound from a legitimately dropped historical table's; that
-            // needs caller context (whether the version is the table's current one),
-            // and the baseline handshake the gap points to still fails loudly on
-            // genuine current-state loss.
-            lance::Error::VersionNotFound { .. } | lance::Error::DatasetNotFound { .. }
-                if matches!(version, VersionResolution::At(_)) =>
-            {
-                OmniError::HistoricalVersionReclaimed {
-                    published_dataset_version: match version {
-                        VersionResolution::At(version) => version,
-                        VersionResolution::Latest => 0,
-                    },
-                }
+    let loaded = match load_recorded(uri, version, recorded, session, wrapper.clone()).await? {
+        // Lance reports a manifest that is missing at a known size as an IO
+        // error, not as the not-found it reports when it looks the manifest up
+        // (`Dataset::load_manifest`), so a failed open through the recorded
+        // location is repeated through Lance's own resolution: every failure
+        // keeps the class an open without it gets, reclaimed history included.
+        Err(_) if recorded.is_some() => load_recorded(uri, version, None, session, wrapper).await?,
+        loaded => loaded,
+    };
+    loaded.map_err(|error| match error {
+        // Only the two shapes cleanup/drop legitimately leaves behind for a
+        // pinned historical read count as reclaimed history:
+        //   - VersionNotFound: the dataset exists, that version was GC'd.
+        //   - DatasetNotFound: the whole dataset directory is gone (a dropped
+        //     table's history fully GC'd).
+        // A bare NotFound is NOT a cleanup shape: it is a live manifest
+        // referencing a missing object — corruption or an object-store
+        // inconsistency — so it must stay loud rather than be masked as a benign
+        // retention gap (which the change feed would surface as a 410 "reset via
+        // baseline"). Residual: this cannot tell a corrupt CURRENT table's
+        // DatasetNotFound from a legitimately dropped historical table's; that
+        // needs caller context (whether the version is the table's current one),
+        // and the baseline handshake the gap points to still fails loudly on
+        // genuine current-state loss.
+        lance::Error::VersionNotFound { .. } | lance::Error::DatasetNotFound { .. }
+            if matches!(version, VersionResolution::At(_)) =>
+        {
+            OmniError::HistoricalVersionReclaimed {
+                published_dataset_version: match version {
+                    VersionResolution::At(version) => version,
+                    VersionResolution::Latest => 0,
+                },
             }
-            error => OmniError::storage(error),
-        })
+        }
+        error => OmniError::storage(error),
+    })
 }
 
 /// [`open_dataset`] at exactly `version`, resolving only that version (no
