@@ -4445,6 +4445,59 @@ mod tests {
         .await;
     }
 
+    #[tokio::test]
+    #[ignore = "issue #1457 reproduction: waits out the real 30 s managed deadline"]
+    async fn managed_branch_merge_outlives_the_thirty_second_deadline_issue_1457() {
+        // The server publishes the merge and answers at 30.25 s, well inside
+        // the 300 s a managed load is given. On main the CLI gives up at 30 s
+        // and the published merge is reported with unknown effects.
+        let commit = json!({
+            "graph_commit_id": "head-after", "graph_branch": "main",
+            "graph_manifest_version": 7, "parent_commit_id": "head-before",
+            "merged_parent_commit_id": "head-source",
+            "actor_id": "principal:alice", "created_at": 12345,
+            "published": true, "kind": "published", "root_commit_id": null
+        });
+        let server = IntentApiFixture::graph_with_response_delay(
+            vec![IntentReply::json(
+                200,
+                json!({
+                    "source": "review", "target": "main", "outcome": "merged",
+                    "commit": commit, "actor_id": "principal:alice"
+                }),
+            )],
+            std::time::Duration::from_millis(30_250),
+        );
+        let client = crate::operator_routing::test_transport_scope_sync(&[&server.origin], || {
+            GraphClient::managed(
+                &server.origin,
+                "knowledge",
+                crate::credential_sources::test_credential(&server.origin, "data-credential"),
+            )
+        })
+        .unwrap();
+        let started = std::time::Instant::now();
+        let result = client
+            .branch_merge(
+                "review",
+                "main",
+                false,
+                false,
+                false,
+                &[],
+                &mut std::io::sink(),
+            )
+            .await;
+        let elapsed = started.elapsed();
+        let requests = server.workflow_requests();
+        assert_eq!(requests.len(), 1, "a merge must not be retried");
+        assert_eq!(requests[0].path, "/graphs/knowledge/branches/merge");
+        let output = result.unwrap_or_else(|error| {
+            panic!("merge answered at 30.25 s was cut off after {elapsed:?}: {error}")
+        });
+        assert_eq!(serde_json::to_value(output.commit).unwrap(), commit);
+    }
+
     #[test]
     fn managed_load_request_has_its_own_deadline_and_exact_input_bound() {
         let file = tempfile::NamedTempFile::new().unwrap();
