@@ -72,7 +72,7 @@ use crate::dataset_index::{
     has_btree_index_on, has_fts_index_on, has_fts_postings_on, has_vector_index_on,
     is_full_text_index, validate_full_text_demand, validate_full_text_scan,
 };
-use crate::db::manifest::{TableVersionMetadata, open_dataset_entry, open_dataset_entry_uncached};
+use crate::db::manifest::{TableVersionMetadata, open_dataset_entry};
 use crate::db::{DatasetEntry, Snapshot};
 use crate::error::{OmniError, Result};
 use crate::seams::{decide_seam, skip};
@@ -2347,29 +2347,27 @@ impl TableStore {
         if entry.native_dataset_branch.is_none() {
             return self.open_at_entry(entry).await;
         }
-        let dataset =
-            match open_dataset_entry_uncached(entry, &self.root_uri, self.session.store_registry())
-                .await
-            {
-                Ok(dataset) => dataset,
-                Err(error @ OmniError::HistoricalVersionReclaimed { .. }) => {
-                    // Cleanup can reclaim a pinned version of a live fork (a
-                    // retention gap), but a fork whose ref is gone altogether was
-                    // reclaimed with its deleted branch; under incarnation-suffixed
-                    // refs the branch may already live on elsewhere. Prove absence
-                    // from the ref listing; any other failure keeps its own class.
-                    if self.named_fork_is_absent(entry).await? {
-                        return Err(OmniError::manifest(format!(
-                            "change feed table '{}' has no persisted native-branch incarnation \
+        let fresh = crate::lance_access::statement_session(self.session.store_registry(), 0, 0);
+        let dataset = match open_dataset_entry(entry, &self.root_uri, Some(&fresh)).await {
+            Ok(dataset) => dataset,
+            Err(error @ OmniError::HistoricalVersionReclaimed { .. }) => {
+                // Cleanup can reclaim a pinned version of a live fork (a
+                // retention gap), but a fork whose ref is gone altogether was
+                // reclaimed with its deleted branch; under incarnation-suffixed
+                // refs the branch may already live on elsewhere. Prove absence
+                // from the ref listing; any other failure keeps its own class.
+                if self.named_fork_is_absent(entry).await? {
+                    return Err(OmniError::manifest(format!(
+                        "change feed table '{}' has no persisted native-branch incarnation \
                          witness at the reopened dataset; the branch was deleted and \
                          recreated during the poll",
-                            entry.type_key,
-                        )));
-                    }
-                    return Err(error);
+                        entry.type_key,
+                    )));
                 }
-                Err(error) => return Err(error),
-            };
+                return Err(error);
+            }
+            Err(error) => return Err(error),
+        };
         // Defense-in-depth only: the e_tag is not a sufficient native-branch
         // incarnation witness (a store may persist none, and equality is a
         // content heuristic, not identity). The load-bearing witness is the

@@ -2083,8 +2083,8 @@ pub async fn open_pinned_dataset(
 }
 
 /// [`open_pinned_dataset`] on a statement session of its own that caches
-/// nothing, for an open that keeps no read cache (a read pinned to a commit,
-/// a change-feed re-open). The version the pin's writer recorded resolves to
+/// nothing, for an open that keeps no read cache (a read pinned to a commit).
+/// The version the pin's writer recorded resolves to
 /// its recorded manifest object (`TableVersionMetadata::recorded_manifest`),
 /// so the open reads the manifest without first asking the store for its
 /// size. No manifest outlives the open, so a version `cleanup` reclaims is
