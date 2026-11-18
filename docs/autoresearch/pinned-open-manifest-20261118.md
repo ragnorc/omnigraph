@@ -10,8 +10,9 @@ agent-devbox, model Claude Opus 5.5. Base: ModernRelay/omnigraph main
 One hypothesis was kept, in its second form (H1b). A table open that keeps no
 read cache now reads the manifest at the path, size and ETag that the pin's
 registration recorded. Such an open no longer sends a HEAD to learn the size.
-The opens that keep no read cache are reads pinned to a commit and the change
-feed's re-open of a named-branch table. The first form (H1) used the recorded
+The opens that keep no read cache are the table opens of a snapshot that holds
+no read caches: reads pinned to a commit, and the merge-base and other
+historical snapshots that a merge opens. The first form (H1) used the recorded
 location on every pinned open. A workspace test caught that it let a cached
 manifest answer for a version that `cleanup` had reclaimed, so it was dropped.
 
@@ -83,7 +84,8 @@ uncached pinned open, one per open. They do not grow with history, rows or
 fragments. Measured: the pinned read saves exactly its 9 HEADs (9 opens of 3
 manifests), and its repeat saves the same 9, because nothing is cached across
 reads. The new golden rows are equal at 2 and 32 commits, on main and now. The
-named-branch merge saves 13 of its 115 requests.
+named-branch merge saves 13 of its 115 requests, all in the snapshots it opens
+without read caches.
 
 ## Hypotheses
 
@@ -91,7 +93,7 @@ named-branch merge saves 13 of its 115 requests.
 |---|---|---|---|---|
 | H1a | The handler of every pinned open returns the recorded location when the recorded path equals Lance's path | no change. The row spells the path from the root URI (`shared-memory://gqt-dst/case/...`), and Lance spells it inside the store (`case/...`) | not run | Refined into H1 |
 | H1 | The same, matching the recorded path's suffix at a path-component boundary, on every pinned open (handle cache, `open_at_entry`, uncached opens) | pinned read 25 to 16, cold read 8 to 6, cold merge 115 to 100, golden 47 lines down | workspace tests: 3 new failures (`historical_read_of_reclaimed_version_is_typed`, `system_column_upgrade_history_survives_unrelated_reclaimed_tables`, `commit_changes_are_exact_ordered_and_bounded`) | Dropped, commit `72d2ca58` |
-| H1b | The recorded location only on opens that own a session which caches nothing, and a failed recorded open repeated through Lance's resolution | pinned read 25 to 16 (RustFS 25 to 17), named-branch merge 115 to 102, golden 13 lines down, none up | listed below | Kept, commit `95bfc47b` |
+| H1b | The recorded location only on opens that own a session which caches nothing, and a failed recorded open repeated through Lance's resolution | pinned read 25 to 16 (RustFS 25 to 17), named-branch merge 115 to 102, golden 13 lines down, none up | listed below | Kept, commits `95bfc47b` and `4e923df5` |
 | H2 | Share one statement-scoped handle cache across the opens of one pinned read | 9 manifest GETs for 3 tables would become 3 | not built | Proposal, see below |
 
 Why H1 failed. Lance's `Dataset::get_manifest` caches a manifest whose size it
@@ -109,7 +111,13 @@ This holds on every store, not only on local files.
 
 How H1b holds. Only `open_pinned_dataset_uncached` passes the recorded
 location, and it builds its own statement session with zero cache capacity, so
-no manifest outlives the open. Opens on the data session (the handle cache and
+no manifest outlives the open. Its one caller is `open_dataset_entry_uncached`,
+which `Snapshot::open_lance_dataset` uses when the snapshot holds no read
+caches. The change feed's re-open of a named-branch table also uses a
+zero-cache session, but it stays on Lance's resolution (`4e923df5`): its
+ETag witness (`TableVersionMetadata::witnesses`) must compare the store's token
+with the recorded one, and through the recorded location both are the same
+value. Opens on the data session (the handle cache and
 `TableStore::open_at_entry`) resolve through Lance as on main. If an open
 through the recorded location fails, `open_dataset` repeats it through Lance's
 resolution and returns that result, so every failure keeps the class it has on
