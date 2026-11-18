@@ -1415,14 +1415,15 @@ mod tests {
         let counter = LogicalCallCounter::default();
         let open = |pin: TableVersionMetadata| {
             let uri = uri.clone();
-            let params = Some(lance::io::ObjectStoreParams {
+            let params = lance::io::ObjectStoreParams {
                 object_store_wrapper: Some(counter.wrapper()),
                 ..Default::default()
-            });
+            };
             async move {
+                let handler_params = Some(params.clone());
                 let handler = match pin.recorded_manifest() {
-                    Some(recorded) => pinned_commit_handler(&uri, &params, recorded).await,
-                    None => configured_commit_handler(&uri, &params, None).await,
+                    Some(recorded) => pinned_commit_handler(&uri, &handler_params, recorded).await,
+                    None => configured_commit_handler(&uri, &handler_params, None).await,
                 }
                 .unwrap();
                 DatasetBuilder::from_uri(&uri)
@@ -1432,7 +1433,7 @@ mod tests {
                         0,
                         0,
                     ))
-                    .with_store_params(params.unwrap())
+                    .with_store_params(params)
                     .with_commit_handler(handler)
                     .load()
                     .await
