@@ -788,7 +788,7 @@ async fn scan_filtered(ds: &Dataset, projection: &[&str], expr: Expr) -> Result<
 /// fragments read whole, through the in-memory match. A key names its rows in
 /// exactly one chunk and the two fragment sets are disjoint, so each row is
 /// seen once.
-async fn read_key_column(
+pub(crate) async fn read_key_column(
     ds: &Dataset,
     reads: &RemovalEdgeReads<'_>,
     projection: &[&str],

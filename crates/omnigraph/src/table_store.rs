@@ -4303,17 +4303,32 @@ impl TableStore {
         if source_ids.is_empty() {
             return Ok(None);
         }
-        let mut target_ids = Self::exact_id_scan(ds, source_ids, system_columns).await?;
-        while let Some(batch) = target_ids.try_next().await.map_err(OmniError::storage)? {
+        // Prototype (#1445): split the probe by BTREE coverage, as
+        // `validate::RemovalEdgeReads` does, so Lance copies no more than
+        // `PROBE_CHUNK_KEYS` ids into the uncovered fragments.
+        let reads = crate::validate::RemovalEdgeReads::plan(
+            ds,
+            (system_columns.id, source_ids),
+            (system_columns.id, &[]),
+        )
+        .await?;
+        let mut found: Option<String> = None;
+        crate::validate::read_key_column(ds, &reads, &[system_columns.id], |batch| {
+            if found.is_some() {
+                return Ok(());
+            }
             let ids =
-                string_id_column(&batch, system_columns, "stage_keyed_write strict preflight")?;
+                string_id_column(batch, system_columns, "stage_keyed_write strict preflight")?;
             for row in 0..ids.len() {
                 if ids.is_valid(row) {
-                    return Ok(Some(ids.value(row).to_string()));
+                    found = Some(ids.value(row).to_string());
+                    break;
                 }
             }
-        }
-        Ok(None)
+            Ok(())
+        })
+        .await?;
+        Ok(found)
     }
 
     /// The id column of the pinned table's rows whose id is a member of
@@ -4353,16 +4368,23 @@ impl TableStore {
         if source_ids.is_empty() {
             return Ok(0);
         }
-        let mut target_ids = Self::exact_id_scan(ds, source_ids, system_columns).await?;
+        let reads = crate::validate::RemovalEdgeReads::plan(
+            ds,
+            (system_columns.id, source_ids),
+            (system_columns.id, &[]),
+        )
+        .await?;
         let mut present = HashSet::new();
-        while let Some(batch) = target_ids.try_next().await.map_err(OmniError::storage)? {
-            let ids = string_id_column(&batch, system_columns, "stage_keyed_write upsert probe")?;
+        crate::validate::read_key_column(ds, &reads, &[system_columns.id], |batch| {
+            let ids = string_id_column(batch, system_columns, "stage_keyed_write upsert probe")?;
             for row in 0..ids.len() {
                 if ids.is_valid(row) {
                     present.insert(ids.value(row).to_string());
                 }
             }
-        }
+            Ok(())
+        })
+        .await?;
         Ok(present.len())
     }
 
