@@ -1,0 +1,76 @@
+# issue: none
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine-dst
+    storage: in-memory-object-store
+    seeds: [0]
+
+--- schema
+node Person {
+    name: String @key
+    age: I32?
+}
+node Company {
+    name: String @key
+}
+edge WorksAt: Person -> Company
+--- seed
+{"type":"Person","data":{"name":"alice","age":30}}
+{"type":"Person","data":{"name":"bob","age":40}}
+{"type":"Company","data":{"name":"acme"}}
+{"edge":"WorksAt","from":"alice","to":"acme","data":{}}
+--- mutate
+query add() { insert Person { name: "carol", age: 50 } }
+--- expect affected: nodes=1 edges=0
+--- bind commit $c1
+--- query
+query person_after_write() { match { $p: Person { name: "carol" } } return { $p.age } }
+--- expect unordered
+{"p.age":50}
+--- expect shape
+p.age: I32?
+--- query
+query person_warm() { match { $p: Person { name: "carol" } } return { $p.age } }
+--- expect unordered
+{"p.age":50}
+--- expect shape
+p.age: I32?
+--- query
+query works_after_write() { match { $p: Person $p worksAt $c } return { $p.name, $c.name } }
+--- expect unordered
+{"p.name":"alice","c.name":"acme"}
+--- expect shape
+p.name: String
+c.name: String
+--- query snapshot: $c1
+query works_at_head_pin() { match { $p: Person $p worksAt $c } return { $p.name, $c.name } }
+--- expect unordered
+{"p.name":"alice","c.name":"acme"}
+--- expect shape
+p.name: String
+c.name: String
+--- query snapshot: $c1
+query works_at_head_pin_again() { match { $p: Person $p worksAt $c } return { $p.name, $c.name } }
+--- expect unordered
+{"p.name":"alice","c.name":"acme"}
+--- expect shape
+p.name: String
+c.name: String
+--- mutate
+query add2() { insert Company { name: "globex" } }
+--- expect affected: nodes=1 edges=0
+--- query snapshot: $c1
+query works_at_old_pin() { match { $p: Person $p worksAt $c } return { $p.name, $c.name } }
+--- expect unordered
+{"p.name":"alice","c.name":"acme"}
+--- expect shape
+p.name: String
+c.name: String
+--- restart
+--- query
+query person_cold_restart() { match { $p: Person { name: "carol" } } return { $p.age } }
+--- expect unordered
+{"p.age":50}
+--- expect shape
+p.age: I32?

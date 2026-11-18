@@ -1,0 +1,49 @@
+# issue: none
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine-dst
+    storage: in-memory-object-store
+    seeds: [0]
+
+--- schema
+node Person {
+    name: String @key
+    age: I32?
+}
+node Company {
+    name: String @key
+}
+edge WorksAt: Person -> Company
+--- seed
+{"type":"Person","data":{"name":"alice","age":30}}
+{"type":"Person","data":{"name":"bob","age":40}}
+{"type":"Company","data":{"name":"acme"}}
+{"edge":"WorksAt","from":"alice","to":"acme","data":{}}
+--- mutate
+branch create feature
+--- expect ok
+--- mutate branch: feature
+query x_on_feature() { insert Person { name: "x", age: 1 } }
+--- expect affected: nodes=1 edges=0
+--- restart
+--- mutate
+query add() { insert Person { name: "carol", age: 50 } }
+--- expect affected: nodes=1 edges=0
+--- restart
+--- query
+branch diff feature into main
+--- expect ordered
+{"after":{"properties":{"age":1,"name":"x"}},"id":"x","kind":"node","op":"insert","type":"Person"}
+--- restart
+--- mutate
+branch merge feature into main
+--- expect outcome: merged
+--- restart
+--- query
+query all() { match { $p: Person $p worksAt $c } return { $p.name, $c.name } }
+--- expect unordered
+{"p.name":"alice","c.name":"acme"}
+--- expect shape
+p.name: String
+c.name: String
