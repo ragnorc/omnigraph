@@ -8,6 +8,11 @@
 # body in `match { }` is now the write's form, and three codes move:
 # e3-03 (`fuzzy` is refused as a function, T6, before its positional budget),
 # e3-17 (`where` inside the braces, Q017) and e3-21 (`= null`, T7).
+# On 2026-11-19, re-judged on #1316's head after its admitted spellings
+# (`case … end` in any letter case, `||`, `<>`, single quotes and keywords in
+# any letter case are non-canonical spellings the front door accepts, lint
+# `L212` to `L216`): two more classes are refusals no more and are dropped,
+# `CASE … END` (e3-10) and an uppercase keyword (e3-22).
 
 --- seed
 id: e3-01
@@ -126,18 +131,6 @@ query people_and_employers() {
 }
 
 --- seed
-id: e3-10
-task: t09
-class: `CASE … END` (SQL)
-code: Q012
-
---- text
-query with_city() {
-  match { $p: Person }
-  return { $p.name, coalesce($p.city, "unknown") as city, CASE WHEN $p.age >= 65 THEN "senior" ELSE "active" END as band }
-}
-
---- seed
 id: e3-12
 task: t02
 class: a comparison inside binding braces
@@ -251,20 +244,6 @@ query homeless() {
   match { $p: Person }
   where $p.city = null
   return { $p.name }
-}
-
---- seed
-id: e3-22
-task: t02
-class: an uppercase keyword
-code: Q014
-
---- text
-query adults($min: I32) {
-  match { $p: Person }
-  where $p.age >= $min
-  return { $p.name }
-  order { $p.age DESC }
 }
 
 --- seed

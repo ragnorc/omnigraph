@@ -49,7 +49,7 @@ does not teach is a skill gap, and a result.
 | `tasks/` | the 45-task competence instrument: 39 kinds of query from the RFC's before-and-after corpus and the six M0 composition tasks (`m1` to `m6`), over the RFC's section 8 schema |
 | `corpus/` | the 30-task agent corpus: realistic requests over three GQT datasets, `s*` (social), `a*` (attribution) and `r*` (reading); 10 of them needed several edition-2 queries |
 | `datasets/` | each dataset's `schema.pg` and `seed.jsonl` (GQT's seed format) |
-| `seeds/` | seeded answers per arm: a ground truth with one injected error per refusal class this front end refuses (26 of the 29 classes of 2026-11-09; `gq3.seeds` names the three it accepts now) |
+| `seeds/` | seeded answers per arm: a ground truth with one injected error per refusal class this front end refuses (24 of the 29 classes of 2026-11-09; `gq3.seeds` names the five it accepts now) |
 | `cards/` | the reference card each arm's agent reads, generated from the skill |
 | `manifest.json` | the pinned agent model and each card's SHA-256 |
 | `run.py`, `summary.py` | the runner: calls the agent, asks `omnigraph-gqt-agent` to judge, writes results |

@@ -29,9 +29,9 @@ fn the_instrument_has_the_shape_stage_m0_names() {
                 .iter()
                 .filter(|s| s.arm == arm.name())
                 .count(),
-            26,
+            24,
             "arm {} has one seed per refusal class this front end still refuses \
-             (29 classes less the three it now accepts; seeds/gq3.seeds)",
+             (29 classes less the five it now accepts; seeds/gq3.seeds)",
             arm.name()
         );
     }
