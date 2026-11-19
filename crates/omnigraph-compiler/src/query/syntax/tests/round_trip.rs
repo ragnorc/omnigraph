@@ -158,6 +158,10 @@ const CALLS: &[&str] = &[
     "distance",
     // A foreign word is a name in operand position.
     "with",
+    // `||` and `case` respell these two (section 3).
+    "concat",
+    "if",
+    "lower",
 ];
 const OPTIONS: &[&str] = &["k", "recall", "max_edits", "weights", "mode", "from"];
 /// Declaration names: distinct within a file, since a repeated name is
@@ -324,6 +328,8 @@ fn agg() -> impl Strategy<Value = AggFunc> {
             AggFunc::Avg,
             AggFunc::Min,
             AggFunc::Max,
+            AggFunc::Stddev,
+            AggFunc::Percentile,
         ][..],
     )
 }
@@ -348,20 +354,27 @@ fn expr(depth: u32) -> BoxedStrategy<Expr> {
         1 => (sub(), sub()).prop_map(|(l, r)| Expr::And(Box::new(l), Box::new(r))),
         1 => (sub(), sub()).prop_map(|(l, r)| Expr::Or(Box::new(l), Box::new(r))),
         2 => call(depth - 1).prop_map(Expr::Call),
-        1 => (agg(), sub()).prop_map(|(func, arg)| Expr::AggDistinct { func, arg: Box::new(arg) }),
+        1 => (agg(), sub()).prop_map(|(func, arg)| Expr::AggDistinct { func, arg: Box::new(arg), fraction: None }),
         1 => block(depth - 1).prop_map(|b| Expr::Block(Box::new(b))),
     ]
     .boxed()
 }
 
 fn call(depth: u32) -> BoxedStrategy<Call> {
+    // `cast(x, T)`: a scalar type name is its second argument.
+    let cast = (expr(depth), pick(CAST_TYPES)).prop_map(|(x, ty)| Call {
+        name: "cast".into(),
+        args: vec![Arg::Expr(x), Arg::Expr(Expr::Ident(ty))],
+        options: Vec::new(),
+        at: SourceSpan::default(),
+    });
     let arg = prop_oneof![
         4 => expr(depth).prop_map(Arg::Expr),
         1 => read_body(depth).prop_map(|b| Arg::Inline(Box::new(b))),
     ];
-    (
+    let general = (
         pick(CALLS),
-        proptest::collection::vec(arg, 0..3),
+        proptest::collection::vec(arg, 0..4),
         proptest::collection::vec(
             (
                 pick(OPTIONS),
@@ -376,18 +389,40 @@ fn call(depth: u32) -> BoxedStrategy<Call> {
             options,
             at: SourceSpan::default(),
         })
-        .boxed()
+        .boxed();
+    // `if(c, a, b)`, which `case` respells; `null` as its `else` half the
+    // time, which a `case` with no `else` respells.
+    let if3 = (
+        expr(depth),
+        expr(depth),
+        prop_oneof![expr(depth), Just(Expr::Literal(Literal::Null))],
+    )
+        .prop_map(|(c, a, b)| Call {
+            name: "if".into(),
+            args: vec![Arg::Expr(c), Arg::Expr(a), Arg::Expr(b)],
+            options: Vec::new(),
+            at: SourceSpan::default(),
+        });
+    prop_oneof![8 => general, 1 => cast, 1 => if3].boxed()
 }
+
+/// The scalar types `cast` converts between.
+const CAST_TYPES: &[&str] = &[
+    "String", "Bool", "I32", "I64", "U32", "U64", "F32", "F64", "DateTime", "Date",
+];
 
 fn block(depth: u32) -> BoxedStrategy<Block> {
     prop_oneof![
         (
             agg(),
             proptest::option::of(expr(depth)),
+            proptest::option::of(expr(depth)),
             pattern(depth, 1..3)
         )
-            .prop_map(|(f, arg, pattern)| Block {
+            .prop_map(|(f, arg, fraction, pattern)| Block {
                 func: BlockFunc::Agg(f),
+                // A second argument is written only beside a first.
+                fraction: fraction.filter(|_| arg.is_some()).map(Box::new),
                 arg: arg.map(Box::new),
                 pattern,
                 at: SourceSpan::default(),
@@ -395,6 +430,7 @@ fn block(depth: u32) -> BoxedStrategy<Block> {
         pattern(depth, 1..3).prop_map(|pattern| Block {
             func: BlockFunc::Exists,
             arg: None,
+            fraction: None,
             pattern,
             at: SourceSpan::default(),
         }),
@@ -487,8 +523,13 @@ fn read_body(depth: u32) -> BoxedStrategy<ReadBody> {
     let ordering = (
         prop_oneof![4 => expr(depth.min(1)), 1 => pick(IDENTS).prop_map(Expr::Ident)],
         proptest::option::of(any::<bool>()),
+        proptest::option::of(any::<bool>()),
     )
-        .prop_map(|(expr, descending)| Ordering { expr, descending });
+        .prop_map(|(expr, descending, nulls_first)| Ordering {
+            expr,
+            descending,
+            nulls_first,
+        });
     let limit = proptest::option::of(prop_oneof![
         3 => (0u64..100).prop_map(Limit::Literal),
         1 => any::<u64>().prop_map(Limit::Literal),
@@ -597,6 +638,7 @@ fn decl() -> impl Strategy<Value = Decl> {
                 MutationWriteMode::Publish
             },
             body,
+            respellings: Default::default(),
         })
 }
 
@@ -749,6 +791,18 @@ fn respell(text: &str, seed: u64) -> String {
                 in_string = true;
                 out.push(c);
             }
+            // A single-quoted string is copied as written.
+            '\'' => {
+                out.push(c);
+                while let Some(c) = chars.next() {
+                    out.push(c);
+                    if c == '\\' {
+                        out.extend(chars.next());
+                    } else if c == '\'' {
+                        break;
+                    }
+                }
+            }
             // Whitespace may follow a minus sign, a unary minus and a
             // negative number's alike (section 7); not inside a float's
             // exponent, which is one token.
@@ -779,7 +833,10 @@ pub(crate) fn round_trip(file: &SourceFile, seed: u64) -> Result<(), String> {
     if again != text {
         return Err(format!("printing is not a fixed point\n{text}\n{again}"));
     }
-    let respelled = respell(&text, seed);
+    let respelled = respell(
+        &crate::arbitrary::respell_spellings(&text, seed, &crate::arbitrary::Spelling::ALL).0,
+        seed,
+    );
     match parse_source(&respelled) {
         Ok(other) if other == *file => Ok(()),
         Ok(other) => Err(format!(
@@ -859,7 +916,7 @@ const NOT_GENERATED: &[(&str, &[&str])] = &[
     ),
     (
         "inside an atomic token, whose inner rules leave no pair",
-        &["ident_chars", "string_char"],
+        &["ident_chars", "string_char", "sq_string_char", "call_word"],
     ),
     (
         "only inside a lookahead, which leaves no pair",
@@ -934,11 +991,6 @@ const NOT_GENERATED: &[(&str, &[&str])] = &[
             "fw_like",
             "fw_starts",
             "fw_ends",
-            "fw_case",
-            "fw_when",
-            "fw_then",
-            "fw_else",
-            "fw_end",
         ],
     ),
     (
@@ -1049,7 +1101,18 @@ fn every_grammar_rule_the_generator_is_meant_to_cover_is_produced() {
             .new_tree(&mut runner)
             .expect("the generator draws a file")
             .current();
-        for text in [print_file(&f), respell(&print_file(&f), seed)] {
+        for text in [
+            print_file(&f),
+            respell(
+                &crate::arbitrary::respell_spellings(
+                    &print_file(&f),
+                    seed,
+                    &crate::arbitrary::Spelling::ALL,
+                )
+                .0,
+                seed,
+            ),
+        ] {
             let pairs = QueryParser::parse(Rule::query_file, &text)
                 .unwrap_or_else(|e| panic!("the grammar refuses a generated text: {e}\n{text}"));
             produced.extend(pairs.flatten().map(|p| format!("{:?}", p.as_rule())));

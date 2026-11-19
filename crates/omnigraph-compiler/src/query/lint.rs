@@ -6,7 +6,7 @@ use crate::catalog::Catalog;
 use crate::ir::core::{CoreDecl, MutationTarget, Sink};
 use crate::query::codes::Q004;
 use crate::query::descriptor::{QueryOperationDescriptor, describe_query_operation};
-use crate::query::diagnostic::{QueryDiagnostic, QueryDiagnosticKind};
+use crate::query::diagnostic::{Applicability, QueryDiagnostic, QueryDiagnosticKind, Suggestion};
 use crate::query::file::QueryDecl;
 use crate::query::parser::parse_query_diagnostic;
 
@@ -102,6 +102,10 @@ pub struct QueryLintFinding {
     pub property: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub query_names: Vec<String>,
+    /// The fix as byte-range edits of the source, which `lint --fix`
+    /// applies: a refusal's printed suggestion, or a canonical form's.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub suggestion: Option<Suggestion>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -134,7 +138,7 @@ pub fn lint_query_file(
         Ok(file) => file
             .body
             .into_read_declarations()
-            .map_err(|message| vec![(Q004.as_str().to_string(), message)]),
+            .map_err(|message| vec![(Q004.as_str().to_string(), message, None, None)]),
         Err(diagnostic) => Err(diagnostic
             .all()
             .into_iter()
@@ -232,14 +236,15 @@ pub fn lint_query_file(
             results: Vec::new(),
             findings: refusals
                 .into_iter()
-                .map(|(code, message)| QueryLintFinding {
+                .map(|(code, message, fix, suggestion)| QueryLintFinding {
                     severity: QueryLintSeverity::Error,
                     code,
                     message,
-                    fix: None,
+                    fix,
                     type_name: None,
                     property: None,
                     query_names: Vec::new(),
+                    suggestion,
                 })
                 .collect(),
         },
@@ -251,8 +256,13 @@ pub fn lint_query_file(
 /// line is reported where it stands; a spanless diagnostic keeps its
 /// message. A parse refusal keeps its code and its message; a refusal the
 /// front door raises for the whole source unit (`T83`, one per repeated
-/// name) keeps its code and its rendered form.
-fn front_door_finding(diagnostic: QueryDiagnostic) -> (String, String) {
+/// name) keeps its code and its rendered form. Its fix and the fix's
+/// byte-range edits ride along, as the diagnostic carries them.
+fn front_door_finding(
+    diagnostic: QueryDiagnostic,
+) -> (String, String, Option<String>, Option<Suggestion>) {
+    let suggestion = diagnostic.suggestion.as_deref().cloned();
+    let fix = diagnostic.fix.clone();
     let (code, message) = match diagnostic.kind {
         QueryDiagnosticKind::Parse => (
             diagnostic.code.as_str().to_string(),
@@ -264,7 +274,7 @@ fn front_door_finding(diagnostic: QueryDiagnostic) -> (String, String) {
         Some(at) => format!("line {}, column {}: {message}", at.line, at.column),
         None => message,
     };
-    (code, message)
+    (code, message, fix, suggestion)
 }
 
 fn query_kind(query: &QueryDecl) -> QueryLintQueryKind {
@@ -354,6 +364,7 @@ fn lint_update_coverage(
                 type_name: Some(type_name.clone()),
                 property: Some(property_name),
                 query_names: type_coverage.query_names.iter().cloned().collect(),
+                suggestion: None,
             });
         }
     }
@@ -365,18 +376,9 @@ fn lint_update_coverage(
 /// as the fix: `L203` and `L206` to `L211` keep the typed IR, `L204` and
 /// `L205` only the rows.
 fn lint_canonical_forms(query_source: &str) -> Vec<QueryLintFinding> {
-    use crate::query::syntax::{Body, Decl};
-    let Ok(file) = crate::query::syntax::parse::parse_source(query_source) else {
-        return Vec::new();
-    };
-    let decls: Vec<&Decl> = match &file.body {
-        Body::Decls(d) => d.iter().collect(),
-        Body::Explain { before, decl } => before.iter().chain([decl.as_ref()]).collect(),
-        Body::Statement(_) => Vec::new(),
-    };
-    let mut findings = Vec::new();
-    for decl in decls {
-        for form in crate::query::canonical::canonical_forms(decl) {
+    crate::query::canonical::source_canonical_forms(query_source)
+        .into_iter()
+        .map(|(decl, form)| {
             let position = form
                 .position
                 .map(|at| format!("line {}, column {}: ", at.line, at.column))
@@ -392,18 +394,21 @@ fn lint_canonical_forms(query_source: &str) -> Vec<QueryLintFinding> {
                     form.written, form.fix
                 )
             };
-            findings.push(QueryLintFinding {
+            QueryLintFinding {
                 severity: QueryLintSeverity::Info,
                 code: form.code.to_string(),
                 message,
                 fix: Some(form.fix),
                 type_name: None,
                 property: None,
-                query_names: vec![decl.name.clone()],
-            });
-        }
-    }
-    findings
+                query_names: vec![decl],
+                suggestion: form.edit.map(|edit| Suggestion {
+                    applicability: Applicability::MachineApplicable,
+                    edits: vec![edit],
+                }),
+            }
+        })
+        .collect()
 }
 
 fn findings_cmp(left: &QueryLintFinding, right: &QueryLintFinding) -> std::cmp::Ordering {

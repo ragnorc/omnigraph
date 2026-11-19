@@ -32,6 +32,8 @@ use omnigraph_compiler::types::{Direction, ExprType, PropType, ScalarType};
 use omnigraph_compiler::{check_datetime_literal, date_literal_days, datetime_literal_millis};
 use serde_json::{Map, Value as Json};
 
+mod registry;
+
 /// Why the interpreter returned no rows.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Refusal {
@@ -183,6 +185,20 @@ fn cmp_values(a: &Value, b: &Value) -> Ordering {
             },
         ) => (e1, t1, i1).cmp(&(e2, t2, i2)),
         _ => rank(a).cmp(&rank(b)),
+    }
+}
+
+/// One order key's comparison: a null is placed by `nulls_first` whatever
+/// the direction, and two non-null values compare by the total value order,
+/// reversed when descending.
+fn cmp_key(a: &Value, b: &Value, descending: bool, nulls_first: bool) -> Ordering {
+    let null_first = |o: Ordering| if nulls_first { o } else { o.reverse() };
+    match (a, b) {
+        (Value::Null, Value::Null) => Ordering::Equal,
+        (Value::Null, _) => null_first(Ordering::Less),
+        (_, Value::Null) => null_first(Ordering::Greater),
+        _ if descending => cmp_values(a, b).reverse(),
+        _ => cmp_values(a, b),
     }
 }
 
@@ -368,6 +384,20 @@ impl<'a> Interpreter<'a> {
             };
             let value = bind_param(name, value, ty)?;
             self.params.insert(name.clone(), value);
+        }
+        // A `percentile`'s fraction is a constant of the read: one outside
+        // its domain refuses the read before it reads a row. A called
+        // read's is its caller's argument, checked where its group is read.
+        let mut pending = vec![&read.term];
+        while let Some(term) = pending.pop() {
+            if let Term::Group { aggs, .. } = term {
+                for (_, agg) in aggs {
+                    self.fraction(agg, &Vec::new())?;
+                }
+            }
+            if !matches!(term, Term::Call { .. }) {
+                pending.extend(term.children());
+            }
         }
         let rel = self.term(&read.term, &Vec::new())?;
         let rows = rel
@@ -743,6 +773,9 @@ impl<'a> Interpreter<'a> {
                     if keys.is_empty() && groups.is_empty() {
                         groups.push((Vec::new(), Vec::new()));
                     }
+                    for (_, agg) in aggs {
+                        self.fraction(agg, env)?;
+                    }
                     let mut rows = Vec::new();
                     for (key, members) in groups {
                         let mut out: Row = keys.iter().map(|(n, _)| n.clone()).zip(key).collect();
@@ -807,14 +840,13 @@ impl<'a> Interpreter<'a> {
                     for row in input.rows {
                         let k = keys
                             .iter()
-                            .map(|(e, desc)| Ok((self.expr(e, &row, env)?, *desc)))
+                            .map(|key| self.expr(&key.expr, &row, env))
                             .collect::<R<Vec<_>>>()?;
                         keyed.push((k, row));
                     }
                     keyed.sort_by(|(ka, ra), (kb, rb)| {
-                        for ((a, desc), (b, _)) in ka.iter().zip(kb) {
-                            let o = cmp_values(a, b);
-                            let o = if *desc { o.reverse() } else { o };
+                        for ((a, b), key) in ka.iter().zip(kb).zip(keys) {
+                            let o = cmp_key(a, b, key.descending, key.places_nulls_first());
                             if o != Ordering::Equal {
                                 return o;
                             }
@@ -1057,6 +1089,28 @@ impl<'a> Interpreter<'a> {
         Ok(best.into_iter().map(|(t, _)| t).collect())
     }
 
+    /// `percentile`'s fraction `p`: a number in [0, 1], or `E5` (a null
+    /// parameter included). `None` for every other aggregate.
+    fn fraction(&self, agg: &Agg, env: &Row) -> R<Option<f64>> {
+        let Some(p) = &agg.fraction else {
+            return Ok(None);
+        };
+        match self.expr(p, &Vec::new(), env)? {
+            Value::Null => Err(Refusal::Runtime(
+                "E5",
+                "`percentile`'s fraction p is null".into(),
+            )),
+            v => match v.as_f64() {
+                Some(p) if (0.0..=1.0).contains(&p) => Ok(Some(p)),
+                Some(p) => Err(Refusal::Runtime(
+                    "E5",
+                    format!("`percentile`'s fraction p is {p}, outside [0, 1]"),
+                )),
+                None => Err(Refusal::Input(format!("a percentile fraction is {v:?}"))),
+            },
+        }
+    }
+
     fn aggregate(&self, agg: &Agg, rows: &[Row], env: &Row) -> R<Value> {
         let Some(arg) = &agg.arg else {
             return Ok(Value::Int(rows.len() as i128));
@@ -1084,6 +1138,52 @@ impl<'a> Interpreter<'a> {
             AggFunc::Avg => Value::Float(exact_sum(&values) / values.len() as f64),
             AggFunc::Min => values.into_iter().min_by(cmp_values).unwrap(),
             AggFunc::Max => values.into_iter().max_by(cmp_values).unwrap(),
+            // The group's values ascending in the fixed value order, each
+            // the nearest `F64`, so the answer does not depend on the order
+            // the rows arrive in.
+            AggFunc::Stddev | AggFunc::Percentile => {
+                values.sort_by(cmp_values);
+                let x = values
+                    .iter()
+                    .map(|v| {
+                        v.as_f64()
+                            .ok_or_else(|| Refusal::Input(format!("{} of {v:?}", agg.func)))
+                    })
+                    .collect::<R<Vec<f64>>>()?;
+                let n = x.len();
+                match self.fraction(agg, env)? {
+                    // The sample deviation: squared differences from the
+                    // mean over n − 1, each sum added in the sorted order;
+                    // null over one value.
+                    None if n < 2 => Value::Null,
+                    None => {
+                        let mut total = 0.0;
+                        for v in &x {
+                            total += v;
+                        }
+                        let mean = total / n as f64;
+                        let mut squares = 0.0;
+                        for v in &x {
+                            squares += (v - mean) * (v - mean);
+                        }
+                        Value::Float((squares / (n - 1) as f64).sqrt())
+                    }
+                    // PERCENTILE_CONT: the value at the index p · (n − 1)
+                    // when it is whole, otherwise interpolated linearly
+                    // between its two neighbors.
+                    Some(p) => {
+                        let h = p * (n - 1) as f64;
+                        let lo = h.floor();
+                        let below = x[lo as usize];
+                        if h == lo {
+                            Value::Float(below)
+                        } else {
+                            let above = x[lo as usize + 1];
+                            Value::Float(below + (above - below) * (h - lo))
+                        }
+                    }
+                }
+            }
         })
     }
 
@@ -1437,6 +1537,29 @@ impl<'a> Interpreter<'a> {
                                 _ => None,
                             },
                         ),
+                        ScalarFunc::Lower
+                        | ScalarFunc::Upper
+                        | ScalarFunc::Trim
+                        | ScalarFunc::LTrim
+                        | ScalarFunc::RTrim
+                        | ScalarFunc::Length
+                        | ScalarFunc::Left
+                        | ScalarFunc::Right
+                        | ScalarFunc::Substring
+                        | ScalarFunc::Abs
+                        | ScalarFunc::Floor
+                        | ScalarFunc::Ceil
+                        | ScalarFunc::Round
+                        | ScalarFunc::Sqrt
+                        | ScalarFunc::Exp
+                        | ScalarFunc::Ln
+                        | ScalarFunc::Log10
+                        | ScalarFunc::Power
+                        | ScalarFunc::Size
+                        | ScalarFunc::Cast => {
+                            let arg_types: Vec<&ExprType> = args.iter().map(IRExpr::ty).collect();
+                            registry::row(*func, vals, &arg_types, e.ty())?
+                        }
                         ScalarFunc::MatchTerms { mode } => {
                             let max_edits = self.max_edits(args.get(2), 0, row, env)?;
                             self.lexical(
@@ -1477,7 +1600,7 @@ fn finite_distance(d: f64) -> R<f64> {
 /// `YYYY-MM-DDTHH:MM:SS` with `.mmm` where the milliseconds are not zero, so
 /// two spellings of one instant are one value and compare as one. `None`
 /// for a string that names no instant, or a year outside `0..=9999`.
-fn canonical_datetime(s: &str) -> Option<String> {
+pub(crate) fn canonical_datetime(s: &str) -> Option<String> {
     let millis = datetime_literal_millis(s).ok()?;
     let (days, of_day) = (millis.div_euclid(86_400_000), millis.rem_euclid(86_400_000));
     // Days since 1970-01-01 to the civil date (H. Hinnant's algorithm).

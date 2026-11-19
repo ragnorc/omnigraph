@@ -1,3 +1,8 @@
+/// The query language this build compiles: `omnigraph version` and
+/// `/healthz` name it, so an operator can tell this binary from one that
+/// speaks edition 2, which names none.
+pub const QUERY_LANGUAGE: &str = "gq3";
+
 #[cfg(any(test, feature = "test-util"))]
 pub mod arbitrary;
 pub mod budget;
@@ -63,6 +68,7 @@ pub use query::diagnostic::{
     Stage, Suggestion, TextEdit,
 };
 
+pub use query::fix::{FixOptions, FixOutcome, FixReport, FixStatus, MAX_FIX_PASSES, fix_source};
 pub use query::lint::{
     QueryLintFinding, QueryLintOutput, QueryLintQueryKind, QueryLintQueryResult,
     QueryLintSchemaSource, QueryLintSchemaSourceKind, QueryLintSeverity, QueryLintStatus,

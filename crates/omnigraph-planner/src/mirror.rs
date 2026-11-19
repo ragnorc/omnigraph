@@ -1361,6 +1361,26 @@ pub enum ScalarFuncMirror {
     Concat,
     MatchTerms { all: bool },
     List,
+    Lower,
+    Upper,
+    Trim,
+    LTrim,
+    RTrim,
+    Length,
+    Left,
+    Right,
+    Substring,
+    Abs,
+    Floor,
+    Ceil,
+    Round,
+    Sqrt,
+    Exp,
+    Ln,
+    Log10,
+    Power,
+    Size,
+    Cast,
 }
 
 impl From<ScalarFunc> for ScalarFuncMirror {
@@ -1373,6 +1393,26 @@ impl From<ScalarFunc> for ScalarFuncMirror {
                 all: mode == TermsMode::All,
             },
             ScalarFunc::List => Self::List,
+            ScalarFunc::Lower => Self::Lower,
+            ScalarFunc::Upper => Self::Upper,
+            ScalarFunc::Trim => Self::Trim,
+            ScalarFunc::LTrim => Self::LTrim,
+            ScalarFunc::RTrim => Self::RTrim,
+            ScalarFunc::Length => Self::Length,
+            ScalarFunc::Left => Self::Left,
+            ScalarFunc::Right => Self::Right,
+            ScalarFunc::Substring => Self::Substring,
+            ScalarFunc::Abs => Self::Abs,
+            ScalarFunc::Floor => Self::Floor,
+            ScalarFunc::Ceil => Self::Ceil,
+            ScalarFunc::Round => Self::Round,
+            ScalarFunc::Sqrt => Self::Sqrt,
+            ScalarFunc::Exp => Self::Exp,
+            ScalarFunc::Ln => Self::Ln,
+            ScalarFunc::Log10 => Self::Log10,
+            ScalarFunc::Power => Self::Power,
+            ScalarFunc::Size => Self::Size,
+            ScalarFunc::Cast => Self::Cast,
         }
     }
 }
@@ -1387,6 +1427,26 @@ impl From<ScalarFuncMirror> for ScalarFunc {
                 mode: if all { TermsMode::All } else { TermsMode::Any },
             },
             ScalarFuncMirror::List => Self::List,
+            ScalarFuncMirror::Lower => Self::Lower,
+            ScalarFuncMirror::Upper => Self::Upper,
+            ScalarFuncMirror::Trim => Self::Trim,
+            ScalarFuncMirror::LTrim => Self::LTrim,
+            ScalarFuncMirror::RTrim => Self::RTrim,
+            ScalarFuncMirror::Length => Self::Length,
+            ScalarFuncMirror::Left => Self::Left,
+            ScalarFuncMirror::Right => Self::Right,
+            ScalarFuncMirror::Substring => Self::Substring,
+            ScalarFuncMirror::Abs => Self::Abs,
+            ScalarFuncMirror::Floor => Self::Floor,
+            ScalarFuncMirror::Ceil => Self::Ceil,
+            ScalarFuncMirror::Round => Self::Round,
+            ScalarFuncMirror::Sqrt => Self::Sqrt,
+            ScalarFuncMirror::Exp => Self::Exp,
+            ScalarFuncMirror::Ln => Self::Ln,
+            ScalarFuncMirror::Log10 => Self::Log10,
+            ScalarFuncMirror::Power => Self::Power,
+            ScalarFuncMirror::Size => Self::Size,
+            ScalarFuncMirror::Cast => Self::Cast,
         }
     }
 }
@@ -1586,6 +1646,8 @@ pub enum AggFuncMirror {
     Min,
     Max,
     Collect,
+    Stddev,
+    Percentile,
 }
 
 impl From<AggFunc> for AggFuncMirror {
@@ -1597,6 +1659,8 @@ impl From<AggFunc> for AggFuncMirror {
             AggFunc::Min => Self::Min,
             AggFunc::Max => Self::Max,
             AggFunc::Collect => Self::Collect,
+            AggFunc::Stddev => Self::Stddev,
+            AggFunc::Percentile => Self::Percentile,
         }
     }
 }
@@ -1610,6 +1674,8 @@ impl From<AggFuncMirror> for AggFunc {
             AggFuncMirror::Min => Self::Min,
             AggFuncMirror::Max => Self::Max,
             AggFuncMirror::Collect => Self::Collect,
+            AggFuncMirror::Stddev => Self::Stddev,
+            AggFuncMirror::Percentile => Self::Percentile,
         }
     }
 }
@@ -1744,6 +1810,10 @@ pub enum ExprMirror {
         func: AggFuncMirror,
         distinct: bool,
         arg: Box<ExprMirror>,
+        /// `percentile`'s fraction; absent for every other aggregate, so a
+        /// plan without one reads as it was written.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        fraction: Option<Box<ExprMirror>>,
         signature: AggSignature,
     },
     AliasRef {
@@ -1826,11 +1896,13 @@ impl From<&IRExpr> for ExprMirror {
                 func,
                 distinct,
                 arg,
+                fraction,
                 signature,
             } => Self::Aggregate {
                 func: AggFuncMirror::from(*func),
                 distinct: *distinct,
                 arg: boxed(arg),
+                fraction: fraction.as_deref().map(boxed),
                 signature: signature.clone(),
             },
             IRExpr::AliasRef(alias, ty) => Self::AliasRef {
@@ -1904,11 +1976,13 @@ impl From<ExprMirror> for IRExpr {
                 func,
                 distinct,
                 arg,
+                fraction,
                 signature,
             } => Self::Aggregate {
                 func: AggFunc::from(func),
                 distinct,
                 arg: unboxed(*arg),
+                fraction: fraction.map(|p| unboxed(*p)),
                 signature,
             },
             ExprMirror::AliasRef { alias, ty } => Self::AliasRef(alias, ty),
@@ -2056,6 +2130,9 @@ impl From<InnerReadMirror> for InnerRead {
 pub struct OrderingMirror {
     pub expr: ExprMirror,
     pub descending: bool,
+    /// The written null placement; absent, the direction's default.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub nulls_first: Option<bool>,
 }
 
 impl From<&IROrdering> for OrderingMirror {
@@ -2063,6 +2140,7 @@ impl From<&IROrdering> for OrderingMirror {
         Self {
             expr: ExprMirror::from(&ordering.expr),
             descending: ordering.descending,
+            nulls_first: ordering.nulls_first,
         }
     }
 }
@@ -2072,6 +2150,7 @@ impl From<OrderingMirror> for IROrdering {
         Self {
             expr: IRExpr::from(mirror.expr),
             descending: mirror.descending,
+            nulls_first: mirror.nulls_first,
         }
     }
 }

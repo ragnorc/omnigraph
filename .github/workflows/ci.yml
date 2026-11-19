@@ -894,7 +894,8 @@ jobs:
 
       # The genuine predecessors of the release route (`omnigraph upgrade`,
       # storage format 8 or 9 to 14): v0.11.0 writes stamp 9 and converts a
-      # v0.10.0 graph to stamp 8. The release assets are trusted exactly as
+      # v0.10.0 graph to stamp 8. The published edge build of main before the
+      # GQ 3 break is the edition-2 binary the one-way journeys read back with. The release assets are trusted exactly as
       # the `test` job's v0.9.0 and v0.10.0 installs trust them: `install.sh`
       # verifies the archive against the `.sha256` published beside it, and
       # no digest is pinned here.
@@ -903,6 +904,7 @@ jobs:
           set -euo pipefail
           v6_dir="$RUNNER_TEMP/omnigraph-v010"
           v011_dir="$RUNNER_TEMP/omnigraph-v011"
+          edition2_dir="$RUNNER_TEMP/omnigraph-edition-2"
           # The installer downloads the official archive and verifies its
           # SHA256 before extraction. An exact VERSION never falls back to edge.
           # A failed download leaves nothing behind, so each release gets three
@@ -924,8 +926,13 @@ jobs:
           test -x "$v011_dir/omnigraph"
           [[ "$("$v011_dir/omnigraph" --version)" == "omnigraph 0.11.0" ]] \
             || { echo "::error::the release storage upgrade requires the genuine v0.11.0 CLI"; exit 1; }
+          install_release edge-20261118-fd4d61f "$edition2_dir"
+          test -x "$edition2_dir/omnigraph"
+          [[ "$("$edition2_dir/omnigraph" --version)" == "omnigraph 0.15.1-edge+fd4d61f" ]] \
+            || { echo "::error::the one-way journeys require the published edition-2 CLI"; exit 1; }
           echo "OMNIGRAPH_V6_BIN=$v6_dir/omnigraph" >> "$GITHUB_ENV"
           echo "OMNIGRAPH_V011_BIN=$v011_dir/omnigraph" >> "$GITHUB_ENV"
+          echo "OMNIGRAPH_EDITION_2_RELEASE_BIN=$edition2_dir/omnigraph" >> "$GITHUB_ENV"
 
       # The genuine stamp-13 predecessor for the main-build in-place route
       # (`omnigraph upgrade`, storage format 13 to 14). Keep this immutable:
@@ -1178,7 +1185,7 @@ jobs:
       # The edition-2 side: the GQT runner of the merge base with main that
       # the GQ 3 break was measured against. Keep it immutable: the edition-2
       # engine is what every case is compared with, and a moving reference
-      # would compare edition 3 with itself (docs/dev/testing.md, Cross-edition
+      # would compare edition 3 with itself (docs/dev/test-ownership.md, Cross-edition
       # comparison).
       - name: Build the edition-2 GQT runner and CLI
         env:
@@ -1213,6 +1220,7 @@ jobs:
           echo "EDITION_2_SOURCE_COMMIT=$EDITION_2_SOURCE_COMMIT" >> "$GITHUB_ENV"
           echo "OMNIGRAPH_EDITION_2_GQT_BIN=$e2_bin" >> "$GITHUB_ENV"
           echo "OMNIGRAPH_EDITION_2_BIN=$e2_cli" >> "$GITHUB_ENV"
+          echo "OMNIGRAPH_EDITION_2_TREE=$e2_source" >> "$GITHUB_ENV"
 
       - name: Build the current GQT runner
         run: cargo build --locked --package omnigraph-gqt --bin omnigraph-gqt
@@ -1243,7 +1251,7 @@ jobs:
             --measure
 
       # The generated reads both editions express, run through the edition-2
-      # CLI and this tree's engine (docs/dev/testing.md, Generated laws).
+      # CLI and this tree's engine (docs/dev/test-ownership.md, Generated laws).
       - name: Run the two-edition law
         env:
           OMNIGRAPH_REQUIRE_EDITION_2: '1'
@@ -1252,6 +1260,20 @@ jobs:
           cargo test --locked -p omnigraph-gqt --test integration \
             law_two_editions:: -- --nocapture 2>&1 | tee "$RUNNER_TEMP/two-editions.log"
           grep -F "test law_two_editions::edition_2_and_edition_3_answer_generated_reads_alike ... ok" "$RUNNER_TEMP/two-editions.log"
+
+      # `omnigraph lint --fix`'s loop over every edition-2 text of the pinned
+      # tree: the printed fixes converge, and what they write has the typed
+      # IR of the hand rewrite in this tree or a row of
+      # crates/omnigraph-gqt/lint-fix-edition-2.tsv (docs/dev/test-ownership.md,
+      # Cross-edition comparison).
+      - name: Respell the edition-2 corpus with the printed fixes
+        env:
+          OMNIGRAPH_REQUIRE_EDITION_2: '1'
+        run: |
+          set -euo pipefail
+          cargo test --locked -p omnigraph-gqt --test integration \
+            fix_edition_2:: -- --nocapture 2>&1 | tee "$RUNNER_TEMP/lint-fix-edition-2.log"
+          grep -F "test fix_edition_2::printed_fixes_respell_the_edition_2_corpus_into_its_hand_rewrite ... ok" "$RUNNER_TEMP/lint-fix-edition-2.log"
 
       - name: Retain the cross-edition report
         if: always()

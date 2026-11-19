@@ -83,6 +83,7 @@ pub(super) async fn plan_schema(
     let accepted_ir = accepted_ir_for_planning(db).await?;
     let desired_ir = resolve_desired_schema_ir(&accepted_ir, desired_schema_source)?;
     plan_schema_migration(&accepted_ir, &desired_ir)
+        .and_then(|plan| plan.with_one_way_constructs(desired_schema_source))
         .map_err(|err| OmniError::manifest(err.to_string()))
 }
 
@@ -102,6 +103,7 @@ pub(super) fn plan_schema_at_contract(
     })?;
     let desired_ir = resolve_desired_schema_ir(accepted_ir, desired_schema_source)?;
     plan_schema_migration(accepted_ir, &desired_ir)
+        .and_then(|plan| plan.with_one_way_constructs(desired_schema_source))
         .map_err(|error| OmniError::manifest(error.to_string()))
 }
 
@@ -165,6 +167,7 @@ async fn plan_schema_for_apply_from_accepted(
 
     let desired_ir = resolve_desired_schema_ir(accepted_ir, desired_schema_source)?;
     let plan = plan_schema_migration(accepted_ir, &desired_ir)
+        .and_then(|plan| plan.with_one_way_constructs(desired_schema_source))
         .map_err(|err| OmniError::manifest(err.to_string()))?;
     if !plan.supported {
         let message = plan
@@ -270,7 +273,7 @@ where
         prepared.validate_capture(db, actor, &captured)?;
         prepared
     } else {
-        issued = captured.issue(db, desired_schema_source, actor)?;
+        issued = captured.issue(db, actor)?;
         &issued
     };
     if let Some(commit_id) = prepared.graph_commit_id()
@@ -303,16 +306,18 @@ where
         desired_catalog,
     } = planned;
     if prepared.is_noop() {
+        // The accepted schema stays: its catalog, IR and stored source.
         db.store_schema_view(
-            desired_catalog,
-            desired_schema_source.to_string(),
-            &desired_ir,
+            (*accepted_catalog).clone(),
+            prepared.desired_source.clone(),
+            &accepted_ir,
         )?;
         return Ok(SchemaApplyResult {
             supported: true,
             applied: false,
             graph_manifest_version: snapshot.graph_manifest_version(),
             steps: plan.steps,
+            one_way_constructs: Vec::new(),
             commit: None,
             contract: prepared.desired_contract().clone(),
         });
@@ -1269,6 +1274,7 @@ where
         applied: true,
         graph_manifest_version: published.graph_manifest_version,
         steps: plan.steps,
+        one_way_constructs: plan.one_way_constructs,
         commit: Some(published.commit),
         contract: prepared.desired_contract().clone(),
     })

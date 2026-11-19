@@ -172,10 +172,17 @@ pub fn read_body(body: &ReadBody) -> String {
         let keys: Vec<String> = body
             .order
             .iter()
-            .map(|o| match o.descending {
-                None => expr(&o.expr),
-                Some(true) => format!("{} desc", expr(&o.expr)),
-                Some(false) => format!("{} asc", expr(&o.expr)),
+            .map(|o| {
+                let key = match o.descending {
+                    None => expr(&o.expr),
+                    Some(true) => format!("{} desc", expr(&o.expr)),
+                    Some(false) => format!("{} asc", expr(&o.expr)),
+                };
+                match o.nulls_first {
+                    None => key,
+                    Some(true) => format!("{key} nulls first"),
+                    Some(false) => format!("{key} nulls last"),
+                }
             })
             .collect();
         let _ = write!(out, " order {{ {} }}", keys.join(", "));
@@ -279,10 +286,13 @@ pub(crate) fn relation(rel: &RelExpr) -> String {
 }
 
 pub(crate) fn block(b: &Block) -> String {
-    let head = match (b.func, &b.arg) {
-        (BlockFunc::Exists, _) => "exists".to_string(),
-        (BlockFunc::Agg(f), None) => agg(f).to_string(),
-        (BlockFunc::Agg(f), Some(a)) => format!("{}({})", agg(f), expr(a)),
+    let head = match (b.func, &b.arg, &b.fraction) {
+        (BlockFunc::Exists, _, _) => "exists".to_string(),
+        (BlockFunc::Agg(f), None, _) => agg(f).to_string(),
+        (BlockFunc::Agg(f), Some(a), None) => format!("{}({})", agg(f), expr(a)),
+        (BlockFunc::Agg(f), Some(a), Some(p)) => {
+            format!("{}({}, {})", agg(f), expr(a), expr(p))
+        }
     };
     format!("{head} {}", braced(&b.pattern))
 }
@@ -295,6 +305,8 @@ pub(crate) fn agg(f: AggFunc) -> &'static str {
         AggFunc::Min => "min",
         AggFunc::Max => "max",
         AggFunc::Collect => "collect",
+        AggFunc::Stddev => "stddev",
+        AggFunc::Percentile => "percentile",
     }
 }
 
@@ -380,7 +392,16 @@ pub fn expr(e: &Expr) -> String {
         Expr::Meta(m) => format!("@{m}"),
         Expr::Ident(i) => i.clone(),
         Expr::Call(c) => call(c),
-        Expr::AggDistinct { func, arg } => format!("{}(distinct {})", agg(*func), expr(arg)),
+        Expr::AggDistinct {
+            func,
+            arg,
+            fraction: None,
+        } => format!("{}(distinct {})", agg(*func), expr(arg)),
+        Expr::AggDistinct {
+            func,
+            arg,
+            fraction: Some(p),
+        } => format!("{}(distinct {}, {})", agg(*func), expr(arg), expr(p)),
         Expr::Block(b) => block(b),
         Expr::Neg(inner) => format!("-{}", at(inner, Prec::Unary)),
         Expr::Arith { op, left, right } => {
@@ -460,7 +481,7 @@ pub fn literal(l: &Literal) -> String {
     }
 }
 
-fn string(s: &str) -> String {
+pub(crate) fn string(s: &str) -> String {
     let mut out = String::from("\"");
     for ch in s.chars() {
         match ch {

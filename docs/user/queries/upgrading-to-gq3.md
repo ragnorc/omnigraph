@@ -1,11 +1,21 @@
 # Upgrading queries to GQ 3
 
 GQ 3 replaces the query language. This release parses GQ 3 only: there is no
-edition line, no older parser and no conversion command. A source written for
-an earlier release fails to compile like any other invalid source, and every
-older form that GQ 3 refuses prints its fix, as text and as byte-range edits
-([Diagnostics](diagnostics.md)). Rewrite each source from the map below and
-the fixes the compiler prints.
+edition line and no older parser. A source written for an earlier release
+fails to compile like any other invalid source, and every older form that GQ 3
+refuses prints its fix, as text and as byte-range edits
+([Diagnostics](diagnostics.md)). `omnigraph lint --fix` applies those fixes
+to a file, a directory or a cluster configuration's stored queries
+([Lint](lint.md#fix)):
+
+```bash
+omnigraph lint --fix --query queries/ --schema schema.pg --dry-run --json
+```
+
+It leaves a file unchanged at a refusal with no fix, and at a fix printed for
+review unless `--review-fixes` is given; finish those from the map below. It
+also leaves a keyed `insert` that the older release meant as `replace`, since
+that text still compiles (the map's `insert` row).
 
 ## Stored queries at upgrade
 
@@ -19,17 +29,23 @@ binary:
    applied registry and schemas and reports every stored query that fails,
    parse and type refusals together, each with its code, position, fix and
    byte-range edits; byte offsets count into the stored query's own source.
-2. **Rewrite the failing queries from their printed fixes.** Edit the `.gq`
-   files your `cluster.yaml` names, applying each fix, and check the bundle
-   with the new binary (`omnigraph cluster validate --config <bundle>`).
+2. **Rewrite the failing queries from their printed fixes.** Run
+   `omnigraph lint --fix --config <bundle>` on the configuration directory
+   your `cluster.yaml` is in, finish what it leaves by hand, and check the
+   bundle with the new binary (`omnigraph cluster validate --config
+   <bundle>`).
 3. **Apply the rewritten registry with the binary switch.** Stop the old
    server, apply the bundle directly with the new CLI (`omnigraph cluster
    apply --target <cluster-root> --config <bundle>`; direct apply requires
    stopped serving), then start the new server. The old server never reads
    a GQ 3 source.
 
-A stored query that still fails to compile does not stop its graph. The new
-server serves the graph with that query alone unavailable: `GET
+A stored query that still fails to compile does not stop its graph. Each
+declaration of a stored file compiles on its own: one the new binary refuses
+is unavailable with its own diagnostic, placed in its file; one that calls an
+unavailable declaration of its file is unavailable naming it; the others in
+the file serve. The new server serves the graph with those queries alone
+unavailable: `GET
 /graphs/{graph_id}/queries`, `omnigraph queries list` and the MCP `queries`
 tool list it under `unavailable` with its diagnostic, `GET /graphs` reports
 it per graph and `GET /readyz` counts it, and invoking it answers HTTP 409
@@ -42,8 +58,9 @@ stored query unavailable: error[CODE] at line L, column C: MESSAGE; fix: FIX; ed
 
 Fix the source and apply it through the running server. An operator who
 wants the whole graph refused instead sets `OMNIGRAPH_STRICT_STORED_QUERIES=1`:
-the graph is then blocked with `invalid_stored_queries`, as before this
-release, and with `--require-all-graphs` the server refuses to start.
+the graph is then blocked with `invalid_stored_queries` when any declaration
+of a stored file fails, as before this release, and with
+`--require-all-graphs` the server refuses to start.
 
 ## The respelling map
 
@@ -67,7 +84,7 @@ fix.
 | `$x.tags contains "rust"` (a list) | `"rust" in $x.tags` | `T7` |
 | `$x.title starts_with "O"` | `starts_with($x.title, "O")` | `T7` |
 | `search($x.t, $q)`, `match_text($x.t, $q)` | `match_terms($x.t, terms($q, mode: any))` | `T6` |
-| `fuzzy($x.t, $q)`, `fuzzy($x.t, $q, n)` | `match_terms($x.t, terms($q, mode: any, max_edits: 2))`, or `max_edits: n` | `T6` |
+| `fuzzy($x.t, $q)`, `fuzzy($x.t, $q, n)` | `match_terms($x.t, terms($q, mode: any, max_edits: 2))`, or `max_edits: n` for the third argument (none for `0`); every removed lexical call's fix is a machine edit | `T6` |
 | `delete T where φ` | `match { $x: T } where φ′  delete $x`: each bare property is written `$x.p`, and an edge's `from` and `to` are `$x.@src` and `$x.@dst` | `Q008` |
 | `update T set { … } where φ` | `match { $x: T } where φ′  update $x set { … }`, a bare property in an assignment written `$x.p` | `Q008` |
 | a body of several statements | one group per statement, in order, each opening with its `match`; consecutive statements with no `match` between them stay one group | `Q008` |
@@ -158,10 +175,16 @@ refuses a `sum`, `avg`, `min`, `max` or `collect` block without its argument.
 ## Other changes a reader sees
 
 - A read may not be named after a registry function or an element keyword
-  (`T74`): `distance`, `nearest`, `bm25`, `rrf`, `union`, `contains`,
-  `starts_with`, `match_terms`, `terms`, `now`, `if`, `coalesce`, `concat`,
-  `count`, `sum`, `avg`, `min`, `max`, `collect`, `let`, `from`, `optional`, `exists`
-  and `not`. A write's name is not checked.
+  (`T74`): `distance`, `nearest`, `bm25`, `rrf`, `union`, every scalar
+  function and aggregate on [Functions and operators](functions.md)
+  (`contains`, `starts_with`, `match_terms`, `terms`, `now`, `lower`,
+  `length`, `left`, `round`, `size`, `cast`, …), `let`, `from`, `optional`,
+  `exists` and `not`. A write's name is not checked.
+- Keywords and function names are read in any letter case, and `case … end`,
+  `||`, `<>` and single-quoted strings are accepted as other spellings of
+  `if`, `concat`, `!=` and double-quoted strings
+  ([Functions and operators](functions.md#other-accepted-spellings)). Lint
+  names each with its canonical form, and `lint --fix` writes that form.
 - Over grouped rows (an aggregate or `return distinct`), every order key must
   be a `return` item or its alias (`T42`); before, a key such as `$p.@id` or
   `$e.@type` was accepted there.
@@ -194,10 +217,29 @@ refuses a `sum`, `avg`, `min`, `max` or `collect` block without its argument.
   that property. In a type that also declares a property named `fulltext` it
   is refused as ambiguous; write `@index` on the property the index is for.
   Before, it declared an index on the property `fulltext`.
-- A schema whose full-text index names an analyzer or a scorer
-  (`@index(fulltext, analyzer = …)`), or whose vector declares a distance
-  other than `l2` (`Vector(n, distance = "cosine")`; an explicit `l2` is
-  stored as an omitted one), is refused by earlier binaries ("schema
-  feature … is unknown to this build"). Upgrade every binary that opens the
-  graph before applying such a schema
-  ([analyzers](../search/analyzers.md)).
+- A graph stores its schema text, and an earlier binary parses it again on
+  every open. A schema apply that stores one of these constructs makes every
+  earlier binary refuse the whole graph, every read, write, export and index
+  pass, and only the backup taken before the upgrade restores it:
+
+  | Construct | `construct` |
+  |---|---|
+  | an explicit `distance` on a Vector, `l2` included | `vector_distance` |
+  | `@index` on a List property | `list_index` |
+  | `@index(fulltext)`, with or without options | `full_text_index` |
+  | an `analyzer` in `@index(fulltext, …)` | `full_text_analyzer` |
+  | a `scorer` in `@index(fulltext, …)` | `full_text_scorer` |
+
+  `schema plan`, `schema apply` and `cluster plan` name each one the schema
+  holds, under `one_way_constructs`, with the line `binaries before this
+  release refuse the whole graph after this apply, and only a backup taken
+  before the upgrade restores it`. They report only; nothing gates the apply.
+  Upgrade every binary that opens the graph before applying such a schema
+  ([analyzers](../search/analyzers.md)). A body-level `@index(tags)` over a
+  list, a plain `@index` on a String and an added property or type are not
+  one-way.
+- A schema apply whose plan has no step publishes nothing: the stored text
+  and the graph head stay as they were, so an explicit `distance = "l2"` over
+  an omitted one, or an edited comment, is never stored. A cluster refuses
+  such a text-only change of a graph's schema file (`schema_preflight_failed`);
+  keep the file equal to `omnigraph schema show`.

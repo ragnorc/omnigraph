@@ -26,7 +26,7 @@ use crate::error::CompilerError;
 use crate::ir::core::MutationTarget;
 use crate::ir::core::WriteGroup;
 use crate::ir::core::*;
-use crate::ir::expr::IRExpr;
+use crate::ir::expr::{IRExpr, IROrdering};
 use crate::query::codes::*;
 use crate::query::diagnostic::{
     Applicability, Position, QueryCode, QueryDiagnostic, Suggestion, TextEdit,
@@ -574,17 +574,29 @@ fn infix_string(op: InfixStringOp, at: &SourceSpan, list: bool) -> QueryDiagnost
 fn removed_lexical_call(c: &Call) -> QueryDiagnostic {
     use crate::query::syntax::print;
     let name = c.name.as_str();
-    let budget = match c.options.as_slice() {
-        [] if name == "fuzzy" => Some(Some("2".to_string())),
-        [] => Some(None),
-        [(o, v)] if name == "fuzzy" && o == "max_edits" => Some(match v {
-            Expr::Literal(Literal::Integer(0)) => None,
-            v => Some(print::expr(v)),
-        }),
+    // The edit budget, written as edition 2's positional third argument of
+    // `fuzzy` or as its option; a budget of 0 is exact membership.
+    let budget_of = |v: &Expr| match v {
+        Expr::Literal(Literal::Integer(0)) => None,
+        v => Some(print::expr(v)),
+    };
+    let positional = match c.args.as_slice() {
+        [_, _, Arg::Expr(n)] if name == "fuzzy" => Some(n),
+        _ => None,
+    };
+    let budget = match (c.options.as_slice(), positional) {
+        ([], None) if name == "fuzzy" => Some(Some("2".to_string())),
+        ([], None) => Some(None),
+        ([], Some(n)) => Some(budget_of(n)),
+        ([(o, v)], None) if name == "fuzzy" && o == "max_edits" => Some(budget_of(v)),
         _ => None,
     };
     let operands = match c.args.as_slice() {
-        [Arg::Expr(field), Arg::Expr(query)] => Some((print::expr(field), print::expr(query))),
+        [Arg::Expr(field), Arg::Expr(query)] | [Arg::Expr(field), Arg::Expr(query), _]
+            if c.args.len() == 2 || positional.is_some() =>
+        {
+            Some((print::expr(field), print::expr(query)))
+        }
         _ => None,
     };
     let message = format!(
@@ -1154,8 +1166,43 @@ const SCALAR_ROWS: &[&str] = &[
     "if",
     "coalesce",
     "concat",
+    "lower",
+    "upper",
+    "trim",
+    "ltrim",
+    "rtrim",
+    "length",
+    "left",
+    "right",
+    "substring",
+    "abs",
+    "floor",
+    "ceil",
+    "round",
+    "sqrt",
+    "power",
+    "exp",
+    "ln",
+    "log10",
+    "size",
+    "cast",
 ];
-const AGGREGATES: &[&str] = &["count", "sum", "avg", "min", "max", "collect"];
+const AGGREGATES: &[&str] = &[
+    "count",
+    "sum",
+    "avg",
+    "min",
+    "max",
+    "collect",
+    "stddev",
+    "percentile",
+];
+
+/// Whether `name` (in lower case) names a registry row: a relation, scalar
+/// or aggregate row, which the parser reads in any letter case.
+pub(crate) fn is_registry_name(name: &str) -> bool {
+    RELATION_ROWS.contains(&name) || SCALAR_ROWS.contains(&name) || AGGREGATES.contains(&name)
+}
 /// The default an omitted option of a registry row takes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum OptionDefault {
@@ -1198,10 +1245,6 @@ pub(crate) const REGISTRY_OPTIONS: &[(&str, &[(&str, OptionDefault)])] = &[
 const CLAUSE_KEYWORDS: &[&str] = &["let", "from", "optional", "exists", "not"];
 /// Annotations retained as pure metadata.
 const METADATA_ANNOTATIONS: &[&str] = &["description", "instruction", "example", "rename_from"];
-
-fn is_registry_name(name: &str) -> bool {
-    RELATION_ROWS.contains(&name) || SCALAR_ROWS.contains(&name) || AGGREGATES.contains(&name)
-}
 
 // ---------------------------------------------------------------------------
 // Context, frames and scopes.
@@ -2443,7 +2486,7 @@ impl Ctx<'_> {
                     sc.refused = true;
                     continue;
                 };
-                order.push((k, o.descending.unwrap_or(false)));
+                order.push((k, o.descending.unwrap_or(false), o.nulls_first));
             }
             let keys: Vec<(String, IRExpr)> =
                 keys.into_iter().map(|(n, k)| (n, k.to_ir())).collect();
@@ -2493,7 +2536,14 @@ impl Ctx<'_> {
             if !order.is_empty() {
                 term = Term::Order {
                     input: term.boxed(),
-                    keys: order.into_iter().map(|(k, d)| (k.to_ir(), d)).collect(),
+                    keys: order
+                        .into_iter()
+                        .map(|(k, descending, nulls_first)| IROrdering {
+                            expr: k.to_ir(),
+                            descending,
+                            nulls_first,
+                        })
+                        .collect(),
                 };
                 self.charge_top(&term)?;
             }
@@ -2536,7 +2586,7 @@ impl Ctx<'_> {
                     sc.refused = true;
                     continue;
                 };
-                order.push((k, o.descending.unwrap_or(false)));
+                order.push((k, o.descending.unwrap_or(false), o.nulls_first));
             }
             term = Term::Project {
                 input: term.boxed(),
@@ -2548,7 +2598,14 @@ impl Ctx<'_> {
             if !order.is_empty() {
                 term = Term::Order {
                     input: term.boxed(),
-                    keys: order.into_iter().map(|(k, d)| (k.to_ir(), d)).collect(),
+                    keys: order
+                        .into_iter()
+                        .map(|(k, descending, nulls_first)| IROrdering {
+                            expr: k.to_ir(),
+                            descending,
+                            nulls_first,
+                        })
+                        .collect(),
                 };
                 self.charge_top(&term)?;
             }
@@ -2825,12 +2882,21 @@ impl Ctx<'_> {
 
     /// An aggregate return item, or `None`.
     fn aggregate(&mut self, sc: &mut Scope, e: &Expr) -> R<Option<Agg>> {
-        let (func, distinct, arg) = match e {
+        let (func, distinct, arg, fraction) = match e {
             Expr::Call(c) if AGGREGATES.contains(&c.name.as_str()) => {
-                if !c.options.is_empty() || c.args.len() != 1 {
-                    return Err(err(T8, format!("`{}` takes one argument", c.name)));
+                let func = agg_func(&c.name);
+                let arity = if func.takes_fraction() { 2 } else { 1 };
+                if !c.options.is_empty() || c.args.len() != arity {
+                    return Err(err(
+                        T8,
+                        if func.takes_fraction() {
+                            format!("`{func}` takes two arguments: `{func}($x.p, 0.5)`")
+                        } else {
+                            format!("`{}` takes one argument", c.name)
+                        },
+                    ));
                 }
-                let Arg::Expr(a) = &c.args[0] else {
+                let [Arg::Expr(a), rest @ ..] = c.args.as_slice() else {
                     return Err(err(
                         T69,
                         format!(
@@ -2839,9 +2905,18 @@ impl Ctx<'_> {
                         ),
                     ));
                 };
-                (agg_func(&c.name), false, a)
+                let fraction = match rest {
+                    [] => None,
+                    [Arg::Expr(p)] => Some(p),
+                    _ => return Err(err(T8, format!("`{func}`'s fraction is a number"))),
+                };
+                (func, false, a, fraction)
             }
-            Expr::AggDistinct { func, arg } => (*func, true, arg.as_ref()),
+            Expr::AggDistinct {
+                func,
+                arg,
+                fraction,
+            } => (*func, true, arg.as_ref(), fraction.as_deref()),
             _ => return Ok(None),
         };
         if distinct && !matches!(func, AggFunc::Count | AggFunc::Collect) {
@@ -2852,12 +2927,71 @@ impl Ctx<'_> {
         }
         let a = self.expr(sc, arg, At::Value)?;
         let ty = agg_type(func, &a.ty)?;
+        let fraction = self.agg_fraction(sc, func, fraction)?;
         Ok(Some(Agg {
             func,
             distinct,
             arg: Some(a.to_ir()),
+            fraction,
             ty,
         }))
+    }
+
+    /// `percentile`'s fraction `p`: a numeric literal in [0, 1], kept as an
+    /// `F64` literal, or a declared numeric parameter, whose value the
+    /// engine checks against [0, 1] before the read reads a row (`E5`). Any
+    /// other aggregate takes none.
+    fn agg_fraction(
+        &mut self,
+        sc: &mut Scope,
+        func: AggFunc,
+        written: Option<&Expr>,
+    ) -> R<Option<IRExpr>> {
+        let p = match (func.takes_fraction(), written) {
+            (false, None) => return Ok(None),
+            (false, Some(_)) => return Err(err(T8, format!("`{func}` takes one argument"))),
+            (true, None) => {
+                return Err(err(
+                    T8,
+                    format!("`{func}` takes two arguments: `{func}($x.p, 0.5)`"),
+                ));
+            }
+            (true, Some(p)) => p,
+        };
+        let typed = self.expr(sc, p, At::Value)?;
+        let numeric = matches!(&typed.ty, Ty::Value(t) if !t.list && t.scalar.is_numeric());
+        let literal = |kind: &SKind| match kind {
+            SKind::Lit(Literal::Integer(n)) => Some(*n as f64),
+            SKind::Lit(Literal::Float(f)) => Some(*f),
+            _ => None,
+        };
+        let value = match &typed.kind {
+            SKind::Param(_) if numeric => return Ok(Some(typed.to_ir())),
+            SKind::Neg(inner) => literal(&inner.kind).map(|v| -v),
+            kind => literal(kind),
+        };
+        match value {
+            // `-0` is `0`: the fraction is a value, not a spelling.
+            Some(v) if (0.0..=1.0).contains(&v) => Ok(Some(IRExpr::Literal(
+                Literal::Float(if v == 0.0 { 0.0 } else { v }),
+                crate::types::ExprType::Value {
+                    scalar: ScalarType::F64,
+                    list: false,
+                    nullable: false,
+                },
+            ))),
+            Some(v) => Err(err(
+                T8,
+                format!("`{func}`'s fraction p is in [0, 1], got {v}"),
+            )),
+            None => Err(err(
+                T8,
+                format!(
+                    "`{func}`'s fraction p is a number literal in [0, 1] or a numeric parameter, got {}",
+                    typed.ty.display()
+                ),
+            )),
+        }
     }
 
     /// Fold a scope's steps into its term, after the last pending filters.
@@ -5882,10 +6016,13 @@ impl Ctx<'_> {
                                 (Some(arg), f) => {
                                     let ty = agg_type(f, &arg.ty)?;
                                     let ty = ty.with_nullable(!f.defined_on_empty());
+                                    let fraction =
+                                        self.agg_fraction(sc, f, b.fraction.as_deref())?;
                                     Agg {
                                         func: f,
                                         distinct: false,
                                         arg: Some(arg.to_ir()),
+                                        fraction,
                                         ty,
                                     }
                                 }
@@ -6332,6 +6469,10 @@ impl Ctx<'_> {
                         {
                             continue;
                         }
+                        // `cast`'s target is a type name, read by its row.
+                        if name == "cast" && position == 1 {
+                            continue;
+                        }
                         // The lazy rows evaluate an argument only where the ones
                         // before it select it: `if`'s branches under their
                         // condition, `coalesce`'s later arguments where every
@@ -6642,6 +6783,191 @@ impl Ctx<'_> {
                         },
                         Ty::scalar(ScalarType::String, nullable),
                     )
+                }
+                "lower" | "upper" | "trim" | "ltrim" | "rtrim" => {
+                    no_options(c)?;
+                    let [x] = one_string(name, args)?;
+                    let ty = x.ty.clone();
+                    call(name, vec![x], ty)
+                }
+                "length" => {
+                    no_options(c)?;
+                    if let [x] = args.as_slice()
+                        && matches!(&x.ty, Ty::Value(t) if t.list)
+                    {
+                        return Err(err_fix(
+                            T7,
+                            "`length` counts a String's characters; a list's elements are `size`",
+                            "size(<list>)",
+                        ));
+                    }
+                    let [x] = one_string(name, args)?;
+                    let nullable = x.ty.nullable();
+                    call(name, vec![x], Ty::scalar(ScalarType::I64, nullable))
+                }
+                "left" | "right" => {
+                    no_options(c)?;
+                    let Ok([x, n]) = <[SExpr; 2]>::try_from(args) else {
+                        return Err(err(
+                            T7,
+                            format!("`{name}(s, n)` takes a String and a count"),
+                        ));
+                    };
+                    let [x] = one_string(name, vec![x])?;
+                    let n = integer_arg(name, "count", n)?;
+                    let nullable = x.ty.nullable() || n.ty.nullable();
+                    call(name, vec![x, n], Ty::scalar(ScalarType::String, nullable))
+                }
+                "substring" => {
+                    no_options(c)?;
+                    let Ok([x, start, len]) = <[SExpr; 3]>::try_from(args) else {
+                        return Err(err(
+                            T7,
+                            "`substring(s, start, len)` takes a String, a 1-based start and a length",
+                        ));
+                    };
+                    let [x] = one_string(name, vec![x])?;
+                    let start = integer_arg(name, "start", start)?;
+                    let len = integer_arg(name, "length", len)?;
+                    let nullable = x.ty.nullable() || start.ty.nullable() || len.ty.nullable();
+                    call(
+                        name,
+                        vec![x, start, len],
+                        Ty::scalar(ScalarType::String, nullable),
+                    )
+                }
+                "abs" | "floor" | "ceil" => {
+                    no_options(c)?;
+                    let Ok([x]) = <[SExpr; 1]>::try_from(args) else {
+                        return Err(err(T7, format!("`{name}` takes one number")));
+                    };
+                    let ty = numeric(&x, &format!("`{name}`"))?;
+                    call(name, vec![x], ty)
+                }
+                "round" => {
+                    let Ok([x]) = <[SExpr; 1]>::try_from(args) else {
+                        return Err(err(T7, "`round(x, digits: n)` takes one number"));
+                    };
+                    let ty = numeric(&x, "`round`")?;
+                    let mut digits = None;
+                    for (o, v) in &c.options {
+                        if o != "digits" || digits.is_some() {
+                            return Err(err(
+                                T71,
+                                format!("`round` has no option `{o}`; it admits `digits`"),
+                            ));
+                        }
+                        digits = Some(integer_arg(name, "`digits`", self.expr(sc, v, At::Value)?)?);
+                    }
+                    let digits = digits.unwrap_or_else(|| {
+                        SExpr::new(
+                            SKind::Lit(Literal::Integer(0)),
+                            Ty::scalar(ScalarType::I64, false),
+                        )
+                    });
+                    let ty = ty.with_nullable(ty.nullable() || digits.ty.nullable());
+                    SExpr::new(
+                        SKind::Call {
+                            func: name.into(),
+                            args: vec![x],
+                            options: vec![("digits".into(), digits)],
+                        },
+                        ty,
+                    )
+                }
+                "sqrt" | "exp" | "ln" | "log10" => {
+                    no_options(c)?;
+                    let Ok([x]) = <[SExpr; 1]>::try_from(args) else {
+                        return Err(err(T7, format!("`{name}` takes one number")));
+                    };
+                    numeric(&x, &format!("`{name}`"))?;
+                    let nullable = x.ty.nullable();
+                    let x = widen(x, ScalarType::F64);
+                    call(name, vec![x], Ty::scalar(ScalarType::F64, nullable))
+                }
+                "power" => {
+                    no_options(c)?;
+                    let Ok([b, e]) = <[SExpr; 2]>::try_from(args) else {
+                        return Err(err(T7, "`power(base, exponent)` takes two numbers"));
+                    };
+                    let b = adapt(b, &Ty::scalar(ScalarType::F64, false));
+                    let e = adapt(e, &Ty::scalar(ScalarType::F64, false));
+                    numeric(&b, "`power`'s base")?;
+                    numeric(&e, "`power`'s exponent")?;
+                    let nullable = b.ty.nullable() || e.ty.nullable();
+                    let (b, e) = (widen(b, ScalarType::F64), widen(e, ScalarType::F64));
+                    call(name, vec![b, e], Ty::scalar(ScalarType::F64, nullable))
+                }
+                "size" => {
+                    no_options(c)?;
+                    let Ok([x]) = <[SExpr; 1]>::try_from(args) else {
+                        return Err(err(T7, "`size` takes one list"));
+                    };
+                    if !matches!(&x.ty, Ty::Value(t) if t.list) {
+                        return Err(err(
+                            T7,
+                            format!("`size` counts a list's elements, got {}", x.ty.display()),
+                        ));
+                    }
+                    let nullable = x.ty.nullable();
+                    call(name, vec![x], Ty::scalar(ScalarType::I64, nullable))
+                }
+                "cast" => {
+                    no_options(c)?;
+                    let target = match c.args.get(1) {
+                        Some(Arg::Expr(Expr::Ident(t))) => crate::ir::expr::cast_target(t)
+                            .ok_or_else(|| {
+                                err(T7, format!("`cast` converts to a scalar type, not `{t}`"))
+                            })?,
+                        // `Vector(3)` reads as a call of a capitalized name.
+                        Some(Arg::Expr(Expr::Call(t)))
+                            if t.name.starts_with(|ch: char| ch.is_ascii_uppercase()) =>
+                        {
+                            return Err(err(
+                                T7,
+                                format!(
+                                    "`cast` converts to a scalar type, not `{}`",
+                                    crate::query::syntax::print::expr(&Expr::Call(t.clone()))
+                                ),
+                            ));
+                        }
+                        _ => {
+                            return Err(err(
+                                T7,
+                                "`cast(x, T)` takes a value and a scalar type name",
+                            ));
+                        }
+                    };
+                    let Ok([x]) = <[SExpr; 1]>::try_from(args) else {
+                        return Err(err(T7, "`cast(x, T)` takes a value and a scalar type name"));
+                    };
+                    let from = match &x.ty {
+                        Ty::Value(t) if !t.list => t.scalar,
+                        other => {
+                            return Err(err(
+                                T7,
+                                format!("`cast` converts a scalar, got {}", other.display()),
+                            ));
+                        }
+                    };
+                    // An integer literal is a number of the target's kind.
+                    let x = adapt(x, &Ty::scalar(target, false));
+                    let from = match &x.ty {
+                        Ty::Value(t) => t.scalar,
+                        _ => from,
+                    };
+                    if !crate::ir::expr::cast_converts(from, target) {
+                        return Err(err(
+                            T7,
+                            format!(
+                                "`cast` does not convert {} to {}",
+                                Ty::scalar(from, false).display(),
+                                Ty::scalar(target, false).display()
+                            ),
+                        ));
+                    }
+                    let nullable = x.ty.nullable();
+                    call(name, vec![x], Ty::scalar(target, nullable))
                 }
                 other => {
                     return Err(err(
@@ -7715,6 +8041,7 @@ fn count_rows() -> Agg {
         func: AggFunc::Count,
         distinct: false,
         arg: None,
+        fraction: None,
         ty: Ty::scalar(ScalarType::I64, false),
     }
 }
@@ -7748,12 +8075,14 @@ fn agg_func(name: &str) -> AggFunc {
         "avg" => AggFunc::Avg,
         "min" => AggFunc::Min,
         "collect" => AggFunc::Collect,
+        "stddev" => AggFunc::Stddev,
+        "percentile" => AggFunc::Percentile,
         _ => AggFunc::Max,
     }
 }
 
-/// An aggregate's result type: `count` is a non-null `I64`; `sum` and `avg`
-/// are `F64` as today; `min` and `max` keep the argument's type; all but
+/// An aggregate's result type: `count` is a non-null `I64`; `sum`, `avg`,
+/// `stddev` and `percentile` are `F64` over a numeric argument; `min` and `max` keep the argument's type; all but
 /// `count` and `collect` are nullable over an empty input. `collect` is a
 /// list of its argument's type, the empty list over empty input.
 fn agg_type(func: AggFunc, arg: &Ty) -> R<Ty> {
@@ -7789,13 +8118,17 @@ fn agg_type(func: AggFunc, arg: &Ty) -> R<Ty> {
             T8,
             format!("{func} cannot take a reference bare; access one of its properties"),
         )),
-        (AggFunc::Sum | AggFunc::Avg, Ty::Value(t)) if t.list || !t.scalar.is_numeric() => {
+        (AggFunc::Sum | AggFunc::Avg | AggFunc::Stddev | AggFunc::Percentile, Ty::Value(t))
+            if t.list || !t.scalar.is_numeric() =>
+        {
             Err(err(
                 T8,
                 format!("{func} requires numeric type, got {}", t.display_name()),
             ))
         }
-        (AggFunc::Sum | AggFunc::Avg, Ty::Value(_)) => Ok(Ty::scalar(ScalarType::F64, true)),
+        (AggFunc::Sum | AggFunc::Avg | AggFunc::Stddev | AggFunc::Percentile, Ty::Value(_)) => {
+            Ok(Ty::scalar(ScalarType::F64, true))
+        }
         (_, Ty::Value(t)) if t.list || !t.scalar.is_orderable() => Err(err(
             T8,
             format!(
@@ -8209,6 +8542,59 @@ fn literal_refusal(
 
 /// A branch of `if` or an argument of `coalesce` in the call's common type:
 /// a literal takes it, and another numeric value is widened to it.
+/// A registry row's call node: its arguments and result type; `can_fail`
+/// as the row declares it ([`crate::ir::expr::ScalarFunc::row_can_fail`])
+/// or as an argument does.
+fn call(name: &str, args: Vec<SExpr>, ty: Ty) -> SExpr {
+    SExpr::new(
+        SKind::Call {
+            func: name.into(),
+            args,
+            options: Vec::new(),
+        },
+        ty,
+    )
+}
+
+/// The one String argument of a string row.
+fn one_string(name: &str, args: Vec<SExpr>) -> R<[SExpr; 1]> {
+    let Ok([x]) = <[SExpr; 1]>::try_from(args) else {
+        return Err(err(T7, format!("`{name}` takes one String")));
+    };
+    if !matches!(&x.ty, Ty::Value(t) if t.scalar == ScalarType::String && !t.list) {
+        return Err(err(
+            T7,
+            format!("`{name}` takes a String, got {}", x.ty.display()),
+        ));
+    }
+    Ok([x])
+}
+
+/// An integer argument of a row, an `I64` by an explicit `Cast` where it is
+/// a narrower integer; a float or a `U64` is refused, since no `Cast`
+/// reaches `I64` without a value it cannot hold.
+fn integer_arg(name: &str, what: &str, e: SExpr) -> R<SExpr> {
+    let e = adapt(e, &Ty::scalar(ScalarType::I64, false));
+    match &e.ty {
+        Ty::Value(t)
+            if !t.list
+                && matches!(
+                    t.scalar,
+                    ScalarType::I32 | ScalarType::I64 | ScalarType::U32
+                ) =>
+        {
+            Ok(widen(e, ScalarType::I64))
+        }
+        other => Err(err(
+            T7,
+            format!(
+                "`{name}`'s {what} is an I64, I32 or U32, got {}",
+                other.display()
+            ),
+        )),
+    }
+}
+
 fn fit(e: SExpr, ty: &Ty) -> SExpr {
     let e = adapt(e, ty);
     match ty {
@@ -8573,6 +8959,10 @@ fn aggregate_filter_fix(catalog: &Catalog, pattern: &Pattern, in_write: bool) ->
     let block = Expr::Block(Box::new(Block {
         func: BlockFunc::Agg(func),
         arg: Some(Box::new(arg.clone())),
+        fraction: match call.args.get(1) {
+            Some(Arg::Expr(p)) => Some(Box::new(p.clone())),
+            _ => None,
+        },
         pattern: Pattern {
             elements: moved,
             ..Pattern::default()
@@ -9377,7 +9767,7 @@ fn block_vars(e: &Expr, out: &mut Vec<String>) {
     crate::stack::deep(|| match e {
         Expr::Block(b) => {
             pattern_vars(&b.pattern, out);
-            if let Some(a) = &b.arg {
+            for a in b.arg.iter().chain(&b.fraction) {
                 expr_vars(a, out);
             }
         }
@@ -9464,7 +9854,9 @@ impl SyntaxSize {
             }
             match e {
                 Expr::Block(b) => {
-                    self.pattern(&b.pattern) && b.arg.as_deref().is_none_or(|a| self.expr(a))
+                    self.pattern(&b.pattern)
+                        && b.arg.as_deref().is_none_or(|a| self.expr(a))
+                        && b.fraction.as_deref().is_none_or(|p| self.expr(p))
                 }
                 Expr::Call(c) => self.call(c),
                 other => {
@@ -9504,7 +9896,13 @@ fn for_each_child(e: &Expr, f: &mut dyn FnMut(&Expr)) {
                 f(e);
             }
         }
-        Expr::AggDistinct { arg, .. } | Expr::Neg(arg) | Expr::Not(arg) => f(arg),
+        Expr::AggDistinct { arg, fraction, .. } => {
+            f(arg);
+            if let Some(p) = fraction {
+                f(p);
+            }
+        }
+        Expr::Neg(arg) | Expr::Not(arg) => f(arg),
         Expr::IsNull { expr, .. } => f(expr),
         Expr::Arith { left, right, .. }
         | Expr::Compare { left, right, .. }
@@ -9679,11 +10077,17 @@ fn expr_vars(e: &Expr, out: &mut Vec<String>) {
                 expr_vars(e, out);
             }
         }
-        Expr::AggDistinct { arg, .. } | Expr::Neg(arg) | Expr::Not(arg) => expr_vars(arg, out),
+        Expr::AggDistinct { arg, fraction, .. } => {
+            expr_vars(arg, out);
+            if let Some(p) = fraction {
+                expr_vars(p, out);
+            }
+        }
+        Expr::Neg(arg) | Expr::Not(arg) => expr_vars(arg, out),
         Expr::IsNull { expr, .. } => expr_vars(expr, out),
         Expr::Block(b) => {
             pattern_vars(&b.pattern, out);
-            if let Some(a) = &b.arg {
+            for a in b.arg.iter().chain(&b.fraction) {
                 expr_vars(a, out);
             }
         }

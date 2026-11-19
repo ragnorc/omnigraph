@@ -43,17 +43,20 @@ omnigraph queries list --target prod --graph dev --json # a server's GET /graphs
   `queries validate` instead audits the **applied** registry against each
   applied schema without restarting the server; it cannot see unapplied source
   edits; it reports every failing query, parse and type refusals together,
-  each with its code, position, fix and byte edits. A stored query that fails
-  to compile under the server's release (after a binary upgrade, say) makes
-  only itself unavailable while its graph serves: `queries list`, the MCP
+  each with its code, position, fix and byte edits. Each declaration of a
+  stored file compiles on its own: one that fails under the server's release
+  (after a binary upgrade, say) is unavailable with its own diagnostic, one
+  that calls it is unavailable naming it, and the others in the file serve,
+  while the graph serves: `queries list`, the MCP
   `queries` tool and `GET /graphs/{graph_id}/queries` list it under
   `unavailable` with its diagnostic, `GET /graphs` reports it per graph, and
   invoking it answers 409 `stored_query_unavailable` with the same diagnostic.
   `OMNIGRAPH_STRICT_STORED_QUERIES=1` instead quarantines the graph
   (`invalid_stored_queries`); startup is fatal when no healthy graph remains
   or `--require-all-graphs` is set. To upgrade across GQ 3: validate with the
-  new binary, rewrite the failing sources from their fixes, and apply the
-  rewritten registry in the same step as the binary switch.
+  new binary, rewrite the failing sources from their fixes (`omnigraph lint
+  --fix --config <dir>` applies them), and apply the rewritten registry in the
+  same step as the binary switch.
 - Both commands take a local cluster root `--target LOCAL_PATH`; `--graph` narrows the
   operation to one declared graph. `queries list` also takes a server or managed target,
   where `--graph` or the target's `default_graph` selects the graph and `--json`

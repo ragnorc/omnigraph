@@ -1361,7 +1361,7 @@ impl<'a> Shaper<'a> {
             }
             term = input;
         }
-        let mut order_keys: &[(IRExpr, bool)] = &[];
+        let mut order_keys: &[IROrdering] = &[];
         if let Term::Order { input, keys } = term {
             order_keys = keys;
             term = input;
@@ -1449,12 +1449,12 @@ impl<'a> Shaper<'a> {
                 resolve(arg, &lets);
             }
         }
-        let order_keys: Vec<(IRExpr, bool)> = order_keys
+        let order_keys: Vec<IROrdering> = order_keys
             .iter()
-            .map(|(key, descending)| {
+            .map(|key| {
                 let mut key = key.clone();
-                resolve(&mut key, &lets);
-                (key, *descending)
+                resolve(&mut key.expr, &lets);
+                key
             })
             .collect();
         // `$x is null` over a reference tests its identity, which an
@@ -1471,7 +1471,9 @@ impl<'a> Shaper<'a> {
             .filter_map(|agg| agg.arg.as_mut())
             .for_each(&mut null_tests);
         let mut order_keys = order_keys;
-        order_keys.iter_mut().for_each(|(key, _)| null_tests(key));
+        order_keys
+            .iter_mut()
+            .for_each(|key| null_tests(&mut key.expr));
         let order_keys = order_keys.as_slice();
         // Return items.
         let mut return_exprs = Vec::new();
@@ -1552,10 +1554,10 @@ impl<'a> Shaper<'a> {
         let mut order_by = Vec::new();
         let mut keys = order_keys.iter().enumerate().peekable();
         if let Some(ranking) = ranking.as_ref().filter(|_| !windowed) {
-            let leads = matches!(keys.peek(), Some((_, (IRExpr::AliasRef(name, _), _))) if *name == ranking.out);
-            let descending = match keys.peek() {
-                Some((_, (_, descending))) if leads => *descending,
-                _ => ranking.descending,
+            let leads = matches!(keys.peek(), Some((_, IROrdering { expr: IRExpr::AliasRef(name, _), .. })) if *name == ranking.out);
+            let (descending, nulls_first) = match keys.peek() {
+                Some((_, key)) if leads => (key.descending, key.nulls_first),
+                _ => (ranking.descending, None),
             };
             if leads {
                 keys.next();
@@ -1563,9 +1565,11 @@ impl<'a> Shaper<'a> {
             order_by.push(IROrdering {
                 expr: ranking.key.clone(),
                 descending,
+                nulls_first,
             });
         }
-        for (position, (key, descending)) in keys {
+        for (position, written) in keys {
+            let key = &written.expr;
             let at = Construct::OrderKey(position);
             let expr = match key {
                 IRExpr::AliasRef(hidden, _) | IRExpr::Variable(hidden, _)
@@ -1636,13 +1640,15 @@ impl<'a> Shaper<'a> {
             if let Some(reference) = self.reference_key(&expr, &return_exprs, grouped) {
                 order_by.extend(reference.into_iter().map(|expr| IROrdering {
                     expr,
-                    descending: *descending,
+                    descending: written.descending,
+                    nulls_first: written.nulls_first,
                 }));
                 continue;
             }
             order_by.push(IROrdering {
                 expr,
-                descending: *descending,
+                descending: written.descending,
+                nulls_first: written.nulls_first,
             });
         }
         let ranked: Vec<String> = ranking
@@ -1813,17 +1819,20 @@ impl<'a> Shaper<'a> {
     fn ranked_scan_runs(
         &self,
         ranking: &Ranking,
-        order_keys: &[(IRExpr, bool)],
+        order_keys: &[IROrdering],
         limit: Option<u64>,
         grouped: bool,
     ) -> bool {
         let reads_score =
             |e: &IRExpr| matches!(e, IRExpr::AliasRef(name, _) if *name == ranking.out);
         let leads = match order_keys.first() {
-            // The score leads, in its ranking's direction.
-            Some((key, descending)) if reads_score(key) => *descending == ranking.descending,
+            // The score leads, in its ranking's direction and null
+            // placement.
+            Some(key) if reads_score(&key.expr) => {
+                key.descending == ranking.descending && key.nulls_first.is_none()
+            }
             // The score is a later key.
-            _ if order_keys.iter().any(|(k, _)| reads_score(k)) => false,
+            _ if order_keys.iter().any(|k| reads_score(&k.expr)) => false,
             // Another key leads.
             Some(_) => grouped,
             // No `order`: the cut takes the ranking's own order.
@@ -1868,6 +1877,7 @@ impl<'a> Shaper<'a> {
             func: agg.func,
             distinct: agg.distinct,
             arg: Box::new(arg.clone()),
+            fraction: agg.fraction.clone().map(Box::new),
             signature: AggSignature {
                 arg: arg.ty().clone(),
                 result,
@@ -3057,7 +3067,7 @@ impl<'a> Shaper<'a> {
                 }
             }
         }
-        let mut order_keys: Vec<(IRExpr, bool)> = Vec::new();
+        let mut order_keys: Vec<IROrdering> = Vec::new();
         if let Term::Order { input, keys } = term {
             order_keys = keys.clone();
             term = input;
@@ -3260,7 +3270,12 @@ impl<'a> Shaper<'a> {
         let id = self.catalog.system_columns.id;
         let order_by = order_keys
             .into_iter()
-            .flat_map(|(key, descending)| {
+            .flat_map(|written| {
+                let IROrdering {
+                    expr: key,
+                    descending,
+                    nulls_first,
+                } = written;
                 let mut key = read_lets(key);
                 resolve(&mut key, &rows);
                 let keys = match &key {
@@ -3269,7 +3284,11 @@ impl<'a> Shaper<'a> {
                 };
                 keys.unwrap_or_else(|| vec![key])
                     .into_iter()
-                    .map(move |expr| IROrdering { expr, descending })
+                    .map(move |expr| IROrdering {
+                        expr,
+                        descending,
+                        nulls_first,
+                    })
             })
             .collect();
         let mut read = InnerRead {
@@ -3420,12 +3439,13 @@ impl<'a> Shaper<'a> {
         // One semi-join per comparison; `not (c > 0)` is the row-count zero
         // test. The right side is evaluated over the outer rows: it reads
         // their columns, not another block's value nor a full-text call. A
-        // `collect` block is read as a value: its list is a group's, not a
-        // running scalar a semi-join folds.
+        // block that holds its group's values (`collect`, `stddev`,
+        // `percentile`) is read as a value: it finishes a group's values,
+        // not a running scalar a semi-join folds.
         let comparisons: Option<Vec<(CompOp, IRExpr)>> = groups
             .iter()
             .map(|(_, column, agg, _, _)| {
-                if agg.func == AggFunc::Collect {
+                if agg.func.holds_values() {
                     return None;
                 }
                 block_comparison(pred, column).filter(|(_, right)| {
@@ -3550,22 +3570,24 @@ impl<'a> Shaper<'a> {
             }
             Some(_) => false,
         };
-        let (func, distinct, mut arg) = if counts_rows {
+        let (func, distinct, mut arg, fraction) = if counts_rows {
             (
                 AggFunc::Count,
                 false,
                 IRExpr::Literal(Literal::Bool(true), scalar(ScalarType::Bool)),
+                None,
             )
         } else {
             let arg = agg.arg.clone().ok_or_else(|| {
                 ShapeError::Internal("an aggregate block without its argument".into())
             })?;
-            (agg.func, agg.distinct, arg)
+            (agg.func, agg.distinct, arg, agg.fraction.clone())
         };
         rename_expr(&mut arg, &rename);
         let aggregate = IRExpr::Aggregate {
             func,
             distinct,
+            fraction: fraction.map(Box::new),
             signature: AggSignature {
                 arg: arg.ty().clone(),
                 result: nullable_result(&agg),
@@ -4719,8 +4741,14 @@ fn bind_params(expr: &mut IRExpr, bindings: &[(String, IRExpr)]) {
         let recurse = |e: &mut IRExpr| bind_params(e, bindings);
         match expr {
             IRExpr::Nearest { query, .. } => recurse(query),
-            IRExpr::Aggregate { arg, .. }
-            | IRExpr::Not(arg, _)
+            // `percentile`'s fraction may be the called read's parameter.
+            IRExpr::Aggregate { arg, fraction, .. } => {
+                recurse(arg);
+                if let Some(p) = fraction {
+                    recurse(p);
+                }
+            }
+            IRExpr::Not(arg, _)
             | IRExpr::IsNull { expr: arg, .. }
             | IRExpr::Neg { expr: arg, .. }
             | IRExpr::Cast { expr: arg, .. } => recurse(arg),

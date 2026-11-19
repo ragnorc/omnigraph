@@ -94,6 +94,15 @@ impl BlockAggregateExpr {
                             "counting a node binding must use CountRows".into(),
                         ));
                     }
+                    // A block that holds values to finish them (`stddev`,
+                    // `percentile`) is read as a value through its plan's
+                    // aggregate, which holds `percentile`'s fraction; no
+                    // semi-join folds one.
+                    if matches!(func, AggFunc::Stddev | AggFunc::Percentile) {
+                        return Err(CompilerError::Plan(format!(
+                            "a {func} block is read as a value, never folded by a semi-join"
+                        )));
+                    }
                     check_aggregate_types(*func, arg, signature)?;
                     return arg.check_types();
                 }
@@ -389,11 +398,16 @@ impl IRExpr {
                     func,
                     distinct,
                     arg,
+                    fraction,
                     signature,
                 } => Self::Aggregate {
                     func: *func,
                     distinct: *distinct,
                     arg: b(arg)?,
+                    fraction: match fraction {
+                        Some(p) => Some(b(p)?),
+                        None => None,
+                    },
                     signature: signature.clone(),
                 },
                 Self::Binary {
@@ -442,8 +456,11 @@ impl IRExpr {
             | Self::Literal(_, _)
             | Self::AliasRef(_, _) => Vec::new(),
             Self::Nearest { query, .. } => vec![query],
-            Self::Aggregate { arg, .. }
-            | Self::Not(arg, _)
+            Self::Aggregate { arg, fraction, .. } => std::iter::once(arg)
+                .chain(fraction.as_ref())
+                .map(|b| &**b)
+                .collect(),
+            Self::Not(arg, _)
             | Self::IsNull { expr: arg, .. }
             | Self::Neg { expr: arg, .. }
             | Self::Cast { expr: arg, .. } => vec![arg],
@@ -496,8 +513,11 @@ impl IRExpr {
                 | Self::Literal(_, _)
                 | Self::AliasRef(_, _) => {}
                 Self::Nearest { query, .. } => pending.push(query),
-                Self::Aggregate { arg, .. }
-                | Self::Not(arg, _)
+                Self::Aggregate { arg, fraction, .. } => {
+                    pending.push(arg);
+                    pending.extend(fraction.as_deref());
+                }
+                Self::Not(arg, _)
                 | Self::IsNull { expr: arg, .. }
                 | Self::Neg { expr: arg, .. }
                 | Self::Cast { expr: arg, .. } => pending.push(arg),
@@ -525,14 +545,25 @@ impl IRExpr {
                     op: BinaryOp::Arith(_),
                     ..
                 } => return true,
+                Self::Call { func, args, ty }
+                    if func.row_can_fail(
+                        &args.iter().map(|a| a.ty().clone()).collect::<Vec<_>>(),
+                        ty,
+                    ) =>
+                {
+                    return true;
+                }
                 Self::PropAccess { .. }
                 | Self::Variable(_, _)
                 | Self::Param(_, _)
                 | Self::Literal(_, _)
                 | Self::AliasRef(_, _) => {}
                 Self::Nearest { query, .. } => pending.push(query),
-                Self::Aggregate { arg, .. }
-                | Self::Not(arg, _)
+                Self::Aggregate { arg, fraction, .. } => {
+                    pending.push(arg);
+                    pending.extend(fraction.as_deref());
+                }
+                Self::Not(arg, _)
                 | Self::IsNull { expr: arg, .. }
                 | Self::Cast { expr: arg, .. } => pending.push(arg),
                 Self::Binary { left, right, .. } => pending.extend([left.as_ref(), right.as_ref()]),
@@ -562,8 +593,11 @@ impl IRExpr {
                     pending.push(query);
                 }
                 Self::Param(_, _) | Self::Literal(_, _) => {}
-                Self::Aggregate { arg, .. }
-                | Self::Not(arg, _)
+                Self::Aggregate { arg, fraction, .. } => {
+                    pending.extend(fraction.as_deref());
+                    pending.push(arg);
+                }
+                Self::Not(arg, _)
                 | Self::IsNull { expr: arg, .. }
                 | Self::Neg { expr: arg, .. }
                 | Self::Cast { expr: arg, .. } => pending.push(arg),
@@ -626,9 +660,11 @@ impl IRExpr {
                     func,
                     distinct: _,
                     arg,
+                    fraction,
                     signature,
                 } => {
                     check_aggregate_types(*func, arg, signature)?;
+                    check_aggregate_fraction(*func, fraction.as_deref())?;
                     pending.push(arg);
                 }
                 Self::Nearest { query, ty, .. } => {
@@ -915,6 +951,14 @@ impl std::fmt::Display for IRExpr {
                     func,
                     distinct: false,
                     arg,
+                    fraction: Some(p),
+                    ..
+                } => write!(f, "{func}({arg}, {p})"),
+                IRExpr::Aggregate {
+                    func,
+                    distinct: false,
+                    arg,
+                    fraction: None,
                     ..
                 } => write!(f, "{func}({arg})"),
                 IRExpr::AliasRef(alias, _) => f.write_str(alias),
@@ -967,6 +1011,22 @@ impl std::fmt::Display for IRExpr {
                     }
                     f.write_str("]")
                 }
+                // `cast` names its target type, `round` its digits option.
+                IRExpr::Call {
+                    func: ScalarFunc::Cast,
+                    args,
+                    ty,
+                } if args.len() == 1 => match ty {
+                    ExprType::Value { scalar, .. } => {
+                        write!(f, "cast({}, {scalar})", args[0])
+                    }
+                    _ => write!(f, "cast({}, …)", args[0]),
+                },
+                IRExpr::Call {
+                    func: ScalarFunc::Round,
+                    args,
+                    ..
+                } if args.len() == 2 => write!(f, "round({}, digits: {})", args[0], args[1]),
                 IRExpr::Call { func, args, .. } => {
                     write!(f, "{}(", func.name())?;
                     for (i, arg) in args.iter().enumerate() {
@@ -1031,6 +1091,7 @@ mod render_tests {
     fn aggregate_signature_must_match_its_stored_argument_leaf() {
         let arg_type = ExprType::from_prop(&PropType::scalar(crate::types::ScalarType::I32, true));
         let mut expression = IRExpr::Aggregate {
+            fraction: None,
             func: AggFunc::Sum,
             distinct: false,
             arg: Box::new(IRExpr::Param("amount".into(), arg_type.clone())),
@@ -1056,6 +1117,7 @@ mod render_tests {
         );
 
         let expression = IRExpr::Aggregate {
+            fraction: None,
             func: AggFunc::Count,
             distinct: false,
             arg: Box::new(IRExpr::Variable(
@@ -1199,6 +1261,7 @@ mod render_tests {
             assert_eq!(rrf_weight_values(&weights, 2), None, "{bad:?}");
         }
         let count = IRExpr::Aggregate {
+            fraction: None,
             func: AggFunc::Count,
             distinct: false,
             arg: Box::new(IRExpr::Variable(
@@ -1536,6 +1599,29 @@ fn integer_type(ty: &ExprType) -> bool {
     )
 }
 
+/// `percentile` holds its fraction, a numeric literal or a numeric
+/// parameter; no other aggregate holds one.
+fn check_aggregate_fraction(func: AggFunc, fraction: Option<&IRExpr>) -> Result<()> {
+    let numeric = |ty: &ExprType| matches!(ty, ExprType::Value { scalar, list: false, .. } if scalar.is_numeric());
+    let valid = match (func.takes_fraction(), fraction) {
+        (false, None) => true,
+        (false, Some(_)) | (true, None) => false,
+        // A literal's value is checked where it is written (and, bound to a
+        // called read's parameter, where the engine reads it, as a
+        // parameter's is).
+        (true, Some(IRExpr::Literal(Literal::Float(_) | Literal::Integer(_), ty)))
+        | (true, Some(IRExpr::Param(_, ty))) => numeric(ty),
+        (true, Some(_)) => false,
+    };
+    if valid {
+        Ok(())
+    } else {
+        Err(CompilerError::Plan(format!(
+            "{func} holds an invalid fraction"
+        )))
+    }
+}
+
 fn check_aggregate_types(func: AggFunc, arg: &IRExpr, signature: &AggSignature) -> Result<()> {
     let expected = func.result_type(&signature.arg).ok_or_else(|| {
         CompilerError::Plan(format!(
@@ -1607,6 +1693,11 @@ fn same_value_type(left: &ExprType, right: &ExprType) -> bool {
     }
 }
 
+/// Whether `t` is a scalar number.
+fn numeric_value(t: &ExprType) -> bool {
+    matches!(t, ExprType::Value { scalar, list: false, .. } if scalar.is_numeric())
+}
+
 /// A registry call's stored types: the arity and argument types its row
 /// declares, and the result type it derives from them.
 fn check_call(func: ScalarFunc, args: &[IRExpr], ty: &ExprType) -> Result<()> {
@@ -1661,6 +1752,105 @@ fn check_call(func: ScalarFunc, args: &[IRExpr], ty: &ExprType) -> Result<()> {
                 return bad("every element is a non-null value of the list's element type");
             }
         }
+        ScalarFunc::Lower
+        | ScalarFunc::Upper
+        | ScalarFunc::Trim
+        | ScalarFunc::LTrim
+        | ScalarFunc::RTrim => {
+            let [x] = args else {
+                return bad("takes one String");
+            };
+            if !string(x) || ty != x.ty() {
+                return bad("takes a String and returns its type");
+            }
+        }
+        ScalarFunc::Length => {
+            let [x] = args else {
+                return bad("takes one String");
+            };
+            if !string(x) || ty != &scalar_type(ScalarType::I64, x.ty().nullable()) {
+                return bad("counts a String's characters as an I64");
+            }
+        }
+        ScalarFunc::Left | ScalarFunc::Right | ScalarFunc::Substring => {
+            let arity = if func == ScalarFunc::Substring { 3 } else { 2 };
+            let int64 = |e: &IRExpr| scalar_is(e.ty(), ScalarType::I64);
+            if args.len() != arity || !string(&args[0]) || !args[1..].iter().all(int64) {
+                return bad("takes a String and I64 positions");
+            }
+            let nullable = args.iter().any(|a| a.ty().nullable());
+            if ty != &scalar_type(ScalarType::String, nullable) {
+                return bad("returns a String, nullable when any argument is");
+            }
+        }
+        ScalarFunc::Abs | ScalarFunc::Floor | ScalarFunc::Ceil => {
+            let [x] = args else {
+                return bad("takes one number");
+            };
+            if !numeric_value(x.ty()) || ty != x.ty() {
+                return bad("takes a number and returns its type");
+            }
+        }
+        ScalarFunc::Round => {
+            let [x, digits] = args else {
+                return bad("takes a number and its digits");
+            };
+            if !numeric_value(x.ty())
+                || !scalar_is(digits.ty(), ScalarType::I64)
+                || !same_value_type(x.ty(), ty)
+                || ty.nullable() != (x.ty().nullable() || digits.ty().nullable())
+            {
+                return bad("takes a number and I64 digits and returns the number's type");
+            }
+        }
+        ScalarFunc::Sqrt
+        | ScalarFunc::Exp
+        | ScalarFunc::Ln
+        | ScalarFunc::Log10
+        | ScalarFunc::Power => {
+            let arity = if func == ScalarFunc::Power { 2 } else { 1 };
+            let f64s = |e: &IRExpr| scalar_is(e.ty(), ScalarType::F64);
+            if args.len() != arity || !args.iter().all(f64s) {
+                return bad("takes F64 arguments");
+            }
+            let nullable = args.iter().any(|a| a.ty().nullable());
+            if ty != &scalar_type(ScalarType::F64, nullable) {
+                return bad("returns an F64, nullable when any argument is");
+            }
+        }
+        ScalarFunc::Size => {
+            let [x] = args else {
+                return bad("takes one list");
+            };
+            if !matches!(x.ty(), ExprType::Value { list: true, .. })
+                || ty != &scalar_type(ScalarType::I64, x.ty().nullable())
+            {
+                return bad("counts a list's elements as an I64");
+            }
+        }
+        ScalarFunc::Cast => {
+            let [x] = args else {
+                return bad("takes one value");
+            };
+            let (
+                ExprType::Value {
+                    scalar: from,
+                    list: false,
+                    nullable,
+                },
+                ExprType::Value {
+                    scalar: to,
+                    list: false,
+                    nullable: result_nullable,
+                },
+            ) = (x.ty(), ty)
+            else {
+                return bad("converts a scalar to a scalar");
+            };
+            if !cast_converts(*from, *to) || nullable != result_nullable {
+                return bad("converts between the scalar types it admits");
+            }
+        }
         ScalarFunc::MatchTerms { .. } => {
             let [field, text, max_edits] = args else {
                 return bad("takes a field, a text and an edit budget");
@@ -1699,10 +1889,15 @@ pub enum IRExpr {
     Variable(String, ExprType),
     Param(String, ExprType),
     Literal(Literal, ExprType),
+    /// An aggregate over a group's rows. `fraction` is `percentile`'s `p`
+    /// (a numeric literal in [0, 1] or a declared numeric parameter, which
+    /// changes the result, so it is the aggregate's own child); `None` for
+    /// every other aggregate.
     Aggregate {
         func: AggFunc,
         distinct: bool,
         arg: Box<IRExpr>,
+        fraction: Option<Box<IRExpr>>,
         signature: AggSignature,
     },
     AliasRef(String, ExprType),
@@ -1765,11 +1960,13 @@ impl Clone for IRExpr {
                 func,
                 distinct,
                 arg,
+                fraction,
                 signature,
             } => Self::Aggregate {
                 func: *func,
                 distinct: *distinct,
                 arg: arg.clone(),
+                fraction: fraction.clone(),
                 signature: signature.clone(),
             },
             Self::AliasRef(name, ty) => Self::AliasRef(name.clone(), ty.clone()),
@@ -1845,15 +2042,17 @@ impl PartialEq for IRExpr {
                     func: f1,
                     distinct: d1,
                     arg: a1,
+                    fraction: p1,
                     signature: s1,
                 },
                 Self::Aggregate {
                     func: f2,
                     distinct: d2,
                     arg: a2,
+                    fraction: p2,
                     signature: s2,
                 },
-            ) => f1 == f2 && d1 == d2 && a1 == a2 && s1 == s2,
+            ) => f1 == f2 && d1 == d2 && a1 == a2 && p1 == p2 && s1 == s2,
             (
                 Self::Binary {
                     left: l1,
@@ -1941,11 +2140,13 @@ impl std::hash::Hash for IRExpr {
                     func,
                     distinct,
                     arg,
+                    fraction,
                     signature,
                 } => {
                     func.hash(state);
                     distinct.hash(state);
                     arg.hash(state);
+                    fraction.hash(state);
                     signature.hash(state);
                 }
                 Self::Binary {
@@ -2014,12 +2215,14 @@ impl std::fmt::Debug for IRExpr {
                 func,
                 distinct,
                 arg,
+                fraction,
                 signature,
             } => f
                 .debug_struct("Aggregate")
                 .field("func", func)
                 .field("distinct", distinct)
                 .field("arg", arg)
+                .field("fraction", fraction)
                 .field("signature", signature)
                 .finish(),
             Self::AliasRef(name, ty) => f.debug_tuple("AliasRef").field(name).field(ty).finish(),
@@ -2093,11 +2296,120 @@ pub enum ScalarFunc {
     Concat,
     /// `match_terms(field, terms(text, mode:, max_edits:))`: arguments are the
     /// field, the text and the edit budget.
-    MatchTerms { mode: TermsMode },
+    MatchTerms {
+        mode: TermsMode,
+    },
     /// A list literal holding a parameter, `[$a, 2]`: its elements, each a
     /// literal or a declared non-null parameter of the list's element type,
     /// in order. The list is built when the parameters are bound.
     List,
+    /// `lower(s)`, `upper(s)`: Unicode case mapping.
+    Lower,
+    Upper,
+    /// `trim(s)`, `ltrim(s)`, `rtrim(s)`: Unicode whitespace removed from
+    /// both ends, the start or the end.
+    Trim,
+    LTrim,
+    RTrim,
+    /// `length(s)`: the Unicode scalar values of a String, an `I64`.
+    Length,
+    /// `left(s, n)`, `right(s, n)`: the first or last `n` characters; a
+    /// negative `n` is a typed error (`E5`).
+    Left,
+    Right,
+    /// `substring(s, start, len)`: the characters from the 1-based `start`
+    /// for `len`, clipped to the String; a negative `len` is `E5`.
+    Substring,
+    /// `abs(x)`, `floor(x)`, `ceil(x)`: the operand's type; `abs` of the
+    /// smallest signed integer overflows (`E1`).
+    Abs,
+    Floor,
+    Ceil,
+    /// `round(x, digits: n)`: half away from zero at `n` decimal digits, the
+    /// operand's type; its arguments are `x` and `n`. An integer that
+    /// overflows is `E1`, a float result that is not finite `E3`.
+    Round,
+    /// `sqrt`, `exp`, `ln`, `log10` and `power` over `F64`: the root of a
+    /// negative and the logarithm of a non-positive are `E5`, a result that
+    /// is not finite `E3`.
+    Sqrt,
+    Exp,
+    Ln,
+    Log10,
+    Power,
+    /// `size(l)`: a list's elements, an `I64`.
+    Size,
+    /// `cast(x, T)`: `x` converted to the call's scalar type; a value that
+    /// does not convert is `E6`.
+    Cast,
+}
+
+/// The scalar type a `cast`'s type name names.
+pub fn cast_target(name: &str) -> Option<ScalarType> {
+    Some(match name {
+        "String" => ScalarType::String,
+        "Bool" => ScalarType::Bool,
+        "I32" => ScalarType::I32,
+        "I64" => ScalarType::I64,
+        "U32" => ScalarType::U32,
+        "U64" => ScalarType::U64,
+        "F32" => ScalarType::F32,
+        "F64" => ScalarType::F64,
+        "Date" => ScalarType::Date,
+        "DateTime" => ScalarType::DateTime,
+        _ => return None,
+    })
+}
+
+fn is_number(s: ScalarType) -> bool {
+    s.is_numeric()
+}
+
+fn is_int(s: ScalarType) -> bool {
+    matches!(
+        s,
+        ScalarType::I32 | ScalarType::I64 | ScalarType::U32 | ScalarType::U64
+    )
+}
+
+/// Whether `cast` converts a `from` value to `to`: between numbers, a
+/// Bool and an integer, every scalar to and from String, and `Date` and
+/// `DateTime` either way.
+pub fn cast_converts(from: ScalarType, to: ScalarType) -> bool {
+    use ScalarType::*;
+    match (from, to) {
+        (Vector(_) | Blob, _) | (_, Vector(_) | Blob) => false,
+        (a, b) if a == b => true,
+        (a, b) if is_number(a) && is_number(b) => true,
+        (Bool, b) | (b, Bool) if is_int(b) => true,
+        (String, _) | (_, String) => true,
+        (Date, DateTime) | (DateTime, Date) => true,
+        _ => false,
+    }
+}
+
+/// Whether a `cast` from `from` to `to` can refuse a value (`E6`): every
+/// conversion but a widening that holds every value, a conversion to
+/// String, an integer to Bool, a Bool to an integer, and between `Date` and
+/// `DateTime`. A String read as a Bool is refused unless it is `true` or
+/// `false`.
+pub fn cast_can_fail(from: ScalarType, to: ScalarType) -> bool {
+    use ScalarType::*;
+    if from == to || to == String || from == Bool {
+        return false;
+    }
+    !matches!(
+        (from, to),
+        (Date, DateTime)
+            | (DateTime, Date)
+            | (I32 | U32 | I64 | U64, Bool)
+            | (I32, I64 | F64)
+            | (U32, I64 | U64 | F64)
+            | (U64, F64)
+            | (I64, F64)
+            | (I32 | U32 | I64 | U64, F32)
+            | (F32, F64)
+    )
 }
 
 /// How a `terms(…)` value matches: every term, or any one.
@@ -2106,6 +2418,35 @@ pub enum TermsMode {
     All,
     Any,
 }
+
+/// Every scalar row with no other node, in registry order, by its written
+/// name; `match_terms` carries its mode and is built by the checker.
+const NAMED_ROWS: &[ScalarFunc] = &[
+    ScalarFunc::If,
+    ScalarFunc::Coalesce,
+    ScalarFunc::Concat,
+    ScalarFunc::List,
+    ScalarFunc::Lower,
+    ScalarFunc::Upper,
+    ScalarFunc::Trim,
+    ScalarFunc::LTrim,
+    ScalarFunc::RTrim,
+    ScalarFunc::Length,
+    ScalarFunc::Left,
+    ScalarFunc::Right,
+    ScalarFunc::Substring,
+    ScalarFunc::Abs,
+    ScalarFunc::Floor,
+    ScalarFunc::Ceil,
+    ScalarFunc::Round,
+    ScalarFunc::Sqrt,
+    ScalarFunc::Exp,
+    ScalarFunc::Ln,
+    ScalarFunc::Log10,
+    ScalarFunc::Power,
+    ScalarFunc::Size,
+    ScalarFunc::Cast,
+];
 
 impl ScalarFunc {
     /// The registry row's name, as written.
@@ -2116,6 +2457,74 @@ impl ScalarFunc {
             Self::Concat => "concat",
             Self::MatchTerms { .. } => "match_terms",
             Self::List => "list",
+            Self::Lower => "lower",
+            Self::Upper => "upper",
+            Self::Trim => "trim",
+            Self::LTrim => "ltrim",
+            Self::RTrim => "rtrim",
+            Self::Length => "length",
+            Self::Left => "left",
+            Self::Right => "right",
+            Self::Substring => "substring",
+            Self::Abs => "abs",
+            Self::Floor => "floor",
+            Self::Ceil => "ceil",
+            Self::Round => "round",
+            Self::Sqrt => "sqrt",
+            Self::Exp => "exp",
+            Self::Ln => "ln",
+            Self::Log10 => "log10",
+            Self::Power => "power",
+            Self::Size => "size",
+            Self::Cast => "cast",
+        }
+    }
+
+    /// The row a written name names, `match_terms` aside.
+    pub fn from_name(name: &str) -> Option<Self> {
+        NAMED_ROWS.iter().copied().find(|f| f.name() == name)
+    }
+
+    /// Whether the row itself can refuse a row of these argument types and
+    /// this result type (the registry's `can_fail`), apart from what its
+    /// arguments can: the planner keeps such a call behind its guards (A3).
+    pub fn row_can_fail(self, args: &[ExprType], ty: &ExprType) -> bool {
+        let scalar = |t: &ExprType| match t {
+            ExprType::Value { scalar, .. } => Some(*scalar),
+            _ => None,
+        };
+        match self {
+            Self::If
+            | Self::Coalesce
+            | Self::Concat
+            | Self::MatchTerms { .. }
+            | Self::List
+            | Self::Lower
+            | Self::Upper
+            | Self::Trim
+            | Self::LTrim
+            | Self::RTrim
+            | Self::Length
+            | Self::Floor
+            | Self::Ceil
+            | Self::Size => false,
+            Self::Left
+            | Self::Right
+            | Self::Substring
+            | Self::Round
+            | Self::Sqrt
+            | Self::Exp
+            | Self::Ln
+            | Self::Log10
+            | Self::Power => true,
+            Self::Abs => matches!(
+                args.first().and_then(scalar),
+                Some(ScalarType::I32 | ScalarType::I64)
+            ),
+            Self::Cast => match (args.first().and_then(scalar), scalar(ty)) {
+                (Some(from), Some(to)) => cast_can_fail(from, to),
+                _ => true,
+            },
         }
     }
 }
@@ -2133,6 +2542,26 @@ pub struct IRProjection {
 pub struct IROrdering {
     pub expr: IRExpr,
     pub descending: bool,
+    /// The written null placement: `nulls first` (`Some(true)`) or `nulls
+    /// last` (`Some(false)`). `None` keeps the fixed value order's
+    /// placement: nulls first ascending, last descending.
+    pub nulls_first: Option<bool>,
+}
+
+impl IROrdering {
+    /// A key with the fixed value order's null placement.
+    pub fn new(expr: IRExpr, descending: bool) -> Self {
+        Self {
+            expr,
+            descending,
+            nulls_first: None,
+        }
+    }
+
+    /// Whether this key sorts its nulls before every non-null value.
+    pub fn places_nulls_first(&self) -> bool {
+        self.nulls_first.unwrap_or(!self.descending)
+    }
 }
 
 #[cfg(test)]
@@ -2304,6 +2733,7 @@ mod block_type_tests {
         assert!(outer.check_types().is_ok());
         let mut forged = base.clone();
         forged.right = IRExpr::Aggregate {
+            fraction: None,
             func: AggFunc::Sum,
             distinct: false,
             arg: Box::new(outer.right.clone()),
@@ -2397,8 +2827,17 @@ impl IRExpr {
             | Self::Param(_, _)
             | Self::Literal(_, _)
             | Self::AliasRef(_, _) => {}
+            Self::Aggregate {
+                arg: child,
+                fraction,
+                ..
+            } => {
+                out.push(Self::take(child));
+                if let Some(p) = fraction {
+                    out.push(Self::take(p));
+                }
+            }
             Self::Nearest { query: child, .. }
-            | Self::Aggregate { arg: child, .. }
             | Self::Not(child, _)
             | Self::IsNull { expr: child, .. }
             | Self::Neg { expr: child, .. }
