@@ -16,20 +16,21 @@ query retire($h: String) {
 
 --- edition3
 query retire($h: String) {
-  $p: Person { handle: $h }
-  $p $k:worksAt $c
+  match { $p: Person, $p $k:worksAt $c }
+  where $p.handle = $h
   delete $k
 }
 
 --- edition3
 query retire($h: String) {
-  $x: WorksAt  $x.@src = $h
+  match { $x: WorksAt }
+  where $x.@src = $h
   delete $x
 }
 
 --- check
 query check() {
-  match { $p: Person  $p worksAt $c }
+  match { $p: Person, $p worksAt $c }
   return { $p.handle, $c.slug }
 }
 

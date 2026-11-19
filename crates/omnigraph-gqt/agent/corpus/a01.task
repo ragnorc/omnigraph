@@ -16,7 +16,7 @@ query weight_per_source() {
 
 --- edition3
 query weight_per_source() {
-  match { $t: Touchpoint  $t touchpointOnSource $s }
+  match { $t: Touchpoint, $t touchpointOnSource $s }
   return { $s.slug, sum($t.weight) as total }
   order { total desc }
 }

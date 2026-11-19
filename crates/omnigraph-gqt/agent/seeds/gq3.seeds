@@ -1,3 +1,14 @@
+# The arm `gq3` seeds: each a GQ 3 ground truth, in the surface #1316 ships
+# (`match { … } where`, commas), with one injected error of one refusal
+# class, refused by the front door with `code`. Ported on 2026-11-19 from the
+# 2026-11-11 seeds (their `where`-arm conversion on gq3/variant-match-where):
+# three classes are refusals no more and are dropped (a minus spaced on one
+# side only, e3-11; a reserved edge name written bare, e3-16; a space before
+# a call's parenthesis, e3-28), e3-15's class is inverted, since a write
+# body in `match { }` is now the write's form, and three codes move:
+# e3-03 (`fuzzy` is refused as a function, T6, before its positional budget),
+# e3-17 (`where` inside the braces, Q017) and e3-21 (`= null`, T7).
+
 --- seed
 id: e3-01
 task: t03
@@ -6,7 +17,8 @@ code: T7
 
 --- text
 query titled() {
-  match { $d: Doc  $d.title contains "graph"  $d.title starts_with "The" }
+  match { $d: Doc }
+  where $d.title contains "graph" and $d.title starts_with "The"
   return { $d.title }
 }
 
@@ -18,7 +30,8 @@ code: T7
 
 --- text
 query tagged() {
-  match { $d: Doc  $d.tags contains "rust" }
+  match { $d: Doc }
+  where $d.tags contains "rust"
   return { $d.title }
 }
 
@@ -26,11 +39,12 @@ query tagged() {
 id: e3-03
 task: t28
 class: a positional option (edition 2's `fuzzy` budget)
-code: T71
+code: T6
 
 --- text
 query mentions($s: String, $q: String) {
-  match { $d: Doc  search($d.body, $s)  fuzzy($d.body, $q, 2) }
+  match { $d: Doc }
+  where match_terms($d.body, terms($s, mode: any)) and fuzzy($d.body, $q, 2)
   return { $d.title }
 }
 
@@ -42,7 +56,8 @@ code: T65
 
 --- text
 query similar($q: Vector(3)) {
-  match { $d: Doc  $d.year >= 2025 }
+  match { $d: Doc }
+  where $d.year >= 2025
   return { $d.title }
   order { nearest($d.embedding, $q) }
   limit 20
@@ -92,7 +107,7 @@ code: Q014
 
 --- text
 query big_employers($min: I64) {
-  match { $c: Company  $p worksAt $c }
+  match { $c: Company, $p worksAt $c }
   return { $c.name, count($p) as n }
   having { n >= $min }
   order { n desc }
@@ -106,7 +121,7 @@ code: Q014
 
 --- text
 query people_and_employers() {
-  match { $p: Person  optional $p worksAt $c }
+  match { $p: Person, optional $p worksAt $c }
   return { $p.name, $c.name }
 }
 
@@ -120,18 +135,6 @@ code: Q012
 query with_city() {
   match { $p: Person }
   return { $p.name, coalesce($p.city, "unknown") as city, CASE WHEN $p.age >= 65 THEN "senior" ELSE "active" END as band }
-}
-
---- seed
-id: e3-11
-task: t08
-class: a minus spaced on one side only
-code: Q016
-
---- text
-query doubled($min: I32) {
-  match { $p: Person  $p.age * 2 >= $min }
-  return { $p.name, $p.age * 2 as twice, 2026 -$p.age as born_about }
 }
 
 --- seed
@@ -155,7 +158,8 @@ code: Q002
 
 --- text
 query person {
-  match { $p: Person { handle: $h } }
+  match { $p: Person }
+  where $p.handle = $h
   return { $p.name, $p.city }
 }
 
@@ -168,42 +172,31 @@ code: Q009
 --- text
 mutation hire($h: String, $slug: String) {
   insert Person { handle: $h, name: $h }
-  insert WorksAt { from: $h, to: $slug }
+  insert WorksAt { @src: $h, @dst: $slug }
 }
 
 --- seed
 id: e3-15
 task: t35
-class: a write body wrapped in `match { }`
-code: Q005
+class: a write's elements written bare, without `match { }` (GQ 3's earlier write body)
+code: Q013
 
 --- text
 query birthday($h: String) {
-  match { $p: Person { handle: $h } }
+  $p: Person
+  $p.handle = $h
   update $p set { age: $p.age + 1 }
-}
-
---- seed
-id: e3-16
-task: t13
-class: a reserved edge name written bare
-code: T7
-
---- text
-query in_collection($slug: String) {
-  match { $x: Collection { slug: $slug }  $d in $x }
-  return { $d.title }
 }
 
 --- seed
 id: e3-17
 task: t18
-class: `where` (SQL, Cypher)
-code: Q014
+class: `where` (SQL, Cypher) inside the `match` braces
+code: Q017
 
 --- text
 query well_connected($min: I64) {
-  match { $p: Person  where count { $p knows $q } >= $min }
+  match { $p: Person, where count { $q: Person, $p knows $q } >= $min }
   return { $p.name }
 }
 
@@ -215,7 +208,8 @@ code: Q007
 
 --- text
 query around($h: String) {
-  match { $p: Person { handle: $h }  $p -knows- $f }
+  match { $p: Person, $p -knows- $f }
+  where $p.handle = $h
   return { $f.name }
 }
 
@@ -228,8 +222,8 @@ code: Q012
 --- text
 query latest_per_author() {
   match {
-    $p: Person
-    let $d in { match { $p authored $d } return { $d } order { $d.year desc } limit 3 }
+    $p: Person,
+    let $d in { match { $d: Doc, $p authored $d } return { $d } order { $d.year desc } limit 3 },
   }
   return { $p.name, $d.title, $d.year }
 }
@@ -250,11 +244,12 @@ query distinct_cities() {
 id: e3-21
 task: t06
 class: a `null` literal in a read
-code: Q014
+code: T7
 
 --- text
 query homeless() {
-  match { $p: Person  $p.city = null }
+  match { $p: Person }
+  where $p.city = null
   return { $p.name }
 }
 
@@ -266,7 +261,8 @@ code: Q014
 
 --- text
 query adults($min: I32) {
-  match { $p: Person  $p.age >= $min }
+  match { $p: Person }
+  where $p.age >= $min
   return { $p.name }
   order { $p.age DESC }
 }
@@ -279,7 +275,7 @@ code: T8
 
 --- text
 query average_headcount() {
-  match { $c: Company  $p worksAt $c }
+  match { $c: Company, $p worksAt $c }
   return { avg(count($p)) as mean, max(count($p)) as largest }
 }
 
@@ -292,8 +288,8 @@ code: T68
 --- text
 query weighted($q: String, $v: Vector(3)) {
   match {
-    from distance({ match { $d: Doc } return { $d } }, $d.embedding, $v)
-    from bm25({ match { $d: Doc } return { $d } }, $d.body, $q)
+    from distance({ match { $d: Doc } return { $d } }, $d.embedding, $v) as $distance,
+    from bm25({ match { $d: Doc } return { $d } }, $d.body, $q) as $score,
   }
   return { $d.title, 0.7 * (1.0 / (1.0 + $distance)) + 0.3 * $score as s }
   order { s desc }
@@ -308,7 +304,7 @@ code: T17
 
 --- text
 query similar($q: Vector(3)) {
-  match { from nearest({ match { $d: Doc  $d.year >= 2025 } return { $d } }, $d.embedding, $q) }
+  match { from nearest({ match { $d: Doc } where $d.year >= 2025 return { $d } }, $d.embedding, $q) as $distance }
   return { $d.title }
   order { $distance }
   limit 20
@@ -335,28 +331,9 @@ code: Q014
 
 --- text
 query in_cities() {
-  match { $p: Person  $p.city == 'Berlin' or $p.city == 'Paris' }
+  match { $p: Person }
+  where $p.city == 'Berlin' or $p.city == 'Paris'
   return { $p.name }
-}
-
---- seed
-id: e3-28
-task: m4
-class: a space before a call's parenthesis
-code: Q019
-
---- text
-query colleagues($of: String) {
-  match { $p: Person { handle: $of }  $p worksAt $c  $q worksAt $c  $q != $p }
-  return { $q }
-}
-
-query colleagues_of_colleagues($of: String) {
-  match {
-    from { match { from colleagues ($of) } return { $q as c } }
-    from { match { from colleagues ($c.handle) } return { $q as r } }
-  }
-  return distinct { $r.name }
 }
 
 --- seed
@@ -368,9 +345,9 @@ code: T74
 --- text
 query big_employers($min: I64) {
   match {
-    from { match { $c: Company  $p worksAt $c } return { $c, count($p) } }
-    $n >= $min
+    from { match { $c: Company, $p: Person, $p worksAt $c } return { $c, count($p) } },
   }
+  where $n >= $min
   return { $c.name, $n }
   order { $n desc }
 }

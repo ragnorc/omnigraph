@@ -15,7 +15,7 @@ query headcount() {
 
 --- edition3
 query headcount() {
-  match { $c: Company  $p worksAt $c }
+  match { $c: Company, $p worksAt $c }
   return { $c.name, count($p) as n }
   order { n desc }
 }

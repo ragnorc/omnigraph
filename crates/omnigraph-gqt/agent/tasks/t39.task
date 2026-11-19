@@ -17,7 +17,8 @@ query people_over($cutoff: I32) @description("People over a given age") @instruc
 
 --- edition3
 query people_over($cutoff: I32) @description("People over a given age") @instruction("Pass the age as an integer") {
-  match { $p: Person  $p.age > $cutoff }
+  match { $p: Person }
+  where $p.age > $cutoff
   return { $p.name }
 }
 

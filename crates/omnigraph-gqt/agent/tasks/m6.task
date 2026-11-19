@@ -14,19 +14,21 @@ Take the 10 documents nearest to the vector `$q` among all documents, and return
 --- edition3
 query near_then_in($q: Vector(3), $coll: String) {
   match {
-    from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 10)
-    $x: Collection { slug: $coll }
-    $d "in" $x
+    from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 10) as $distance,
+    $x: Collection,
+    $d "in" $x,
   }
+  where $x.slug = $coll
   return { $d.title }
 }
 
 --- edition3
 query near_then_in($q: Vector(3), $coll: String) {
   match {
-    from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 10)
-    $d "in" $x
-    $x: Collection { slug: $coll }
+    from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 10) as $distance,
+    $d "in" $x,
+    $x: Collection,
   }
+  where $x.slug = $coll
   return { $d.title }
 }

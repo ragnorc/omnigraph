@@ -14,7 +14,8 @@ query homeless() {
 
 --- edition3
 query homeless() {
-  match { $p: Person  $p.city is null }
+  match { $p: Person }
+  where $p.city is null
   return { $p.name }
 }
 

@@ -15,7 +15,7 @@ query citation_counts() {
 
 --- edition3
 query citation_counts() {
-  match { $d: Doc  $o cites $d }
+  match { $d: Doc, $o cites $d }
   return { $d.slug, count($o) as cited_by }
 }
 

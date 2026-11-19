@@ -23,23 +23,15 @@ query co_likers($who: String) {
 
 --- edition3
 query co_likers($who: String) {
-  match {
-    $me: Person { slug: $who }
-    $me likesComment $c
-    $p likesComment $c
-    $p != $me
-  }
+  match { $me: Person, $me likesComment $c, $p likesComment $c }
+  where $me.slug = $who and $p != $me
   return distinct { $p.slug }
 }
 
 --- edition3
 query co_likers($who: String) {
-  match {
-    $me: Person { slug: $who }
-    $me likesComment $c
-    $p likesComment $c
-    $p.slug != $who
-  }
+  match { $me: Person, $me likesComment $c, $p likesComment $c }
+  where $me.slug = $who and $p.slug != $who
   return distinct { $p.slug }
 }
 

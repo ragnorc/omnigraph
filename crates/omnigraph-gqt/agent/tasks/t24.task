@@ -19,14 +19,18 @@ query similar($q: Vector(3)) {
 
 --- edition3
 query similar($q: Vector(3)) {
-  match { from nearest({ match { $d: Doc  $d.year >= 2025 } return { $d } }, $d.embedding, $q, k: 20) }
+  match {
+    from nearest({ match { $d: Doc } where $d.year >= 2025 return { $d } }, $d.embedding, $q, k: 20) as $distance,
+  }
   return { $d.title }
   order { $distance }
 }
 
 --- edition3
 query similar($q: Vector(3)) {
-  match { from nearest({ match { $d: Doc  $d.year >= 2025 } return { $d } }, $d.embedding, $q, k: 20) }
+  match {
+    from nearest({ match { $d: Doc } where $d.year >= 2025 return { $d } }, $d.embedding, $q, k: 20) as $distance,
+  }
   return { $d.title }
   order { $distance }
   limit 20

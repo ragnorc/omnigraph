@@ -23,12 +23,8 @@ query identities_via($source: String, $via: String) {
 
 --- edition3
 query identities_via($source: String, $via: String) {
-  match {
-    $s: Source { slug: $source }
-    $t $e:touchpointOnSource $s
-    $e.via = $via
-    $t touchpointByIdentity $x
-  }
+  match { $s: Source, $t $e:touchpointOnSource $s, $t touchpointByIdentity $x }
+  where $s.slug = $source and $e.via = $via
   return { $x.slug }
 }
 

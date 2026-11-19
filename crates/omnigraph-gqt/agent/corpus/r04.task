@@ -27,15 +27,12 @@ query knowers($hits: [String]) {
 
 --- edition3
 query relevant_knowers($q: String) {
-  match {
-    from {
-      match { from bm25({ match { $d: Doc } return { $d } }, $d.body, $q) }
+  match { from {
+      match { from bm25({ match { $d: Doc } return { $d } }, $d.body, $q) as $score }
       return { $d }
       order { $score desc }
       limit 2
-    }
-    $p knows $d
-  }
+    }, $p knows $d }
   return { $d.slug, $p.name }
 }
 

@@ -28,8 +28,8 @@ query cited_by($hits: [String]) {
 --- edition3
 query nearest_citations($v: Vector(2)) {
   match {
-    from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $v, k: 2)
-    $d cites $o
+    from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $v, k: 2) as $distance,
+    $d cites $o,
   }
   return { $d.slug, $o.slug }
 }

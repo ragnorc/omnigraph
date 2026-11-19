@@ -25,9 +25,9 @@ query sources_of($top: [String]) {
 --- edition3
 query heaviest_identity_sources() {
   match {
-    from { match { $t: Touchpoint  $t touchpointByIdentity $x } return { $x } order { $t.weight desc } limit 1 }
-    $u touchpointByIdentity $x
-    $u touchpointOnSource $s
+    from { match { $t: Touchpoint, $x: ExternalID, $t touchpointByIdentity $x } return { $x } order { $t.weight desc } limit 1 },
+    $u touchpointByIdentity $x,
+    $u touchpointOnSource $s,
   }
   return distinct { $s.slug }
 }

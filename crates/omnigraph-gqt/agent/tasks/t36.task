@@ -11,7 +11,9 @@ Tag the 20 documents nearest to the vector `$q` with the single tag "near", repl
 
 --- edition3
 query tag_near($q: Vector(3)) {
-  from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 20)
+  match {
+    from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 20) as $distance,
+  }
   update $d set { tags: ["near"] }
 }
 

@@ -24,14 +24,15 @@ query learn($who: String, $target: String) {
 
 --- edition3
 query learn_cited($who: String, $doc: String) {
-  $d: Doc { slug: $doc }
-  $d cites $o
-  insert Knows { from: $who, to: $o }
+  match { $d: Doc, $d cites $o }
+  where $d.slug = $doc
+  insert Knows { @src: $who, @dst: $o }
 }
 
 --- check
 query check($who: String) {
-  match { $p: Person { name: $who }  $p knows $d }
+  match { $p: Person, $p knows $d }
+  where $p.name = $who
   return { $d.slug }
 }
 

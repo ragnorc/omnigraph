@@ -16,20 +16,21 @@ query close_company($slug: String) {
 
 --- edition3
 query close_company($slug: String) {
-  $c: Company { slug: $slug }
-  $p $k:worksAt $c
+  match { $c: Company, $p $k:worksAt $c }
+  where $c.slug = $slug
   delete $k
 }
 
 --- edition3
 query close_company($slug: String) {
-  $x: WorksAt  $x.@dst = $slug
+  match { $x: WorksAt }
+  where $x.@dst = $slug
   delete $x
 }
 
 --- check
 query check() {
-  match { $p: Person  $p worksAt $c }
+  match { $p: Person, $p worksAt $c }
   return { $p.handle, $c.slug }
 }
 

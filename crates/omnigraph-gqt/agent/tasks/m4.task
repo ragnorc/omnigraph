@@ -13,29 +13,25 @@ Define a query `colleagues($of)` that returns the people working at the same com
 
 --- edition3
 query colleagues($of: String) {
-  match { $p: Person { handle: $of }  $p worksAt $c  $q worksAt $c  $q != $p }
+  match { $p: Person, $p worksAt $c, $q worksAt $c }
+  where $p.handle = $of and $q != $p
   return { $q }
 }
 
 query colleagues_of_colleagues($of: String) {
-  match {
-    from { match { from colleagues($of) } return { $q.handle as h } }
-    from colleagues($h)
-  }
+  match { from { match { from colleagues($of) } return { $q.handle as h } }, from colleagues($h) }
   return distinct { $q.name }
 }
 
 --- edition3
 query colleagues($of: String) {
-  match { $p: Person { handle: $of }  $p worksAt $c  $q worksAt $c  $q != $p }
+  match { $p: Person, $p worksAt $c, $q worksAt $c }
+  where $p.handle = $of and $q != $p
   return { $q }
 }
 
 query colleagues_of_colleagues($of: String) {
-  match {
-    from { match { from colleagues($of) } return { $q as c } }
-    from { match { from colleagues($c.handle) } return { $q as r } }
-  }
+  match { from { match { from colleagues($of) } return { $q as c } }, from { match { from colleagues($c.handle) } return { $q as r } } }
   return distinct { $r.name }
 }
 

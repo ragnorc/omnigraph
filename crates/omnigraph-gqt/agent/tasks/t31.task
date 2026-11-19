@@ -11,13 +11,17 @@ Find the 20 documents nearest to the vector `$q`, accepting 90% recall in exchan
 
 --- edition3
 query similar_fast($q: Vector(3)) {
-  match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 20, recall: 0.9) }
+  match {
+    from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 20, recall: 0.9) as $distance,
+  }
   return { $d.title, $distance }
 }
 
 --- edition3
 query similar_fast($q: Vector(3)) {
-  match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 20, recall: 0.9) }
+  match {
+    from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 20, recall: 0.9) as $distance,
+  }
   return { $d.title, $distance }
   order { $distance }
 }

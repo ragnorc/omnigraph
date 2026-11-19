@@ -20,13 +20,21 @@ query record_star($slug: String, $weight: I64, $source: String, $identity: Strin
 --- edition3
 query record_star($slug: String, $weight: I64, $source: String, $identity: String) {
   insert Touchpoint { slug: $slug, action: "star", weight: $weight }
-  insert TouchpointOnSource { from: $slug, to: $source }
-  insert TouchpointByIdentity { from: $slug, to: $identity }
+  insert TouchpointOnSource { @src: $slug, @dst: $source }
+  insert TouchpointByIdentity { @src: $slug, @dst: $identity }
+}
+
+--- edition3
+query record_star($slug: String, $weight: I64, $source: String, $identity: String) {
+  replace Touchpoint { slug: $slug, action: "star", weight: $weight }
+  insert TouchpointOnSource { @src: $slug, @dst: $source }
+  insert TouchpointByIdentity { @src: $slug, @dst: $identity }
 }
 
 --- check
 query check($slug: String) {
-  match { $t: Touchpoint { slug: $slug }  $t touchpointOnSource $s  $t touchpointByIdentity $x }
+  match { $t: Touchpoint, $t touchpointOnSource $s, $t touchpointByIdentity $x }
+  where $t.slug = $slug
   return { $t.action, $t.weight, $s.slug, $x.slug }
 }
 

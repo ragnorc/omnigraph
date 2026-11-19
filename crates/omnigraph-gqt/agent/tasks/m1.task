@@ -10,10 +10,7 @@ For every person, return their name and how many people they know as `degree` (z
 
 --- edition3
 query degrees() {
-  match {
-    $p: Person
-    let $degree = count { $p knows $q }
-  }
+  match { $p: Person, let $degree = count { $q: Person, $p knows $q } }
   return { $p.name, $degree }
   order { $degree desc }
 }

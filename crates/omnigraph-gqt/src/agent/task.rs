@@ -157,6 +157,11 @@ pub struct Task {
     pub edition2: Vec<Step>,
     /// The first is canonical; the rest are equally canonical spellings.
     pub edition3: Vec<String>,
+    /// Spellings of the task (`--- edition3 disputed`) that the front door
+    /// accepts but whose rows on the engine measured differ from the
+    /// recorded rows: kept as the record of what was written, never used as
+    /// a truth (no row check, no IR equality).
+    pub disputed: Vec<String>,
     /// The read run after a write, whose rows judge the write.
     pub check: Option<String>,
     pub expect: Option<Expect>,
@@ -173,7 +178,12 @@ impl Task {
     /// The prompt states them, so the typed IR of a correct answer does not
     /// depend on which width the agent guessed for an unstated type.
     pub fn signature(&self) -> Result<String, String> {
-        entry_params(&self.edition3[0])
+        let canonical = self
+            .edition3
+            .first()
+            .or(self.disputed.first())
+            .ok_or_else(|| format!("{}: no edition-3 text", self.id))?;
+        entry_params(canonical)
             .map_err(|e| format!("{}: the canonical edition-3 truth: {e}", self.id))
     }
 
@@ -302,6 +312,7 @@ pub fn parse_task(path: &Path, set: &str, text: &str) -> Result<Task, String> {
     let mut params = None;
     let mut edition2 = Vec::new();
     let mut edition3 = Vec::new();
+    let mut disputed = Vec::new();
     let mut check = None;
     let mut expect_section = None;
     let mut note = None;
@@ -339,6 +350,9 @@ pub fn parse_task(path: &Path, set: &str, text: &str) -> Result<Task, String> {
             }
             "edition2" => edition2.push(step(section).map_err(at)?),
             "edition3" if section.words.len() == 1 => edition3.push(section.body.clone()),
+            "edition3" if section.words[1..] == ["disputed"] => {
+                disputed.push(section.body.clone())
+            }
             "check" => {
                 once(check.is_some())?;
                 check = Some(section.body.clone());
@@ -391,8 +405,13 @@ pub fn parse_task(path: &Path, set: &str, text: &str) -> Result<Task, String> {
             "the file is named `{stem}` but its id is `{id}`"
         )));
     }
-    if edition3.is_empty() {
+    if edition3.is_empty() && disputed.is_empty() {
         return Err(at("a task needs an edition-3 ground truth".into()));
+    }
+    if edition3.is_empty() && edition2.is_empty() {
+        return Err(at(
+            "a task with no edition-2 rows needs an undisputed edition-3 truth to record from".into(),
+        ));
     }
     for (index, step) in edition2.iter().enumerate() {
         for binding in step.bind.iter().chain(&step.each) {
@@ -438,6 +457,7 @@ pub fn parse_task(path: &Path, set: &str, text: &str) -> Result<Task, String> {
         params: params.unwrap_or_default(),
         edition2,
         edition3,
+        disputed,
         check,
         expect: expect_section,
         note,

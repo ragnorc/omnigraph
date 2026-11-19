@@ -14,7 +14,8 @@ query tagged() {
 
 --- edition3
 query tagged() {
-  match { $d: Doc  "rust" in $d.tags }
+  match { $d: Doc }
+  where "rust" in $d.tags
   return { $d.title }
 }
 

@@ -17,12 +17,13 @@ query like($who: String, $comment: String) {
 
 --- edition3
 query like($who: String, $comment: String) {
-  insert LikesComment { from: $who, to: $comment }
+  insert LikesComment { @src: $who, @dst: $comment }
 }
 
 --- check
 query check($comment: String) {
-  match { $c: Comment { slug: $comment }  $p likesComment $c }
+  match { $c: Comment, $p likesComment $c }
+  where $c.slug = $comment
   return { $p.slug }
 }
 

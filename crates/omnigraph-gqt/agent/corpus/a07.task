@@ -23,28 +23,25 @@ query heavy_identities($min: I64) {
 --- edition3
 query heavy_identities($min: I64) {
   match {
-    from { match { $t touchpointByIdentity $x } return { $x, sum($t.weight) as total } }
-    $total >= $min
+    from { match { $t: Touchpoint, $x: ExternalID, $t touchpointByIdentity $x } return { $x, sum($t.weight) as total } },
   }
+  where $total >= $min
   return { $x.slug, $total }
 }
 
 --- edition3
 query heavy_identities($min: I64) {
   match {
-    from { match { $x: ExternalID  $t touchpointByIdentity $x } return { $x, sum($t.weight) as total } }
-    $total >= $min
+    from { match { $x: ExternalID, $t: Touchpoint, $t touchpointByIdentity $x } return { $x, sum($t.weight) as total } },
   }
+  where $total >= $min
   return { $x.slug, $total }
 }
 
 --- edition3
 query heavy_identities($min: I64) {
-  match {
-    $x: ExternalID
-    sum($u.weight) { $u touchpointByIdentity $x } >= $min
-    $t touchpointByIdentity $x
-  }
+  match { $x: ExternalID, $t touchpointByIdentity $x }
+  where sum($u.weight) { $u: Touchpoint, $u touchpointByIdentity $x } >= $min
   return { $x.slug, sum($t.weight) as total }
 }
 

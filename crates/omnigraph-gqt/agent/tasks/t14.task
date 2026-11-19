@@ -17,7 +17,8 @@ query staff($slug: String) {
 
 --- edition3
 query staff($slug: String) {
-  match { $c: Company { slug: $slug }  $p worksAt $c }
+  match { $c: Company, $p worksAt $c }
+  where $c.slug = $slug
   return { $p.name }
 }
 

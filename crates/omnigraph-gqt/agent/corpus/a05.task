@@ -21,9 +21,8 @@ query drop_unwatched($ids: [String]) {
 
 --- edition3
 query drop_unwatched() {
-  $t: Touchpoint
-  $t touchpointOnSource $s
-  not { $c channelWatchesSource $s }
+  match { $t: Touchpoint, $t touchpointOnSource $s }
+  where not exists { $c: Channel, $c channelWatchesSource $s }
   delete $t
 }
 

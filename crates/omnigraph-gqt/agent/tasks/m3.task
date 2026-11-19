@@ -21,9 +21,9 @@ query big_employers($min: I64) {
 --- edition3
 query big_employers($min: I64) {
   match {
-    from { match { $c: Company  $p worksAt $c } return { $c, count($p) as n } }
-    $n >= $min
+    from { match { $c: Company, $p: Person, $p worksAt $c } return { $c, count($p) as n } },
   }
+  where $n >= $min
   return { $c.name, $n }
   order { $n desc }
 }
@@ -31,27 +31,25 @@ query big_employers($min: I64) {
 --- edition3
 query big_employers($min: I64) {
   match {
-    from { match { $p worksAt $c } return { $c, count($p) as n } }
-    $n >= $min
+    from { match { $p: Person, $c: Company, $p worksAt $c } return { $c, count($p) as n } },
   }
+  where $n >= $min
   return { $c.name, $n }
   order { $n desc }
 }
 
 --- edition3
 query big_employers($min: I64) {
-  match { $c: Company  count { $q worksAt $c } >= $min  $p worksAt $c }
+  match { $c: Company, $p worksAt $c }
+  where count { $q: Person, $q worksAt $c } >= $min
   return { $c.name, count($p) as n }
   order { n desc }
 }
 
 --- edition3
 query big_employers($min: I64) {
-  match {
-    $c: Company
-    let $n = count { $p worksAt $c }
-    $n >= $min
-  }
+  match { $c: Company, let $n = count { $p: Person, $p worksAt $c } }
+  where $n >= $min
   return { $c.name, $n }
   order { $n desc }
 }

@@ -14,8 +14,8 @@ Find the 10 documents most similar to the vector `$q` and, for each, return its 
 --- edition3
 query cited_near($q: Vector(3)) {
   match {
-    from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 10)
-    let $cites = count { $d cites $other }
+    from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 10) as $distance,
+    let $cites = count { $other: Doc, $d cites $other },
   }
   return { $d.title, $distance, $cites }
   order { $distance }

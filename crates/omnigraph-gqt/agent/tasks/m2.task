@@ -10,6 +10,7 @@ List the slugs of the collections that hold at least as many documents as their 
 
 --- edition3
 query full_collections() {
-  match { $x: Collection  count { $d "in" $x } >= $x.min_docs }
+  match { $x: Collection }
+  where count { $d: Doc, $d "in" $x } >= $x.min_docs
   return { $x.slug }
 }

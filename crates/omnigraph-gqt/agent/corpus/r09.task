@@ -18,7 +18,8 @@ query within_two($doc: String) {
 
 --- edition3
 query within_two($doc: String) {
-  match { $d: Doc { slug: $doc }  $d cites{1,2} $o }
+  match { $d: Doc, $d cites{1,2} $o }
+  where $d.slug = $doc
   return { $o.slug }
 }
 

@@ -18,7 +18,8 @@ query adults($min: I32) {
 
 --- edition3
 query adults($min: I32) {
-  match { $p: Person  $p.age >= $min }
+  match { $p: Person }
+  where $p.age >= $min
   return { $p.name }
   order { $p.age desc }
 }

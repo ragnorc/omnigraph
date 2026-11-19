@@ -19,24 +19,25 @@ query popular($min: I64) {
 --- edition3
 query popular($min: I64) {
   match {
-    from { match { $p likesComment $c } return { $c, count($p) as likes } }
-    $likes >= $min
+    from { match { $p: Person, $c: Comment, $p likesComment $c } return { $c, count($p) as likes } },
   }
+  where $likes >= $min
   return { $c.slug, $likes }
 }
 
 --- edition3
 query popular($min: I64) {
   match {
-    from { match { $c: Comment  $p likesComment $c } return { $c, count($p) as likes } }
-    $likes >= $min
+    from { match { $c: Comment, $p: Person, $p likesComment $c } return { $c, count($p) as likes } },
   }
+  where $likes >= $min
   return { $c.slug, $likes }
 }
 
 --- edition3
 query popular($min: I64) {
-  match { $c: Comment  count { $q likesComment $c } >= $min  $p likesComment $c }
+  match { $c: Comment, $p likesComment $c }
+  where count { $q: Person, $q likesComment $c } >= $min
   return { $c.slug, count($p) as likes }
 }
 

@@ -14,7 +14,8 @@ query in_cities() {
 
 --- edition3
 query in_cities() {
-  match { $p: Person  $p.city in ["Berlin", "Paris"] }
+  match { $p: Person }
+  where $p.city in ["Berlin", "Paris"]
   return { $p.name }
 }
 

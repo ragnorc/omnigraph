@@ -17,12 +17,13 @@ query learn($who: String, $doc: String) {
 
 --- edition3
 query learn($who: String, $doc: String) {
-  insert Knows { from: $who, to: $doc }
+  insert Knows { @src: $who, @dst: $doc }
 }
 
 --- check
 query check($who: String) {
-  match { $p: Person { name: $who }  $p knows $d }
+  match { $p: Person, $p knows $d }
+  where $p.name = $who
   return { $d.slug }
 }
 

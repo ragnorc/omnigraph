@@ -17,7 +17,8 @@ query employer($h: String) {
 
 --- edition3
 query employer($h: String) {
-  match { $p: Person { handle: $h }  $p $k:worksAt $c }
+  match { $p: Person, $p $k:worksAt $c }
+  where $p.handle = $h
   return { $c.name, $k.@src, $k.@dst }
 }
 

@@ -19,14 +19,18 @@ query similar_scored($q: Vector(3)) {
 
 --- edition3
 query similar_scored($q: Vector(3)) {
-  match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 20) }
+  match {
+    from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 20) as $distance,
+  }
   return { $d.title, $distance as s }
   order { $distance }
 }
 
 --- edition3
 query similar_scored($q: Vector(3)) {
-  match { from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 20) }
+  match {
+    from nearest({ match { $d: Doc } return { $d } }, $d.embedding, $q, k: 20) as $distance,
+  }
   return { $d.title, $distance as s }
   order { $distance }
   limit 20

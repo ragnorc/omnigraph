@@ -14,7 +14,8 @@ query titled() {
 
 --- edition3
 query titled() {
-  match { $d: Doc  contains($d.title, "graph")  starts_with($d.title, "The") }
+  match { $d: Doc }
+  where contains($d.title, "graph") and starts_with($d.title, "The")
   return { $d.title }
 }
 

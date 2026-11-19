@@ -17,7 +17,8 @@ query person($h: String) {
 
 --- edition3
 query person($h: String) {
-  match { $p: Person { handle: $h } }
+  match { $p: Person }
+  where $p.handle = $h
   return { $p.name, $p.city }
 }
 

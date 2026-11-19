@@ -18,7 +18,8 @@ commands:
   judge --arm gq3  judge {\"id\", \"task\", \"text\"} lines from stdin
   cards --check|--write    each arm's card regenerated from skills/omnigraph, and its digest in manifest.json
   record --check|--write   rows from the first edition-3 truth, for tasks with no edition-2 rows
-  truths                   every edition-3 truth run against the expected rows, one JSON line each";
+  truths                   every edition-3 truth (and disputed text) run against the expected rows, one JSON line each;
+                           a task with no rows still runs its truths, reported `no_expected` when they run";
 
 struct Args {
     root: PathBuf,
@@ -209,10 +210,14 @@ async fn run(args: Args) -> Result<(), String> {
             let instrument = Instrument::load(&args.root)?;
             for task in &instrument.tasks {
                 let expected = agent::expected_rows(&instrument, task).await;
-                for (index, truth) in task.edition3.iter().enumerate() {
+                let texts = task
+                    .edition3
+                    .iter()
+                    .map(|t| (t, false))
+                    .chain(task.disputed.iter().map(|t| (t, true)));
+                for (index, (truth, disputed)) in texts.enumerate() {
                     let actual = agent::run_truth(&instrument, task, truth).await;
                     let (status, detail) = match (&expected, &actual) {
-                        (Err(e), _) => ("no_expected", json!(e)),
                         (_, Err(e)) => (
                             if e.is_planner_gap() {
                                 "planner_gap"
@@ -221,6 +226,7 @@ async fn run(args: Args) -> Result<(), String> {
                             },
                             json!(e.to_string()),
                         ),
+                        (Err(e), Ok(_)) => ("no_expected", json!(e)),
                         (Ok(want), Ok(got)) => {
                             if got.same_values(want, task.ordered()) {
                                 ("equal", Value::Null)
@@ -235,6 +241,7 @@ async fn run(args: Args) -> Result<(), String> {
                     print(&json!({
                         "task": task.id,
                         "truth": index + 1,
+                        "disputed": disputed,
                         "expect_from_edition3": task.expect.as_ref().is_some_and(|e| e.from_edition3),
                         "status": status,
                         "detail": detail,

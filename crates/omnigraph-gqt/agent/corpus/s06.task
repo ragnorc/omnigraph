@@ -24,15 +24,14 @@ query unlike($who: String, $long: [String]) {
 
 --- edition3
 query unlike_long($who: String, $min_length: I64) {
-  $p: Person { slug: $who }
-  $p $k:likesComment $c
-  $c.length > $min_length
+  match { $p: Person, $p $k:likesComment $c }
+  where $p.slug = $who and $c.length > $min_length
   delete $k
 }
 
 --- check
 query check() {
-  match { $p: Person  $p likesComment $c }
+  match { $p: Person, $p likesComment $c }
   return { $p.slug, $c.slug }
 }
 

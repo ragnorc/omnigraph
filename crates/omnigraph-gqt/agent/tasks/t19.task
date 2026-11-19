@@ -18,11 +18,8 @@ query uncited_authors() {
 
 --- edition3
 query uncited_authors() {
-  match {
-    $p: Person
-    exists { $p authored $d }
-    not { $p authored $d2  $other cites $d2 }
-  }
+  match { $p: Person }
+  where exists { $d: Doc, $p authored $d } and not exists { $d2: Doc, $p authored $d2, $other: Doc, $other cites $d2 }
   return { $p.name }
 }
 

@@ -8,6 +8,6 @@ List every person's name together with their employer's name, keeping people who
 
 --- edition3
 query people_and_employers() {
-  match { $p: Person  optional { $p worksAt $c } }
+  match { $p: Person, optional { $c: Company, $p worksAt $c } }
   return { $p.name, $c.name }
 }

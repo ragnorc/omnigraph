@@ -15,7 +15,8 @@ query liker_names() {
 
 --- edition3
 query liker_names() {
-  match { $p: Person  exists { $p likesComment $c } }
+  match { $p: Person }
+  where exists { $c: Comment, $p likesComment $c }
   return { count(distinct $p.name) as names }
 }
 

@@ -10,12 +10,16 @@ What is the average number of touchpoints per identity, and the largest number a
 
 --- edition3
 query touchpoints_per_identity() {
-  match { from { match { $t touchpointByIdentity $x } return { $x, count($t) as n } } }
+  match {
+    from { match { $t: Touchpoint, $x: ExternalID, $t touchpointByIdentity $x } return { $x, count($t) as n } },
+  }
   return { avg($n) as mean, max($n) as largest }
 }
 
 --- edition3
 query touchpoints_per_identity() {
-  match { from { match { $x: ExternalID  $t touchpointByIdentity $x } return { $x, count($t) as n } } }
+  match {
+    from { match { $x: ExternalID, $t: Touchpoint, $t touchpointByIdentity $x } return { $x, count($t) as n } },
+  }
   return { avg($n) as mean, max($n) as largest }
 }

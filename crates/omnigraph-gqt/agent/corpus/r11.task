@@ -21,8 +21,8 @@ query drop_docs($ids: [String]) {
 
 --- edition3
 query drop_unknown() {
-  $d: Doc
-  not { $p knows $d }
+  match { $d: Doc }
+  where not exists { $p: Person, $p knows $d }
   delete $d
 }
 

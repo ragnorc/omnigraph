@@ -17,7 +17,8 @@ query in_collection($slug: String) {
 
 --- edition3
 query in_collection($slug: String) {
-  match { $x: Collection { slug: $slug }  $d "in" $x }
+  match { $x: Collection, $d "in" $x }
+  where $x.slug = $slug
   return { $d.title }
 }
 

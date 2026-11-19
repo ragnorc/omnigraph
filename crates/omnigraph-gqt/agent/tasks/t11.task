@@ -17,7 +17,8 @@ query around($h: String) {
 
 --- edition3
 query around($h: String) {
-  match { $p: Person { handle: $h }  $p <knows> $f }
+  match { $p: Person, $p <knows> $f }
+  where $p.handle = $h
   return { $f.name }
 }
 

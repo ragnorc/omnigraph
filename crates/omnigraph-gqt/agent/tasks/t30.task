@@ -12,12 +12,12 @@ Score each document whose body matches the text `$q` as 0.7 times 1/(1 + its vec
 --- edition3
 query weighted($q: String, $v: Vector(3)) {
   match {
-    let $docs = { match { $d: Doc } return { $d } }
-    let $docs2 = { match { from $docs } return { $d as d2 } }
-    from { match { from distance($docs, $d.embedding, $v) } return { $d, $distance as vec } }
-    from { match { from bm25($docs2, $d2.body, $q) } return { $d2, $score as lex } }
-    $d = $d2
+    let $docs = { match { $d: Doc } return { $d } },
+    let $docs2 = { match { from $docs } return { $d as d2 } },
+    from { match { from distance($docs, $d.embedding, $v) as $distance } return { $d, $distance as vec } },
+    from { match { from bm25($docs2, $d2.body, $q) as $score } return { $d2, $score as lex } },
   }
+  where $d = $d2
   return { $d.title, 0.7 * (1.0 / (1.0 + $vec)) + 0.3 * $lex as s }
   order { s desc }
   limit 10

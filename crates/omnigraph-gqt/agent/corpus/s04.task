@@ -23,10 +23,7 @@ query non_likers() {
 
 --- edition3
 query likes_given() {
-  match {
-    $p: Person
-    let $liked = count { $p likesComment $c }
-  }
+  match { $p: Person, let $liked = count { $c: Comment, $p likesComment $c } }
   return { $p.slug, $liked }
 }
 

@@ -24,8 +24,8 @@ query reweigh($ids: [String], $weight: I64) {
 
 --- edition3
 query reweigh($source: String, $weight: I64) {
-  $s: Source { slug: $source }
-  $t touchpointOnSource $s
+  match { $s: Source, $t touchpointOnSource $s }
+  where $s.slug = $source
   update $t set { weight: $weight }
 }
 

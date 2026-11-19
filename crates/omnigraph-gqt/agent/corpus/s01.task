@@ -19,7 +19,8 @@ query likers($comment: String) {
 
 --- edition3
 query likers($comment: String) {
-  match { $c: Comment { slug: $comment }  $p likesComment $c }
+  match { $c: Comment, $p likesComment $c }
+  where $c.slug = $comment
   return { $p.name }
   order { $p.name }
 }

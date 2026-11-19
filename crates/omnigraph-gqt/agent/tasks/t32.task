@@ -18,12 +18,19 @@ query hire($h: String, $slug: String) {
 --- edition3
 query hire($h: String, $slug: String) {
   insert Person { handle: $h, name: $h }
-  insert WorksAt { from: $h, to: $slug }
+  insert WorksAt { @src: $h, @dst: $slug }
+}
+
+--- edition3
+query hire($h: String, $slug: String) {
+  replace Person { handle: $h, name: $h }
+  insert WorksAt { @src: $h, @dst: $slug }
 }
 
 --- check
 query check($h: String) {
-  match { $p: Person { handle: $h }  $p worksAt $c }
+  match { $p: Person, $p worksAt $c }
+  where $p.handle = $h
   return { $p.name, $c.slug }
 }
 

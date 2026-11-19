@@ -89,6 +89,7 @@ impl Verdict {
                 "accepted": false,
                 "diagnostic": diagnostic,
                 "rendered": render(diagnostic),
+                "coverage_gap": self.is_coverage_gap(),
             }),
         }
     }
@@ -102,6 +103,18 @@ impl Verdict {
 
     pub fn is_accepted(&self) -> bool {
         matches!(self, Verdict::Accepted { .. })
+    }
+
+    /// A refusal of a form the language defines but this release does not
+    /// support yet (`T86`, "this release does not support … yet"): the
+    /// front door's counterpart of a planner gap (`P006`), as distinct from
+    /// a `T86` that refuses a form outright (returning a bare edge).
+    pub fn is_coverage_gap(&self) -> bool {
+        let Verdict::Refused(d) = self else {
+            return false;
+        };
+        let message = d.get("message").and_then(Value::as_str).unwrap_or("");
+        self.code() == Some("T86") && message.contains("does not support") && message.contains("yet")
     }
 }
 

@@ -17,7 +17,8 @@ query well_connected($min: I64) {
 
 --- edition3
 query well_connected($min: I64) {
-  match { $p: Person  count { $p knows $q } >= $min }
+  match { $p: Person }
+  where count { $q: Person, $p knows $q } >= $min
   return { $p.name }
 }
 

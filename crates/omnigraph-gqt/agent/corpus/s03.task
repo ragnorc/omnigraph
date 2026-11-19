@@ -15,7 +15,7 @@ query author_engagement() {
 
 --- edition3
 query author_engagement() {
-  match { $c: Comment  $c commentHasCreator $a  $p likesComment $c }
+  match { $c: Comment, $c commentHasCreator $a, $p likesComment $c }
   return { $a.slug, count(distinct $c) as liked_comments, count($p) as likes }
 }
 
