@@ -131,7 +131,8 @@ pub enum Combine {
 pub struct Expect {
     pub ordered: bool,
     /// Recorded from the first edition-3 ground truth on #1316's engine
-    /// (`--- expect … edition3`), because the task had no edition-2 rows.
+    /// (`--- expect … edition3`), because the task had no edition-2 rows or
+    /// the RFC changes those rows' values by type.
     pub from_edition3: bool,
     /// `None` when the rows are owned by something else (the engine
     /// catalogue) and are compared live against the ground truth's.
@@ -435,8 +436,12 @@ pub fn parse_task(path: &Path, set: &str, text: &str) -> Result<Task, String> {
             "an edition-2 ground truth needs an `expect` section".into()
         ));
     }
+    // Rows come from the edition-2 ground truth when there is one, unless the
+    // RFC changes their values by type (a `bm25` score is `F64`, edition 2's
+    // was `F32`), which the note states; rows recorded from the first
+    // edition-3 ground truth are marked `edition3`.
     if let Some(e) = &expect_section {
-        if edition2.is_empty() != e.from_edition3 {
+        if edition2.is_empty() && !e.from_edition3 {
             return Err(at(
                 "rows are recorded from the edition-2 ground truth when there is one, and marked \
                  `edition3` when they were recorded from the first edition-3 ground truth"

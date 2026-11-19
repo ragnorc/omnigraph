@@ -17,7 +17,7 @@ query about($q: String) {
   limit 10
 }
 
---- edition3 disputed
+--- edition3
 query about($q: String) {
   match { from bm25({ match { $d: Doc } return { $d } }, $d.body, $q) as $score }
   return { $d.title, $score as s }
@@ -25,11 +25,11 @@ query about($q: String) {
   limit 10
 }
 
---- expect ordered
+--- expect ordered edition3
 columns: ["d.title","s"]
-["The graph primer",2.0232522]
-["Rust in production",1.0116261]
-["The graph of cities",0.9156194]
+["The graph primer",2.0232521362860822]
+["Rust in production",1.0116260681430411]
+["The graph of cities",0.9156193762630337]
 
 --- note
-Disputed on #1316 at a1b89621 (the 2026-11-19 M0 re-run): the edition-3 text is accepted and returns the recorded documents in the recorded order, but `bm25` scores are F64 there while the rows recorded from edition 2 hold F32 scores (2.0232521362860822 against 2.0232522), so its rows differ from the recorded rows by value. The rows are not edited; the text is kept as `edition3 disputed`, not a truth.
+Recorded from the first edition-3 truth on #1316's head, 2026-11-19: the RFC types a `bm25` score as `F64` (`bm25_v1`), where the rows recorded from edition 2 held Lance's `F32` scores. The recorded documents, their order and their scores equal edition 2's rows at `F32` width (each score rounds to edition 2's value); only the score's width differs.

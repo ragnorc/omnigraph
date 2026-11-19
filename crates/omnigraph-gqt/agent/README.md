@@ -86,7 +86,7 @@ A `.task` file is sections in the shape of a `.gqt` case:
 | `--- edition3` | a GQ 3 ground truth, in the surface the RFC specifies (`match { … } where`, commas, the write statements of 2026-11-18); the first is canonical and the others are spellings the RFC makes equally canonical |
 | `--- edition3 disputed` | a GQ 3 text the front door accepts but whose rows on the engine measured differ from the recorded rows; kept, never a truth (no row check, no IR equality), with a `note` saying why. The rows are not edited |
 | `--- check` | for a write: the read whose rows, after the write, judge it |
-| `--- expect ordered\|unordered` | the expected rows: the edition-2 ground truth's on the seed, as recorded on 2026-11-09; `--- expect … edition3` marks rows recorded from the first edition-3 truth on #1316's engine, for a task with no edition-2 rows (`record --write`); `live` instead of rows for rows the engine owns (its catalogue) |
+| `--- expect ordered\|unordered` | the expected rows: the edition-2 ground truth's on the seed, as recorded on 2026-11-09; `--- expect … edition3` marks rows recorded from the first edition-3 truth on #1316's engine, for a task with no edition-2 rows (`record --write`) or one whose edition-2 rows the RFC changes by type (t27 and r01: a `bm25` score is `F64`), which its note states; `live` instead of rows for rows the engine owns (its catalogue) |
 | `--- note` | why the task is written the way it is |
 
 A task with no expected rows is one whose first edition-3 truth did not run

@@ -18,7 +18,7 @@ query relevant($q: String) {
   limit 3
 }
 
---- edition3 disputed
+--- edition3
 query relevant($q: String) {
   match { from bm25({ match { $d: Doc } return { $d } }, $d.body, $q) as $score }
   return { $d.slug, $score }
@@ -26,7 +26,7 @@ query relevant($q: String) {
   limit 3
 }
 
---- edition3 disputed
+--- edition3
 query relevant($q: String) {
   match { from bm25({ match { $d: Doc } return { $d } }, $d.body, $q) as $score }
   return { $d.slug, $score as score }
@@ -34,11 +34,11 @@ query relevant($q: String) {
   limit 3
 }
 
---- expect ordered
+--- expect ordered edition3
 columns: ["d.slug","score"]
-["d0",0.7411202]
-["d3",0.71866196]
-["d1",0.65877354]
+["d0",0.7411201885074448]
+["d3",0.7186620009769161]
+["d1",0.6587735008955066]
 
 --- note
-Disputed on #1316 at a1b89621 (the 2026-11-19 M0 re-run): the edition-3 text is accepted and returns the recorded documents in the recorded order, but `bm25` scores are F64 there while the rows recorded from edition 2 hold F32 scores (2.0232521362860822 against 2.0232522), so its rows differ from the recorded rows by value. The rows are not edited; the text is kept as `edition3 disputed`, not a truth.
+Recorded from the first edition-3 truth on #1316's head, 2026-11-19: the RFC types a `bm25` score as `F64` (`bm25_v1`), where the rows recorded from edition 2 held Lance's `F32` scores. The recorded documents and their order equal edition 2's rows; each score, rounded to `F32`, is one `F32` place from edition 2's (0.7411202, 0.71866196 and 0.65877354 there), since `bm25_v1` computes it in `F64`.
