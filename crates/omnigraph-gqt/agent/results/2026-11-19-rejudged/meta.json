@@ -1,0 +1,26 @@
+{
+  "arms": [
+    "gq3"
+  ],
+  "cards": {
+    "gq3.md": "6608ff7720fe3eb063ef8578e3271b6557ac28011d9b99b09b8674d7e68145e5"
+  },
+  "claude": "2.1.328 (Claude Code)",
+  "git_head": "46b39dfe6662362561517868d8d7221b9202a496",
+  "model": "claude-sonnet-5-5",
+  "rejudged": {
+    "agent_calls": 0,
+    "at": "2026-11-19T20:28:10+00:00",
+    "from": "2026-11-19",
+    "git_head": "38a95a73debec0d4c2685d55f7775c343b853afa",
+    "runner_sha256": "ed0b468fbe293fb7e0717535d4e6bafc9d69c2d082f58abaf39b6e65ee6e5cb1"
+  },
+  "runner_sha256": "e8388adb91350168e68f2edef21dec629d707f6c54def27eaee360e87207216b",
+  "runs": 5,
+  "sets": [
+    "corpus",
+    "tasks"
+  ],
+  "started": "2026-11-19T08:18:17+00:00",
+  "tasks": 75
+}

@@ -1,0 +1,5 @@
+{
+  "source": "results/2026-11-19-edition2: the edition-2 arm of fork branch gq3/phase-0-instrument at cb0f4634, judged by its own engine",
+  "accepted": [43, 44, 43, 43, 43],
+  "correct": [38, 38, 39, 41, 40]
+}

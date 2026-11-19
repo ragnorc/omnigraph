@@ -1,0 +1,1632 @@
+{
+  "arms": {
+    "gq3": {
+      "all": {
+        "accepted": [
+          67,
+          70,
+          71,
+          71,
+          72
+        ],
+        "after_repair_correct": [
+          53,
+          53,
+          53,
+          53,
+          53
+        ],
+        "correct": [
+          49,
+          51,
+          52,
+          52,
+          52
+        ],
+        "coverage_gap": [
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "gap": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "ir_equal": [
+          30,
+          30,
+          29,
+          32,
+          29
+        ],
+        "judged": [
+          51,
+          54,
+          54,
+          54,
+          54
+        ],
+        "n": [
+          75,
+          75,
+          75,
+          75,
+          75
+        ],
+        "no_expected": [
+          15,
+          16,
+          16,
+          16,
+          17
+        ],
+        "refused": [
+          8,
+          5,
+          4,
+          4,
+          3
+        ],
+        "repair_bare_accepted": [
+          5,
+          3,
+          1,
+          3,
+          1
+        ],
+        "repair_bare_correct": [
+          3,
+          2,
+          1,
+          1,
+          1
+        ],
+        "repair_card_accepted": [
+          7,
+          3,
+          2,
+          3,
+          2
+        ],
+        "repair_card_correct": [
+          4,
+          2,
+          1,
+          1,
+          1
+        ],
+        "tokens_in": [
+          16036,
+          16034,
+          16036,
+          16034,
+          16033
+        ],
+        "tokens_out": [
+          308,
+          304,
+          295,
+          293,
+          309
+        ],
+        "unjudged": [
+          16,
+          16,
+          17,
+          17,
+          18
+        ]
+      },
+      "corpus": {
+        "accepted": [
+          27,
+          28,
+          29,
+          29,
+          29
+        ],
+        "after_repair_correct": [
+          28,
+          28,
+          28,
+          28,
+          28
+        ],
+        "correct": [
+          25,
+          26,
+          27,
+          27,
+          27
+        ],
+        "coverage_gap": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "ir_equal": [
+          9,
+          9,
+          8,
+          10,
+          9
+        ],
+        "judged": [
+          25,
+          27,
+          27,
+          27,
+          27
+        ],
+        "n": [
+          30,
+          30,
+          30,
+          30,
+          30
+        ],
+        "no_expected": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "refused": [
+          3,
+          2,
+          1,
+          1,
+          1
+        ],
+        "repair_bare_accepted": [
+          3,
+          2,
+          1,
+          1,
+          1
+        ],
+        "repair_bare_correct": [
+          3,
+          2,
+          1,
+          1,
+          1
+        ],
+        "repair_card_accepted": [
+          3,
+          2,
+          1,
+          1,
+          1
+        ],
+        "repair_card_correct": [
+          3,
+          2,
+          1,
+          1,
+          1
+        ],
+        "tokens_in": [
+          15947,
+          15945,
+          15947,
+          15945,
+          15944
+        ],
+        "tokens_out": [
+          326,
+          323,
+          311,
+          296,
+          324
+        ],
+        "unjudged": [
+          2,
+          1,
+          2,
+          2,
+          2
+        ]
+      },
+      "seeded": {
+        "accepted": [
+          20,
+          20,
+          20,
+          20,
+          20
+        ],
+        "correct": [
+          17,
+          17,
+          17,
+          17,
+          17
+        ],
+        "n": [
+          26,
+          26,
+          26,
+          26,
+          26
+        ]
+      },
+      "shared": {
+        "accepted": [
+          41,
+          42,
+          43,
+          43,
+          43
+        ],
+        "after_repair_correct": [
+          42,
+          42,
+          42,
+          42,
+          42
+        ],
+        "correct": [
+          39,
+          40,
+          41,
+          41,
+          41
+        ],
+        "coverage_gap": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "ir_equal": [
+          24,
+          25,
+          25,
+          26,
+          23
+        ],
+        "judged": [
+          41,
+          42,
+          43,
+          43,
+          43
+        ],
+        "n": [
+          45,
+          45,
+          45,
+          45,
+          45
+        ],
+        "no_expected": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "refused": [
+          4,
+          3,
+          2,
+          2,
+          2
+        ],
+        "repair_bare_accepted": [
+          2,
+          2,
+          1,
+          2,
+          1
+        ],
+        "repair_bare_correct": [
+          2,
+          2,
+          1,
+          1,
+          1
+        ],
+        "repair_card_accepted": [
+          4,
+          2,
+          2,
+          2,
+          2
+        ],
+        "repair_card_correct": [
+          3,
+          2,
+          1,
+          1,
+          1
+        ],
+        "tokens_in": [
+          16028,
+          16026,
+          16028,
+          16026,
+          16025
+        ],
+        "tokens_out": [
+          194,
+          179,
+          192,
+          187,
+          199
+        ],
+        "unjudged": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "tasks": {
+        "accepted": [
+          40,
+          42,
+          42,
+          42,
+          43
+        ],
+        "after_repair_correct": [
+          25,
+          25,
+          25,
+          25,
+          25
+        ],
+        "correct": [
+          24,
+          25,
+          25,
+          25,
+          25
+        ],
+        "coverage_gap": [
+          0,
+          0,
+          1,
+          0,
+          0
+        ],
+        "gap": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "ir_equal": [
+          21,
+          21,
+          21,
+          22,
+          20
+        ],
+        "judged": [
+          26,
+          27,
+          27,
+          27,
+          27
+        ],
+        "n": [
+          45,
+          45,
+          45,
+          45,
+          45
+        ],
+        "no_expected": [
+          14,
+          15,
+          15,
+          15,
+          16
+        ],
+        "refused": [
+          5,
+          3,
+          3,
+          3,
+          2
+        ],
+        "repair_bare_accepted": [
+          2,
+          1,
+          0,
+          2,
+          0
+        ],
+        "repair_bare_correct": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "repair_card_accepted": [
+          4,
+          1,
+          1,
+          2,
+          1
+        ],
+        "repair_card_correct": [
+          1,
+          0,
+          0,
+          0,
+          0
+        ],
+        "tokens_in": [
+          16096,
+          16094,
+          16096,
+          16094,
+          16093
+        ],
+        "tokens_out": [
+          297,
+          291,
+          284,
+          291,
+          300
+        ],
+        "unjudged": [
+          14,
+          15,
+          15,
+          15,
+          16
+        ]
+      }
+    }
+  },
+  "by_task": {
+    "a01": {
+      "gq3": "ccccc"
+    },
+    "a02": {
+      "gq3": "ccccc"
+    },
+    "a03": {
+      "gq3": "crccc"
+    },
+    "a04": {
+      "gq3": "ccccc"
+    },
+    "a05": {
+      "gq3": "ccccc"
+    },
+    "a06": {
+      "gq3": "uuuuu"
+    },
+    "a07": {
+      "gq3": "rcccc"
+    },
+    "a08": {
+      "gq3": "rcccc"
+    },
+    "a09": {
+      "gq3": "ccccc"
+    },
+    "a10": {
+      "gq3": "ccccc"
+    },
+    "m1": {
+      "gq3": "uuuuu"
+    },
+    "m2": {
+      "gq3": "uuuuu"
+    },
+    "m3": {
+      "gq3": "ccccc"
+    },
+    "m4": {
+      "gq3": "ruuuu"
+    },
+    "m5": {
+      "gq3": "uuuuu"
+    },
+    "m6": {
+      "gq3": "uuuuu"
+    },
+    "r01": {
+      "gq3": "rcccc"
+    },
+    "r02": {
+      "gq3": "ccccc"
+    },
+    "r03": {
+      "gq3": "crrrr"
+    },
+    "r04": {
+      "gq3": "uwuuu"
+    },
+    "r05": {
+      "gq3": "ccccc"
+    },
+    "r06": {
+      "gq3": "ccccc"
+    },
+    "r07": {
+      "gq3": "ccccc"
+    },
+    "r08": {
+      "gq3": "ccccc"
+    },
+    "r09": {
+      "gq3": "ccccc"
+    },
+    "r10": {
+      "gq3": "ccccc"
+    },
+    "r11": {
+      "gq3": "ccccc"
+    },
+    "s01": {
+      "gq3": "ccccc"
+    },
+    "s02": {
+      "gq3": "ccccc"
+    },
+    "s03": {
+      "gq3": "ccccc"
+    },
+    "s04": {
+      "gq3": "ccccc"
+    },
+    "s05": {
+      "gq3": "ccccc"
+    },
+    "s06": {
+      "gq3": "ccccc"
+    },
+    "s07": {
+      "gq3": "ccccc"
+    },
+    "s08": {
+      "gq3": "ccccc"
+    },
+    "s09": {
+      "gq3": "ccccc"
+    },
+    "t01": {
+      "gq3": "ccccc"
+    },
+    "t02": {
+      "gq3": "wwwww"
+    },
+    "t03": {
+      "gq3": "ccccc"
+    },
+    "t04": {
+      "gq3": "ccccc"
+    },
+    "t05": {
+      "gq3": "ccccc"
+    },
+    "t06": {
+      "gq3": "ccccc"
+    },
+    "t07": {
+      "gq3": "uuuuu"
+    },
+    "t08": {
+      "gq3": "ccccc"
+    },
+    "t09": {
+      "gq3": "ccccc"
+    },
+    "t10": {
+      "gq3": "ccccc"
+    },
+    "t11": {
+      "gq3": "ccccc"
+    },
+    "t12": {
+      "gq3": "uuuuu"
+    },
+    "t13": {
+      "gq3": "ccccc"
+    },
+    "t14": {
+      "gq3": "ccccc"
+    },
+    "t15": {
+      "gq3": "ccccc"
+    },
+    "t16": {
+      "gq3": "ccccc"
+    },
+    "t17": {
+      "gq3": "rrrru"
+    },
+    "t18": {
+      "gq3": "ccccc"
+    },
+    "t19": {
+      "gq3": "ccccc"
+    },
+    "t20": {
+      "gq3": "uuuuu"
+    },
+    "t21": {
+      "gq3": "uuuuu"
+    },
+    "t22": {
+      "gq3": "uuuuu"
+    },
+    "t23": {
+      "gq3": "uuuuu"
+    },
+    "t24": {
+      "gq3": "ccccc"
+    },
+    "t25": {
+      "gq3": "ccccc"
+    },
+    "t26": {
+      "gq3": "uuuuu"
+    },
+    "t27": {
+      "gq3": "ccccc"
+    },
+    "t28": {
+      "gq3": "ccccc"
+    },
+    "t29": {
+      "gq3": "ccccc"
+    },
+    "t30": {
+      "gq3": "rrtrr"
+    },
+    "t31": {
+      "gq3": "uuuuu"
+    },
+    "t32": {
+      "gq3": "ccccc"
+    },
+    "t33": {
+      "gq3": "rcccc"
+    },
+    "t34": {
+      "gq3": "ccccc"
+    },
+    "t35": {
+      "gq3": "uuuuu"
+    },
+    "t36": {
+      "gq3": "uuuuu"
+    },
+    "t37": {
+      "gq3": "wwwww"
+    },
+    "t38": {
+      "gq3": "rrrrr"
+    },
+    "t39": {
+      "gq3": "ccccc"
+    }
+  },
+  "gate": {
+    "gq3": {
+      "acceptance_met": true,
+      "accepted": [
+        41,
+        42,
+        43,
+        43,
+        43
+      ],
+      "accepted_pooled": 212,
+      "correct": [
+        39,
+        40,
+        41,
+        41,
+        41
+      ],
+      "correct_pooled": 202,
+      "correctness_met": true,
+      "coverage_gaps": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "edition2_accepted": [
+        43,
+        44,
+        43,
+        43,
+        43
+      ],
+      "edition2_accepted_pooled": 216,
+      "edition2_correct": [
+        38,
+        38,
+        39,
+        41,
+        40
+      ],
+      "edition2_correct_pooled": 196,
+      "edition2_source": "results/2026-11-19-edition2: the edition-2 arm of fork branch gq3/phase-0-instrument at cb0f4634, judged by its own engine",
+      "margin": 5,
+      "planner_gaps": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "runs": 5,
+      "shared_items": 45,
+      "verdict": "pass"
+    }
+  },
+  "not_correct": [
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "a06"
+    },
+    {
+      "arm": "gq3",
+      "detail": "T84",
+      "outcome": "refused",
+      "run": 1,
+      "task": "a07"
+    },
+    {
+      "arm": "gq3",
+      "detail": "T84",
+      "outcome": "refused",
+      "run": 1,
+      "task": "a08"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "m1"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "m2"
+    },
+    {
+      "arm": "gq3",
+      "detail": "T68",
+      "outcome": "refused",
+      "run": 1,
+      "task": "m4"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "m5"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "m6"
+    },
+    {
+      "arm": "gq3",
+      "detail": "T83",
+      "outcome": "refused",
+      "run": 1,
+      "task": "r01"
+    },
+    {
+      "arm": "gq3",
+      "detail": "several queries: the glue between them is prose; judge by hand",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "r04"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 1,
+      "task": "t02"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t07"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t12"
+    },
+    {
+      "arm": "gq3",
+      "detail": "T84",
+      "outcome": "refused",
+      "run": 1,
+      "task": "t17"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t20"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t21"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t22"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t23"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t26"
+    },
+    {
+      "arm": "gq3",
+      "detail": "T68",
+      "outcome": "refused",
+      "run": 1,
+      "task": "t30"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t31"
+    },
+    {
+      "arm": "gq3",
+      "detail": "Q001",
+      "outcome": "refused",
+      "run": 1,
+      "task": "t33"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t35"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 1,
+      "task": "t36"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 1,
+      "task": "t37"
+    },
+    {
+      "arm": "gq3",
+      "detail": "Q001",
+      "outcome": "refused",
+      "run": 1,
+      "task": "t38"
+    },
+    {
+      "arm": "gq3",
+      "detail": "T83",
+      "outcome": "refused",
+      "run": 2,
+      "task": "a03"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "a06"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "m1"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "m2"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "m4"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "m5"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "m6"
+    },
+    {
+      "arm": "gq3",
+      "detail": "T84",
+      "outcome": "refused",
+      "run": 2,
+      "task": "r03"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 2,
+      "task": "r04"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 2,
+      "task": "t02"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t07"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t12"
+    },
+    {
+      "arm": "gq3",
+      "detail": "T84",
+      "outcome": "refused",
+      "run": 2,
+      "task": "t17"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t20"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t21"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t22"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t23"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t26"
+    },
+    {
+      "arm": "gq3",
+      "detail": "T68",
+      "outcome": "refused",
+      "run": 2,
+      "task": "t30"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t31"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t35"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 2,
+      "task": "t36"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 2,
+      "task": "t37"
+    },
+    {
+      "arm": "gq3",
+      "detail": "Q001",
+      "outcome": "refused",
+      "run": 2,
+      "task": "t38"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "a06"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "m1"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "m2"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "m4"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "m5"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "m6"
+    },
+    {
+      "arm": "gq3",
+      "detail": "T84",
+      "outcome": "refused",
+      "run": 3,
+      "task": "r03"
+    },
+    {
+      "arm": "gq3",
+      "detail": "several queries: the glue between them is prose; judge by hand",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "r04"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 3,
+      "task": "t02"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t07"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t12"
+    },
+    {
+      "arm": "gq3",
+      "detail": "T84",
+      "outcome": "refused",
+      "run": 3,
+      "task": "t17"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t20"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t21"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t22"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t23"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t26"
+    },
+    {
+      "arm": "gq3",
+      "detail": "T86",
+      "outcome": "not-yet",
+      "run": 3,
+      "task": "t30"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t31"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t35"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 3,
+      "task": "t36"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 3,
+      "task": "t37"
+    },
+    {
+      "arm": "gq3",
+      "detail": "Q001",
+      "outcome": "refused",
+      "run": 3,
+      "task": "t38"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 4,
+      "task": "a06"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 4,
+      "task": "m1"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 4,
+      "task": "m2"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 4,
+      "task": "m4"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 4,
+      "task": "m5"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 4,
+      "task": "m6"
+    },
+    {
+      "arm": "gq3",
+      "detail": "T84",
+      "outcome": "refused",
+      "run": 4,
+      "task": "r03"
+    },
+    {
+      "arm": "gq3",
+      "detail": "several queries: the glue between them is prose; judge by hand",
+      "outcome": "unjudged",
+      "run": 4,
+      "task": "r04"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 4,
+      "task": "t02"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 4,
+      "task": "t07"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 4,
+      "task": "t12"
+    },
+    {
+      "arm": "gq3",
+      "detail": "T84",
+      "outcome": "refused",
+      "run": 4,
+      "task": "t17"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 4,
+      "task": "t20"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 4,
+      "task": "t21"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 4,
+      "task": "t22"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 4,
+      "task": "t23"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 4,
+      "task": "t26"
+    },
+    {
+      "arm": "gq3",
+      "detail": "T68",
+      "outcome": "refused",
+      "run": 4,
+      "task": "t30"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 4,
+      "task": "t31"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 4,
+      "task": "t35"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 4,
+      "task": "t36"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 4,
+      "task": "t37"
+    },
+    {
+      "arm": "gq3",
+      "detail": "Q001",
+      "outcome": "refused",
+      "run": 4,
+      "task": "t38"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 5,
+      "task": "a06"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 5,
+      "task": "m1"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 5,
+      "task": "m2"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 5,
+      "task": "m4"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 5,
+      "task": "m5"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 5,
+      "task": "m6"
+    },
+    {
+      "arm": "gq3",
+      "detail": "T84",
+      "outcome": "refused",
+      "run": 5,
+      "task": "r03"
+    },
+    {
+      "arm": "gq3",
+      "detail": "several queries: the glue between them is prose; judge by hand",
+      "outcome": "unjudged",
+      "run": 5,
+      "task": "r04"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 5,
+      "task": "t02"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 5,
+      "task": "t07"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 5,
+      "task": "t12"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 5,
+      "task": "t17"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 5,
+      "task": "t20"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 5,
+      "task": "t21"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 5,
+      "task": "t22"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 5,
+      "task": "t23"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 5,
+      "task": "t26"
+    },
+    {
+      "arm": "gq3",
+      "detail": "T68",
+      "outcome": "refused",
+      "run": 5,
+      "task": "t30"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 5,
+      "task": "t31"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 5,
+      "task": "t35"
+    },
+    {
+      "arm": "gq3",
+      "detail": "no expected rows: the task's first edition-3 truth does not run on this engine",
+      "outcome": "unjudged",
+      "run": 5,
+      "task": "t36"
+    },
+    {
+      "arm": "gq3",
+      "detail": "rows differ from the expected rows on the seed",
+      "outcome": "wrong-rows",
+      "run": 5,
+      "task": "t37"
+    },
+    {
+      "arm": "gq3",
+      "detail": "Q001",
+      "outcome": "refused",
+      "run": 5,
+      "task": "t38"
+    }
+  ]
+}
