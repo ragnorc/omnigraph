@@ -1,0 +1,370 @@
+
+=== an explicit l2 distance: NEW plans 0 steps, applies, and OLD can no longer open the graph
+$ $NEW schema plan --schema $W/l2/next.pg --target $W/l2/g --json
+{
+  "uri": "$W/l2/g",
+  "supported": true,
+  "step_count": 0,
+  "steps": []
+}
+[exit 0]
+$ $NEW schema apply --schema $W/l2/next.pg --target $W/l2/g --json
+{
+  "uri": "$W/l2/g",
+  "supported": true,
+  "applied": true,
+  "step_count": 0,
+  "graph_manifest_version": 3,
+  "steps": []
+}
+[exit 0]
+$ $OLD snapshot --target $W/l2/g --json
+{
+  "error": "schema evolution is locked down in phase 1: schema-contract source is not a valid accepted schema definition: parse error:  --> 1:36\n  |\n1 | node Doc { slug: String @key  emb: Vector(2, distance = \"l2\") }\n  |                                    ^---\n  |\n  = expected core_type; manual coordination is required",
+  "code": "conflict",
+  "disposition": {
+    "effects": "none",
+    "action": "refresh"
+  }
+}
+[exit 1]
+
+=== @index on a list property (LABEL_LIST): NEW applies it, OLD refuses the whole graph with a parse error
+$ $NEW schema apply --schema $W/list/next.pg --target $W/list/g --json
+{
+  "uri": "$W/list/g",
+  "supported": true,
+  "applied": true,
+  "step_count": 1,
+  "graph_manifest_version": 3,
+  "steps": [
+    {
+      "kind": "add_constraint",
+      "type_kind": "node",
+      "type_name": "T",
+      "constraint": {
+        "Index": [
+          "tags"
+        ]
+      }
+    }
+  ]
+}
+[exit 0]
+$ $OLD snapshot --target $W/list/g --json
+{
+  "error": "schema evolution is locked down in phase 1: schema-contract source is not a valid accepted schema definition: parse error: parse error: @index is not supported on list property T.tags; manual coordination is required",
+  "code": "conflict",
+  "disposition": {
+    "effects": "none",
+    "action": "refresh"
+  }
+}
+[exit 1]
+
+=== the respelling the RFC prescribes, @index(fulltext): OLD then refuses every read and write, not only the index
+$ $NEW schema apply --schema $W/ft/next.pg --target $W/ft/g --json
+{
+  "uri": "$W/ft/g",
+  "supported": true,
+  "applied": true,
+  "step_count": 1,
+  "graph_manifest_version": 3,
+  "steps": [
+    {
+      "kind": "change_full_text_analysis",
+      "type_kind": "node",
+      "type_name": "Doc",
+      "property_name": "title",
+      "from": null,
+      "to": {
+        "scorer": "bm25_v1"
+      }
+    }
+  ]
+}
+[exit 0]
+$ $OLD query n --query $W/ft/q.gq --target $W/ft/g --format json
+{
+  "error": "schema evolution is locked down in phase 1: schema feature 'full-text-analysis' in the schema_contract row is unknown to this build; upgrade omnigraph before opening this graph; open will not recover or migrate this schema; manual coordination is required",
+  "code": "conflict",
+  "disposition": {
+    "effects": "none",
+    "action": "refresh"
+  }
+}
+[exit 1]
+
+=== one refused declaration makes every stored query of its file unavailable, each with that declaration's diagnostic
+`fine` compiles under NEW on its own: ok
+$ $NEW queries list --target $W/sq/root --graph g --json
+{
+  "queries": [],
+  "unavailable": [
+    {
+      "name": "fine",
+      "error": "error[Q010] at line 7, column 11: a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`; fix: match { $d: Doc } where $d.slug = \"a\"; edits: bytes 80..111 -> \"match { $d: Doc } where $d.slug = \\\"a\\\"\"",
+      "diagnostic": {
+        "code": "Q010",
+        "position": {
+          "line": 7,
+          "column": 11,
+          "byte": 88
+        },
+        "end": {
+          "line": 7,
+          "column": 34,
+          "byte": 111
+        },
+        "expected": "a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`",
+        "fix": "match { $d: Doc } where $d.slug = \"a\"",
+        "suggestion": {
+          "applicability": "machine_applicable",
+          "edits": [
+            {
+              "start": 80,
+              "end": 111,
+              "replacement": "match { $d: Doc } where $d.slug = \"a\""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "old_form",
+      "error": "error[Q010] at line 7, column 11: a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`; fix: match { $d: Doc } where $d.slug = \"a\"; edits: bytes 80..111 -> \"match { $d: Doc } where $d.slug = \\\"a\\\"\"",
+      "diagnostic": {
+        "code": "Q010",
+        "position": {
+          "line": 7,
+          "column": 11,
+          "byte": 88
+        },
+        "end": {
+          "line": 7,
+          "column": 34,
+          "byte": 111
+        },
+        "expected": "a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`",
+        "fix": "match { $d: Doc } where $d.slug = \"a\"",
+        "suggestion": {
+          "applicability": "machine_applicable",
+          "edits": [
+            {
+              "start": 80,
+              "end": 111,
+              "replacement": "match { $d: Doc } where $d.slug = \"a\""
+            }
+          ]
+        }
+      }
+[exit 0]
+
+=== fuzzy(field, q, n): the printed fix is a placeholder with max_edits 2, and no edit
+$ $NEW query f --query $W/fz/q.gq --params {"q":"zebre"} --target $W/fz/g --format json
+{
+  "error": "type error: T6: `fuzzy` is not a registry row; the lexical predicate is `match_terms(field, terms(text, mode: any, max_edits: n))`",
+  "code": "bad_request",
+  "disposition": {
+    "effects": "none",
+    "action": "fix"
+  },
+  "diagnostic": {
+    "code": "T6",
+    "position": {
+      "line": 1,
+      "column": 47,
+      "byte": 46
+    },
+    "end": {
+      "line": 1,
+      "column": 69,
+      "byte": 68
+    },
+    "stage": "typecheck",
+    "expected": "`fuzzy` is not a registry row; the lexical predicate is `match_terms(field, terms(text, mode: any, max_edits: n))`",
+    "fix": "match_terms(<field>, terms(<text>, mode: any, max_edits: 2))"
+  }
+}
+[exit 1]
+
+=== lint --json drops a parse refusal's fix and edits, which the same text's query refusal carries
+$ $NEW lint --schema $W/lj/s.pg --query $W/lj/q.gq --json
+{
+  "status": "error",
+  "schema_source": {
+    "kind": "file",
+    "path": "$W/lj/s.pg"
+  },
+  "query_path": "$W/lj/q.gq",
+  "queries_processed": 0,
+  "errors": 1,
+  "warnings": 0,
+  "infos": 0,
+  "results": [],
+  "findings": [
+    {
+      "severity": "error",
+      "code": "Q017",
+      "message": "line 1, column 30: a filter is not an element of `match { … }`: a predicate belongs in the `where` after the braces"
+    }
+  ]
+}
+[exit 1]
+$ $NEW query q --query $W/lj/q.gq --target $W/lj/g --format json
+{
+  "error": "parse error: a filter is not an element of `match { … }`: a predicate belongs in the `where` after the braces",
+  "disposition": {
+    "effects": "none",
+    "action": "refresh"
+  },
+  "diagnostic": {
+    "code": "Q017",
+    "position": {
+      "line": 1,
+      "column": 30,
+      "byte": 29
+    },
+    "end": {
+      "line": 1,
+      "column": 40,
+      "byte": 39
+    },
+    "expected": "a filter is not an element of `match { … }`: a predicate belongs in the `where` after the braces",
+    "fix": "match { $d: Doc } where $d.n > 0",
+    "suggestion": {
+      "applicability": "machine_applicable",
+      "edits": [
+        {
+          "start": 12,
+          "end": 39,
+          "replacement": "match { $d: Doc } where $d.n > 0"
+        }
+      ]
+    }
+  }
+}
+[exit 1]
+
+=== NEW index build on an OLD graph with no index pass tells the operator to run the one-way full-text rebuild
+$ $NEW index build --target $W/ib/g --json
+{
+  "uri": "$W/ib/g",
+  "branch": "main",
+  "graph_commit_id": "hb1.01M7SFNDW8KDASFVREKB4DW7WH.2.01M7SFNDZ3A453WW363KSWPZFX",
+  "indexes": [
+    {
+      "type_key": "node:Doc",
+      "property": "__id",
+      "kind": "btree",
+      "action": "built"
+    },
+    {
+      "type_key": "node:Doc",
+      "property": "slug",
+      "kind": "btree",
+      "action": "built"
+    },
+    {
+      "type_key": "node:Doc",
+      "property": "title",
+      "kind": "btree",
+      "action": "built"
+    },
+    {
+      "type_key": "node:Doc",
+      "property": "title",
+      "kind": "ngram",
+      "action": "built"
+    }
+  ],
+  "pending_indexes": [
+    {
+      "type_key": "node:Doc",
+      "property": "slug",
+      "reason": "full-text index 'slug_idx' has incomplete or unknown coverage; run omnigraph index rebuild --kind full-text --target <target> --branch main"
+    },
+    {
+      "type_key": "node:Doc",
+      "property": "title",
+      "reason": "full-text index 'title_idx' has incomplete or unknown coverage; run omnigraph index rebuild --kind full-text --target <target> --branch main"
+[exit 0]
+$ $NEW index rebuild --kind full-text --target $W/ib/g --json
+{
+  "uri": "$W/ib/g",
+  "branch": "main",
+  "graph_commit_id": "hb1.01M7SFNDW8KDASFVREKB4DW7WH.3.01M7SFNE1PYZZY32HME08XJG9K",
+  "warnings": [
+    "Full-text indexes were rebuilt with each property's analyzer profile (english_v1 where none is declared); any previous custom tokenizer settings were replaced."
+  ],
+  "rebuilt_indexes": [
+    {
+      "type_key": "node:Doc",
+      "property": "slug"
+    },
+    {
+      "type_key": "node:Doc",
+      "property": "title"
+    }
+  ]
+}
+[exit 0]
+$ $OLD query s --query $W/ib/q.gq --params {"q":"graph"} --target $W/ib/g --format json
+{
+  "error": "full-text index 'title_idx' requires rebuild: analyzer certificate payload is malformed (index UUID bdc5532e-413b-4471-b28f-45da4c964529); run omnigraph index rebuild --kind full-text --target <target> --branch <branch> on the live branch (historical snapshots are unchanged)",
+  "code": "conflict",
+  "disposition": {
+    "effects": "none",
+    "action": "recover"
+  },
+  "full_text_index_rebuild_required": {
+    "index": "title_idx",
+    "reason": "analyzer certificate payload is malformed (index UUID bdc5532e-413b-4471-b28f-45da4c964529)"
+  }
+}
+[exit 1]
+
+=== a lexical query of stop words: OLD answers no rows, NEW refuses with T20 and no fix
+$ $OLD query s --query $W/sw/old.gq --params {"q":"the"} --target $W/sw/g --format json
+{
+  "query_name": "s",
+  "target": {
+    "branch": "main",
+    "snapshot": null
+  },
+  "row_count": 0,
+  "columns": [
+    "d.slug"
+  ],
+  "rows": [],
+  "graph_commit_id": "hb1.01M7SFNE7KZ9EAFK11DZGE9BXP.2.01M7SFNEB8G4XBVEMWFQ3TM1G5"
+}
+[exit 0]
+$ $NEW query s --query $W/sw/new.gq --params {"q":"the"} --target $W/sw/g --format json
+{
+  "error": "type error: T20: the lexical query `the` has no searchable terms under its field's analyzer",
+  "code": "bad_request",
+  "disposition": {
+    "effects": "none",
+    "action": "fix"
+  },
+  "diagnostic": {
+    "code": "T20",
+    "stage": "typecheck",
+    "expected": "the lexical query `the` has no searchable terms under its field's analyzer"
+  }
+}
+[exit 1]
+
+=== the HTTP load response reports mode replace where OLD reported merge, for the same request and contract version
+OLD: mode = merge 
+NEW: mode = replace 
+
+=== load --mode merge --json: the refusal is a usage error on stderr (exit 64) with no JSON, unlike load csv's coded Q004
+$ $NEW load --data $W/cm/d.jsonl --mode merge --target $W/cm/g --json
+error: invalid value 'merge' for '--mode <MODE>': the load mode `merge` was removed; write `replace`, which means what `merge` meant (`upsert` sets only the properties a record names)
+
+For more information, try '--help'.
+[exit 64]
+
+work directory: $W

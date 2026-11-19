@@ -1,0 +1,4516 @@
+{
+ "q_aggregates": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q016",
+     "message": "line 3, column 15: elements are separated by commas; a space or a newline is not a separator",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q016"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "elements are separated by commas; a space or a newline is not a separator"
+     ],
+     "fix": [
+      "match { $p: Person, $p knows $f }"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_aggregates() {\n  match { $p: Person, $p knows $f }\n  return { $p.email, count($f) as n, avg($f.age) as a, min($f.age) as lo, max($f.age) as hi, sum($f.age) as total }\n  order { n desc, $p.email }\n  limit 10\n}"
+  },
+  "kind": "read",
+  "name": "q_aggregates"
+ },
+ "q_avg_int_extremes": {
+  "e2_under_new": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "pass": 0,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_avg_int_extremes() {\n  match { $s: Scalars }\n  return { avg($s.i64) as a, sum($s.i64) as t, count($s) as n, max($s.u64) as hi }\n}"
+  },
+  "kind": "read",
+  "name": "q_avg_int_extremes"
+ },
+ "q_brace_enum": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q010",
+     "message": "line 2, column 11: a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q010"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`"
+     ],
+     "fix": [
+      "match { $s: Scalars } where $s.kind = \"alpha\""
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_brace_enum() {\n  match { $s: Scalars } where $s.kind = \"alpha\"\n  return { $s.slug, $s.kind }\n  order { $s.slug }\n}"
+  },
+  "kind": "read",
+  "name": "q_brace_enum"
+ },
+ "q_case_sensitive_eq": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $s: Scalars } where $s.tags contains \"Rust\""
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T7"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`contains` is a function, not an infix operator"
+     ],
+     "fix": [
+      "\"Rust\" in $s.tags"
+     ],
+     "pass": 1
+    },
+    {
+     "pass": 2,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_case_sensitive_eq() {\n  match { $s: Scalars } where \"Rust\" in $s.tags\n  return { $s.slug }\n  order { $s.slug }\n}"
+  },
+  "kind": "read",
+  "name": "q_case_sensitive_eq"
+ },
+ "q_cites": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q016",
+     "message": "line 3, column 12: elements are separated by commas; a space or a newline is not a separator",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q016"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "elements are separated by commas; a space or a newline is not a separator"
+     ],
+     "fix": [
+      "match { $a: Doc, $a $c:cites $b } where $c.weight > 3.0"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_cites() {\n  match { $a: Doc, $a $c:cites $b } where $c.weight > 3.0\n  return { $a.slug, $b.slug, $c.weight }\n  order { $a.slug, $b.slug }\n}"
+  },
+  "kind": "read",
+  "name": "q_cites"
+ },
+ "q_compound_key": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q010",
+     "message": "line 2, column 11: a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q010"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`"
+     ],
+     "fix": [
+      "match { $x: Pair } where $x.a = \"y\" and $x.b = 4"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_compound_key() {\n  match { $x: Pair } where $x.a = \"y\" and $x.b = 4\n  return { $x.@id, $x.a, $x.b, $x.label }\n}"
+  },
+  "kind": "read",
+  "name": "q_compound_key"
+ },
+ "q_contains_list": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $s: Scalars } where $s.tags contains \"rust\""
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T7"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`contains` is a function, not an infix operator"
+     ],
+     "fix": [
+      "\"rust\" in $s.tags"
+     ],
+     "pass": 1
+    },
+    {
+     "pass": 2,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_contains_list() {\n  match { $s: Scalars } where \"rust\" in $s.tags\n  return { $s.slug, $s.tags }\n  order { $s.slug }\n}"
+  },
+  "kind": "read",
+  "name": "q_contains_list"
+ },
+ "q_contains_str": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $d: Doc } where $d.title contains \"raph\""
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T7"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`contains` is a function, not an infix operator"
+     ],
+     "fix": [
+      "contains($d.title, \"raph\")"
+     ],
+     "pass": 1
+    },
+    {
+     "pass": 2,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_contains_str() {\n  match { $d: Doc } where contains($d.title, \"raph\")\n  return { $d.slug, $d.title }\n  order { $d.slug }\n}"
+  },
+  "kind": "read",
+  "name": "q_contains_str"
+ },
+ "q_count_block": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $p: Person } where count { $p knows $q } >= 2"
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T84"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`$q` is named in a triple of this block but bound nowhere: a name new to a block, an `optional` or an inline read is introduced by a binding element inside it, and a name read from the enclosing scope correlates"
+     ],
+     "fix": [
+      "bind it in the block: `$q: Person`"
+     ],
+     "pass": 1
+    },
+    {
+     "pass": 2,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_count_block() {\n  match { $p: Person } where count { $q: Person, $p knows $q } >= 2\n  return { $p.email }\n  order { $p.email }\n}"
+  },
+  "kind": "read",
+  "name": "q_count_block"
+ },
+ "q_date_order_limit": {
+  "e2_under_new": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "pass": 0,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_date_order_limit() {\n  match { $s: Scalars }\n  return { $s.slug, $s.dt }\n  order { $s.dt desc, $s.slug }\n  limit 7\n}"
+  },
+  "kind": "read",
+  "name": "q_date_order_limit"
+ },
+ "q_date_param": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $s: Scalars } where $s.d >= $from and $s.dt > $t"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_date_param($from: Date, $t: DateTime) {\n  match { $s: Scalars } where $s.d >= $from and $s.dt > $t\n  return { $s.slug, $s.d, $s.dt }\n  order { $s.dt desc, $s.slug }\n}"
+  },
+  "kind": "read",
+  "name": "q_date_param"
+ },
+ "q_distinct": {
+  "e2_under_new": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "pass": 0,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_distinct() {\n  match { $s: Scalars }\n  return distinct { $s.kind, $s.b }\n  order { $s.kind, $s.b }\n}"
+  },
+  "kind": "read",
+  "name": "q_distinct"
+ },
+ "q_edge_binding": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q016",
+     "message": "line 3, column 15: elements are separated by commas; a space or a newline is not a separator",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q016"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "elements are separated by commas; a space or a newline is not a separator"
+     ],
+     "fix": [
+      "match { $a: Person, $a $k:knows $b } where $k.since > 2040"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_edge_binding() {\n  match { $a: Person, $a $k:knows $b } where $k.since > 2040\n  return { $a.email, $b.email, $k.since }\n  order { $k.since, $a.email, $b.email }\n}"
+  },
+  "kind": "read",
+  "name": "q_edge_binding"
+ },
+ "q_empty_edge_type": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q016",
+     "message": "line 3, column 12: elements are separated by commas; a space or a newline is not a separator",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q016"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "elements are separated by commas; a space or a newline is not a separator"
+     ],
+     "fix": [
+      "match { $d: Doc, $d tagged $l }"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_empty_edge_type() {\n  match { $d: Doc, $d tagged $l }\n  return { $d.slug, $l.name }\n}"
+  },
+  "kind": "read",
+  "name": "q_empty_edge_type"
+ },
+ "q_f32_literal": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $s: Scalars } where $s.f32 = 0.1"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_f32_literal() {\n  match { $s: Scalars } where $s.f32 = 0.1\n  return { $s.slug, $s.f32 }\n  order { $s.slug }\n}"
+  },
+  "kind": "read",
+  "name": "q_f32_literal"
+ },
+ "q_hops": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q010",
+     "message": "line 3, column 5: a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q010"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`"
+     ],
+     "fix": [
+      "match { $a: Person, $a knows{1,2} $b } where $a.email = $e"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_hops($e: String) {\n  match { $a: Person, $a knows{1,2} $b } where $a.email = $e\n  return distinct { $b.email }\n  order { $b.email }\n}"
+  },
+  "kind": "read",
+  "name": "q_hops"
+ },
+ "q_in_list": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $s: Scalars } where $s.kind in [\"alpha\", \"gamma\"] and $s.i32 < 300"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_in_list() {\n  match { $s: Scalars } where $s.kind in [\"alpha\", \"gamma\"] and $s.i32 < 300\n  return { $s.slug, $s.kind }\n  order { $s.slug }\n}"
+  },
+  "kind": "read",
+  "name": "q_in_list"
+ },
+ "q_int_float_literal": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $s: Scalars } where $s.i64 = 9007199254740992.0"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_int_float_literal() {\n  match { $s: Scalars } where $s.i64 = 9007199254740992.0\n  return { $s.slug, $s.i64 }\n  order { $s.slug }\n}"
+  },
+  "kind": "read",
+  "name": "q_int_float_literal"
+ },
+ "q_is_null": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $s: Scalars } where $s.s_opt is null"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_is_null() {\n  match { $s: Scalars } where $s.s_opt is null\n  return { $s.slug }\n  order { $s.slug }\n}"
+  },
+  "kind": "read",
+  "name": "q_is_null"
+ },
+ "q_limit_no_order": {
+  "e2_under_new": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "pass": 0,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_limit_no_order() {\n  match { $s: Scalars }\n  return { $s.slug }\n  limit 5\n}"
+  },
+  "kind": "read",
+  "name": "q_limit_no_order"
+ },
+ "q_meta_fields": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q016",
+     "message": "line 3, column 15: elements are separated by commas; a space or a newline is not a separator",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q016"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "elements are separated by commas; a space or a newline is not a separator"
+     ],
+     "fix": [
+      "match { $a: Person, $a $k:worksAt $c }"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_meta_fields() {\n  match { $a: Person, $a $k:worksAt $c }\n  return { $a.@id, $k.@src, $k.@dst, $k.@id, $k.role }\n  order { $a.@id }\n}"
+  },
+  "kind": "read",
+  "name": "q_meta_fields"
+ },
+ "q_node_object": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q010",
+     "message": "line 2, column 11: a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q010"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`"
+     ],
+     "fix": [
+      "match { $p: Person } where $p.email = \"p005@example.com\""
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_node_object() {\n  match { $p: Person } where $p.email = \"p005@example.com\"\n  return { $p }\n}"
+  },
+  "kind": "read",
+  "name": "q_node_object"
+ },
+ "q_not_block": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q012",
+     "message": "line 4, column 5: `not { \u2026 }` is `not exists { \u2026 }`, a predicate in `where`",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q012"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`not { \u2026 }` is `not exists { \u2026 }`, a predicate in `where`"
+     ],
+     "fix": [
+      "match { $p: Person } where not exists { $p worksAt $_ }"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_not_block() {\n  match { $p: Person } where not exists { $p worksAt $_ }\n  return { $p.email }\n  order { $p.email }\n}"
+  },
+  "kind": "read",
+  "name": "q_not_block"
+ },
+ "q_or_null": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $s: Scalars } where ($s.i32_opt > 10 or $s.i32_opt is null)"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_or_null() {\n  match { $s: Scalars } where ($s.i32_opt > 10 or $s.i32_opt is null)\n  return { $s.slug, $s.i32_opt }\n  order { $s.slug }\n}"
+  },
+  "kind": "read",
+  "name": "q_or_null"
+ },
+ "q_parallel_edges": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q010",
+     "message": "line 3, column 5: a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q010"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`"
+     ],
+     "fix": [
+      "match { $a: Person, $a $k:knows $b } where $a.email = \"p000@example.com\""
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_parallel_edges() {\n  match { $a: Person, $a $k:knows $b } where $a.email = \"p000@example.com\"\n  return { $b.email, $k.since }\n  order { $b.email, $k.since }\n}"
+  },
+  "kind": "read",
+  "name": "q_parallel_edges"
+ },
+ "q_range": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $s: Scalars } where $s.i32 > 500 and $s.i32 <= 900"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_range() {\n  match { $s: Scalars } where $s.i32 > 500 and $s.i32 <= 900\n  return { $s.slug, $s.i32 }\n  order { $s.i32 desc, $s.slug }\n}"
+  },
+  "kind": "read",
+  "name": "q_range"
+ },
+ "q_reverse": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q010",
+     "message": "line 3, column 5: a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q010"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`"
+     ],
+     "fix": [
+      "match { $c: Company, $p worksAt $c } where $c.slug = \"c0\""
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_reverse() {\n  match { $c: Company, $p worksAt $c } where $c.slug = \"c0\"\n  return { $p.email }\n  order { $p.email }\n}"
+  },
+  "kind": "read",
+  "name": "q_reverse"
+ },
+ "q_scalars_all": {
+  "e2_under_new": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "pass": 0,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_scalars_all() {\n  match { $s: Scalars }\n  return { $s.slug, $s.s, $s.s_opt, $s.b, $s.b_opt, $s.i32, $s.i32_opt, $s.i64, $s.i64_opt, $s.u32, $s.u32_opt, $s.u64, $s.u64_opt, $s.f32, $s.f64, $s.f64_opt, $s.d, $s.d_opt, $s.dt, $s.dt_opt, $s.kind, $s.kind_opt, $s.tags, $s.tags_opt, $s.nums }\n  order { $s.slug }\n}"
+  },
+  "kind": "read",
+  "name": "q_scalars_all"
+ },
+ "q_starts_with": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $d: Doc } where $d.slug starts_with \"Graph\""
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T7"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`starts_with` is a function, not an infix operator"
+     ],
+     "fix": [
+      "starts_with($d.slug, \"Graph\")"
+     ],
+     "pass": 1
+    },
+    {
+     "pass": 2,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_starts_with() {\n  match { $d: Doc } where starts_with($d.slug, \"Graph\")\n  return { $d.slug }\n  order { $d.slug }\n}"
+  },
+  "kind": "read",
+  "name": "q_starts_with"
+ },
+ "q_traverse": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q010",
+     "message": "line 3, column 5: a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q010"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`"
+     ],
+     "fix": [
+      "match { $a: Person, $a knows $b } where $a.email = $e"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_traverse($e: String) {\n  match { $a: Person, $a knows $b } where $a.email = $e\n  return { $b.email, $b.name }\n  order { $b.email }\n}"
+  },
+  "kind": "read",
+  "name": "q_traverse"
+ },
+ "q_u64_big": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $s: Scalars } where $s.u64 > 9007199254740992"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_u64_big() {\n  match { $s: Scalars } where $s.u64 > 9007199254740992\n  return { $s.slug, $s.u64 }\n  order { $s.slug }\n}"
+  },
+  "kind": "read",
+  "name": "q_u64_big"
+ },
+ "q_undirected": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q010",
+     "message": "line 3, column 5: a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q010"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`"
+     ],
+     "fix": [
+      "match { $a: Person, $a <knows> $b } where $a.email = $e"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_undirected($e: String) {\n  match { $a: Person, $a <knows> $b } where $a.email = $e\n  return { $b.email }\n  order { $b.email }\n}"
+  },
+  "kind": "read",
+  "name": "q_undirected"
+ },
+ "q_unkeyed": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q010",
+     "message": "line 2, column 11: a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q010"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`"
+     ],
+     "fix": [
+      "match { $l: Loose } where $l.name = \"loose1\""
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_unkeyed() {\n  match { $l: Loose } where $l.name = \"loose1\"\n  return { $l.@id, $l.name }\n  order { $l.@id }\n}"
+  },
+  "kind": "read",
+  "name": "q_unkeyed"
+ },
+ "q_vector_column": {
+  "e2_under_new": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "pass": 0,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query q_vector_column() {\n  match { $d: Doc }\n  return { $d.slug, $d.emb, $d.emb_opt }\n  order { $d.slug }\n  limit 6\n}"
+  },
+  "kind": "read",
+  "name": "q_vector_column"
+ },
+ "s_bm25_filtered": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $d: Doc } where $d.year > 2005"
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T65"
+     ],
+     "edit_count": 4,
+     "expected": [
+      "`bm25` is a relation function; a ranking is drawn with `from`, and its score is a column"
+     ],
+     "fix": [
+      "match { let $pop = { match { $d: Doc } where $d.year > 2005 return { $d } }, from bm25($pop, $d.body, $q) as $score }  order { $score desc }"
+     ],
+     "pass": 1
+    },
+    {
+     "pass": 2,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query s_bm25_filtered($q: String) {\n  match { let $pop = { match { $d: Doc } where $d.year > 2005 return { $d } }, from bm25($pop, $d.body, $q) as $score }\n  return { $d.slug, $score as score }\n  order { $score desc }\n  limit 10\n}"
+  },
+  "kind": "search",
+  "name": "s_bm25_filtered"
+ },
+ "s_bm25_nolimit": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": null,
+     "diagnostics": [
+      {
+       "code": "T65",
+       "fix": "match { let $pop = { match { $d: Doc } return { $d } }, from bm25($pop, $d.title, $q) as $score }  order { $score desc }",
+       "kind": "type",
+       "message": "`bm25` is a relation function; a ranking is drawn with `from`, and its score is a column",
+       "position": {
+        "byte": 86,
+        "column": 11,
+        "line": 4
+       },
+       "stage": {
+        "name": "typecheck"
+       },
+       "suggestion": {
+        "applicability": "machine_applicable",
+        "edits": [
+         {
+          "end": 44,
+          "replacement": " let $pop = { match {",
+          "start": 44
+         },
+         {
+          "end": 53,
+          "replacement": "} return { $d } }, from bm25($pop, $d.title, $q) as $score ",
+          "start": 53
+         },
+         {
+          "end": 104,
+          "replacement": "$score desc",
+          "start": 86
+         }
+        ]
+       }
+      }
+     ],
+     "error": "type error: T65: `bm25` is a relation function; a ranking is drawn with `from`, and its score is a column",
+     "name": "s_bm25_nolimit",
+     "status": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T65"
+     ],
+     "edit_count": 3,
+     "expected": [
+      "`bm25` is a relation function; a ranking is drawn with `from`, and its score is a column"
+     ],
+     "fix": [
+      "match { let $pop = { match { $d: Doc } return { $d } }, from bm25($pop, $d.title, $q) as $score }  order { $score desc }"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query s_bm25_nolimit($q: String) {\n  match { let $pop = { match { $d: Doc } return { $d } }, from bm25($pop, $d.title, $q) as $score }\n  return { $d.slug }\n  order { $score desc }\n}"
+  },
+  "kind": "search",
+  "name": "s_bm25_nolimit"
+ },
+ "s_bm25_title": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": null,
+     "diagnostics": [
+      {
+       "code": "T65",
+       "fix": "match { let $pop = { match { $d: Doc } return { $d } }, from bm25($pop, $d.title, $q) as $score }  order { $score desc }",
+       "kind": "type",
+       "message": "`bm25` is a relation function; a ranking is drawn with `from`, and its score is a column",
+       "position": {
+        "byte": 113,
+        "column": 11,
+        "line": 4
+       },
+       "stage": {
+        "name": "typecheck"
+       },
+       "suggestion": {
+        "applicability": "machine_applicable",
+        "edits": [
+         {
+          "end": 42,
+          "replacement": " let $pop = { match {",
+          "start": 42
+         },
+         {
+          "end": 51,
+          "replacement": "} return { $d } }, from bm25($pop, $d.title, $q) as $score ",
+          "start": 51
+         },
+         {
+          "end": 91,
+          "replacement": "$score",
+          "start": 73
+         },
+         {
+          "end": 131,
+          "replacement": "$score desc",
+          "start": 113
+         }
+        ]
+       }
+      }
+     ],
+     "error": "type error: T65: `bm25` is a relation function; a ranking is drawn with `from`, and its score is a column",
+     "name": "s_bm25_title",
+     "status": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T65"
+     ],
+     "edit_count": 4,
+     "expected": [
+      "`bm25` is a relation function; a ranking is drawn with `from`, and its score is a column"
+     ],
+     "fix": [
+      "match { let $pop = { match { $d: Doc } return { $d } }, from bm25($pop, $d.title, $q) as $score }  order { $score desc }"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query s_bm25_title($q: String) {\n  match { let $pop = { match { $d: Doc } return { $d } }, from bm25($pop, $d.title, $q) as $score }\n  return { $d.slug, $score as score }\n  order { $score desc }\n  limit 10\n}"
+  },
+  "kind": "search",
+  "name": "s_bm25_title"
+ },
+ "s_bm25_unaliased": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": null,
+     "diagnostics": [
+      {
+       "code": "T65",
+       "fix": "match { let $pop = { match { $d: Doc } return { $d } }, from bm25($pop, $d.title, $q) as $score }  order { $score desc }",
+       "kind": "type",
+       "message": "`bm25` is a relation function; a ranking is drawn with `from`, and its score is a column",
+       "position": {
+        "byte": 108,
+        "column": 11,
+        "line": 4
+       },
+       "stage": {
+        "name": "typecheck"
+       },
+       "suggestion": {
+        "applicability": "machine_applicable",
+        "edits": [
+         {
+          "end": 46,
+          "replacement": " let $pop = { match {",
+          "start": 46
+         },
+         {
+          "end": 55,
+          "replacement": "} return { $d } }, from bm25($pop, $d.title, $q) as $score ",
+          "start": 55
+         },
+         {
+          "end": 95,
+          "replacement": "$score as _score",
+          "start": 77
+         },
+         {
+          "end": 126,
+          "replacement": "$score desc",
+          "start": 108
+         }
+        ]
+       }
+      }
+     ],
+     "error": "type error: T65: `bm25` is a relation function; a ranking is drawn with `from`, and its score is a column",
+     "name": "s_bm25_unaliased",
+     "status": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T65"
+     ],
+     "edit_count": 4,
+     "expected": [
+      "`bm25` is a relation function; a ranking is drawn with `from`, and its score is a column"
+     ],
+     "fix": [
+      "match { let $pop = { match { $d: Doc } return { $d } }, from bm25($pop, $d.title, $q) as $score }  order { $score desc }"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query s_bm25_unaliased($q: String) {\n  match { let $pop = { match { $d: Doc } return { $d } }, from bm25($pop, $d.title, $q) as $score }\n  return { $d.slug, $score as _score }\n  order { $score desc }\n  limit 5\n}"
+  },
+  "kind": "search",
+  "name": "s_bm25_unaliased"
+ },
+ "s_case": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $d: Doc } where search($d.body, $q)"
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T6"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`search` is not a registry row; the lexical predicate is `match_terms(field, terms(text, mode: any))`"
+     ],
+     "fix": [
+      "match_terms($d.body, terms($q, mode: any))"
+     ],
+     "pass": 1
+    },
+    {
+     "pass": 2,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query s_case($q: String) {\n  match { $d: Doc } where match_terms($d.body, terms($q, mode: any))\n  return { $d.slug }\n  order { $d.slug }\n}"
+  },
+  "kind": "search",
+  "name": "s_case"
+ },
+ "s_company_name": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $c: Company } where search($c.name, $q)"
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T6"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`search` is not a registry row; the lexical predicate is `match_terms(field, terms(text, mode: any))`"
+     ],
+     "fix": [
+      "match_terms($c.name, terms($q, mode: any))"
+     ],
+     "pass": 1
+    },
+    {
+     "pass": 2,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query s_company_name($q: String) {\n  match { $c: Company } where match_terms($c.name, terms($q, mode: any))\n  return { $c.slug }\n  order { $c.slug }\n}"
+  },
+  "kind": "search",
+  "name": "s_company_name"
+ },
+ "s_fuzzy_default": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $d: Doc } where fuzzy($d.title, $q)"
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T6"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`fuzzy` is not a registry row; the lexical predicate is `match_terms(field, terms(text, mode: any, max_edits: n))`"
+     ],
+     "fix": [
+      "match_terms($d.title, terms($q, mode: any, max_edits: 2))"
+     ],
+     "pass": 1
+    },
+    {
+     "pass": 2,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query s_fuzzy_default($q: String) {\n  match { $d: Doc } where match_terms($d.title, terms($q, mode: any, max_edits: 2))\n  return { $d.slug }\n  order { $d.slug }\n}"
+  },
+  "kind": "search",
+  "name": "s_fuzzy_default"
+ },
+ "s_fuzzy_one": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": false,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $d: Doc } where fuzzy($d.body, $q, 1)"
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [],
+     "codes": [
+      "T6"
+     ],
+     "edit_count": 0,
+     "expected": [
+      "`fuzzy` is not a registry row; the lexical predicate is `match_terms(field, terms(text, mode: any, max_edits: n))`"
+     ],
+     "fix": [
+      "match_terms(<field>, terms(<text>, mode: any, max_edits: 2))"
+     ],
+     "pass": 1
+    }
+   ],
+   "stuck": "no edit printed",
+   "stuck_codes": [
+    "T6"
+   ],
+   "text": "query s_fuzzy_one($q: String) {\n  match { $d: Doc } where fuzzy($d.body, $q, 1)\n  return { $d.slug }\n  order { $d.slug }\n}"
+  },
+  "kind": "search",
+  "name": "s_fuzzy_one"
+ },
+ "s_match_text_body": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $d: Doc } where match_text($d.body, $q)"
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T6"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`match_text` is not a registry row; the lexical predicate is `match_terms(field, terms(text, mode: any))`"
+     ],
+     "fix": [
+      "match_terms($d.body, terms($q, mode: any))"
+     ],
+     "pass": 1
+    },
+    {
+     "pass": 2,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query s_match_text_body($q: String) {\n  match { $d: Doc } where match_terms($d.body, terms($q, mode: any))\n  return { $d.slug }\n  order { $d.slug }\n}"
+  },
+  "kind": "search",
+  "name": "s_match_text_body"
+ },
+ "s_nearest": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": null,
+     "diagnostics": [
+      {
+       "code": "T65",
+       "fix": "match { let $pop = { match { $d: Doc } return { $d } }, from nearest($pop, $d.emb, $v, k: 10) as $distance }  order { $distance }",
+       "kind": "type",
+       "message": "`nearest` is a relation function; a ranking is drawn with `from`, and its score is a column",
+       "position": {
+        "byte": 113,
+        "column": 11,
+        "line": 4
+       },
+       "stage": {
+        "name": "typecheck"
+       },
+       "suggestion": {
+        "applicability": "machine_applicable",
+        "edits": [
+         {
+          "end": 42,
+          "replacement": " let $pop = { match {",
+          "start": 42
+         },
+         {
+          "end": 51,
+          "replacement": "} return { $d } }, from nearest($pop, $d.emb, $v, k: 10) as $distance ",
+          "start": 51
+         },
+         {
+          "end": 92,
+          "replacement": "$distance",
+          "start": 73
+         },
+         {
+          "end": 132,
+          "replacement": "$distance",
+          "start": 113
+         }
+        ]
+       }
+      }
+     ],
+     "error": "type error: T65: `nearest` is a relation function; a ranking is drawn with `from`, and its score is a column",
+     "name": "s_nearest",
+     "status": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T65"
+     ],
+     "edit_count": 4,
+     "expected": [
+      "`nearest` is a relation function; a ranking is drawn with `from`, and its score is a column"
+     ],
+     "fix": [
+      "match { let $pop = { match { $d: Doc } return { $d } }, from nearest($pop, $d.emb, $v, k: 10) as $distance }  order { $distance }"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query s_nearest($v: Vector(8)) {\n  match { let $pop = { match { $d: Doc } return { $d } }, from nearest($pop, $d.emb, $v, k: 10) as $distance }\n  return { $d.slug, $distance as dist }\n  order { $distance }\n  limit 10\n}"
+  },
+  "kind": "search",
+  "name": "s_nearest"
+ },
+ "s_nearest_nullable": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": null,
+     "diagnostics": [
+      {
+       "code": "T65",
+       "fix": "match { let $pop = { match { $d: Doc } return { $d } }, from nearest($pop, $d.emb_opt, $v, k: 8) as $distance }  order { $distance }",
+       "kind": "type",
+       "message": "`nearest` is a relation function; a ranking is drawn with `from`, and its score is a column",
+       "position": {
+        "byte": 126,
+        "column": 11,
+        "line": 4
+       },
+       "stage": {
+        "name": "typecheck"
+       },
+       "suggestion": {
+        "applicability": "machine_applicable",
+        "edits": [
+         {
+          "end": 51,
+          "replacement": " let $pop = { match {",
+          "start": 51
+         },
+         {
+          "end": 60,
+          "replacement": "} return { $d } }, from nearest($pop, $d.emb_opt, $v, k: 8) as $distance ",
+          "start": 60
+         },
+         {
+          "end": 105,
+          "replacement": "$distance",
+          "start": 82
+         },
+         {
+          "end": 149,
+          "replacement": "$distance",
+          "start": 126
+         }
+        ]
+       }
+      }
+     ],
+     "error": "type error: T65: `nearest` is a relation function; a ranking is drawn with `from`, and its score is a column",
+     "name": "s_nearest_nullable",
+     "status": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T65"
+     ],
+     "edit_count": 4,
+     "expected": [
+      "`nearest` is a relation function; a ranking is drawn with `from`, and its score is a column"
+     ],
+     "fix": [
+      "match { let $pop = { match { $d: Doc } return { $d } }, from nearest($pop, $d.emb_opt, $v, k: 8) as $distance }  order { $distance }"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query s_nearest_nullable($v: Vector(8)) {\n  match { let $pop = { match { $d: Doc } return { $d } }, from nearest($pop, $d.emb_opt, $v, k: 8) as $distance }\n  return { $d.slug, $distance as dist }\n  order { $distance }\n  limit 8\n}"
+  },
+  "kind": "search",
+  "name": "s_nearest_nullable"
+ },
+ "s_nearest_traversal": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q016",
+     "message": "line 3, column 12: elements are separated by commas; a space or a newline is not a separator",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q016"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "elements are separated by commas; a space or a newline is not a separator"
+     ],
+     "fix": [
+      "match { $a: Doc, $a cites $b }"
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T65"
+     ],
+     "edit_count": 5,
+     "expected": [
+      "`nearest` is a relation function; a ranking is drawn with `from`, and its score is a column"
+     ],
+     "fix": [
+      "match { let $pop = { match { $a: Doc, $b: Doc, $a cites $b } return { $a, $b } }, from nearest($pop, $b.emb, $v, k: 5) as $distance }  order { $distance }"
+     ],
+     "pass": 1
+    },
+    {
+     "pass": 2,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query s_nearest_traversal($v: Vector(8)) {\n  match { let $pop = { match { $a: Doc, $b: Doc, $a cites $b } return { $a, $b } }, from nearest($pop, $b.emb, $v, k: 5) as $distance }\n  return { $a.slug, $b.slug, $distance as dist }\n  order { $distance }\n  limit 5\n}"
+  },
+  "kind": "search",
+  "name": "s_nearest_traversal"
+ },
+ "s_nearest_unaliased": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": null,
+     "diagnostics": [
+      {
+       "code": "T65",
+       "fix": "match { let $pop = { match { $d: Doc } return { $d } }, from nearest($pop, $d.emb, $v, k: 5) as $distance }  order { $distance }",
+       "kind": "type",
+       "message": "`nearest` is a relation function; a ranking is drawn with `from`, and its score is a column",
+       "position": {
+        "byte": 115,
+        "column": 11,
+        "line": 4
+       },
+       "stage": {
+        "name": "typecheck"
+       },
+       "suggestion": {
+        "applicability": "machine_applicable",
+        "edits": [
+         {
+          "end": 52,
+          "replacement": " let $pop = { match {",
+          "start": 52
+         },
+         {
+          "end": 61,
+          "replacement": "} return { $d } }, from nearest($pop, $d.emb, $v, k: 5) as $distance ",
+          "start": 61
+         },
+         {
+          "end": 102,
+          "replacement": "$distance as _distance",
+          "start": 83
+         },
+         {
+          "end": 134,
+          "replacement": "$distance",
+          "start": 115
+         }
+        ]
+       }
+      }
+     ],
+     "error": "type error: T65: `nearest` is a relation function; a ranking is drawn with `from`, and its score is a column",
+     "name": "s_nearest_unaliased",
+     "status": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T65"
+     ],
+     "edit_count": 4,
+     "expected": [
+      "`nearest` is a relation function; a ranking is drawn with `from`, and its score is a column"
+     ],
+     "fix": [
+      "match { let $pop = { match { $d: Doc } return { $d } }, from nearest($pop, $d.emb, $v, k: 5) as $distance }  order { $distance }"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query s_nearest_unaliased($v: Vector(8)) {\n  match { let $pop = { match { $d: Doc } return { $d } }, from nearest($pop, $d.emb, $v, k: 5) as $distance }\n  return { $d.slug, $distance as _distance }\n  order { $distance }\n  limit 5\n}"
+  },
+  "kind": "search",
+  "name": "s_nearest_unaliased"
+ },
+ "s_nfd": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $d: Doc } where search($d.title, $q)"
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T6"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`search` is not a registry row; the lexical predicate is `match_terms(field, terms(text, mode: any))`"
+     ],
+     "fix": [
+      "match_terms($d.title, terms($q, mode: any))"
+     ],
+     "pass": 1
+    },
+    {
+     "pass": 2,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query s_nfd($q: String) {\n  match { $d: Doc } where match_terms($d.title, terms($q, mode: any))\n  return { $d.slug }\n  order { $d.slug }\n}"
+  },
+  "kind": "search",
+  "name": "s_nfd"
+ },
+ "s_not_search": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $d: Doc } where not search($d.title, $q)"
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T6"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`search` is not a registry row; the lexical predicate is `match_terms(field, terms(text, mode: any))`"
+     ],
+     "fix": [
+      "match_terms($d.title, terms($q, mode: any))"
+     ],
+     "pass": 1
+    },
+    {
+     "pass": 2,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query s_not_search($q: String) {\n  match { $d: Doc } where not match_terms($d.title, terms($q, mode: any))\n  return { $d.slug }\n  order { $d.slug }\n}"
+  },
+  "kind": "search",
+  "name": "s_not_search"
+ },
+ "s_rrf": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": null,
+     "diagnostics": [
+      {
+       "code": "T65",
+       "fix": "match { let $all = { match { $d: Doc } return { $d } }, from rrf(nearest($all, $d.emb, $v, k: 10), bm25($all, $d.title, $q), k: 60) as $score, $d: Doc }  order { $score desc }",
+       "kind": "type",
+       "message": "`rrf` is a relation function; a ranking is drawn with `from`, and its score is a column",
+       "position": {
+        "byte": 143,
+        "column": 11,
+        "line": 4
+       },
+       "stage": {
+        "name": "typecheck"
+       },
+       "suggestion": {
+        "applicability": "machine_applicable",
+        "edits": [
+         {
+          "end": 50,
+          "replacement": " let $all = { match { $d: Doc } return { $d } }, from rrf(nearest($all, $d.emb, $v, k: 10), bm25($all, $d.title, $q), k: 60) as $score, ",
+          "start": 50
+         },
+         {
+          "end": 125,
+          "replacement": "$score",
+          "start": 81
+         },
+         {
+          "end": 187,
+          "replacement": "$score desc",
+          "start": 143
+         }
+        ]
+       }
+      }
+     ],
+     "error": "type error: T65: `rrf` is a relation function; a ranking is drawn with `from`, and its score is a column",
+     "name": "s_rrf",
+     "status": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T65"
+     ],
+     "edit_count": 3,
+     "expected": [
+      "`rrf` is a relation function; a ranking is drawn with `from`, and its score is a column"
+     ],
+     "fix": [
+      "match { let $all = { match { $d: Doc } return { $d } }, from rrf(nearest($all, $d.emb, $v, k: 10), bm25($all, $d.title, $q), k: 60) as $score, $d: Doc }  order { $score desc }"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query s_rrf($v: Vector(8), $q: String) {\n  match { let $all = { match { $d: Doc } return { $d } }, from rrf(nearest($all, $d.emb, $v, k: 10), bm25($all, $d.title, $q), k: 60) as $score,  $d: Doc }\n  return { $d.slug, $score as s }\n  order { $score desc }\n  limit 10\n}"
+  },
+  "kind": "search",
+  "name": "s_rrf"
+ },
+ "s_search_key": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $d: Doc } where search($d.slug, $q)"
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T6"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`search` is not a registry row; the lexical predicate is `match_terms(field, terms(text, mode: any))`"
+     ],
+     "fix": [
+      "match_terms($d.slug, terms($q, mode: any))"
+     ],
+     "pass": 1
+    },
+    {
+     "pass": 2,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query s_search_key($q: String) {\n  match { $d: Doc } where match_terms($d.slug, terms($q, mode: any))\n  return { $d.slug }\n  order { $d.slug }\n}"
+  },
+  "kind": "search",
+  "name": "s_search_key"
+ },
+ "s_search_title": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $d: Doc } where search($d.title, $q)"
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T6"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`search` is not a registry row; the lexical predicate is `match_terms(field, terms(text, mode: any))`"
+     ],
+     "fix": [
+      "match_terms($d.title, terms($q, mode: any))"
+     ],
+     "pass": 1
+    },
+    {
+     "pass": 2,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query s_search_title($q: String) {\n  match { $d: Doc } where match_terms($d.title, terms($q, mode: any))\n  return { $d.slug }\n  order { $d.slug }\n}"
+  },
+  "kind": "search",
+  "name": "s_search_title"
+ },
+ "s_search_unindexed": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [
+    {
+     "code": null,
+     "diagnostics": [
+      {
+       "code": "T27",
+       "end": {
+        "byte": 109,
+        "column": 51,
+        "line": 3
+       },
+       "kind": "type",
+       "message": "`match_terms` needs a full-text index on `Doc.note`",
+       "position": {
+        "byte": 67,
+        "column": 9,
+        "line": 3
+       },
+       "stage": {
+        "name": "typecheck"
+       }
+      }
+     ],
+     "error": "type error: T27: `match_terms` needs a full-text index on `Doc.note`",
+     "name": "s_search_unindexed",
+     "status": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "fixed": {
+   "compiled": false,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $d: Doc } where search($d.note, $q)"
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T6"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`search` is not a registry row; the lexical predicate is `match_terms(field, terms(text, mode: any))`"
+     ],
+     "fix": [
+      "match_terms($d.note, terms($q, mode: any))"
+     ],
+     "pass": 1
+    },
+    {
+     "applicability": [],
+     "codes": [
+      "T27"
+     ],
+     "edit_count": 0,
+     "expected": [
+      "`match_terms` needs a full-text index on `Doc.note`"
+     ],
+     "fix": [
+      null
+     ],
+     "pass": 2
+    }
+   ],
+   "stuck": "no edit printed",
+   "stuck_codes": [
+    "T27"
+   ],
+   "text": "query s_search_unindexed($q: String) {\n  match { $d: Doc } where match_terms($d.note, terms($q, mode: any))\n  return { $d.slug }\n  order { $d.slug }\n}"
+  },
+  "kind": "search",
+  "name": "s_search_unindexed"
+ },
+ "s_stem": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $d: Doc } where search($d.title, $q)"
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T6"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`search` is not a registry row; the lexical predicate is `match_terms(field, terms(text, mode: any))`"
+     ],
+     "fix": [
+      "match_terms($d.title, terms($q, mode: any))"
+     ],
+     "pass": 1
+    },
+    {
+     "pass": 2,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query s_stem($q: String) {\n  match { $d: Doc } where match_terms($d.title, terms($q, mode: any))\n  return { $d.slug }\n  order { $d.slug }\n}"
+  },
+  "kind": "search",
+  "name": "s_stem"
+ },
+ "s_stopword": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q017",
+     "message": "line 4, column 5: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": false,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q017"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces"
+     ],
+     "fix": [
+      "match { $d: Doc } where search($d.title, $q)"
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T6"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`search` is not a registry row; the lexical predicate is `match_terms(field, terms(text, mode: any))`"
+     ],
+     "fix": [
+      "match_terms($d.title, terms($q, mode: any))"
+     ],
+     "pass": 1
+    },
+    {
+     "applicability": [],
+     "codes": [
+      "T20"
+     ],
+     "edit_count": 0,
+     "expected": [
+      "the lexical query `the` has no searchable terms under its field's analyzer"
+     ],
+     "fix": [
+      null
+     ],
+     "pass": 2
+    }
+   ],
+   "stuck": "no edit printed",
+   "stuck_codes": [
+    "T20"
+   ],
+   "text": "query s_stopword($q: String) {\n  match { $d: Doc } where match_terms($d.title, terms($q, mode: any))\n  return { $d.slug }\n  order { $d.slug }\n}"
+  },
+  "kind": "search",
+  "name": "s_stopword"
+ },
+ "w_blob_insert": {
+  "e2_under_new": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "e3_alt_lint": {
+   "upsert": {
+    "diagnostics": [],
+    "raw": null,
+    "rc": 0,
+    "status": "ok"
+   }
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "pass": 0,
+     "rc": 1,
+     "run_error": "[conflict] node type 'Asset' already has id 'a000'; `upsert` sets the named properties of an existing entity and `replace` writes its whole row",
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_blob_insert($c: Blob) {\n  insert Asset { slug: \"a000\", content: $c }\n}"
+  },
+  "kind": "write",
+  "name": "w_blob_insert"
+ },
+ "w_card_violation": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": null,
+     "diagnostics": [
+      {
+       "code": "T11",
+       "end": {
+        "byte": 50,
+        "column": 24,
+        "line": 2
+       },
+       "fix": "@src: <endpoint>",
+       "kind": "type",
+       "message": "an edge's endpoints are assigned as `@src` and `@dst`; `from:` is edition 2's spelling of `@src:`",
+       "position": {
+        "byte": 46,
+        "column": 20,
+        "line": 2
+       },
+       "stage": {
+        "name": "typecheck"
+       },
+       "suggestion": {
+        "applicability": "machine_applicable",
+        "edits": [
+         {
+          "end": 50,
+          "replacement": "@src",
+          "start": 46
+         }
+        ]
+       }
+      },
+      {
+       "code": "T11",
+       "end": {
+        "byte": 74,
+        "column": 48,
+        "line": 2
+       },
+       "fix": "@dst: <endpoint>",
+       "kind": "type",
+       "message": "an edge's endpoints are assigned as `@src` and `@dst`; `to:` is edition 2's spelling of `@dst:`",
+       "position": {
+        "byte": 72,
+        "column": 46,
+        "line": 2
+       },
+       "stage": {
+        "name": "typecheck"
+       },
+       "suggestion": {
+        "applicability": "machine_applicable",
+        "edits": [
+         {
+          "end": 74,
+          "replacement": "@dst",
+          "start": 72
+         }
+        ]
+       }
+      }
+     ],
+     "error": "type error: T11: an edge's endpoints are assigned as `@src` and `@dst`; `from:` is edition 2's spelling of `@src:`",
+     "name": "w_card_violation",
+     "status": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T11",
+      "T11"
+     ],
+     "edit_count": 2,
+     "expected": [
+      "an edge's endpoints are assigned as `@src` and `@dst`; `from:` is edition 2's spelling of `@src:`",
+      "an edge's endpoints are assigned as `@src` and `@dst`; `to:` is edition 2's spelling of `@dst:`"
+     ],
+     "fix": [
+      "@src: <endpoint>",
+      "@dst: <endpoint>"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 1,
+     "run_error": "[bad_request] @card violation on edge WorksAt: source 'p000@example.com' has 2 edges (max 1)",
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_card_violation() {\n  insert WorksAt { @src: \"p000@example.com\", @dst: \"c3\", role: \"second\" }\n}"
+  },
+  "kind": "write",
+  "name": "w_card_violation"
+ },
+ "w_delete_edge": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q008",
+     "message": "line 2, column 3: `delete Knows \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q008"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`delete Knows \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows"
+     ],
+     "fix": [
+      "match { $x: Knows } where $x.since > 2050  delete $x"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_delete_edge() {\n  match { $x: Knows } where $x.since > 2050  delete $x\n}"
+  },
+  "kind": "write",
+  "name": "w_delete_edge"
+ },
+ "w_delete_edge_from": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q008",
+     "message": "line 2, column 3: `delete Knows \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q008"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`delete Knows \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows"
+     ],
+     "fix": [
+      "match { $x: Knows } where $x.@src = \"p000@example.com\"  delete $x"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_delete_edge_from() {\n  match { $x: Knows } where $x.@src = \"p000@example.com\"  delete $x\n}"
+  },
+  "kind": "write",
+  "name": "w_delete_edge_from"
+ },
+ "w_delete_mixed": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q008",
+     "message": "line 2, column 3: `delete Person \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q008"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`delete Person \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows"
+     ],
+     "fix": [
+      "match { $x: Person } where $x.email = \"p004@example.com\"  delete $x"
+     ],
+     "pass": 0
+    },
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q008"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`delete Company \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows"
+     ],
+     "fix": [
+      "match { $c: Company } where $c.slug = \"c7\"  delete $c"
+     ],
+     "pass": 1
+    },
+    {
+     "pass": 2,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_delete_mixed() {\n  match { $x: Person } where $x.email = \"p004@example.com\"  delete $x\n  match { $c: Company } where $c.slug = \"c7\"  delete $c\n}"
+  },
+  "kind": "write",
+  "name": "w_delete_mixed"
+ },
+ "w_delete_node": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q008",
+     "message": "line 2, column 3: `delete Person \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q008"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`delete Person \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows"
+     ],
+     "fix": [
+      "match { $x: Person } where $x.email = \"p002@example.com\"  delete $x"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_delete_node() {\n  match { $x: Person } where $x.email = \"p002@example.com\"  delete $x\n}"
+  },
+  "kind": "write",
+  "name": "w_delete_node"
+ },
+ "w_insert_compound_existing": {
+  "e2_under_new": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "e3_alt_lint": {
+   "insert": {
+    "diagnostics": [],
+    "raw": null,
+    "rc": 0,
+    "status": "ok"
+   }
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "pass": 0,
+     "rc": 1,
+     "run_error": "[conflict] node type 'Pair' already has id '[\"y\",\"4\"]'; `upsert` sets the named properties of an existing entity and `replace` writes its whole row",
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_insert_compound_existing() {\n  insert Pair { a: \"y\", b: 4, label: \"relabelled\" }\n}"
+  },
+  "kind": "write",
+  "name": "w_insert_compound_existing"
+ },
+ "w_insert_edge": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": null,
+     "diagnostics": [
+      {
+       "code": "T11",
+       "end": {
+        "byte": 45,
+        "column": 22,
+        "line": 2
+       },
+       "fix": "@src: <endpoint>",
+       "kind": "type",
+       "message": "an edge's endpoints are assigned as `@src` and `@dst`; `from:` is edition 2's spelling of `@src:`",
+       "position": {
+        "byte": 41,
+        "column": 18,
+        "line": 2
+       },
+       "stage": {
+        "name": "typecheck"
+       },
+       "suggestion": {
+        "applicability": "machine_applicable",
+        "edits": [
+         {
+          "end": 45,
+          "replacement": "@src",
+          "start": 41
+         }
+        ]
+       }
+      },
+      {
+       "code": "T11",
+       "end": {
+        "byte": 69,
+        "column": 46,
+        "line": 2
+       },
+       "fix": "@dst: <endpoint>",
+       "kind": "type",
+       "message": "an edge's endpoints are assigned as `@src` and `@dst`; `to:` is edition 2's spelling of `@dst:`",
+       "position": {
+        "byte": 67,
+        "column": 44,
+        "line": 2
+       },
+       "stage": {
+        "name": "typecheck"
+       },
+       "suggestion": {
+        "applicability": "machine_applicable",
+        "edits": [
+         {
+          "end": 69,
+          "replacement": "@dst",
+          "start": 67
+         }
+        ]
+       }
+      }
+     ],
+     "error": "type error: T11: an edge's endpoints are assigned as `@src` and `@dst`; `from:` is edition 2's spelling of `@src:`",
+     "name": "w_insert_edge",
+     "status": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_alt_lint": {
+   "from_to": {
+    "diagnostics": [
+     {
+      "code": null,
+      "diagnostics": [
+       {
+        "code": "T11",
+        "end": {
+         "byte": 45,
+         "column": 22,
+         "line": 2
+        },
+        "fix": "@src: <endpoint>",
+        "kind": "type",
+        "message": "an edge's endpoints are assigned as `@src` and `@dst`; `from:` is edition 2's spelling of `@src:`",
+        "position": {
+         "byte": 41,
+         "column": 18,
+         "line": 2
+        },
+        "stage": {
+         "name": "typecheck"
+        },
+        "suggestion": {
+         "applicability": "machine_applicable",
+         "edits": [
+          {
+           "end": 45,
+           "replacement": "@src",
+           "start": 41
+          }
+         ]
+        }
+       },
+       {
+        "code": "T11",
+        "end": {
+         "byte": 69,
+         "column": 46,
+         "line": 2
+        },
+        "fix": "@dst: <endpoint>",
+        "kind": "type",
+        "message": "an edge's endpoints are assigned as `@src` and `@dst`; `to:` is edition 2's spelling of `@dst:`",
+        "position": {
+         "byte": 67,
+         "column": 44,
+         "line": 2
+        },
+        "stage": {
+         "name": "typecheck"
+        },
+        "suggestion": {
+         "applicability": "machine_applicable",
+         "edits": [
+          {
+           "end": 69,
+           "replacement": "@dst",
+           "start": 67
+          }
+         ]
+        }
+       }
+      ],
+      "error": "type error: T11: an edge's endpoints are assigned as `@src` and `@dst`; `from:` is edition 2's spelling of `@src:`",
+      "name": "w_insert_edge",
+      "status": "error"
+     }
+    ],
+    "raw": null,
+    "rc": 1,
+    "status": "error"
+   }
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T11",
+      "T11"
+     ],
+     "edit_count": 2,
+     "expected": [
+      "an edge's endpoints are assigned as `@src` and `@dst`; `from:` is edition 2's spelling of `@src:`",
+      "an edge's endpoints are assigned as `@src` and `@dst`; `to:` is edition 2's spelling of `@dst:`"
+     ],
+     "fix": [
+      "@src: <endpoint>",
+      "@dst: <endpoint>"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_insert_edge() {\n  insert Knows { @src: \"p000@example.com\", @dst: \"p002@example.com\", since: 5 }\n}"
+  },
+  "kind": "write",
+  "name": "w_insert_edge"
+ },
+ "w_insert_existing_key": {
+  "e2_under_new": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "e3_alt_lint": {
+   "insert": {
+    "diagnostics": [],
+    "raw": null,
+    "rc": 0,
+    "status": "ok"
+   },
+   "upsert": {
+    "diagnostics": [],
+    "raw": null,
+    "rc": 0,
+    "status": "ok"
+   }
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "pass": 0,
+     "rc": 1,
+     "run_error": "[conflict] node type 'Person' already has id 'p001@example.com'; `upsert` sets the named properties of an existing entity and `replace` writes its whole row",
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_insert_existing_key() {\n  insert Person { email: \"p001@example.com\", name: \"Changed\" }\n}"
+  },
+  "kind": "write",
+  "name": "w_insert_existing_key"
+ },
+ "w_insert_keyed_edge_existing": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": null,
+     "diagnostics": [
+      {
+       "code": "T11",
+       "end": {
+        "byte": 62,
+        "column": 24,
+        "line": 2
+       },
+       "fix": "@src: <endpoint>",
+       "kind": "type",
+       "message": "an edge's endpoints are assigned as `@src` and `@dst`; `from:` is edition 2's spelling of `@src:`",
+       "position": {
+        "byte": 58,
+        "column": 20,
+        "line": 2
+       },
+       "stage": {
+        "name": "typecheck"
+       },
+       "suggestion": {
+        "applicability": "machine_applicable",
+        "edits": [
+         {
+          "end": 62,
+          "replacement": "@src",
+          "start": 58
+         }
+        ]
+       }
+      },
+      {
+       "code": "T11",
+       "end": {
+        "byte": 86,
+        "column": 48,
+        "line": 2
+       },
+       "fix": "@dst: <endpoint>",
+       "kind": "type",
+       "message": "an edge's endpoints are assigned as `@src` and `@dst`; `to:` is edition 2's spelling of `@dst:`",
+       "position": {
+        "byte": 84,
+        "column": 46,
+        "line": 2
+       },
+       "stage": {
+        "name": "typecheck"
+       },
+       "suggestion": {
+        "applicability": "machine_applicable",
+        "edits": [
+         {
+          "end": 86,
+          "replacement": "@dst",
+          "start": 84
+         }
+        ]
+       }
+      }
+     ],
+     "error": "type error: T11: an edge's endpoints are assigned as `@src` and `@dst`; `from:` is edition 2's spelling of `@src:`",
+     "name": "w_insert_keyed_edge_existing",
+     "status": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_alt_lint": {
+   "insert": {
+    "diagnostics": [],
+    "raw": null,
+    "rc": 0,
+    "status": "ok"
+   }
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T11",
+      "T11"
+     ],
+     "edit_count": 2,
+     "expected": [
+      "an edge's endpoints are assigned as `@src` and `@dst`; `from:` is edition 2's spelling of `@src:`",
+      "an edge's endpoints are assigned as `@src` and `@dst`; `to:` is edition 2's spelling of `@dst:`"
+     ],
+     "fix": [
+      "@src: <endpoint>",
+      "@dst: <endpoint>"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 1,
+     "run_error": "[conflict] edge type 'WorksAt' already has id '[\"p000@example.com\",\"c0\"]'; `upsert` sets the named properties of an existing entity and `replace` writes its whole row",
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_insert_keyed_edge_existing() {\n  insert WorksAt { @src: \"p000@example.com\", @dst: \"c0\", role: \"boss\" }\n}"
+  },
+  "kind": "write",
+  "name": "w_insert_keyed_edge_existing"
+ },
+ "w_insert_new_key": {
+  "e2_under_new": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "e3_alt_lint": {
+   "replace": {
+    "diagnostics": [],
+    "raw": null,
+    "rc": 0,
+    "status": "ok"
+   }
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "pass": 0,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_insert_new_key() {\n  insert Person { email: \"new@example.com\", name: \"New\", age: 7 }\n}"
+  },
+  "kind": "write",
+  "name": "w_insert_new_key"
+ },
+ "w_insert_unkeyed": {
+  "e2_under_new": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "pass": 0,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_insert_unkeyed() {\n  insert Loose { name: \"fresh\", n: 99 }\n}"
+  },
+  "kind": "write",
+  "name": "w_insert_unkeyed"
+ },
+ "w_multi_statement": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": null,
+     "diagnostics": [
+      {
+       "code": "T11",
+       "end": {
+        "byte": 101,
+        "column": 24,
+        "line": 3
+       },
+       "fix": "@src: <endpoint>",
+       "kind": "type",
+       "message": "an edge's endpoints are assigned as `@src` and `@dst`; `from:` is edition 2's spelling of `@src:`",
+       "position": {
+        "byte": 97,
+        "column": 20,
+        "line": 3
+       },
+       "stage": {
+        "name": "typecheck"
+       },
+       "suggestion": {
+        "applicability": "machine_applicable",
+        "edits": [
+         {
+          "end": 101,
+          "replacement": "@src",
+          "start": 97
+         }
+        ]
+       }
+      },
+      {
+       "code": "T11",
+       "end": {
+        "byte": 125,
+        "column": 48,
+        "line": 3
+       },
+       "fix": "@dst: <endpoint>",
+       "kind": "type",
+       "message": "an edge's endpoints are assigned as `@src` and `@dst`; `to:` is edition 2's spelling of `@dst:`",
+       "position": {
+        "byte": 123,
+        "column": 46,
+        "line": 3
+       },
+       "stage": {
+        "name": "typecheck"
+       },
+       "suggestion": {
+        "applicability": "machine_applicable",
+        "edits": [
+         {
+          "end": 125,
+          "replacement": "@dst",
+          "start": 123
+         }
+        ]
+       }
+      }
+     ],
+     "error": "type error: T11: an edge's endpoints are assigned as `@src` and `@dst`; `from:` is edition 2's spelling of `@src:`",
+     "name": "w_multi_statement",
+     "status": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "T11",
+      "T11"
+     ],
+     "edit_count": 2,
+     "expected": [
+      "an edge's endpoints are assigned as `@src` and `@dst`; `from:` is edition 2's spelling of `@src:`",
+      "an edge's endpoints are assigned as `@src` and `@dst`; `to:` is edition 2's spelling of `@dst:`"
+     ],
+     "fix": [
+      "@src: <endpoint>",
+      "@dst: <endpoint>"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_multi_statement() {\n  insert Company { slug: \"cx\", name: \"Graph Co\" }\n  insert WorksAt { @src: \"p001@example.com\", @dst: \"cx\", role: \"r\" }\n}"
+  },
+  "kind": "write",
+  "name": "w_multi_statement"
+ },
+ "w_range_violation": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q008",
+     "message": "line 2, column 3: `update Scalars \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q008"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`update Scalars \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows"
+     ],
+     "fix": [
+      "match { $x: Scalars } where $x.slug = \"s00001\"  update $x set { i32: 5000 }"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 1,
+     "run_error": "[bad_request] @range violation on Scalars.i32: value 5000 > max 1000",
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_range_violation() {\n  match { $x: Scalars } where $x.slug = \"s00001\"  update $x set { i32: 5000 }\n}"
+  },
+  "kind": "write",
+  "name": "w_range_violation"
+ },
+ "w_scalar_extremes": {
+  "e2_under_new": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "pass": 0,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_scalar_extremes($lo: I64, $hi: U64, $z: F64, $dd: Date, $tt: DateTime) {\n  insert Scalars { slug: \"zz\", s: \"x\", b: true, i32: 1000, i64: $lo, u32: 1, u64: $hi, f32: 1.5, f64: $z, d: $dd, dt: $tt, kind: \"gamma\", tags: [\"a\"] }\n}"
+  },
+  "kind": "write",
+  "name": "w_scalar_extremes"
+ },
+ "w_unique_violation": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q008",
+     "message": "line 2, column 3: `update Scalars \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q008"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`update Scalars \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows"
+     ],
+     "fix": [
+      "match { $x: Scalars } where $x.slug = \"s00005\"  update $x set { u32: 3999999999 }"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 1,
+     "run_error": "[bad_request] @unique violation on Scalars.u32: value '3999999999' held by 's00001' and 's00005'",
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_unique_violation() {\n  match { $x: Scalars } where $x.slug = \"s00005\"  update $x set { u32: 3999999999 }\n}"
+  },
+  "kind": "write",
+  "name": "w_unique_violation"
+ },
+ "w_update_edge": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q008",
+     "message": "line 2, column 3: `update Knows \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q008"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`update Knows \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows"
+     ],
+     "fix": [
+      "match { $x: Knows } where $x.since > 2070  update $x set { since: 1 }"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_update_edge() {\n  match { $x: Knows } where $x.since > 2070  update $x set { since: 1 }\n}"
+  },
+  "kind": "write",
+  "name": "w_update_edge"
+ },
+ "w_update_node": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q008",
+     "message": "line 2, column 3: `update Person \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q008"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`update Person \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows"
+     ],
+     "fix": [
+      "match { $x: Person } where $x.age > 50  update $x set { name: \"Older\" }"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_update_node() {\n  match { $x: Person } where $x.age > 50  update $x set { name: \"Older\" }\n}"
+  },
+  "kind": "write",
+  "name": "w_update_node"
+ },
+ "w_update_scalars": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q008",
+     "message": "line 2, column 3: `update Scalars \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q008"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`update Scalars \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows"
+     ],
+     "fix": [
+      "match { $x: Scalars } where $x.kind = \"beta\"  update $x set { i64_opt: 9007199254740993, f64_opt: 0.5, s_opt: \"x\" }"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_update_scalars() {\n  match { $x: Scalars } where $x.kind = \"beta\"  update $x set { i64_opt: 9007199254740993, f64_opt: 0.5, s_opt: \"x\" }\n}"
+  },
+  "kind": "write",
+  "name": "w_update_scalars"
+ },
+ "w_update_vector": {
+  "e2_under_new": {
+   "diagnostics": [
+    {
+     "code": "Q008",
+     "message": "line 2, column 3: `update Doc \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows",
+     "severity": "error"
+    }
+   ],
+   "raw": null,
+   "rc": 1,
+   "status": "error"
+  },
+  "e3_lint": {
+   "diagnostics": [],
+   "raw": null,
+   "rc": 0,
+   "status": "ok"
+  },
+  "fixed": {
+   "compiled": true,
+   "passes": [
+    {
+     "applicability": [
+      "machine_applicable"
+     ],
+     "codes": [
+      "Q008"
+     ],
+     "edit_count": 1,
+     "expected": [
+      "`update Doc \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows"
+     ],
+     "fix": [
+      "match { $x: Doc } where $x.year = 1995  update $x set { emb: [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] }"
+     ],
+     "pass": 0
+    },
+    {
+     "pass": 1,
+     "rc": 0,
+     "run_error": null,
+     "status": "compiled"
+    }
+   ],
+   "text": "query w_update_vector() {\n  match { $x: Doc } where $x.year = 1995  update $x set { emb: [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] }\n}"
+  },
+  "kind": "write",
+  "name": "w_update_vector"
+ }
+}
