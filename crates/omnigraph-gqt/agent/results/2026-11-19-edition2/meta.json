@@ -1,0 +1,20 @@
+{
+  "cards": {
+    "edition2.md": "0f791365b296977e01908105f82e9233c723f3f3194cad784dbee8e4eb0f2379",
+    "edition3.md": "52014d3aa9ba0093247467c09cd00a80a77090ae2f72bc8534c87e20b9dd9cb8"
+  },
+  "claude": "2.1.328 (Claude Code)",
+  "editions": [
+    2
+  ],
+  "git_head": "cb0f4634a9896615b128828e438c0d3523d9d991",
+  "model": "claude-sonnet-5-5",
+  "runner_sha256": "b0da6ef3a2c64f2c6e6b3c387a6737747db30a38da232febdbe185198f245460",
+  "runs": 5,
+  "sets": [
+    "corpus",
+    "tasks"
+  ],
+  "started": "2026-11-19T08:25:48+00:00",
+  "tasks": 75
+}
