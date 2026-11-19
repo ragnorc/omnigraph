@@ -5,8 +5,12 @@ import json
 import os
 
 # Edition 2's 2026-11-09 numbers on the 45 shared items, per run
-# (results/2026-11-09/summary.json, the RFC gate's baseline).
-EDITION2 = {"accepted": [43, 43, 43], "correct": [39, 39, 40]}
+# (results/2026-11-09/summary.json): a comparison only. The gate's baseline
+# is a fresh edition-2 run of as many runs, given as `edition2.json` in the
+# results directory (`{"source": …, "accepted": [...], "correct": [...]}`,
+# per run on the 45 shared items).
+EDITION2_2026_11_09 = {"source": "results/2026-11-09 (comparison only)",
+                       "accepted": [43, 43, 43], "correct": [39, 39, 40]}
 
 
 def json_lines(text):
@@ -36,13 +40,18 @@ def gap(r):
     return accepted(r) and r["judge"].get("planner_gap") is True
 
 
+def coverage_gap(r):
+    """Refused as a form this release does not support yet (`T86`)."""
+    return r["judge"].get("accepted") is False and r["judge"].get("coverage_gap") is True
+
+
 def outcome(r):
     """One word for a first answer."""
     j = r["judge"]
     if j.get("error"):
         return "judge-error"
     if j.get("accepted") is False:
-        return "refused"
+        return "not-yet" if j.get("coverage_gap") else "refused"
     if j.get("planner_gap"):
         return "gap"
     if j.get("correct") is True:
@@ -72,7 +81,7 @@ def summarize(out):
         per_set = {}
         for subset in ("shared", "tasks", "corpus", "all"):
             cols = {k: [] for k in (
-                "n", "accepted", "correct", "judged", "gap", "ir_equal", "unjudged", "no_expected",
+                "n", "accepted", "correct", "judged", "gap", "coverage_gap", "ir_equal", "unjudged", "no_expected",
                 "refused", "repair_card_accepted", "repair_card_correct", "repair_bare_accepted",
                 "repair_bare_correct", "after_repair_correct", "tokens_in", "tokens_out")}
             for run in runs:
@@ -93,6 +102,7 @@ def summarize(out):
                 cols["correct"].append(sum(correct(r) for r in fs))
                 cols["judged"].append(sum(r["judge"].get("correct") is not None for r in fs))
                 cols["gap"].append(sum(gap(r) for r in fs))
+                cols["coverage_gap"].append(sum(coverage_gap(r) for r in fs))
                 cols["ir_equal"].append(sum(r["judge"].get("ir_equal") is True for r in fs))
                 cols["unjudged"].append(sum(accepted(r) and r["judge"].get("correct") is None for r in fs))
                 cols["no_expected"].append(sum(accepted(r) and "no_expected_rows" in r["judge"] for r in fs))
@@ -115,18 +125,34 @@ def summarize(out):
         per_set["seeded"] = sd
         numbers["arms"][arm] = per_set
 
+    # The gate as the RFC states it on 2026-11-18 (`blocked_on` item 2):
+    # on the 45 shared items, each of first-try acceptance and correct
+    # answers, pooled over the runs, at least edition 2's pooled total less
+    # one task per run. The margin is fixed before the run.
+    e2_path = os.path.join(out, "edition2.json")
+    edition2 = json.load(open(e2_path)) if os.path.exists(e2_path) else None
     gate = {}
     for arm in arms:
         sh = numbers["arms"][arm]["shared"]
-        acc_ok = mean(sh["accepted"]) >= mean(EDITION2["accepted"])
-        cor_ok = mean(sh["correct"]) >= mean(EDITION2["correct"])
-        gate[arm] = {
-            "shared_items": sh["n"][0] if sh["n"] else 0,
-            "accepted": sh["accepted"], "correct": sh["correct"], "planner_gaps": sh["gap"],
-            "edition2_accepted": EDITION2["accepted"], "edition2_correct": EDITION2["correct"],
-            "acceptance_at_or_above": acc_ok, "correctness_at_or_above": cor_ok,
-            "verdict": "pass" if acc_ok and cor_ok else "fail",
-        }
+        g = {"shared_items": sh["n"][0] if sh["n"] else 0, "runs": len(sh["n"]),
+             "accepted": sh["accepted"], "correct": sh["correct"], "planner_gaps": sh["gap"],
+             "coverage_gaps": sh["coverage_gap"],
+             "accepted_pooled": sum(sh["accepted"]), "correct_pooled": sum(sh["correct"])}
+        if edition2:
+            margin = len(edition2["accepted"])
+            g.update({
+                "edition2_source": edition2["source"],
+                "edition2_accepted": edition2["accepted"], "edition2_correct": edition2["correct"],
+                "edition2_accepted_pooled": sum(edition2["accepted"]),
+                "edition2_correct_pooled": sum(edition2["correct"]),
+                "margin": margin,
+                "acceptance_met": sum(sh["accepted"]) >= sum(edition2["accepted"]) - margin,
+                "correctness_met": sum(sh["correct"]) >= sum(edition2["correct"]) - margin,
+            })
+            g["verdict"] = "pass" if g["acceptance_met"] and g["correctness_met"] else "fail"
+        else:
+            g["verdict"] = "no edition-2 baseline in this directory (edition2.json)"
+        gate[arm] = g
     numbers["gate"] = gate
 
     L = [f"# Agent instrument results: {os.path.basename(out)}", "",
@@ -136,9 +162,10 @@ def summarize(out):
          "Means over the runs, the range in parentheses. `shared` is the 45 items edition 2 expresses in one "
          "query; `all` is the 75.", ""]
     head = ("| Arm | Set | Items | First try accepted | First try correct (rows) | Planner gaps (P006) "
+            "| Not supported yet (T86) "
             "| Unjudged (no expected rows) | IR-equal | Refused | Repair with card accepted / correct "
             "| Repair without card accepted / correct | Correct after repair | Tokens in / out |")
-    L += [head, "|" + "---|" * 13]
+    L += [head, "|" + "---|" * 14]
     for arm in arms:
         for subset in ("shared", "tasks", "corpus", "all"):
             c = numbers["arms"][arm][subset]
@@ -146,7 +173,7 @@ def summarize(out):
                 continue
             L.append(
                 f"| {arm} | {subset} | {c['n'][0]} | {spread(c['accepted'])} | {spread(c['correct'])} "
-                f"| {spread(c['gap'])} | {spread(c['unjudged'])} ({spread(c['no_expected'])}) | {spread(c['ir_equal'])} "
+                f"| {spread(c['gap'])} | {spread(c['coverage_gap'])} | {spread(c['unjudged'])} ({spread(c['no_expected'])}) | {spread(c['ir_equal'])} "
                 f"| {spread(c['refused'])} | {spread(c['repair_card_accepted'])} / {spread(c['repair_card_correct'])} "
                 f"| {spread(c['repair_bare_accepted'])} / {spread(c['repair_bare_correct'])} "
                 f"| {spread(c['after_repair_correct'])} | {spread(c['tokens_in'])} / {spread(c['tokens_out'])} |")
@@ -157,19 +184,29 @@ def summarize(out):
             L.append(f"| {arm} | {sd['n'][0]} | {spread(sd['accepted'])} | {spread(sd['correct'])} |")
 
     L += ["", "## The gate", "",
-          f"Edition 2 on 2026-11-09, 45 shared items, per run: accepted {EDITION2['accepted']}, "
-          f"correct by rows {EDITION2['correct']}.", ""]
+          "On the 45 shared items, first-try acceptance and correct answers, each pooled over the runs, "
+          "at least edition 2's pooled total less one task per run (RFC `blocked_on` item 2, 2026-11-18).",
+          f"Edition 2 on 2026-11-09, per run, for comparison only: accepted {EDITION2_2026_11_09['accepted']}, "
+          f"correct by rows {EDITION2_2026_11_09['correct']}.", ""]
     for arm, g in gate.items():
-        L.append(f"- `{arm}`: accepted {g['accepted']}, correct by rows {g['correct']} (planner gaps "
-                 f"{g['planner_gaps']}). Acceptance at or above edition 2's: "
-                 f"{'yes' if g['acceptance_at_or_above'] else 'no'}; correctness at or above: "
-                 f"{'yes' if g['correctness_at_or_above'] else 'no'}. Verdict: **{g['verdict']}**.")
+        line = (f"- `{arm}`: accepted {g['accepted']} (pooled {g['accepted_pooled']}), correct by rows "
+                f"{g['correct']} (pooled {g['correct_pooled']}); planner gaps {g['planner_gaps']}, "
+                f"not supported yet (T86) {g['coverage_gaps']}.")
+        if "margin" in g:
+            line += (f" Edition 2 ({g['edition2_source']}): accepted {g['edition2_accepted']} (pooled "
+                     f"{g['edition2_accepted_pooled']}), correct {g['edition2_correct']} (pooled "
+                     f"{g['edition2_correct_pooled']}); margin {g['margin']}. Acceptance "
+                     f"{g['accepted_pooled']} ≥ {g['edition2_accepted_pooled'] - g['margin']}: "
+                     f"{'yes' if g['acceptance_met'] else 'no'}; correctness {g['correct_pooled']} ≥ "
+                     f"{g['edition2_correct_pooled'] - g['margin']}: {'yes' if g['correctness_met'] else 'no'}.")
+        line += f" Verdict: **{g['verdict']}**."
+        L.append(line)
 
     L += ["", "## By task", "",
-          "First answers over the runs per arm: `c` correct, `g` planner gap, `w` wrong rows, `e` engine "
-          "error, `r` refused, `u` unjudged. Rows where the arms differ or either is not correct every run.",
+          "First answers over the runs per arm: `c` correct, `g` planner gap, `t` refused as not supported "
+          "yet (T86), `w` wrong rows, `e` engine error, `r` refused, `u` unjudged. Rows where the arms differ or either is not correct every run.",
           "", "| Task | Set | Shared | Kind | gq3 | where |", "|---|---|---|---|---|---|"]
-    letters = {"correct": "c", "gap": "g", "wrong-rows": "w", "engine-error": "e", "refused": "r",
+    letters = {"correct": "c", "gap": "g", "not-yet": "t", "wrong-rows": "w", "engine-error": "e", "refused": "r",
                "unjudged": "u", "judge-error": "x"}
     by_task = {}
     for tid in sorted(tasks, key=lambda t: (tasks[t]["set"], t)):
@@ -194,7 +231,7 @@ def summarize(out):
             continue
         j = r["judge"]
         detail = ((j.get("diagnostic") or {}).get("code") or (j.get("diagnostic") or {}).get("message", "")
-                  if o == "refused" else j.get("execution_error") or j.get("correct_reason") or j.get("error", ""))
+                  if o in ("refused", "not-yet") else j.get("execution_error") or j.get("correct_reason") or j.get("error", ""))
         detail = str(detail).replace("|", "\\|").replace("\n", " ")[:160]
         wrong.append({"arm": arm, "run": run, "task": tid, "outcome": o, "detail": detail})
         L.append(f"| {arm} | {run} | {tid} | {o} | {detail} |")
