@@ -9,22 +9,23 @@ The non-obvious facts that bite, then the full grammar:
 - **Scalar param types**: `String Bool I32 I64 U32 U64 F32 F64 DateTime Date Blob`. Modifiers: `T?` (optional), `[T]` (list), `Vector(N)`; `$min: I32 = 18` declares a default (a literal of the type, else `T3`) that an omitted parameter takes, while a supplied value or explicit `null` replaces it; a defaulted parameter is followed only by defaulted ones (`T88`), since a call's arguments bind by position. There is **no `Int`** — use `I64`. An integer parameter takes its type's whole range (`U64` up to `18446744073709551615`); send a 64-bit value above 2^53 in `--params` as a decimal string so no client rounds it through a double.
 - **A read is `match { … }`, an optional `where`, then `return`** (`order`/`limit` optional); a write ends in `insert`/`upsert`/`replace`/`update`/`delete` statements instead of `return`.
 - **`match` holds elements, `where` the predicate.** Elements are bindings `$x: Type` (no property braces), triples, `optional { … }` (every row of the elements before it, once per match or once with the names it introduces null; those names are nullable after it; each adds compile work in proportion to its pattern and the names around it; a read's compile work is bounded by its plan budget, 32768 units unless it declares `@budget(plan = n)`, and a read past it is `T70`; a declared budget above the `plan_budget_limit` setting, 65536 by default and the operator's on a server, is `T89`, never clamped), `let` and `from`, separated by commas (trailing comma allowed; a newline is not a separator). `where`, after the braces, is one Boolean expression over every element, evaluated after all of them, so arithmetic in a `let`, a `from` or an `optional` runs on rows `where` removes and can fail there (`E1` overflow, `E2` zero divisor): guard it with `if(cond, value, 0)` or compute it in `return`; inside `where`, `and`/`or` guard left to right (`$n != 0 and $t / $n > 1` is safe, the reverse order is not): `match { $p: Person, $p worksAt $c } where $p.handle = $h and $c.name != "x"`. A filter or `where` inside the braces (`Q017`), a property map `$p: Person { handle: $h }` (`Q010`) and a missing comma (`Q016`) are parse errors that print the fix. Every list takes commas: return items, order keys, arguments, assignments.
-- **A bare name is not a value** (`Q018`): a property is `$x.name`, a parameter `$name`, a string `"name"`. A read may not be named after a function or an element keyword (`nearest`, `contains`, `count`, `exists`, …: `T74`), and a keyword or reserved word is never a call (`where(…)`, `and(a, b)`: `Q019`). An annotation without arguments takes no parentheses (`@name`, not `@name()`: `Q012`).
+- **A bare name is not a value** (`Q018`): a property is `$x.name`, a parameter `$name`, a string `"name"`. A read may not be named after a function or an element keyword (`nearest`, `contains`, `lower`, `round`, `count`, `exists`, …: `T74`), and a keyword or reserved word is never a call (`where(…)`, `and(a, b)`: `Q019`). An annotation without arguments takes no parentheses (`@name`, not `@name()`: `Q012`).
 - **A block, an `optional` or an inline read binds every name new to it** (`T84`): `not exists { $q: Person, $p knows $q }`, `optional { $c: Company, $p worksAt $c }`, `from { match { $p: Person, $c: Company, $p worksAt $c } return { … } }`; a name read from the enclosing scope correlates. A triple naming a name neither in scope nor bound there is `T84`, and the diagnostic inserts the binding with the edge's end type. Binding an outer name inside a block or an `optional` is `T68`: read it unbound to correlate; `not exists { $p: Person where $p.name = "bob" }` is written `not ($p.name = "bob")`, or `not coalesce($p.age > 30, false)` when the test can be null (a bare `not` drops the rows whose test is null, which the block kept), and a negated text search `not match_terms($d.title, terms($q, mode: any))`. `$_`, an edge binding `$k:e` and the read's own `match` need no binding; the names an `optional` binds enter the enclosing scope, nullable, and a triple outside it reading one is `T90` (it would drop the rows where the name is null), whose fix moves the triple inside.
 - **`limit` takes an integer literal or parameter** — `limit 50` or `limit $n`, the parameter bound to a non-negative count (a negative or null one is refused).
-- **Elements that share no variable are a product, refused (`T81`)** unless every component but one is a single node binding pinned by its `@key` or `@id` in `where`: `match { $p: Person, $c: Company } where $c.slug = $s` runs, without the conjunct it is refused. Join the components with a triple (`$p worksAt $c`; the diagnostic inserts it when one edge type fits) or write the intended product as a named relation, `let $cs = { match { $c: Company } return { $c } }, from $cs`. A `where` comparison such as `$p.name = $c.name` does not join them.
+- **Elements that share no variable are a product, refused (`T81`)** unless every component but one is a single node binding pinned by its `@key` or `@id` in `where`: `match { $p: Person, $c: Company } where $c.slug = $s` runs, without the conjunct it is refused. Join the components with a triple (`$p worksAt $c`; the fix names it when one edge type fits) or write the intended product as a named relation, `let $cs = { match { $c: Company } return { $c } }, from $cs` (the diagnostic's suggestion, which needs review). A `where` comparison such as `$p.name = $c.name` does not join them.
 - **A triple is written in its edge's declared order, source first** (`T82`): over `WorksAt: Person -> Company` write `$p worksAt $c` even when `$c` is the bound end; `$c worksAt $p` is refused whatever the end types, and the diagnostic swaps the ends. Between ends of one type (`Knows: Person -> Person`) the written order is the direction; `<knows>` reads both. A selection, `(a | b)` or `*`, reads each member in the direction its end types fix and is `T82` only when no member points along the written order.
 - **Variable-hop traversal**: `$p knows{1,3} $f` — bounds are **required to be finite** (`{1,}` is rejected: "unbounded traversal is disabled"), and an edge whose endpoint types differ allows only one hop (`T5`). Hops are shortest-path distances; each `$_` is a distinct anonymous node; variables beginning `__` are reserved.
 - **Undirected traversal**: `$p <knows> $f` matches the edge in either direction, deduplicated (a pair connected both ways appears once). Same-endpoint-type edges only (e.g. `Related: Issue -> Issue`) — asymmetric edges are rejected (T22). Composes with bounds (`$p <knows>{1,3} $f`) and correlated blocks (`not exists { }`, `exists { }`, `count { } > 2`).
 - **Edge bindings**: an optional `$var:` prefix on the edge word — `$src $w:knows $dst`, undirected `$a $w:<related> $b` — binds the matched edge row, so edge properties work in filters (`$w.confidence = "asserted"`), projections (`return { $w.role }`), aggregates, and ordering. A bound traversal returns one row per edge (parallel edges stay distinct); binding a `{min,max}` multi-hop or rebinding a taken name is `T23` (`T68` inside a block, an `optional` or an inline read), and returning bare `$w` is `T86` (return its fields: `$w.@id`, `$w.@src`, `$w.role`).
-- **Literals & calls**: `now()`, `date("2026-04-29")`, `datetime("…T00:00:00Z")`, list `[…]` of literals (`[-1, 2]`) and non-null scalar parameters of one declared type (`[$a, $b, 3]`, also a `nearest` vector); no element is cast (`T53`), and a list or nullable parameter, a binding or a `let` name as an element is `T7`.
+- **Literals & calls**: `now()`, `date("2026-04-29")`, `datetime("…T00:00:00Z")`, list `[…]` of literals (`[-1, 2]`) and non-null scalar parameters of one declared type (`[$a, $b, 3]`, also a `nearest` vector); no element is cast (`T53`), and a list or nullable parameter, a binding or a `let` name as an element is `T7`. Scalar functions: `if`, `coalesce`, `concat`, `lower`, `upper`, `trim`/`ltrim`/`rtrim`, `length`, `left`, `right`, `substring(s, start, len)` (1-based), `abs`, `floor`, `ceil`, `round(x, digits: n)`, `sqrt`, `power`, `exp`, `ln`, `log10`, `size(list)`, `cast(x, T)`; each is null on a null argument (`if`, `coalesce` aside), and one outside its domain or a failed `cast` refuses the read (`E5`, `E6`). A predicate over a function of a column (`lower($p.email) = $q`) uses no index: compare the bare column where an index should answer. See [functions](references/queries.md#filter-operators).
 `starts_with($x.f, "A")`, `contains($x.f, "g")`, `in`, `>=`, `<=`, `!=`, `>`, `<`, `=`, `is null`, `is not null`
 
 Those are the complete **filter operators** (`$m.number in $numbers` tests membership in a list parameter or literal, `"rust" in $m.tags` in a list property; infix `contains`/`starts_with` is `T7`); conditions compose with `and`, `or`, `not`, parentheses and `is null` / `is not null`, and a filter keeps only rows whose expression is true (a comparison with a null operand is null). A literal compared with a property (or listed in an `in` against one), in any `where` or `let`, must fit the property's type: an enum value outside the set, a number against a non-numeric property, an integer out of an integer property's range or a malformed date is `T3`, whose fix names the nearest allowed value (a float against an integer property is fine: it compares through a cast). String predicates are exact and
-case-sensitive. **Aggregates** are `count/sum/avg/min/max/collect` (`count($f) as n`, `count(distinct $f.city) as cities`, `collect($r.key) as keys`, a `[T]` list in value order); `min`/`max` also accept String, Bool, Date, and DateTime. Alias aggregates and order by the alias. `return distinct { … }` keeps one row per distinct projected tuple.
+case-sensitive. **Aggregates** are `count/sum/avg/min/max/collect/stddev/percentile` (`count($f) as n`, `count(distinct $f.city) as cities`, `collect($r.key) as keys`, a `[T]` list in value order; `stddev($d.amount)` the sample deviation, `percentile($d.amount, 0.5)` exact with linear interpolation, `p` a literal from 0 to 1 or a parameter); `min`/`max` also accept String, Bool, Date, and DateTime. Alias aggregates and order by the alias; `nulls first` or `nulls last` after an order key places its nulls (`order { $d.closed desc nulls last }`). `return distinct { … }` keeps one row per distinct projected tuple.
 - **Result column names must be distinct** (`T25`): alias projections that would collide.
 - **Stored-query metadata**: `@description("…")` / `@instruction("…")` may follow the param list.
 - **Casing**: type names uppercase-initial (`Signal`); idents/edges lowercase-initial (`formsPattern`); variables `$`-prefixed. `//` and `/* */` comments only.
+- **Write the canonical spelling**: lowercase keywords and function names, double-quoted strings, `!=`, `concat(a, b)`, `if(c, a, b)`. `WHERE`, `'x'`, `<>`, `a || b` and `case when … end` also parse, as the same query; `lint` names each (`L212`–`L216`), and `omnigraph lint --fix` rewrites them, and edition-2 text, from the printed fixes. `==`, `&&` and `!` are refused with the fix.
 
 The compiler grammar in `crates/omnigraph-compiler/src/query/syntax/grammar.pest` is the
 single source of truth.
@@ -55,14 +56,15 @@ nothing. Such a product is refused (`T81`, at the second component) unless
 every component but one is a single node binding whose `@key`, or `@id`, a
 top-level `where` conjunct equates with a literal or parameter, as in a write that links two
 nodes (`match { $p: Person, $c: Company } where $p.handle = $h and $c.slug = $s`).
-Otherwise join the components with a triple, which the diagnostic inserts
-when exactly one edge type connects them, or write the intended product as a
-named relation: `let $cs = { match { $c: Company } return { $c } }, from $cs`.
+Otherwise join the components with a triple, which the fix names when
+exactly one edge type connects them, or write the intended product as a
+named relation: `let $cs = { match { $c: Company } return { $c } }, from $cs`
+(the suggestion writes this one, for review).
 
 `let $v = expr` names a value for `where`, `return`, `order` and later
-elements; a value that can fail (arithmetic) runs on every row before
-`where`, as does a `from` or an `optional` over one, so it fails (`E1`,
-`E2`) on rows `where` removes: guard it with
+elements; a value that can fail (arithmetic, a function such as `sqrt` or
+`cast`) runs on every row before `where`, as does a `from` or an `optional`
+over one, so it fails (`E1`, `E2`, `E3`, `E5`, `E6`) on rows `where` removes: guard it with
 `if(cond, value, 0)` or write it in `return`, which runs after `where`.
 Arithmetic (`+ - * / %`, unary `-`), `if` and `coalesce` widen two numeric
 types to their common one: the wider integer, `I64` for `U32` with a signed
@@ -98,6 +100,11 @@ query recent_signals() {
     limit 50
 }
 ```
+
+An order key's nulls come first ascending and last descending; write
+`nulls first` or `nulls last` after the key to place them
+(`order { $s.score desc nulls first }`). Only that key's nulls move: rows
+whose key is null fall to the later keys.
 
 ### Edge traversal (lowerCamelCase)
 
@@ -244,6 +251,28 @@ query busy_signals($least: I64) {
 }
 ```
 
+### The engine catalogue (`@` types)
+
+Five built-in node types describe the running binary, read like any type and
+never written: `@Operator` (`name`, `inputs`: the physical operators),
+`@Pass` (`name`, `position`: the planner passes in order), `@Setting`
+(`name`, `kind`, `default`, `scope`), `@Engine` (`version`,
+`current_internal_schema_version`, `min_supported_internal_schema_version`)
+and `@LogicalKind` (`name`, `coverage`). No `@` type can be declared, written
+or searched.
+
+```gq
+query operators() {
+  match { $o: @Operator }
+  return { $o.name, $o.inputs }
+  order { $o.name }
+}
+```
+
+Run it on any graph (`omnigraph query --target <uri> -e '…'`), on the local
+binary with no store (`omnigraph catalogue -e '…' --json`), or served under the
+reserved graph `og_catalog`.
+
 ## System Fields and Result Values
 
 Use `$p.@id` for a node's identity and `$w.@id`, `$w.@src`, `$w.@dst` for a
@@ -364,7 +393,14 @@ query friend_counts() {
 }
 ```
 
-Supported: `count`, `sum`, `avg`, `min`, `max`, `collect`. Grouping is implicit on non-aggregated return fields.
+Supported: `count`, `sum`, `avg`, `min`, `max`, `collect`, `stddev`, `percentile`. Grouping is implicit on non-aggregated return fields.
+`stddev($x.n)` is the sample standard deviation (null below two values) and
+`percentile($x.n, 0.5)` the exact percentile with linear interpolation (null
+over none), both a nullable `F64` over numeric values held in
+`query_memory_bytes`; `p` is a literal from 0 to 1 (`T8` outside) or a
+numeric parameter (`E5` when bound outside or to null), and neither takes
+`distinct` (`T57`). Both work as block values too:
+`percentile($s.amount, 0.5) { $s: Sale, $h sells $s } as median`.
 `count(distinct $f)` counts distinct nodes (distinct edges over an edge
 binding `$k`) and `count(distinct $f.city)`
 distinct non-null values; `distinct` under another aggregate but `collect` is refused
@@ -415,6 +451,22 @@ index, and an index never changes their rows: a String `@index` (not a `@key` al
 `contains` to candidates checked exactly (a needle under three characters, or with no run of
 three letters or digits, reads every row) and a BTREE for `starts_with`; a list `@index` builds a
 LABEL_LIST for `"x" in $p.tags`.
+
+Scalar functions, null when an argument is null (`if` and `coalesce` aside):
+`if(c, a, b)`, `coalesce(a, …)`, `concat(a, …)`; strings `lower`, `upper`
+(Unicode case mapping), `trim`, `ltrim`, `rtrim` (Unicode whitespace),
+`length` (characters, `I64`), `left(s, n)`, `right(s, n)`,
+`substring(s, start, len)` (1-based, clipped; a negative count or length is
+`E5`); numbers `abs`, `floor`, `ceil` and `round(x, digits: n)` (half away
+from zero) in the operand's type, `sqrt`, `exp`, `ln`, `log10`,
+`power(b, e)` as `F64` (`E5` outside the domain, `E3` for a result that is
+not finite); `size(list)`; `cast(x, T)` between scalar types (`E6` for text
+that is not a literal of `T` or a number out of range). A function of a
+column is tested on each row the scan reads, never through an index
+(`lower($p.email) = $q`, `contains(lower($d.title), $q)`), so compare the
+bare column (`$p.email = $q`, `contains($d.title, $q)`) where
+an index should answer. Full semantics: the user guide's "Functions and
+operators" page.
 
 `$m.number in $numbers` keeps the rows whose value is a member of a list
 parameter or literal, one query instead of one per candidate; the right side
@@ -568,6 +620,31 @@ another, in two writes.
 > **Constructive-only OR delete-only (the D₂ rule).** A single mutation query may contain inserts, upserts, replaces and updates, **or** deletes — never both. Mixing a `delete` with an `insert`/`upsert`/`replace`/`update` in the same query is a type error (`T76`) that `lint` reports. The split is deliberate: one mutation query is constructive XOR destructive. Split a delete-then-insert into two separate mutations.
 
 A write's filter may compare at most four properties more than once each with `=`, `!=` or `in` (for example `$x.s in ["a"] or $x.s in ["b"]` compares `s` twice). One that compares more is refused before any effect; split the condition across groups or simplify it.
+
+### Proposals and snapshots: `as commit`, `as unattached branch`
+
+The clause after a write's parameters decides where its result lands; the
+branch head stays where it was in both cases.
+
+```gq
+query propose_bob() as commit {
+    replace Person { name: "bob", age: 41 }
+}
+
+query draft_person($name: String) as unattached branch {
+    replace Person { name: $name }
+}
+
+query draft_more($base: String) as unattached branch on $base {
+    replace Person { name: "carol" }
+}
+```
+
+`as commit` records an unpublished commit: read it with `--snapshot <id>`,
+then `commit publish "<id>"` installs it on its branch or `commit drop "<id>"`
+discards it; a merge takes `branch merge feature into main as commit`.
+`as unattached branch` records a snapshot that never publishes: its id is the
+caller's tip, and the next write `on "<id>"` (or `on $base`) builds on it.
 
 ### Date and DateTime values
 
