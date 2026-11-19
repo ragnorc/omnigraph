@@ -403,6 +403,46 @@ def cmd_run(args):
     summarize(out)
 
 
+def cmd_rejudge(args):
+    """Judge every stored answer of a results directory again, at this
+    checkout, into a new results directory: no agent call is made, the
+    replies, prompts and agent figures are the source's, and only each
+    record's verdict is the current judge's."""
+    bin_path = args.agent_bin
+    if not os.path.exists(bin_path):
+        raise Refusal(f"{bin_path} is missing: build it with "
+                      "`cargo build --locked -p omnigraph-gqt --bin omnigraph-gqt-agent`")
+    src = args.src.rstrip("/")
+    out = args.out
+    if os.path.exists(out):
+        raise Refusal(f"{out} exists")
+    records = json_lines(open(os.path.join(src, "records.jsonl")).read())
+    for arm in sorted({r["arm"] for r in records}):
+        mine = [r for r in records if r["arm"] == arm and r.get("answer") is not None]
+        verdicts = judge(bin_path, arm, [(r["task"], r["answer"]["text"]) for r in mine])
+        for i, record in enumerate(mine):
+            record["judge"] = verdicts[i]
+    os.makedirs(out)
+    with open(os.path.join(out, "records.jsonl"), "w") as f:
+        for record in records:
+            f.write(json.dumps(record, sort_keys=True) + "\n")
+    meta = json.load(open(os.path.join(src, "meta.json")))
+    meta["rejudged"] = {
+        "from": os.path.basename(src),
+        "git_head": git_head(),
+        "at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+        "agent_calls": 0,
+        "runner_sha256": sha256(open(__file__).read()),
+    }
+    with open(os.path.join(out, "meta.json"), "w") as f:
+        json.dump(meta, f, indent=2, sort_keys=True)
+        f.write("\n")
+    edition2 = os.path.join(src, "edition2.json")
+    if os.path.exists(edition2):
+        shutil.copyfile(edition2, os.path.join(out, "edition2.json"))
+    summarize(out)
+
+
 # ---------------------------------------------------------------- summary
 
 from summary import summarize  # noqa: E402
@@ -425,10 +465,16 @@ def main():
     r.add_argument("--claude", default="claude")
     s = sub.add_parser("summarize", help="rewrite summary.md and summary.json of a results directory")
     s.add_argument("dir")
+    j = sub.add_parser("rejudge", help="judge a results directory's stored answers again, with no agent call")
+    j.add_argument("src")
+    j.add_argument("out")
+    j.add_argument("--agent-bin", default=DEFAULT_BIN)
     args = ap.parse_args()
     try:
         if args.command == "run":
             cmd_run(args)
+        elif args.command == "rejudge":
+            cmd_rejudge(args)
         else:
             summarize(args.dir)
     except Refusal as e:
