@@ -1,0 +1,117 @@
+# Local checks for simplify/dead-items-20261119 (0f9afd8e) on base fd4d61f6. Box: 2 CPUs, gVisor, root.
+
+$ cargo fmt --all --check
+(exit 0)
+
+$ cargo dev-clippy
+    Finished `dev` profile [unoptimized] target(s) in 4m 09s
+exit 0
+
+$ RUST_MIN_STACK=16777216 cargo dev-nextest --no-fail-fast
+     Summary [ 302.398s] 5468 tests run: 5389 passed, 79 failed, 49 skipped
+PASS [   0.044s] (3749/5468) omnigraph-engine::integration merge_projection_cache::branch_delete_purges_merge_authority_after_acquiring_branch_gate
+PASS [   0.488s] (3759/5468) omnigraph-engine::integration merge_projection_cache::merge_authority_cache_retains_only_one_non_bound_branch
+PASS [   0.821s] (3767/5468) omnigraph-engine::integration merge_projection_cache::branch_recreate_is_fenced_from_the_cached_projection
+PASS [   1.613s] (3779/5468) omnigraph-engine::integration merge_projection_cache::repeated_merge_reuses_local_projection_and_refreshes_foreign
+PASS [   3.018s] (3802/5468) omnigraph-engine::integration merge_projection_cache::cold_merge_uses_held_tail_before_settled_history
+PASS [   3.591s] (3833/5468) omnigraph-engine::integration merge_projection_cache::consecutive_recent_fork_merges_avoid_settled_history
+
+$ RUST_MIN_STACK=16777216 cargo dev-nextest --no-fail-fast -E "<the crates of the 79 failures>"   # unmodified main fd4d61f6
+     Summary [ 173.871s] 842 tests run: 763 passed, 79 failed, 4676 skipped
+failing only on branch: 0   failing only on main: 0
+
+The 79 failures, identical on both:
+omnigraph-bench archive::tests::archive_loader_rejects_symlinked_object_ancestors
+omnigraph-bench archive::tests::archive_loader_rejects_symlinked_shards
+omnigraph-bench archive::tests::archive_publisher_rejects_symlinked_internal_ancestors
+omnigraph-bench machine::tests::captures_a_complete_identity_on_supported_hosts
+omnigraph-bench projection::tests::bounded_reads_reject_special_files_and_symlinked_ancestors_without_blocking
+omnigraph-bench real_graph_run::tests::native_finbench_delta_merges_and_verifies_exactly
+omnigraph-bench real_graph_run::tests::worker_machine_identity_is_established_once_and_drift_is_refused
+omnigraph-bench runner::tests::warm_and_post_reopen_start_from_identical_frozen_bytes_and_verify_exact_content
+omnigraph-cli::integration cli_cluster::managed_lifecycle_capture_and_retry_records_refuse_symlinks_without_reading_targets
+omnigraph-cli::integration cli_data::a_policy_refused_served_load_reports_not_started
+omnigraph-cli::integration cli_mcp::mcp_binds_one_graph_and_relays_its_reads_unchanged
+omnigraph-cli::integration cli_mcp::mcp_lists_and_admits_write_tools_only_with_the_agents_consent
+omnigraph-cli::integration cli_queries::a_query_without_its_parameter_list_reports_q002_in_every_output_format
+omnigraph-cli::integration cli_queries::branch_statements_remote_round_trip_and_delete_needs_consent
+omnigraph-cli::integration cli_queries::queries_list_on_a_server_target_prints_the_route_body
+omnigraph-cli::integration parity_matrix::parity_blob_external_get_never_follows_the_redirect
+omnigraph-cli::integration parity_matrix::parity_blob_get_is_byte_exact_for_full_range_empty_edge_and_snapshot_reads
+omnigraph-cli::integration parity_matrix::parity_blob_put_and_clear_share_receipts_and_refusals
+omnigraph-cli::integration parity_matrix::parity_blob_shared_failures_keep_exit_codes_aligned
+omnigraph-cli::integration parity_matrix::parity_blob_stat_preserves_exact_managed_and_external_metadata
+omnigraph-cli::integration parity_matrix::parity_branch_create_at_a_commit
+omnigraph-cli::integration parity_matrix::parity_branch_create_delete
+omnigraph-cli::integration parity_matrix::parity_branch_list
+omnigraph-cli::integration parity_matrix::parity_branch_merge
+omnigraph-cli::integration parity_matrix::parity_branch_review
+omnigraph-cli::integration parity_matrix::parity_branch_statements
+omnigraph-cli::integration parity_matrix::parity_changes_baseline
+omnigraph-cli::integration parity_matrix::parity_changes_poll_beginning
+omnigraph-cli::integration parity_matrix::parity_commit_changes
+omnigraph-cli::integration parity_matrix::parity_commit_changes_filtered
+omnigraph-cli::integration parity_matrix::parity_commit_list
+omnigraph-cli::integration parity_matrix::parity_commit_list_branch
+omnigraph-cli::integration parity_matrix::parity_commit_list_pages
+omnigraph-cli::integration parity_matrix::parity_diff_over_shared_history
+omnigraph-cli::integration parity_matrix::parity_errors_share_exit_codes
+omnigraph-cli::integration parity_matrix::parity_export
+omnigraph-cli::integration parity_matrix::parity_load
+omnigraph-cli::integration parity_matrix::parity_load_embedding_diagnostics
+omnigraph-cli::integration parity_matrix::parity_mutate
+omnigraph-cli::integration parity_matrix::parity_query
+omnigraph-cli::integration parity_matrix::parity_ranked_query_ranking
+omnigraph-cli::integration parity_matrix::parity_schema_show
+omnigraph-cli::integration parity_matrix::parity_snapshot
+omnigraph-cli::integration parity_matrix::parity_verb_and_statement_agree
+omnigraph-cli::integration system_local::cluster_server_boot_ignores_local_config_in_cwd
+omnigraph-cli::integration system_local::local_applied_empty_cluster_serves_exact_witness_and_empty_inventory
+omnigraph-cli::integration system_local::local_cli_branch_create_enforces_engine_layer_policy
+omnigraph-cli::integration system_local::local_cli_branch_delete_enforces_engine_layer_policy
+omnigraph-cli::integration system_local::local_cli_branch_merge_enforces_engine_layer_policy
+omnigraph-cli::integration system_local::local_cli_change_enforces_engine_layer_policy
+omnigraph-cli::integration system_local::local_cli_ingest_enforces_engine_layer_policy
+omnigraph-cli::integration system_local::local_cli_keyed_credentials_authenticate_url_matched_server_issue_1022
+omnigraph-cli::integration system_local::local_cli_load_enforces_engine_layer_policy
+omnigraph-cli::integration system_local::local_cli_operator_alias_and_server_flag_invoke_stored_query
+omnigraph-cli::integration system_local::local_cli_optimize_runs_a_recorded_operation
+omnigraph-cli::integration system_local::local_cluster_apply_then_server_boots_from_cluster_state
+omnigraph-cli::integration system_local::local_cluster_full_lifecycle_declare_serve_evolve_delete
+omnigraph-cli::integration system_local::local_cluster_serving_enforces_applied_policy_bindings
+omnigraph-cli::integration system_remote::graphs_list_against_multi_graph_server
+omnigraph-cli::integration system_remote::mutate_if_commit_lost_cas_exits_4_issue_365
+omnigraph-cli::integration system_remote::remote_blob_write_delivery_loss_never_replays_committed_effect
+omnigraph-cli::integration system_remote::remote_branch_create_list_merge_flow
+omnigraph-cli::integration system_remote::remote_branch_delete_removes_branch
+omnigraph-cli::integration system_remote::remote_commit_delivery_loss_never_replays_committed_effect
+omnigraph-cli::integration system_remote::remote_deployment_delivery_loss_preserves_owned_completion
+omnigraph-cli::integration system_remote::remote_export_round_trips_full_branch_graph
+omnigraph-cli::integration system_remote::remote_ingest_creates_review_branch_and_keeps_it_readable
+omnigraph-cli::integration system_remote::remote_ingest_reuses_existing_branch_and_merges_updates
+omnigraph-cli::integration system_remote::remote_load_round_trips_and_requires_from_for_new_branches
+omnigraph-cli::integration system_remote::remote_merge_delivery_loss_never_replays_committed_effect
+omnigraph-cli::integration system_remote::remote_merge_statement_delivery_loss_never_replays_committed_effect
+omnigraph-cli::integration system_remote::remote_policy_enforces_branch_first_cli_workflow
+omnigraph-cli::integration system_remote::remote_read_preserves_projection_order_in_json_and_csv
+omnigraph-cli::integration system_remote::remote_schema_apply_refuses_additive_change_for_cluster_backed_graph
+omnigraph-cli::integration system_remote::remote_schema_apply_refuses_branched_cluster_backed_graph
+omnigraph-cli::integration system_remote::remote_schema_apply_refuses_incompatible_change_for_cluster_backed_graph
+omnigraph-cli::integration system_remote::remote_server_and_cli_end_to_end_flow
+omnigraph-cli::integration system_remote::remote_unix_socket_serves_query_mutate_load_export_and_blob_get_issue_979
+omnigraph-engine db::upgrade::tests::interrupted::unreadable_legacy_object_asks_for_a_rerun
+
+$ cargo test -p omnigraph-gqt --locked --lib --test runner_dispatch
+test result: ok. 54 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.51s
+test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.02s
+
+$ cargo clippy -p omnigraph-gqt --all-targets --locked -- -D warnings -W clippy::dbg_macro
+    Finished `dev` profile [unoptimized] target(s) in 3m 35s
+gqt-clippy exit 0
+
+$ (cd crates/omnigraph-dst && cargo test --locked --test scenarios dst_bench_cost_count_golden)
+test dst_bench_cost_count_golden ... ok
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 86 filtered out; finished in 11.70s
+
+$ python3 scripts/check-ci-cells.py
+ok: 101 required test names are defined under crates/
