@@ -1,7 +1,7 @@
 //! The instrument's data stays valid: every edition-3 ground truth is
 //! accepted by #1316's front door, and where it runs it returns the task's
-//! expected rows; every seed of each arm is refused with its code; and the
-//! cards match their pins.
+//! expected rows; every seed of each arm is refused with its code; and each
+//! card matches its pin and regenerates from the skill.
 
 use super::*;
 
@@ -116,7 +116,7 @@ fn every_seed_is_refused_with_its_code() {
 }
 
 #[test]
-fn cards_match_their_pins() {
+fn cards_match_their_pins_and_regenerate_from_the_skill() {
     let root = Instrument::default_root();
     let manifest = card::Manifest::read(&root).unwrap();
     assert!(
@@ -130,4 +130,15 @@ fn cards_match_their_pins() {
          `omnigraph-gqt-agent cards --write`:\n{}",
         mismatches.join("\n")
     );
+    let skill = card::skill_root(&card::repo_root(&root));
+    for (arm, _) in &manifest.cards {
+        let generated = card::generated(*arm, &skill).unwrap();
+        let on_disk = std::fs::read_to_string(card::card_path(&root, *arm)).unwrap();
+        assert!(
+            generated == on_disk,
+            "skills/omnigraph changed, so the {} card no longer matches it; run \
+             `omnigraph-gqt-agent cards --write`, which regenerates the card and its pin",
+            arm.name()
+        );
+    }
 }

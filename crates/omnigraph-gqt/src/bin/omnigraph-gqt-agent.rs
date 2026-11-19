@@ -16,7 +16,7 @@ commands:
   tasks                    every task, one JSON object per line
   seeds --arm gq3  the seeded answers of an arm
   judge --arm gq3  judge {\"id\", \"task\", \"text\"} lines from stdin
-  cards --check|--write    the card digests in manifest.json
+  cards --check|--write    each arm's card regenerated from skills/omnigraph, and its digest in manifest.json
   record --check|--write   rows from the first edition-3 truth, for tasks with no edition-2 rows
   truths                   every edition-3 truth run against the expected rows, one JSON line each";
 
@@ -125,7 +125,22 @@ async fn run(args: Args) -> Result<(), String> {
         }
         "cards" => {
             let write = args.write.ok_or("cards needs --check or --write")?;
+            let skill = card::skill_root(&card::repo_root(&args.root));
             let mut manifest = card::Manifest::read(&args.root)?;
+            let mut problems = Vec::new();
+            for (arm, _) in &manifest.cards {
+                let generated = card::generated(*arm, &skill)?;
+                let path = card::card_path(&args.root, *arm);
+                if write {
+                    std::fs::write(&path, &generated).map_err(|e| e.to_string())?;
+                } else if std::fs::read_to_string(&path).ok().as_deref() != Some(&generated) {
+                    problems.push(format!(
+                        "{} differs from the card generated from {}; run `cards --write`",
+                        path.display(),
+                        skill.display()
+                    ));
+                }
+            }
             if write {
                 for (arm, digest) in &mut manifest.cards {
                     let bytes = std::fs::read(card::card_path(&args.root, *arm))
@@ -136,7 +151,7 @@ async fn run(args: Args) -> Result<(), String> {
                     .map_err(|e| e.to_string())?;
                 return Ok(());
             }
-            let problems = manifest.verify(&args.root);
+            problems.extend(manifest.verify(&args.root));
             if problems.is_empty() {
                 Ok(())
             } else {
