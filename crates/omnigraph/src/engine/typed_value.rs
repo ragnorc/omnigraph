@@ -412,8 +412,13 @@ fn check_stored_fields<'a>(
             OmniError::manifest_internal(format!("consumed {table}.{name} has no declared field"))
         })?;
         let actual = stored_field(stored, expected, table, contract_covers)?;
+        // PROTOTYPE (#1493, option B): a version older than the accepted
+        // contract may store a property as nullable that a later promotion
+        // made required. The type must still match; the null probe
+        // (`probe_promoted_nulls`) proves the version holds no live null.
+        let promoted_since = !contract_covers && actual.is_nullable() && !expected.is_nullable();
         if actual.data_type() != expected.data_type()
-            || actual.is_nullable() != expected.is_nullable()
+            || (actual.is_nullable() != expected.is_nullable() && !promoted_since)
         {
             return Err(OmniError::manifest_internal(format!(
                 "stored {table}.{} has {:?}, nullable {}; declared {:?}, nullable {}",

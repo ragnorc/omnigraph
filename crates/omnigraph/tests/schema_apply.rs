@@ -4406,3 +4406,198 @@ async fn issue_721_edge_property_promotes_to_required() {
     .await
     .expect_err("an edge without why is refused");
 }
+
+// Issue #1493: a promotion (`b: I32?` to `b: I32`) tightens the storage
+// column from its own commit on and rewrites no older table version, so every
+// commit before it stores the column nullable. A read at such a commit must
+// answer the values the commit stored, for a node property, a whole node and
+// an edge property.
+#[tokio::test]
+#[cfg_attr(feature = "failpoints", serial_test::parallel)]
+async fn issue_1493_promoted_property_reads_at_a_commit_before_the_promotion() {
+    let v1 = "node P {\n    slug: String @key\n    b: I32?\n}\nedge K: P -> P {\n    w: I32?\n}\n";
+    let v2 = "node P {\n    slug: String @key\n    b: I32\n}\nedge K: P -> P {\n    w: I32\n}\n";
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap();
+    let db = helpers::session(Omnigraph::init(uri, v1).await.unwrap());
+    db.load_jsonl(
+        "{\"type\":\"P\",\"data\":{\"slug\":\"a\",\"b\":1}}\n\
+         {\"type\":\"P\",\"data\":{\"slug\":\"c\",\"b\":3}}\n\
+         {\"edge\":\"K\",\"from\":\"a\",\"to\":\"c\",\"data\":{\"w\":4}}",
+        LoadMode::Append,
+    )
+    .await
+    .unwrap();
+    let before = snapshot_id(&db, "main").await.unwrap();
+    db.apply_schema(v2)
+        .await
+        .expect("a filled property promotes");
+
+    let reads = r#"
+query slugs() { match { $p: P } return { $p.slug } order { $p.slug asc } }
+query values() { match { $p: P } return { $p.slug, $p.b } order { $p.slug asc } }
+query nodes() { match { $p: P } return { $p } order { $p.slug asc } }
+query weights() { match { $a: P
+ $a $e:k $b } return { $a.slug, $e.w } }
+"#;
+    let expected = [
+        (
+            "slugs",
+            serde_json::json!([{"p.slug": "a"}, {"p.slug": "c"}]),
+        ),
+        (
+            "values",
+            serde_json::json!([{"p.slug": "a", "p.b": 1}, {"p.slug": "c", "p.b": 3}]),
+        ),
+        ("weights", serde_json::json!([{"a.slug": "a", "e.w": 4}])),
+    ];
+    for (name, rows) in expected {
+        let result = db
+            .query(
+                ReadTarget::snapshot(before.clone()),
+                reads,
+                name,
+                &params(&[]),
+            )
+            .await
+            .unwrap_or_else(|error| panic!("{name} at the commit before the promotion: {error:?}"));
+        assert_eq!(result.to_rust_json().unwrap(), rows, "{name}");
+    }
+    let nodes = db
+        .query(
+            ReadTarget::snapshot(before.clone()),
+            reads,
+            "nodes",
+            &params(&[]),
+        )
+        .await
+        .unwrap_or_else(|error| panic!("whole node at the commit before the promotion: {error:?}"));
+    assert_eq!(nodes.num_rows(), 2);
+}
+
+// Issue #1493: a commit before the promotion may hold a null that a later
+// commit filled. That read can never answer under the required declaration,
+// and repeating it can never succeed, so it must not fail as `internal`.
+#[tokio::test]
+#[cfg_attr(feature = "failpoints", serial_test::parallel)]
+async fn issue_1493_a_null_stored_before_the_promotion_is_not_an_internal_error() {
+    let v1 = "node P {\n    slug: String @key\n    b: I32?\n}\n";
+    let v2 = "node P {\n    slug: String @key\n    b: I32\n}\n";
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap();
+    let db = helpers::session(Omnigraph::init(uri, v1).await.unwrap());
+    db.load_jsonl(r#"{"type":"P","data":{"slug":"a"}}"#, LoadMode::Append)
+        .await
+        .unwrap();
+    let with_null = snapshot_id(&db, "main").await.unwrap();
+    db.load_jsonl(r#"{"type":"P","data":{"slug":"a","b":2}}"#, LoadMode::Merge)
+        .await
+        .unwrap();
+    db.apply_schema(v2)
+        .await
+        .expect("a filled property promotes");
+
+    let reads = "query values() { match { $p: P } return { $p.slug, $p.b } }";
+    match db
+        .query(
+            ReadTarget::snapshot(with_null),
+            reads,
+            "values",
+            &params(&[]),
+        )
+        .await
+    {
+        Ok(result) => assert_eq!(
+            result.to_rust_json().unwrap(),
+            serde_json::json!([{"p.slug": "a", "p.b": null}])
+        ),
+        Err(OmniError::Manifest(error)) => assert!(
+            error.kind == ManifestErrorKind::BadRequest && error.message.contains("'b'"),
+            "{error:?}"
+        ),
+        Err(error) => panic!("expected an answer or a typed refusal naming b, got {error:?}"),
+    }
+}
+
+// Issue #1493, option B measurement (proto branch only, not for merge): the
+// cost of probing a pre-promotion table version for a live null in the
+// promoted column, next to the historical read it would guard.
+#[tokio::test]
+#[ignore = "measurement for #1493; run with ISSUE_1493_ROWS"]
+async fn issue_1493_measure_null_probe() {
+    let rows: usize = std::env::var("ISSUE_1493_ROWS")
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(100_000);
+    let v1 = "node P {\n    slug: String @key\n    b: I32?\n    note: String?\n}\n";
+    let v2 = "node P {\n    slug: String @key\n    b: I32\n    note: String?\n}\n";
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().to_str().unwrap();
+    let db = helpers::session(Omnigraph::init(uri, v1).await.unwrap());
+    let mut data = String::new();
+    for i in 0..rows {
+        data.push_str(&format!(
+            "{{\"type\":\"P\",\"data\":{{\"slug\":\"s{i:08}\",\"b\":{i},\"note\":\"note {i} padding padding padding\"}}}}\n"
+        ));
+    }
+    // A keyed load admits 8192 entities, so load in chunks.
+    let lines: Vec<&str> = data.lines().collect();
+    for chunk in lines.chunks(8192) {
+        db.load_jsonl(&chunk.join("\n"), LoadMode::Append)
+            .await
+            .unwrap();
+    }
+    db.optimize_as(None, omnigraph::db::OptimizeRequest::default())
+        .await
+        .unwrap();
+    let before = snapshot_id(&db, "main").await.unwrap();
+    let version = db
+        .snapshot_of(ReadTarget::branch("main"))
+        .await
+        .unwrap()
+        .graph_manifest_version();
+    db.apply_schema(v2).await.unwrap();
+    let reads = "query slugs() { match { $p: P } return { $p.slug } }\nquery one($s: String) { match { $p: P { slug: $s } } return { $p.slug } }";
+    let historical = db
+        .snapshot_at_graph_manifest_version(version)
+        .await
+        .unwrap();
+    for round in 0..3 {
+        let started = std::time::Instant::now();
+        let all = db
+            .query(
+                ReadTarget::snapshot(before.clone()),
+                reads,
+                "slugs",
+                &params(&[]),
+            )
+            .await
+            .unwrap();
+        let read_all = started.elapsed();
+        let started = std::time::Instant::now();
+        db.query(
+            ReadTarget::snapshot(before.clone()),
+            reads,
+            "one",
+            &params(&[("$s", "s00000007")]),
+        )
+        .await
+        .unwrap();
+        let read_one = started.elapsed();
+        let started = std::time::Instant::now();
+        let dataset = historical.open_dataset("node:P").await.unwrap();
+        let nulls = dataset
+            .count_rows(Some("b IS NULL".to_string()))
+            .await
+            .unwrap();
+        let probe = started.elapsed();
+        assert_eq!(nulls, 0);
+        println!(
+            "ISSUE_1493 rows={rows} round={round} historical_full_read_ms={:.1} historical_point_read_ms={:.1} null_probe_ms={:.1} (rows read {})",
+            read_all.as_secs_f64() * 1e3,
+            read_one.as_secs_f64() * 1e3,
+            probe.as_secs_f64() * 1e3,
+            all.num_rows()
+        );
+    }
+}
