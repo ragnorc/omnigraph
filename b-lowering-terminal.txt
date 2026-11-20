@@ -1,0 +1,57 @@
+$ cat q.gq
+query nearest_per_author($v: Vector(3)) {
+  match {
+    $p: Person,
+    from nearest({ match { $d: Doc, $p authored $d } return { $d } }, $d.embedding, $v, k: 2) as $s
+  }
+  return { $p.name, $d.title, $s }
+  order { $p.name, $s }
+}
+
+query knows_edges() {
+  match {
+    $c: Person,
+    from union({ match { $q: Person, $c $k:knows $q } return { $k } },
+               { match { $a: Person, $a $e:knows $c } return { $e as k } })
+  }
+  return { $c.handle, $k.@src, $k.@dst }
+  order { $c.handle, $k }
+}
+
+query hits($s: String) {
+  match { $d: Doc }
+  return { $d.id, match_terms($d.body, terms($s, mode: any)) as hit }
+  order { $d.id }
+}
+
+$ omnigraph query --query q.gq nearest_per_author
+target file:///src/gq3-gates/b-lower-2/demo/g (inline): direct graph /src/gq3-gates/b-lower-2/demo/g; requested=/src/gq3-gates/b-lower-2/demo/g; provider=Local
+4 rows from branch main via nearest_per_author
+p.name | d.title       | s          
+-------+---------------+------------
+Ada    | graph basics  | 0.0        
+Ada    | cooking       | 2.0        
+Bob    | vector search | 0.020000005
+Bob    | graphs again  | 0.5        
+
+$ omnigraph query --query q.gq knows_edges
+target file:///src/gq3-gates/b-lower-2/demo/g (inline): direct graph /src/gq3-gates/b-lower-2/demo/g; requested=/src/gq3-gates/b-lower-2/demo/g; provider=Local
+4 rows from branch main via knows_edges
+c.handle | k.@src | k.@dst
+---------+--------+-------
+a        | a      | b     
+b        | b      | p1    
+b        | a      | b     
+p1       | b      | p1    
+
+$ omnigraph query --query q.gq hits
+target file:///src/gq3-gates/b-lower-2/demo/g (inline): direct graph /src/gq3-gates/b-lower-2/demo/g; requested=/src/gq3-gates/b-lower-2/demo/g; provider=Local
+5 rows from branch main via hits
+d.id | hit  
+-----+------
+d1   | true 
+d2   | true 
+d3   | true 
+d4   | false
+d5   | true 
+
