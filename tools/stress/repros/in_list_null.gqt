@@ -1,0 +1,68 @@
+# issue: 1277
+# notes: Two IN-list tests on one nullable property, joined so the lists' intersection is empty.
+# notes: For a row whose property is null every test is null, so neither predicate may select it.
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+    slug: String @key
+    s: String?
+}
+
+--- seed
+{"type":"Item","data":{"slug":"a"}}
+{"type":"Item","data":{"slug":"b","s":"x"}}
+
+--- query
+query or_of_negated_memberships() {
+    match {
+        $i: Item
+        not ($i.s in ["x"]) or not ($i.s in ["y"])
+    }
+    return { $i.slug }
+}
+
+--- expect unordered
+{"i.slug": "b"}
+
+--- expect shape
+i.slug: String
+
+--- query
+query negated_disjoint_conjunction() {
+    match {
+        $i: Item
+        not (($i.s in ["x"]) and ($i.s in ["y"]))
+    }
+    return { $i.slug }
+}
+
+--- expect unordered
+{"i.slug": "b"}
+
+--- expect shape
+i.slug: String
+
+--- mutate
+query delete_or_of_negated_memberships() {
+    delete Item where not (s in ["x"]) or not (s in ["y"])
+}
+
+--- expect affected: nodes=1 edges=0
+
+--- query
+query survivors() {
+    match { $i: Item }
+    return { $i.slug }
+}
+
+--- expect unordered
+{"i.slug": "a"}
+
+--- expect shape
+i.slug: String
