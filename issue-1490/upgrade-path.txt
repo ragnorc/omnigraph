@@ -1,0 +1,10 @@
+# A cluster applied by the old binary with graph probe_under, then corrected.
+$ omnigraph cluster apply ...   # old binary, graph probe_under
+"converged": true               # graphs/probe_under.omni written
+$ omnigraph cluster apply ...   # fixed binary, same cluster.yaml
+"code": "invalid_resource_id"   # nothing written
+$ sed -i 's/probe_under/probe-under/' cluster.yaml
+$ omnigraph cluster apply ...   # fixed binary
+"converged": true               # graphs/: probe-under.omni only (probe_under removed by the ordinary declaration-removal path)
+$ omnigraph-server --cluster file://.../storage --require-all-graphs --unauthenticated
+readyz ok

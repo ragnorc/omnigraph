@@ -1,0 +1,21 @@
+== probe_under: cluster apply
+exit 0
+converged: True
+target /tmp/r1490/before/under-storage (inline): direct root /tmp/r1490/before/under-storage; requested=/tmp/r1490/before/under-storage; provider=Local
+Deployment-ID: 01M7X4H7XF6FCAR467AFZ0KS9A:1:01M7X4H7XN5J9T23A4ZPS387M3
+Cluster-root: file:///tmp/r1490/before/under-storage
+Admission lock: 01M7X4H7XK5125HW7GDVSJB1XS
+== probe_under: server boot
+server exit 1
+Error: 
+   0: graph id 'probe_under': graph_id 'probe_under' must match ^[a-zA-Z0-9-]{1,64}$ — no underscores (engine reserves them), no path separators, no unicode
+== probe-dash: cluster apply
+exit 0
+converged: True
+target /tmp/r1490/before/dash-storage (inline): direct root /tmp/r1490/before/dash-storage; requested=/tmp/r1490/before/dash-storage; provider=Local
+Deployment-ID: 01M7X4H8JP0WFQ2ND7Z7D5WMDC:1:01M7X4H8JVB7MZGYNZGDYK98JR
+Cluster-root: file:///tmp/r1490/before/dash-storage
+Admission lock: 01M7X4H8JSJA4ANSJ2R9CN8VYF
+== probe-dash: server boot
+readyz ok
+server exit 0
