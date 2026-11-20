@@ -1,0 +1,41 @@
+$ omnigraph init --schema s.pg --target ./g
+initialized /src/work/demo/g
+$ omnigraph load --data d.jsonl --mode insert --target ./g
+loaded /src/work/demo/g on branch main with insert: 12 entities across 3 node types and 4 edge types
+
+$ cat q.gq
+query employers() {
+    match { $p: Person, optional { $c: Company, $p worksAt $c } }
+    return { $p.handle, $c }
+}
+
+query edges() {
+    match { $p: Person, $p $k:(knows | likes) $q }
+    return { $p.handle, $k }
+}
+
+query fused_per_author($s: String, $v: Vector(3)) {
+    match {
+        $p: Person,
+        let $pop = { match { $d: Doc, $p authored $d } return { $d } },
+        from rrf(bm25($pop, $d.body, $s), nearest($pop, $d.embedding, $v, k: 1)) as $f
+    }
+    return { $p.handle, $d.id, $f }
+    order { $p.handle, $f desc }
+}
+
+$ omnigraph query --query q.gq --target ./g --format jsonl employers
+{"kind":"metadata","query_name":"employers","target":{"branch":"main","snapshot":null},"row_count":2,"page":null}
+{"p.handle":"ada","c":{"@id":"acme","name":"Acme","slug":"acme"}}
+{"p.handle":"bob"}
+
+$ omnigraph query --query q.gq --target ./g --format jsonl edges
+{"kind":"metadata","query_name":"edges","target":{"branch":"main","snapshot":null},"row_count":2,"page":null}
+{"p.handle":"ada","k":{"@id":"k1","@src":"ada","@dst":"bob","@type":"Knows"}}
+{"p.handle":"bob","k":{"@id":"l1","@src":"bob","@dst":"ada","@type":"Likes"}}
+
+$ omnigraph query --query q.gq --target ./g --format jsonl --params '{"s":"graph","v":[1.0,0.0,0.0]}' fused_per_author
+{"kind":"metadata","query_name":"fused_per_author","target":{"branch":"main","snapshot":null},"row_count":3,"page":null,"ranking":{"by":"rrf","order":"descending","exhaustive":true,"score_columns":[]}}
+{"p.handle":"ada","d.id":"d1","f":0.03278688524590164}
+{"p.handle":"ada","d.id":"d3","f":0.016129032258064516}
+{"p.handle":"bob","d.id":"d2","f":0.03278688524590164}
