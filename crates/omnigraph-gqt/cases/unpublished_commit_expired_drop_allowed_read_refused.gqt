@@ -1,6 +1,7 @@
 # issue: none
 # notes: P4: an expired proposal is unavailable to new reads; the user docs say a commit past its parent can only be dropped.
 # notes: P5: a repeated drop is not found. P20: the target keeps its own rows.
+# notes: contract: branch:2
 
 --- runner
 timeout_ms: 10000

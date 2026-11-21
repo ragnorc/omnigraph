@@ -484,7 +484,7 @@ Full rules: [writes](writes.md), [mutations](../user/mutations/index.md).
    concurrent when neither is an ancestor of the other, so history is a
    total order on one branch and a partial order across branches, by
    ancestry and never by a clock.
-2. `merge:2` The same change on both sides is kept once, deletes included.
+2. `merge:2` ✓ The same change on both sides is kept once, deletes included.
    Different changes to one entity are a conflict: `divergent_insert`,
    `divergent_update`, `delete_vs_update`. Changes to different entities
    never conflict, unless together they break a constraint.
@@ -535,7 +535,7 @@ Full rules: [schema](../user/schema/index.md).
 
 1. `branch:1` A branch starts at a head or at a published commit of a live
    branch. Creating it copies no data.
-2. `branch:2` A proposal becomes unreadable when it is dropped or when it
+2. `branch:2` ✓ A proposal becomes unreadable when it is dropped or when it
    expires. It expires when its target's head moves past the commit it was
    built on, or when its target branch is deleted or created again.
 3. `branch:3` A branch listing says, for each live branch, who owns it, for
