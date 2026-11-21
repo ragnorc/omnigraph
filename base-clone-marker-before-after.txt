@@ -1,0 +1,13 @@
+# after (036de125): empty --base directory, new --target root
+$ omnigraph branch create feature --json --target /tmp/t/clone.omni --base /tmp/t/base   # run 1
+{"code": "not_found", "disposition": {"effects": "unknown", "action": "reconcile"}}
+exit=2
+root holds: ./__clone/created 
+$ omnigraph branch create feature --json --target /tmp/t/clone.omni --base /tmp/t/base   # run 2
+{"code": "not_found", "disposition": {"effects": "none", "action": "fix"}}
+exit=1
+root holds: ./__clone/created 
+
+# before (bc64a003), from the regression test run without the fix: run 1
+reported: Object {"effects": String("none"), "action": String("fix")}
+expected: Object {"effects": String("unknown"), "action": String("reconcile")}
