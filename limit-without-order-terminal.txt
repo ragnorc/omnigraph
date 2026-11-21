@@ -1,0 +1,13 @@
+$ python3 measure.py <binary> <graph> <queries.gq>   # release CLIs, --stats, 5 runs each, medians; 100,000 documents
+read                                    edition 2 ms   GQ 3 ms  e2 RSS MB  GQ3 RSS MB
+scan_limit                                      24.3      72.5      268.6       282.6
+scan_order_limit                                75.5      81.9      276.0       282.5
+filter_limit                                    26.6      88.1      271.7       282.6
+filter_order_limit                              77.4      89.9      276.2       282.3
+
+queries (GQ 3 text; edition 2 writes the filter as a match clause):
+query scan_limit() { match { $d: Doc } return { $d.slug, $d.year } limit 10 }
+query scan_order_limit() { match { $d: Doc } return { $d.slug, $d.year } order { $d.year desc } limit 10 }
+query filter_limit() { match { $d: Doc } where $d.year > 2005 return { $d.slug, $d.year } limit 10 }
+query filter_order_limit() { match { $d: Doc } where $d.year > 2005 return { $d.slug, $d.year } order { $d.year desc } limit 10 }
+

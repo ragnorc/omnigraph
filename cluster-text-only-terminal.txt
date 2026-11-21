@@ -1,0 +1,45 @@
+$ omnigraph cluster apply   # first apply creates the graph
+    "converged": true
+  }
+}
+
+$ # people.pg gains only a comment
+$ omnigraph cluster plan
+target /tmp/cap/cl (inline): direct root /tmp/cap/cl; requested=/tmp/cap/cl; provider=Local
+cluster plan: 2 change(s)
+  authority: observed (no lock taken, nothing written)
+  Update graph.knowledge
+  Update schema.knowledge [text only]
+      no step: the accepted identity is unchanged, so apply publishes no graph commit; the graph keeps its accepted schema source, which `omnigraph schema show` shows
+
+$ omnigraph cluster apply --json | jq .result.graphs
+{
+ "knowledge": {
+  "outcome": "schema",
+  "result": {
+   "NoOp": {
+    "graph_manifest_version": 1,
+    "head_commit_id": "01M7YG3206HJKCHM7VCBMAVHCQ",
+    "contract": {
+     "source_hash": "1c7e42c6974e59bcb0b6c89e0ddf86186945ca3e1b1572d78e41fd6eb0327434",
+     "schema_ir_hash": "sha256:0eaf733a25303d1dd1dbc2a289b0a0b512d73fcf537560eb6a61ff308bd35e9c",
+     "schema_identity_domain": "01M7YG3206PC9V4AB5T6ZJ676H",
+     "schema_identity_version": 2
+    }
+   }
+  }
+ }
+}
+
+$ omnigraph schema show --target graphs/knowledge.omni
+node Person {
+  name: String @key
+  age: I32?
+}
+
+
+$ omnigraph cluster plan
+target /tmp/cap/cl (inline): direct root /tmp/cap/cl; requested=/tmp/cap/cl; provider=Local
+cluster plan: 0 change(s)
+  authority: observed (no lock taken, nothing written)
+  no changes

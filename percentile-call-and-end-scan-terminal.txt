@@ -1,0 +1,9 @@
+$ omnigraph query per_sale_share --query pct.gq   # a caller column bound to percentile's fraction
+error[T8]: type error: T8: `pct`'s parameter `$f` is `percentile`'s fraction p, a number literal in [0, 1] or a numeric parameter, got F64?
+  --> line 6, column 28
+disposition: {"effects":"none","action":"fix"}
+
+$ omnigraph query --query cnt.gq --format json | physical tree   # count($r) reads no Region scan
+Aggregate {}
+  Expand {'src': 's', 'dst': 'r'}
+    Scan {'binding': 's', 'table': 'node:Sale'}
