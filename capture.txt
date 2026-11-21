@@ -1,0 +1,11 @@
+$ cargo dev-test --test integration -- write_cost_s3::cleanup_sweep --nocapture   # RustFS, proxy +20 ms/request
+
+# main (f36d3e92)
+cleanup after 4 commits: manifests removed 6, objects deleted 12, S3 delete requests 12, heads 28, gets 33, lists 77, wall 3478 ms
+cleanup after 16 commits: manifests removed 18, objects deleted 36, S3 delete requests 36, heads 52, gets 57, lists 77, wall 5138 ms
+  FAILED: the delete requests for freed files grew with the files
+
+# this PR (H1 + H2)
+cleanup after 4 commits: manifests removed 6, objects deleted 12, S3 delete requests 8, heads 18, gets 23, lists 77, wall 2897 ms
+cleanup after 16 commits: manifests removed 18, objects deleted 36, S3 delete requests 20, heads 30, gets 35, lists 77, wall 3844 ms
+  test write_cost_s3::cleanup_sweep_delete_requests_on_s3_issue_1252 ... ok
