@@ -20,16 +20,20 @@ Two hypotheses were kept.
 
 `cleanup --keep 1` after N one-row inserts on `main` (test schema, 3 node and
 edge tables plus `__manifest`), measured on RustFS 1.0.0-beta.12 through a
-counting proxy. Every number is a count of HTTP requests in the cleanup window.
+counting proxy. Every number is a count of HTTP requests in the cleanup window,
+from the plain proxy run; the wall column is from a second run through a proxy
+that adds 20 ms per request. The test's own counter (`DeleteRequestCounter` on
+the table and `__manifest` stores) gives the same delete and GET counts and 8
+HEADs and 2 LISTs fewer in every row, from stores outside its probes.
 
 | N commits | Version | Objects deleted | Delete requests | HEAD | GET | LIST | Wall, 20 ms per request |
 |---:|---|---:|---:|---:|---:|---:|---:|
-| 4 | main | 12 | 12 | 28 | 33 | 77 | 3,478 ms |
-| 4 | H1 | 12 | 8 | 28 | 33 | 77 | 3,333 ms |
-| 4 | H1 + H2 | 12 | 8 | 18 | 23 | 77 | 2,897 ms |
-| 16 | main | 36 | 36 | 52 | 57 | 77 | 5,138 ms |
-| 16 | H1 | 36 | 20 | 52 | 57 | 77 | 4,869 ms |
-| 16 | H1 + H2 | 36 | 20 | 30 | 35 | 77 | 3,844 ms |
+| 4 | main | 12 | 12 | 36 | 33 | 79 | 3,478 ms |
+| 4 | H1 | 12 | 8 | 36 | 33 | 79 | 3,333 ms |
+| 4 | H1 + H2 | 12 | 8 | 26 | 23 | 79 | 2,897 ms |
+| 16 | main | 36 | 36 | 60 | 57 | 79 | 5,138 ms |
+| 16 | H1 | 36 | 20 | 60 | 57 | 79 | 4,869 ms |
+| 16 | H1 + H2 | 36 | 20 | 38 | 35 | 79 | 3,844 ms |
 
 Per extra removed commit, main sends 2 delete requests, 2 HEADs and 2 GETs.
 The change sends 1 of each. The remaining delete request per commit is the
@@ -91,14 +95,14 @@ minutes at one request per file. The contract's cost column for `reclaim` says
 |---|---|---|---|
 | Delete requests | Manifests removed (they must go one by one, in order), plus one per 1,000 files | Manifests + files | Manifests + one stream per file group |
 | Manifest HEAD and GET in planning | Versions traced, once each | Twice per removed version | Once per traced version |
-| LIST | Tables and live branches, not history | 77, flat | 77, flat |
+| LIST | Tables and live branches, not history | 79, flat | 79, flat |
 
 ## Hypotheses
 
 | # | Change | Counter before | Counter after | Gates | Outcome |
 |---|---|---|---|---|---|
 | H1 | Freed files of a group go through one `delete_stream` on the table store's inner object store; an absent file counts no bytes; manifests stay single deletes | 16 commits: 36 delete requests (RustFS), 44 delete calls (local) | 20, 26 | All below | Kept (`9b45b880`) |
-| H2 | Resolve roots before the chain walk; the walk reads each version's paths at the same open (as a root or a sweep candidate); the root loop and the sweep skip traced versions | 16 commits: 52 HEAD, 57 GET (RustFS) | 30 HEAD, 35 GET | All below | Kept (`165cfde1`) |
+| H2 | Resolve roots before the chain walk; the walk reads each version's paths at the same open (as a root or a sweep candidate); the root loop and the sweep skip traced versions | 16 commits: 60 HEAD, 57 GET (RustFS) | 38 HEAD, 35 GET | All below | Kept (`165cfde1`) |
 | H3 | Delete the published manifests in one stream too | Not built | | | Dropped before building, see below |
 
 H1 detail. The stream goes to `lance::io::ObjectStore::inner`, the same object
@@ -138,7 +142,7 @@ Batching them needs that proof. That proof is the proposal below, not a change.
   just given every size (`plan.manifest_bytes`). PR #1449 (open) teaches the
   pinned opener to use a recorded size on a cache-free session; the collector
   could open through the same route, which would take the 16-commit case from
-  30 HEADs to about 8.
+  38 HEADs to about 16.
 
 ## Gates
 
