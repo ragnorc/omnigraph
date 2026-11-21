@@ -1,0 +1,27 @@
+loaded /tmp/tmp.mlyRV02Jbj/g on branch main with overwrite: 5 entities across 1 node types and 2 edge types
+
+$ omnigraph mutate -e 'query q() { match { $f: File, $g: File } where $f.name = "a" and $g.name = "b" update $g set { data: $f.data } }'
+changed main via q: 1 nodes, 0 edges
+  blob get node File b        data -> hello
+
+$ omnigraph mutate -e 'query q() { match { $f: File } where $f.name = "c" insert File { name: "c-copy", data: $f.data } }'
+changed main via q: 1 nodes, 0 edges
+  blob get node File c-copy   data -> cccc
+
+$ omnigraph mutate -e 'query q() { match { $f: File, $f $e:(holds | keeps) $g } update $g set { data: $e.data } }'
+changed main via q: 2 nodes, 0 edges
+  blob get node File b        data -> holds
+  blob get node File c        data -> keeps
+
+$ omnigraph mutate -e 'query q() { match { $f: File, optional { $s: File, $s holds $f } } update $f set { data: coalesce($s.data, $f.data) } }'
+changed main via q: 4 nodes, 0 edges
+  blob get node File a        data -> hello
+  blob get node File b        data -> hello
+
+$ omnigraph mutate -e 'query q() { match { $f: File, $g: File } where $g.name = "b" update $g set { data: $f.data } }'
+error[E4]: execution error: E4: `q`: the rows of statement 1 of group 1 give File `b` two different Blob values for `data`; the rows of one statement must agree on each entity's value
+  --> execution
+
+$ omnigraph query -e (a Blob bound by let)
+error[T24]: type error: T24: Blob property `f.data` is not a read value
+  --> line 1, column 31

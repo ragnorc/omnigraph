@@ -1,0 +1,8 @@
+bm25 single pass: release CLI --stats, 100,000 docs (migration matrix gen.search_corpus, seed 11), 5 runs, medians
+query                    wall before wall after elapsed before elapsed after   RSS MiB b/a  rows
+bm25_body                     1.514s     0.845s       1484.7ms       814.7ms  294.5/292.2  identical (3893aa7d14715fd1)
+bm25_body_filtered            1.217s     0.842s       1187.7ms       814.0ms  294.9/294.3  identical (e825d97610aed822)
+bm25_title                    0.455s     0.298s        424.7ms       268.3ms  291.1/288.8  identical (96214feca1c9eef0)
+bm25_title_filtered           0.375s     0.299s        344.3ms       269.9ms  290.6/290.0  identical (4c601e5a9072f12a)
+match_terms_body              0.847s     0.847s        816.8ms       817.0ms  289.9/291.1  identical (5010ce270d139636)
+rrf_bm25                      0.523s     0.395s        493.2ms       367.1ms  318.5/319.3  identical (0bf3077be45aa5a4)
