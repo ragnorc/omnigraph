@@ -1,0 +1,417 @@
+{
+  "runner_output_version": 2,
+  "store": "/src/gqb/store",
+  "at": [
+    {
+      "reference": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+      "commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+      "product": {
+        "path": "/src/gqb/bin/new/omnigraph",
+        "package_version": "0.16.1",
+        "http_contract": "0.14",
+        "internal_schema_writes": 18,
+        "executable_sha256": "53a082ecadc75594c896f50355a5c4dab9d5fd061ac7f275deebc242d2232c55",
+        "requested_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b"
+      },
+      "output": {
+        "runner_output_version": 2,
+        "suite": "e2e-mixed-load",
+        "suite_path": "/src/gqb/new/benchmarks/benchmarks.yaml",
+        "completed_run_count": 1,
+        "runs": [
+          {
+            "runner_output_version": 1,
+            "case_id": "e2e-mixed-load",
+            "case_path": "/src/gqb/new/benchmarks/benchmarks.yaml",
+            "point_id": "986a513f52c0510c2437d71de805e4d685890fc790af6ec0c57cb902f993e7c4",
+            "point_name": "gqt-process-cold-986a513f52c0",
+            "requested_repetitions": 1,
+            "bound": {
+              "plan": {
+                "definition": {
+                  "version": 1,
+                  "id": "e2e-mixed-load",
+                  "scenario": "gqt-v1",
+                  "fixture": {
+                    "kind": "dataset",
+                    "path": "fixtures/e2e_mixed_load.gqt"
+                  },
+                  "workload": {
+                    "queries": "workloads/e2e_mixed_load.gqt",
+                    "measured_step": {
+                      "ordinal": 1,
+                      "text": "--- load generate: v1 seed: 0 mode: replace branch: main\ntables:\n  - kind: node\n    name: Chunk\n    rows: 32\n    commits: 1\n    batch_rows: 32\n    start: 48\n    columns:\n      slug: {kind: key, prefix: base, width: 3}\n      embedding: {kind: literal, value: [300.0,0.0,0.0,0.0]}\n"
+                    }
+                  },
+                  "environment": {
+                    "backend": {
+                      "kind": "local-fs",
+                      "filesystem": "xfs",
+                      "storage_class": "nvme-ssd"
+                    }
+                  },
+                  "protocol": {
+                    "deadline_seconds": 60,
+                    "attribution": "off",
+                    "schedule": "manual",
+                    "reset": "clone",
+                    "timer": "monotonic"
+                  }
+                },
+                "dataset": {
+                  "kind": "gqt",
+                  "source": {
+                    "stem": "e2e_mixed_load",
+                    "text": "# issue: none\n# notes: 64 explicit Vector(4) rows. No raw Lance MergeInsertBuilder or index-toggle baseline.\n\n--- runner\ntimeout_ms: 60000\nenvironments:\n  - target: omnigraph-engine\n    storage: local-filesystem\n\n--- schema\nnode Chunk { slug: String @key embedding: Vector(4) }\n\n--- seed\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base000\",\"embedding\":[0.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base001\",\"embedding\":[1.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base002\",\"embedding\":[2.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base003\",\"embedding\":[3.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base004\",\"embedding\":[4.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base005\",\"embedding\":[5.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base006\",\"embedding\":[6.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base007\",\"embedding\":[7.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base008\",\"embedding\":[8.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base009\",\"embedding\":[9.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base010\",\"embedding\":[10.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base011\",\"embedding\":[11.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base012\",\"embedding\":[12.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base013\",\"embedding\":[13.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base014\",\"embedding\":[14.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base015\",\"embedding\":[15.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base016\",\"embedding\":[16.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base017\",\"embedding\":[17.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base018\",\"embedding\":[18.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base019\",\"embedding\":[19.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base020\",\"embedding\":[20.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base021\",\"embedding\":[21.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base022\",\"embedding\":[22.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base023\",\"embedding\":[23.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base024\",\"embedding\":[24.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base025\",\"embedding\":[25.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base026\",\"embedding\":[26.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base027\",\"embedding\":[27.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base028\",\"embedding\":[28.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base029\",\"embedding\":[29.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base030\",\"embedding\":[30.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base031\",\"embedding\":[31.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base032\",\"embedding\":[32.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base033\",\"embedding\":[33.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base034\",\"embedding\":[34.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base035\",\"embedding\":[35.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base036\",\"embedding\":[36.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base037\",\"embedding\":[37.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base038\",\"embedding\":[38.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base039\",\"embedding\":[39.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base040\",\"embedding\":[40.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base041\",\"embedding\":[41.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base042\",\"embedding\":[42.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base043\",\"embedding\":[43.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base044\",\"embedding\":[44.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base045\",\"embedding\":[45.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base046\",\"embedding\":[46.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base047\",\"embedding\":[47.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base048\",\"embedding\":[48.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base049\",\"embedding\":[49.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base050\",\"embedding\":[50.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base051\",\"embedding\":[51.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base052\",\"embedding\":[52.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base053\",\"embedding\":[53.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base054\",\"embedding\":[54.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base055\",\"embedding\":[55.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base056\",\"embedding\":[56.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base057\",\"embedding\":[57.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base058\",\"embedding\":[58.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base059\",\"embedding\":[59.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base060\",\"embedding\":[60.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base061\",\"embedding\":[61.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base062\",\"embedding\":[62.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base063\",\"embedding\":[63.0,1.0,0.0,0.0]}}\n\n--- query\nbranch list\n\n--- expect unordered\n{\"name\":\"main\"}\n--- expect shape\nname: String\n\n--- query branch: main\nquery chunk_rows() { match { $c: Chunk } return { $c.slug as slug, $c.embedding as embedding } }\n\n--- expect unordered\n{\"slug\":\"base000\",\"embedding\":[0.0,1.0,0.0,0.0]}\n{\"slug\":\"base001\",\"embedding\":[1.0,1.0,0.0,0.0]}\n{\"slug\":\"base002\",\"embedding\":[2.0,1.0,0.0,0.0]}\n{\"slug\":\"base003\",\"embedding\":[3.0,1.0,0.0,0.0]}\n{\"slug\":\"base004\",\"embedding\":[4.0,1.0,0.0,0.0]}\n{\"slug\":\"base005\",\"embedding\":[5.0,1.0,0.0,0.0]}\n{\"slug\":\"base006\",\"embedding\":[6.0,1.0,0.0,0.0]}\n{\"slug\":\"base007\",\"embedding\":[7.0,1.0,0.0,0.0]}\n{\"slug\":\"base008\",\"embedding\":[8.0,1.0,0.0,0.0]}\n{\"slug\":\"base009\",\"embedding\":[9.0,1.0,0.0,0.0]}\n{\"slug\":\"base010\",\"embedding\":[10.0,1.0,0.0,0.0]}\n{\"slug\":\"base011\",\"embedding\":[11.0,1.0,0.0,0.0]}\n{\"slug\":\"base012\",\"embedding\":[12.0,1.0,0.0,0.0]}\n{\"slug\":\"base013\",\"embedding\":[13.0,1.0,0.0,0.0]}\n{\"slug\":\"base014\",\"embedding\":[14.0,1.0,0.0,0.0]}\n{\"slug\":\"base015\",\"embedding\":[15.0,1.0,0.0,0.0]}\n{\"slug\":\"base016\",\"embedding\":[16.0,1.0,0.0,0.0]}\n{\"slug\":\"base017\",\"embedding\":[17.0,1.0,0.0,0.0]}\n{\"slug\":\"base018\",\"embedding\":[18.0,1.0,0.0,0.0]}\n{\"slug\":\"base019\",\"embedding\":[19.0,1.0,0.0,0.0]}\n{\"slug\":\"base020\",\"embedding\":[20.0,1.0,0.0,0.0]}\n{\"slug\":\"base021\",\"embedding\":[21.0,1.0,0.0,0.0]}\n{\"slug\":\"base022\",\"embedding\":[22.0,1.0,0.0,0.0]}\n{\"slug\":\"base023\",\"embedding\":[23.0,1.0,0.0,0.0]}\n{\"slug\":\"base024\",\"embedding\":[24.0,1.0,0.0,0.0]}\n{\"slug\":\"base025\",\"embedding\":[25.0,1.0,0.0,0.0]}\n{\"slug\":\"base026\",\"embedding\":[26.0,1.0,0.0,0.0]}\n{\"slug\":\"base027\",\"embedding\":[27.0,1.0,0.0,0.0]}\n{\"slug\":\"base028\",\"embedding\":[28.0,1.0,0.0,0.0]}\n{\"slug\":\"base029\",\"embedding\":[29.0,1.0,0.0,0.0]}\n{\"slug\":\"base030\",\"embedding\":[30.0,1.0,0.0,0.0]}\n{\"slug\":\"base031\",\"embedding\":[31.0,1.0,0.0,0.0]}\n{\"slug\":\"base032\",\"embedding\":[32.0,1.0,0.0,0.0]}\n{\"slug\":\"base033\",\"embedding\":[33.0,1.0,0.0,0.0]}\n{\"slug\":\"base034\",\"embedding\":[34.0,1.0,0.0,0.0]}\n{\"slug\":\"base035\",\"embedding\":[35.0,1.0,0.0,0.0]}\n{\"slug\":\"base036\",\"embedding\":[36.0,1.0,0.0,0.0]}\n{\"slug\":\"base037\",\"embedding\":[37.0,1.0,0.0,0.0]}\n{\"slug\":\"base038\",\"embedding\":[38.0,1.0,0.0,0.0]}\n{\"slug\":\"base039\",\"embedding\":[39.0,1.0,0.0,0.0]}\n{\"slug\":\"base040\",\"embedding\":[40.0,1.0,0.0,0.0]}\n{\"slug\":\"base041\",\"embedding\":[41.0,1.0,0.0,0.0]}\n{\"slug\":\"base042\",\"embedding\":[42.0,1.0,0.0,0.0]}\n{\"slug\":\"base043\",\"embedding\":[43.0,1.0,0.0,0.0]}\n{\"slug\":\"base044\",\"embedding\":[44.0,1.0,0.0,0.0]}\n{\"slug\":\"base045\",\"embedding\":[45.0,1.0,0.0,0.0]}\n{\"slug\":\"base046\",\"embedding\":[46.0,1.0,0.0,0.0]}\n{\"slug\":\"base047\",\"embedding\":[47.0,1.0,0.0,0.0]}\n{\"slug\":\"base048\",\"embedding\":[48.0,1.0,0.0,0.0]}\n{\"slug\":\"base049\",\"embedding\":[49.0,1.0,0.0,0.0]}\n{\"slug\":\"base050\",\"embedding\":[50.0,1.0,0.0,0.0]}\n{\"slug\":\"base051\",\"embedding\":[51.0,1.0,0.0,0.0]}\n{\"slug\":\"base052\",\"embedding\":[52.0,1.0,0.0,0.0]}\n{\"slug\":\"base053\",\"embedding\":[53.0,1.0,0.0,0.0]}\n{\"slug\":\"base054\",\"embedding\":[54.0,1.0,0.0,0.0]}\n{\"slug\":\"base055\",\"embedding\":[55.0,1.0,0.0,0.0]}\n{\"slug\":\"base056\",\"embedding\":[56.0,1.0,0.0,0.0]}\n{\"slug\":\"base057\",\"embedding\":[57.0,1.0,0.0,0.0]}\n{\"slug\":\"base058\",\"embedding\":[58.0,1.0,0.0,0.0]}\n{\"slug\":\"base059\",\"embedding\":[59.0,1.0,0.0,0.0]}\n{\"slug\":\"base060\",\"embedding\":[60.0,1.0,0.0,0.0]}\n{\"slug\":\"base061\",\"embedding\":[61.0,1.0,0.0,0.0]}\n{\"slug\":\"base062\",\"embedding\":[62.0,1.0,0.0,0.0]}\n{\"slug\":\"base063\",\"embedding\":[63.0,1.0,0.0,0.0]}\n--- expect shape\nslug: String\nembedding: Vector(4)\n\n",
+                    "sha256": "96b4e91011118338b6ea5b73fdfe8386465ce2ffb2bf54d67569d385eb3edd94"
+                  }
+                },
+                "queries": {
+                  "stem": "e2e_mixed_load",
+                  "text": "# issue: none\n# notes: One public loader call updates 16 existing keys and inserts 16 new keys; exact 80-row result. One operation on a fresh handle is timed; checks and restart are outside the timer.\n\n--- runner\ntimeout_ms: 60000\nenvironments:\n  - target: omnigraph-engine\n    storage: local-filesystem\n\n--- load generate: v1 seed: 0 mode: replace branch: main\ntables:\n  - kind: node\n    name: Chunk\n    rows: 32\n    commits: 1\n    batch_rows: 32\n    start: 48\n    columns:\n      slug: {kind: key, prefix: base, width: 3}\n      embedding: {kind: literal, value: [300.0,0.0,0.0,0.0]}\n--- expect ok\n\n--- query\nbranch list\n\n--- expect unordered\n{\"name\":\"main\"}\n--- expect shape\nname: String\n\n--- query branch: main\nquery chunk_rows() { match { $c: Chunk } return { $c.slug as slug, $c.embedding as embedding } }\n\n--- expect unordered\n{\"slug\":\"base000\",\"embedding\":[0.0,1.0,0.0,0.0]}\n{\"slug\":\"base001\",\"embedding\":[1.0,1.0,0.0,0.0]}\n{\"slug\":\"base002\",\"embedding\":[2.0,1.0,0.0,0.0]}\n{\"slug\":\"base003\",\"embedding\":[3.0,1.0,0.0,0.0]}\n{\"slug\":\"base004\",\"embedding\":[4.0,1.0,0.0,0.0]}\n{\"slug\":\"base005\",\"embedding\":[5.0,1.0,0.0,0.0]}\n{\"slug\":\"base006\",\"embedding\":[6.0,1.0,0.0,0.0]}\n{\"slug\":\"base007\",\"embedding\":[7.0,1.0,0.0,0.0]}\n{\"slug\":\"base008\",\"embedding\":[8.0,1.0,0.0,0.0]}\n{\"slug\":\"base009\",\"embedding\":[9.0,1.0,0.0,0.0]}\n{\"slug\":\"base010\",\"embedding\":[10.0,1.0,0.0,0.0]}\n{\"slug\":\"base011\",\"embedding\":[11.0,1.0,0.0,0.0]}\n{\"slug\":\"base012\",\"embedding\":[12.0,1.0,0.0,0.0]}\n{\"slug\":\"base013\",\"embedding\":[13.0,1.0,0.0,0.0]}\n{\"slug\":\"base014\",\"embedding\":[14.0,1.0,0.0,0.0]}\n{\"slug\":\"base015\",\"embedding\":[15.0,1.0,0.0,0.0]}\n{\"slug\":\"base016\",\"embedding\":[16.0,1.0,0.0,0.0]}\n{\"slug\":\"base017\",\"embedding\":[17.0,1.0,0.0,0.0]}\n{\"slug\":\"base018\",\"embedding\":[18.0,1.0,0.0,0.0]}\n{\"slug\":\"base019\",\"embedding\":[19.0,1.0,0.0,0.0]}\n{\"slug\":\"base020\",\"embedding\":[20.0,1.0,0.0,0.0]}\n{\"slug\":\"base021\",\"embedding\":[21.0,1.0,0.0,0.0]}\n{\"slug\":\"base022\",\"embedding\":[22.0,1.0,0.0,0.0]}\n{\"slug\":\"base023\",\"embedding\":[23.0,1.0,0.0,0.0]}\n{\"slug\":\"base024\",\"embedding\":[24.0,1.0,0.0,0.0]}\n{\"slug\":\"base025\",\"embedding\":[25.0,1.0,0.0,0.0]}\n{\"slug\":\"base026\",\"embedding\":[26.0,1.0,0.0,0.0]}\n{\"slug\":\"base027\",\"embedding\":[27.0,1.0,0.0,0.0]}\n{\"slug\":\"base028\",\"embedding\":[28.0,1.0,0.0,0.0]}\n{\"slug\":\"base029\",\"embedding\":[29.0,1.0,0.0,0.0]}\n{\"slug\":\"base030\",\"embedding\":[30.0,1.0,0.0,0.0]}\n{\"slug\":\"base031\",\"embedding\":[31.0,1.0,0.0,0.0]}\n{\"slug\":\"base032\",\"embedding\":[32.0,1.0,0.0,0.0]}\n{\"slug\":\"base033\",\"embedding\":[33.0,1.0,0.0,0.0]}\n{\"slug\":\"base034\",\"embedding\":[34.0,1.0,0.0,0.0]}\n{\"slug\":\"base035\",\"embedding\":[35.0,1.0,0.0,0.0]}\n{\"slug\":\"base036\",\"embedding\":[36.0,1.0,0.0,0.0]}\n{\"slug\":\"base037\",\"embedding\":[37.0,1.0,0.0,0.0]}\n{\"slug\":\"base038\",\"embedding\":[38.0,1.0,0.0,0.0]}\n{\"slug\":\"base039\",\"embedding\":[39.0,1.0,0.0,0.0]}\n{\"slug\":\"base040\",\"embedding\":[40.0,1.0,0.0,0.0]}\n{\"slug\":\"base041\",\"embedding\":[41.0,1.0,0.0,0.0]}\n{\"slug\":\"base042\",\"embedding\":[42.0,1.0,0.0,0.0]}\n{\"slug\":\"base043\",\"embedding\":[43.0,1.0,0.0,0.0]}\n{\"slug\":\"base044\",\"embedding\":[44.0,1.0,0.0,0.0]}\n{\"slug\":\"base045\",\"embedding\":[45.0,1.0,0.0,0.0]}\n{\"slug\":\"base046\",\"embedding\":[46.0,1.0,0.0,0.0]}\n{\"slug\":\"base047\",\"embedding\":[47.0,1.0,0.0,0.0]}\n{\"slug\":\"base048\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base049\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base050\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base051\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base052\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base053\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base054\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base055\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base056\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base057\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base058\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base059\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base060\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base061\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base062\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base063\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base064\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base065\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base066\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base067\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base068\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base069\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base070\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base071\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base072\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base073\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base074\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base075\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base076\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base077\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base078\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base079\",\"embedding\":[300.0,0.0,0.0,0.0]}\n--- expect shape\nslug: String\nembedding: Vector(4)\n\n--- restart\n\n--- query\nbranch list\n\n--- expect unordered\n{\"name\":\"main\"}\n--- expect shape\nname: String\n\n--- query branch: main\nquery chunk_rows() { match { $c: Chunk } return { $c.slug as slug, $c.embedding as embedding } }\n\n--- expect unordered\n{\"slug\":\"base000\",\"embedding\":[0.0,1.0,0.0,0.0]}\n{\"slug\":\"base001\",\"embedding\":[1.0,1.0,0.0,0.0]}\n{\"slug\":\"base002\",\"embedding\":[2.0,1.0,0.0,0.0]}\n{\"slug\":\"base003\",\"embedding\":[3.0,1.0,0.0,0.0]}\n{\"slug\":\"base004\",\"embedding\":[4.0,1.0,0.0,0.0]}\n{\"slug\":\"base005\",\"embedding\":[5.0,1.0,0.0,0.0]}\n{\"slug\":\"base006\",\"embedding\":[6.0,1.0,0.0,0.0]}\n{\"slug\":\"base007\",\"embedding\":[7.0,1.0,0.0,0.0]}\n{\"slug\":\"base008\",\"embedding\":[8.0,1.0,0.0,0.0]}\n{\"slug\":\"base009\",\"embedding\":[9.0,1.0,0.0,0.0]}\n{\"slug\":\"base010\",\"embedding\":[10.0,1.0,0.0,0.0]}\n{\"slug\":\"base011\",\"embedding\":[11.0,1.0,0.0,0.0]}\n{\"slug\":\"base012\",\"embedding\":[12.0,1.0,0.0,0.0]}\n{\"slug\":\"base013\",\"embedding\":[13.0,1.0,0.0,0.0]}\n{\"slug\":\"base014\",\"embedding\":[14.0,1.0,0.0,0.0]}\n{\"slug\":\"base015\",\"embedding\":[15.0,1.0,0.0,0.0]}\n{\"slug\":\"base016\",\"embedding\":[16.0,1.0,0.0,0.0]}\n{\"slug\":\"base017\",\"embedding\":[17.0,1.0,0.0,0.0]}\n{\"slug\":\"base018\",\"embedding\":[18.0,1.0,0.0,0.0]}\n{\"slug\":\"base019\",\"embedding\":[19.0,1.0,0.0,0.0]}\n{\"slug\":\"base020\",\"embedding\":[20.0,1.0,0.0,0.0]}\n{\"slug\":\"base021\",\"embedding\":[21.0,1.0,0.0,0.0]}\n{\"slug\":\"base022\",\"embedding\":[22.0,1.0,0.0,0.0]}\n{\"slug\":\"base023\",\"embedding\":[23.0,1.0,0.0,0.0]}\n{\"slug\":\"base024\",\"embedding\":[24.0,1.0,0.0,0.0]}\n{\"slug\":\"base025\",\"embedding\":[25.0,1.0,0.0,0.0]}\n{\"slug\":\"base026\",\"embedding\":[26.0,1.0,0.0,0.0]}\n{\"slug\":\"base027\",\"embedding\":[27.0,1.0,0.0,0.0]}\n{\"slug\":\"base028\",\"embedding\":[28.0,1.0,0.0,0.0]}\n{\"slug\":\"base029\",\"embedding\":[29.0,1.0,0.0,0.0]}\n{\"slug\":\"base030\",\"embedding\":[30.0,1.0,0.0,0.0]}\n{\"slug\":\"base031\",\"embedding\":[31.0,1.0,0.0,0.0]}\n{\"slug\":\"base032\",\"embedding\":[32.0,1.0,0.0,0.0]}\n{\"slug\":\"base033\",\"embedding\":[33.0,1.0,0.0,0.0]}\n{\"slug\":\"base034\",\"embedding\":[34.0,1.0,0.0,0.0]}\n{\"slug\":\"base035\",\"embedding\":[35.0,1.0,0.0,0.0]}\n{\"slug\":\"base036\",\"embedding\":[36.0,1.0,0.0,0.0]}\n{\"slug\":\"base037\",\"embedding\":[37.0,1.0,0.0,0.0]}\n{\"slug\":\"base038\",\"embedding\":[38.0,1.0,0.0,0.0]}\n{\"slug\":\"base039\",\"embedding\":[39.0,1.0,0.0,0.0]}\n{\"slug\":\"base040\",\"embedding\":[40.0,1.0,0.0,0.0]}\n{\"slug\":\"base041\",\"embedding\":[41.0,1.0,0.0,0.0]}\n{\"slug\":\"base042\",\"embedding\":[42.0,1.0,0.0,0.0]}\n{\"slug\":\"base043\",\"embedding\":[43.0,1.0,0.0,0.0]}\n{\"slug\":\"base044\",\"embedding\":[44.0,1.0,0.0,0.0]}\n{\"slug\":\"base045\",\"embedding\":[45.0,1.0,0.0,0.0]}\n{\"slug\":\"base046\",\"embedding\":[46.0,1.0,0.0,0.0]}\n{\"slug\":\"base047\",\"embedding\":[47.0,1.0,0.0,0.0]}\n{\"slug\":\"base048\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base049\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base050\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base051\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base052\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base053\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base054\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base055\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base056\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base057\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base058\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base059\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base060\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base061\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base062\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base063\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base064\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base065\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base066\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base067\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base068\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base069\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base070\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base071\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base072\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base073\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base074\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base075\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base076\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base077\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base078\",\"embedding\":[300.0,0.0,0.0,0.0]}\n{\"slug\":\"base079\",\"embedding\":[300.0,0.0,0.0,0.0]}\n--- expect shape\nslug: String\nembedding: Vector(4)\n\n",
+                  "sha256": "070e2babc89b83ac0ff0a784ef686a7f38e6e6c1a87012615a46e1b6cdfe2a13"
+                },
+                "recipe_sha256": "a26694397e7de01c593f22f63075dc878174a3ab96544c520c38c64af51e140c",
+                "case_digest": "385c087eb43539717366784c62f14142fe26d5f09f38cca024d5f5ce7c982999",
+                "planned_sha256": "4e3ec9ccb277bb53f09d6723a9fa484b41165480f554e866fa7f798a8ac9d6e3",
+                "cache_condition": {
+                  "process": "fresh-per-step",
+                  "engine": "preparation-only",
+                  "page_cache": "uncontrolled",
+                  "program": "none",
+                  "iterations": 0
+                },
+                "needs_indices": false
+              },
+              "identity": {
+                "identity_version": 1,
+                "scenario": "gqt-v1",
+                "dataset_recipe_sha256": "a26694397e7de01c593f22f63075dc878174a3ab96544c520c38c64af51e140c",
+                "dataset_logical_digest": "339da6d83cdee6a2344e0facaa312483a23d84e12905104e9dba1a7079f7c2af",
+                "dataset_identity_algorithm": "omnigraph-gqt-branches-lineage-equivalence-v1",
+                "queries_sha256": "070e2babc89b83ac0ff0a784ef686a7f38e6e6c1a87012615a46e1b6cdfe2a13",
+                "measured_step": {
+                  "ordinal": 1,
+                  "text": "--- load generate: v1 seed: 0 mode: replace branch: main\ntables:\n  - kind: node\n    name: Chunk\n    rows: 32\n    commits: 1\n    batch_rows: 32\n    start: 48\n    columns:\n      slug: {kind: key, prefix: base, width: 3}\n      embedding: {kind: literal, value: [300.0,0.0,0.0,0.0]}\n"
+                },
+                "cache_condition": {
+                  "process": "fresh-per-step",
+                  "engine": "preparation-only",
+                  "page_cache": "uncontrolled",
+                  "program": "none",
+                  "iterations": 0
+                },
+                "environment": {
+                  "backend": {
+                    "kind": "local-fs",
+                    "filesystem": "xfs",
+                    "storage_class": "nvme-ssd"
+                  }
+                },
+                "protocol": {
+                  "deadline_seconds": 60,
+                  "attribution": "off",
+                  "schedule": "manual",
+                  "reset": "clone",
+                  "timer": "monotonic"
+                }
+              },
+              "point_id": "986a513f52c0510c2437d71de805e4d685890fc790af6ec0c57cb902f993e7c4",
+              "point_name": "gqt-process-cold-986a513f52c0"
+            },
+            "build": {
+              "source_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+              "source_tree_dirty": true,
+              "cargo_profile": "release",
+              "cargo_opt_level": "2",
+              "debug_assertions": false,
+              "effective_lance_mem_pool_size": {
+                "state": "unset"
+              },
+              "target_triple": "x86_64-unknown-linux-gnu",
+              "rustc_version": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+              "declared_release_lto": "thin",
+              "declared_release_codegen_units": 16,
+              "declared_release_strip": true,
+              "cargo_encoded_rustflags_present": false,
+              "release_profile_environment_overrides_supported": true,
+              "effective_codegen_options_proved": false,
+              "engine_feature_flags": [
+                "default"
+              ],
+              "enabled_techniques": [],
+              "worker_executable_sha256": "54c66d85c09f8dc98d07079714d5864708c83e43106b02642382067eca6535cb"
+            },
+            "machine": {
+              "format_version": 1,
+              "os_name": "linux",
+              "os_version": "unqualified gVisor sandbox",
+              "kernel_version": "4.19.0-gvisor",
+              "architecture": "x86_64",
+              "cpu_model": "unqualified: machine_probe_failed for resource_control: /proc/self/status contains no Cpus_allowed_list",
+              "logical_cores": 32,
+              "physical_cores": 32,
+              "total_memory_bytes": 68719476736,
+              "resource_control": {
+                "kind": "linux-uncontrolled",
+                "cpu_affinity_sha256": "60031dc12459b6b27c714d18d88650127d68996790861deb3d3fca96acafff26"
+              },
+              "scheduling": {
+                "nice_level": 0,
+                "policy": "other",
+                "priority": 0,
+                "reset_on_fork": false
+              },
+              "resource_limits": {
+                "scope_version": 1,
+                "values_sha256": "d1f7f49a10ef62916e9793d7b8df95524b5ea6a12e89ab333c0b309441d8c70c"
+              },
+              "machine_label": "hostname-sha256:bf2514dbbc66aeadbfbee7ec53ee976534ac40364314340a15e68823da82c18b"
+            },
+            "environment": {
+              "filesystem": "unqualified (scratch device 0:27 is not XFS)",
+              "storage_class": "unqualified",
+              "mount_point": "/src/gqb/store",
+              "storage_protocol": "unqualified",
+              "available_bytes": 0,
+              "probe": "unqualified-local-patch"
+            },
+            "dataset_cache_hit": true,
+            "base": {
+              "format_version": 1,
+              "key": "f7093568555d063f77d8c133f00aabe0520eb6799fa8f72d8438f2ce3fddbf44",
+              "recipe_sha256": "a26694397e7de01c593f22f63075dc878174a3ab96544c520c38c64af51e140c",
+              "engine_digest": "631153d6854beefce2be16cce234e34a47f0de4c29eec5bd523f46de9e35e258",
+              "needs_indices": false,
+              "storage_format": {
+                "internal_schema_version": 18,
+                "lance_version": "13.0.0",
+                "fts_certificate": {
+                  "format_version": 2,
+                  "profiles": [
+                    {
+                      "profile": "standard_v1",
+                      "native": "sha256:76e1636637778021f1690a9c0789bc743088efb9f95ae7906541480f1bc53593",
+                      "analyzer": "sha256:c91eac721fc165c523d6f0d89bf422fed19a9b3325023b195e63e1bbae6e4eec"
+                    },
+                    {
+                      "profile": "standard_folded_v1",
+                      "native": "sha256:de15802bb5cc886270be53e7770fcd38c278a760b15456493bcfe0851c807a53",
+                      "analyzer": "sha256:d403ea038f16e1bb3927809cdb5c4dc361bbe7de6d00023910681917b993121d"
+                    },
+                    {
+                      "profile": "english_v1",
+                      "native": "sha256:eb980aaeb2cda1a85139f541e09dcaaf2a10288f620a7d6aad1c70cd1c038822",
+                      "analyzer": "sha256:bdc9c2f22f06c5d5ad1f588f04d704ed3608b6876e028a8b7142215321c89208"
+                    }
+                  ]
+                }
+              },
+              "summary": {
+                "algorithm": "omnigraph-gqt-branches-lineage-equivalence-v1",
+                "logical_content_sha256": "339da6d83cdee6a2344e0facaa312483a23d84e12905104e9dba1a7079f7c2af",
+                "branches": [
+                  {
+                    "name": "main",
+                    "content_sha256": "a3be613e580201204ffb833e11a49d689d25ceb173427b676cb56f1032ca5daa",
+                    "schema_sha256": "8abed6f714304b5594b43aa3778d3f8e00271371fbdb6a78b95d39923b964390",
+                    "lineage_sha256": "ad49f1c98ed4a29a9d17713b420ff30984a47e1e50236d9bbb8e7b7638265b3a",
+                    "history_commits": 2,
+                    "node_tables": [
+                      {
+                        "name": "Chunk",
+                        "rows": 64
+                      }
+                    ],
+                    "edge_tables": [],
+                    "indexes": []
+                  }
+                ],
+                "relocation_self_contained": true,
+                "limitations": [
+                  "unkeyed-edge-ids-excluded",
+                  "historical-row-images-not-attested"
+                ]
+              },
+              "registered_source_identity": null,
+              "objects": [
+                {
+                  "path": "__history/schemas/86a22b35572004a30c81ab745a1538b419c74f0ece19b62fa31f0e65f8ba5ce1.schema",
+                  "bytes": 1847,
+                  "version": "86a22b35572004a30c81ab745a1538b419c74f0ece19b62fa31f0e65f8ba5ce1"
+                },
+                {
+                  "path": "__manifest/_transactions/0-9a5f11a8-84a5-47e9-a699-baad714521f8.txn",
+                  "bytes": 1273,
+                  "version": "9639cc5f92bf95934c70fd47d3b8a48272d332ac1c7908d81ee41b8b841722d5"
+                },
+                {
+                  "path": "__manifest/_transactions/1-10f0e021-dd2b-4d80-85fd-b9c6b3828c51.txn",
+                  "bytes": 1275,
+                  "version": "8bfef971c6177628c4bc07865ea066853a41f2c798d8e1ddc8d8a49f7fd533f0"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551613.manifest",
+                  "bytes": 2708,
+                  "version": "32a69cfa00c38bcfb5e17091968f0207a69e9bcf6a3e91f455bfd5cae166f9e0"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551614.manifest",
+                  "bytes": 2702,
+                  "version": "c51b25fcefa27202534062c5c048f39affa83e1a5eb42c2b137d71ceb656e381"
+                },
+                {
+                  "path": "__manifest/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "732322c128ed67841ef5aa42c7cd04ffcd74a61b2d17d710cd502b713d62930d"
+                },
+                {
+                  "path": "__manifest/data/11010111100101001001010188b7944977a2bff8fbbc2ab945.lance",
+                  "bytes": 5741,
+                  "version": "37dcc79df156b8b10ddae64964e57fa3c5727818a780275fcf61cb918278d8a2"
+                },
+                {
+                  "path": "__manifest/data/111011011011000011000000341bef474eb385e6719fc97bc1.lance",
+                  "bytes": 6574,
+                  "version": "d1235403516f11efab263311ba01faeedbab73be492757835292bbbb0cd0c684"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/0-fec263c7-6b3b-4809-a463-2e1347a58255.txn",
+                  "bytes": 272,
+                  "version": "7f67d34e8638cda0f95e1d06c3d51da3f01a968ab7845273cdb4d1afa5d05d3d"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/1-cbe08801-dfe7-45aa-a522-5378b2be10c2.txn",
+                  "bytes": 493,
+                  "version": "40ebb7975c29f1f61ad5354d61cbfd608bed5650d401f6e517dab42b41c2c4d5"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/18446744073709551614.manifest",
+                  "bytes": 623,
+                  "version": "000dda2819ff445deeb8a8c6af1e1929f7b1f3714758b71dfea48c0afbfeb25b"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/d10440959790465883061.manifest",
+                  "bytes": 970,
+                  "version": "45e38fe8284a04891f1b3dae6b135cff41fbfb88a4d7f8c41aa2bb8bdb8ca9ed"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "2430f1a2ad2982d0067885488a4c89e21ad1d7c83b115ba8f1b20acc88dfaea8"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/data/100000110100100111010101d06e334f8d8ee782ebc34cf29a.lance",
+                  "bytes": 3509,
+                  "version": "d7d907ed24f35a3b00bfbe778b3494459bfc0159488a4e7f87cfbe39e0e5ae8a"
+                }
+              ],
+              "built_at_unix_ms": 1795328831244
+            },
+            "product": {
+              "path": "/src/gqb/bin/new/omnigraph",
+              "package_version": "0.16.1",
+              "http_contract": "0.14",
+              "internal_schema_writes": 18,
+              "executable_sha256": "53a082ecadc75594c896f50355a5c4dab9d5fd061ac7f275deebc242d2232c55",
+              "requested_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b"
+            },
+            "samples": [
+              {
+                "repetition": 1,
+                "elapsed_us": 83875,
+                "peak_rss_bytes": 579014656,
+                "outcome": "expectations-passed",
+                "logical_store_calls": {
+                  "manifest": {
+                    "get": 6,
+                    "put": 4,
+                    "put_part": 0,
+                    "head": 10,
+                    "list": 0,
+                    "delete": 0,
+                    "copy": 0,
+                    "rename": 0,
+                    "multipart_complete": 0,
+                    "multipart_abort": 0
+                  },
+                  "table": {
+                    "get": 2,
+                    "put": 4,
+                    "put_part": 0,
+                    "head": 1,
+                    "list": 0,
+                    "delete": 0,
+                    "copy": 0,
+                    "rename": 0,
+                    "multipart_complete": 0,
+                    "multipart_abort": 0
+                  },
+                  "physical_attempts_observed": false
+                },
+                "steps": [
+                  {
+                    "ordinal": 1,
+                    "occurrence": 1,
+                    "kind": "load",
+                    "elapsed_us": 83875
+                  },
+                  {
+                    "ordinal": 2,
+                    "occurrence": 1,
+                    "kind": "branch-list",
+                    "elapsed_us": 53008
+                  },
+                  {
+                    "ordinal": 3,
+                    "occurrence": 1,
+                    "kind": "query",
+                    "elapsed_us": 59399
+                  },
+                  {
+                    "ordinal": 5,
+                    "occurrence": 1,
+                    "kind": "branch-list",
+                    "elapsed_us": 49287
+                  },
+                  {
+                    "ordinal": 6,
+                    "occurrence": 1,
+                    "kind": "query",
+                    "elapsed_us": 59508
+                  }
+                ],
+                "verification": {
+                  "selected_assertion_passed": true,
+                  "assertions_passed": 6,
+                  "following_assertions": 4
+                },
+                "merge": null,
+                "client_peak_rss_bytes": 580255744,
+                "base_manifest_sha256": "8e55a5e0763f33b19cfa5d9d260c5af66b45a241c1d4a4aa4176ca914140ed03"
+              }
+            ],
+            "wall_clock": {
+              "observed_repetitions": 1,
+              "min_us": 83875,
+              "p50_us": 83875,
+              "max_us": 83875,
+              "p95_supported": false
+            },
+            "durable_record": false
+          }
+        ],
+        "store_records": {
+          "store": "/src/gqb/store",
+          "session_id": "01M81000BFE33NF4JH81B5HK5K",
+          "records": [
+            {
+              "record_sha256": "2c69fd757e29b0d10164cf7a30490950d05e88343cfffb934391f9f91b6187c5",
+              "uri": "/src/gqb/store/records/2c69fd757e29b0d10164cf7a30490950d05e88343cfffb934391f9f91b6187c5.json"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

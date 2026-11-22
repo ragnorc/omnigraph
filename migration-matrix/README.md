@@ -21,8 +21,8 @@ neither tells an operator which language a binary speaks.
 **Contents:** [Summary](#summary) · [How it ran](#how-it-ran) ·
 [Differences](#differences) · [Rollback](#rollback) ·
 [Defects](#defects-most-severe-first) · [Search timings](#search-timings) ·
-[Serving](#serving) · [Not covered](#not-covered) ·
-[Reproducing](#reproducing)
+[GQ 2 against GQ 3](#gq-2-against-gq-3) · [Serving](#serving) ·
+[Not covered](#not-covered) · [Reproducing](#reproducing)
 
 ## Summary
 
@@ -458,6 +458,19 @@ exact scan of the field on every call until stage L, class a). NEW issues
 fewer store requests (5 against 7) because it reads the column instead of
 the index; the elapsed time is the scan.
 
+
+## GQ 2 against GQ 3
+
+[`results/gq2-vs-gq3.md`](results/gq2-vs-gq3.md), measured 2026-11-22 at
+`84dbead8` (`main`, the last merge into #1316) against `cf133eae` (#1316's
+head, after the `bm25` memory fallback), so the two differ by GQ 3 alone: the
+56 catalog scenarios whose measured step is GQ text, each in its edition-2
+and GQ 3 text on a fixture OLD built; the search set on the 100,000-document
+corpus; and the 24 scenarios with no GQ text through `omnigraph-bench run
+--at`. Rows match wherever both editions ran. Lexical search costs 2.2–7.5×
+and `limit` without `order` 2×, as the RFC's Cost bullet states; everything
+else costs the same or less. Its harness is `harness/gq2_vs_gq3.py` and
+`harness/gq2_vs_gq3_partb.sh`, its raw records `results/raw/gq2-vs-gq3/`.
 
 ## Serving
 

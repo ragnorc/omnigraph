@@ -1,0 +1,12 @@
+{
+  "ok": false,
+  "runner_output_version": 2,
+  "suite": "finbench-disjoint-merge",
+  "suite_path": "/src/gqb/new/benchmarks/benchmarks.yaml",
+  "completed_run_count": 0,
+  "completed_runs": [],
+  "error": {
+    "code": "gqt_prepare_failed",
+    "message": "registered dataset requires exactly one matching --fixture ID=BUNDLE"
+  }
+}

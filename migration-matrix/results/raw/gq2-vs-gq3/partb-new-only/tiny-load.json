@@ -1,0 +1,399 @@
+{
+  "runner_output_version": 2,
+  "store": "/src/gqb/store",
+  "at": [
+    {
+      "reference": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+      "commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+      "product": {
+        "path": "/src/gqb/bin/new/omnigraph",
+        "package_version": "0.16.1",
+        "http_contract": "0.14",
+        "internal_schema_writes": 18,
+        "executable_sha256": "53a082ecadc75594c896f50355a5c4dab9d5fd061ac7f275deebc242d2232c55",
+        "requested_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b"
+      },
+      "output": {
+        "runner_output_version": 2,
+        "suite": "tiny-load",
+        "suite_path": "/src/gqb/new/benchmarks/benchmarks.yaml",
+        "completed_run_count": 1,
+        "runs": [
+          {
+            "runner_output_version": 1,
+            "case_id": "tiny-load",
+            "case_path": "/src/gqb/new/benchmarks/benchmarks.yaml",
+            "point_id": "7d864d7a524af7ba774ec95e78a3047595d09a1249c388d7c4acac87d950b253",
+            "point_name": "gqt-process-cold-7d864d7a524a",
+            "requested_repetitions": 1,
+            "bound": {
+              "plan": {
+                "definition": {
+                  "version": 1,
+                  "id": "tiny-load",
+                  "scenario": "gqt-v1",
+                  "fixture": {
+                    "kind": "dataset",
+                    "path": "fixtures/tiny_graph.gqt"
+                  },
+                  "workload": {
+                    "queries": "workloads/tiny_load.gqt",
+                    "measured_step": {
+                      "ordinal": 1,
+                      "text": "--- load generate: v1 seed: 0 mode: insert\ntables:\n  - kind: node\n    name: Item\n    rows: 1\n    commits: 1\n    batch_rows: 1\n    columns:\n      key: {kind: key, prefix: c, width: 1}\n      val: {kind: literal, value: 3}\n"
+                    }
+                  },
+                  "environment": {
+                    "backend": {
+                      "kind": "local-fs",
+                      "filesystem": "xfs",
+                      "storage_class": "nvme-ssd"
+                    }
+                  },
+                  "protocol": {
+                    "deadline_seconds": 60,
+                    "attribution": "off",
+                    "schedule": "manual",
+                    "reset": "clone",
+                    "timer": "monotonic"
+                  }
+                },
+                "dataset": {
+                  "kind": "gqt",
+                  "source": {
+                    "stem": "tiny_graph",
+                    "text": "# issue: none\n# notes: Shared benchmark dataset/query contract.\n\n--- runner\ntimeout_ms: 600000\nenvironments:\n  - target: omnigraph-engine\n    storage: local-filesystem\n\n--- schema\nnode Item { key: String @key val: I64 }\n\n--- seed\n{\"type\":\"Item\",\"data\":{\"key\":\"a\",\"val\":1}}\n{\"type\":\"Item\",\"data\":{\"key\":\"b\",\"val\":2}}\n",
+                    "sha256": "e057811d3d6b72d05785e348fd45da12a52ee85577817de2368519f8d9f8b43b"
+                  }
+                },
+                "queries": {
+                  "stem": "tiny_load",
+                  "text": "# issue: none\n# notes: Shared benchmark dataset/query contract.\n\n--- runner\ntimeout_ms: 600000\nenvironments:\n  - target: omnigraph-engine\n    storage: local-filesystem\n\n--- load generate: v1 seed: 0 mode: insert\ntables:\n  - kind: node\n    name: Item\n    rows: 1\n    commits: 1\n    batch_rows: 1\n    columns:\n      key: {kind: key, prefix: c, width: 1}\n      val: {kind: literal, value: 3}\n--- expect ok\n\n--- query branch: main\nquery items() {\n    match { $i: Item }\n    return { $i.key as key, $i.val as val }\n}\n--- expect unordered\n{\"key\":\"a\",\"val\":1}\n{\"key\":\"b\",\"val\":2}\n{\"key\":\"c0\",\"val\":3}\n--- expect shape\nkey: String\nval: I64\n",
+                  "sha256": "a9459c95b7ee9d80b05521f372a6fe4375a71278a3464e81d89a3ce2b29c9f13"
+                },
+                "recipe_sha256": "1d10330d0bb50c068ec5e433870473b6ddee6e5e2613e31fb6504e40826c0b9f",
+                "case_digest": "a57df7619376a96155eb3134a8759fcc0b0bc162bd0d1de6a66d0d167a154619",
+                "planned_sha256": "d1015d9afec72c6d35c6dde51b90d4a250849308731be4ef5a0564a1d6d8a851",
+                "cache_condition": {
+                  "process": "fresh-per-step",
+                  "engine": "preparation-only",
+                  "page_cache": "uncontrolled",
+                  "program": "none",
+                  "iterations": 0
+                },
+                "needs_indices": false
+              },
+              "identity": {
+                "identity_version": 1,
+                "scenario": "gqt-v1",
+                "dataset_recipe_sha256": "1d10330d0bb50c068ec5e433870473b6ddee6e5e2613e31fb6504e40826c0b9f",
+                "dataset_logical_digest": "3e4aedecb7149f1c548b20094e6fb6158c0a64992447bd7dfdac11fafbf432f2",
+                "dataset_identity_algorithm": "omnigraph-gqt-branches-lineage-equivalence-v1",
+                "queries_sha256": "a9459c95b7ee9d80b05521f372a6fe4375a71278a3464e81d89a3ce2b29c9f13",
+                "measured_step": {
+                  "ordinal": 1,
+                  "text": "--- load generate: v1 seed: 0 mode: insert\ntables:\n  - kind: node\n    name: Item\n    rows: 1\n    commits: 1\n    batch_rows: 1\n    columns:\n      key: {kind: key, prefix: c, width: 1}\n      val: {kind: literal, value: 3}\n"
+                },
+                "cache_condition": {
+                  "process": "fresh-per-step",
+                  "engine": "preparation-only",
+                  "page_cache": "uncontrolled",
+                  "program": "none",
+                  "iterations": 0
+                },
+                "environment": {
+                  "backend": {
+                    "kind": "local-fs",
+                    "filesystem": "xfs",
+                    "storage_class": "nvme-ssd"
+                  }
+                },
+                "protocol": {
+                  "deadline_seconds": 60,
+                  "attribution": "off",
+                  "schedule": "manual",
+                  "reset": "clone",
+                  "timer": "monotonic"
+                }
+              },
+              "point_id": "7d864d7a524af7ba774ec95e78a3047595d09a1249c388d7c4acac87d950b253",
+              "point_name": "gqt-process-cold-7d864d7a524a"
+            },
+            "build": {
+              "source_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+              "source_tree_dirty": true,
+              "cargo_profile": "release",
+              "cargo_opt_level": "2",
+              "debug_assertions": false,
+              "effective_lance_mem_pool_size": {
+                "state": "unset"
+              },
+              "target_triple": "x86_64-unknown-linux-gnu",
+              "rustc_version": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+              "declared_release_lto": "thin",
+              "declared_release_codegen_units": 16,
+              "declared_release_strip": true,
+              "cargo_encoded_rustflags_present": false,
+              "release_profile_environment_overrides_supported": true,
+              "effective_codegen_options_proved": false,
+              "engine_feature_flags": [
+                "default"
+              ],
+              "enabled_techniques": [],
+              "worker_executable_sha256": "54c66d85c09f8dc98d07079714d5864708c83e43106b02642382067eca6535cb"
+            },
+            "machine": {
+              "format_version": 1,
+              "os_name": "linux",
+              "os_version": "unqualified gVisor sandbox",
+              "kernel_version": "4.19.0-gvisor",
+              "architecture": "x86_64",
+              "cpu_model": "unqualified: machine_probe_failed for resource_control: /proc/self/status contains no Cpus_allowed_list",
+              "logical_cores": 32,
+              "physical_cores": 32,
+              "total_memory_bytes": 68719476736,
+              "resource_control": {
+                "kind": "linux-uncontrolled",
+                "cpu_affinity_sha256": "60031dc12459b6b27c714d18d88650127d68996790861deb3d3fca96acafff26"
+              },
+              "scheduling": {
+                "nice_level": 0,
+                "policy": "other",
+                "priority": 0,
+                "reset_on_fork": false
+              },
+              "resource_limits": {
+                "scope_version": 1,
+                "values_sha256": "d1f7f49a10ef62916e9793d7b8df95524b5ea6a12e89ab333c0b309441d8c70c"
+              },
+              "machine_label": "hostname-sha256:bf2514dbbc66aeadbfbee7ec53ee976534ac40364314340a15e68823da82c18b"
+            },
+            "environment": {
+              "filesystem": "unqualified (scratch device 0:27 is not XFS)",
+              "storage_class": "unqualified",
+              "mount_point": "/src/gqb/store",
+              "storage_protocol": "unqualified",
+              "available_bytes": 0,
+              "probe": "unqualified-local-patch"
+            },
+            "dataset_cache_hit": true,
+            "base": {
+              "format_version": 1,
+              "key": "aaddef24050b1abfaf2920a2937a37fe4d0f9c93d157fc3af06a87cc5dceb7e4",
+              "recipe_sha256": "1d10330d0bb50c068ec5e433870473b6ddee6e5e2613e31fb6504e40826c0b9f",
+              "engine_digest": "631153d6854beefce2be16cce234e34a47f0de4c29eec5bd523f46de9e35e258",
+              "needs_indices": false,
+              "storage_format": {
+                "internal_schema_version": 18,
+                "lance_version": "13.0.0",
+                "fts_certificate": {
+                  "format_version": 2,
+                  "profiles": [
+                    {
+                      "profile": "standard_v1",
+                      "native": "sha256:76e1636637778021f1690a9c0789bc743088efb9f95ae7906541480f1bc53593",
+                      "analyzer": "sha256:c91eac721fc165c523d6f0d89bf422fed19a9b3325023b195e63e1bbae6e4eec"
+                    },
+                    {
+                      "profile": "standard_folded_v1",
+                      "native": "sha256:de15802bb5cc886270be53e7770fcd38c278a760b15456493bcfe0851c807a53",
+                      "analyzer": "sha256:d403ea038f16e1bb3927809cdb5c4dc361bbe7de6d00023910681917b993121d"
+                    },
+                    {
+                      "profile": "english_v1",
+                      "native": "sha256:eb980aaeb2cda1a85139f541e09dcaaf2a10288f620a7d6aad1c70cd1c038822",
+                      "analyzer": "sha256:bdc9c2f22f06c5d5ad1f588f04d704ed3608b6876e028a8b7142215321c89208"
+                    }
+                  ]
+                }
+              },
+              "summary": {
+                "algorithm": "omnigraph-gqt-branches-lineage-equivalence-v1",
+                "logical_content_sha256": "3e4aedecb7149f1c548b20094e6fb6158c0a64992447bd7dfdac11fafbf432f2",
+                "branches": [
+                  {
+                    "name": "main",
+                    "content_sha256": "e2149aa303957a53f3b36474d2407caf5969a47c674dc7c11d6575205cff0128",
+                    "schema_sha256": "9f109fe15041a6b8b6cb87848e87f52a17dc1e0dfb284dcad8281cdc71037c9c",
+                    "lineage_sha256": "ad49f1c98ed4a29a9d17713b420ff30984a47e1e50236d9bbb8e7b7638265b3a",
+                    "history_commits": 2,
+                    "node_tables": [
+                      {
+                        "name": "Item",
+                        "rows": 2
+                      }
+                    ],
+                    "edge_tables": [],
+                    "indexes": []
+                  }
+                ],
+                "relocation_self_contained": true,
+                "limitations": [
+                  "unkeyed-edge-ids-excluded",
+                  "historical-row-images-not-attested"
+                ]
+              },
+              "registered_source_identity": null,
+              "objects": [
+                {
+                  "path": "__history/schemas/0504c9df7e0c2735da299a4e72512464cf78a729a1dfc05c1aa861eb9da27544.schema",
+                  "bytes": 1787,
+                  "version": "0504c9df7e0c2735da299a4e72512464cf78a729a1dfc05c1aa861eb9da27544"
+                },
+                {
+                  "path": "__manifest/_transactions/0-72ca6909-c757-4097-b9dd-08b7025d2175.txn",
+                  "bytes": 1273,
+                  "version": "dcb2884ff5bd36e9410536152cb262f84e767c3e5556b60e60ff4b428e2d19ae"
+                },
+                {
+                  "path": "__manifest/_transactions/1-29f8989d-b28b-4e92-80e1-4f50ae711257.txn",
+                  "bytes": 1275,
+                  "version": "78c508cd88e0c880e232a7de1806fcd49b52dfa4291f4e653727f579c3b83f3c"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551613.manifest",
+                  "bytes": 2708,
+                  "version": "a6250fe749f8255fe845e9115587b2e91aeae8a3c2f0939850743917fa4851ea"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551614.manifest",
+                  "bytes": 2702,
+                  "version": "ebfd68bbd4cb1fb898607d003e6999c887e1d2b086ec22fd78b1b820e8e33d55"
+                },
+                {
+                  "path": "__manifest/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "732322c128ed67841ef5aa42c7cd04ffcd74a61b2d17d710cd502b713d62930d"
+                },
+                {
+                  "path": "__manifest/data/001010111010100101100000f45cd64934ac4bb040e977e4d7.lance",
+                  "bytes": 6510,
+                  "version": "0bffe32c093cf0376fe48b7d0f7e67213750c9cf3c914e57cae291804058423c"
+                },
+                {
+                  "path": "__manifest/data/110000101111100111110100458c7a4a128cf49c412a11f236.lance",
+                  "bytes": 5677,
+                  "version": "2064ff58d8ad93e4ced438d0bf3559f25b72661779245062a7759aad569cd6f3"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/0-15a8cd52-b31d-4e59-994c-7eb2c35f4dcd.txn",
+                  "bytes": 247,
+                  "version": "e4ad54a11b5f5e2ee200d112d288f785f056e1890842ffb03885556367c38ff3"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/1-15feb3b9-fa3a-4e0f-b8e1-1af2fe8b95fe.txn",
+                  "bytes": 468,
+                  "version": "de6fa68ecdc93f6c31fc87ccb679a8f4c0f15618117e8dbc9066da3e603b7989"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/18446744073709551614.manifest",
+                  "bytes": 573,
+                  "version": "f33ff795b6642e1ad5dcd3068e1df45918e58c00fc219d5b5055295bd61a5fbf"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/d14656632531153868485.manifest",
+                  "bytes": 920,
+                  "version": "070dcfcf54cf918eb994c39c0e72e2aa06e3e8d88ddeda5b4229ce539c707f8c"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "2430f1a2ad2982d0067885488a4c89e21ad1d7c83b115ba8f1b20acc88dfaea8"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/data/101101101110101100100100fe117e4d3aa53a2004f7c6e8ae.lance",
+                  "bytes": 1043,
+                  "version": "8dda7313988be69cff2b2669047e7d829db1ba685d82996a3338d5bfe4d7ca12"
+                }
+              ],
+              "built_at_unix_ms": 1795328814046
+            },
+            "product": {
+              "path": "/src/gqb/bin/new/omnigraph",
+              "package_version": "0.16.1",
+              "http_contract": "0.14",
+              "internal_schema_writes": 18,
+              "executable_sha256": "53a082ecadc75594c896f50355a5c4dab9d5fd061ac7f275deebc242d2232c55",
+              "requested_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b"
+            },
+            "samples": [
+              {
+                "repetition": 1,
+                "elapsed_us": 67882,
+                "peak_rss_bytes": 578879488,
+                "outcome": "expectations-passed",
+                "logical_store_calls": {
+                  "manifest": {
+                    "get": 6,
+                    "put": 4,
+                    "put_part": 0,
+                    "head": 10,
+                    "list": 0,
+                    "delete": 0,
+                    "copy": 0,
+                    "rename": 0,
+                    "multipart_complete": 0,
+                    "multipart_abort": 0
+                  },
+                  "table": {
+                    "get": 2,
+                    "put": 3,
+                    "put_part": 0,
+                    "head": 1,
+                    "list": 0,
+                    "delete": 0,
+                    "copy": 0,
+                    "rename": 0,
+                    "multipart_complete": 0,
+                    "multipart_abort": 0
+                  },
+                  "physical_attempts_observed": false
+                },
+                "steps": [
+                  {
+                    "ordinal": 1,
+                    "occurrence": 1,
+                    "kind": "load",
+                    "elapsed_us": 67882
+                  },
+                  {
+                    "ordinal": 2,
+                    "occurrence": 1,
+                    "kind": "query",
+                    "elapsed_us": 60681
+                  }
+                ],
+                "verification": {
+                  "selected_assertion_passed": true,
+                  "assertions_passed": 2,
+                  "following_assertions": 1
+                },
+                "merge": null,
+                "client_peak_rss_bytes": 580182016,
+                "base_manifest_sha256": "acd9903f855356de5cf86bcd3109a779a464000a24baf7c0a2a0b68a3c497657"
+              }
+            ],
+            "wall_clock": {
+              "observed_repetitions": 1,
+              "min_us": 67882,
+              "p50_us": 67882,
+              "max_us": 67882,
+              "p95_supported": false
+            },
+            "durable_record": false
+          }
+        ],
+        "store_records": {
+          "store": "/src/gqb/store",
+          "session_id": "01M80ZZYNECT9793ZJKXYA9M9Y",
+          "records": [
+            {
+              "record_sha256": "0c4800a0f9c470e2c76afed7971d757c336c3e682dbdd48c74b6e7681f22872e",
+              "uri": "/src/gqb/store/records/0c4800a0f9c470e2c76afed7971d757c336c3e682dbdd48c74b6e7681f22872e.json"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

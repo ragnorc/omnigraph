@@ -1,0 +1,9 @@
+date: 2026-11-22
+kernel: 4.19.0-gvisor (x86_64)
+logical CPUs: 32 (cgroup cpu quota 3200000/100000); nproc prints 2 because OMP_NUM_THREADS=2
+cpu model:  unknown
+memory: MemTotal:       67108864 kB
+root filesystem: none rw,size=536870912k 512G
+rustc: rustc 1.97.1 (8bab26f4f 2026-07-14)
+python: Python 3.12.16
+timeline (UTC): part A shapes 2026-11-22T05:55:36Z..2026-11-22T06:15:14Z; search 2026-11-22T06:15:20Z..2026-11-22T06:24:51Z; part B 2026-11-22T06:25:21Z..2026-11-22T06:48:19Z

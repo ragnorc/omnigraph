@@ -1,0 +1,12 @@
+{
+  "ok": false,
+  "runner_output_version": 2,
+  "suite": "tiny-branch",
+  "suite_path": "/src/gqb/new/benchmarks/benchmarks.yaml",
+  "completed_run_count": 0,
+  "completed_runs": [],
+  "error": {
+    "code": "gqt_prepare_failed",
+    "message": "scratch device 0:27 is not XFS"
+  }
+}

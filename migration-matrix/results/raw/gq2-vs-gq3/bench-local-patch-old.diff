@@ -1,0 +1,33 @@
+diff --git a/crates/omnigraph-bench/src/environment.rs b/crates/omnigraph-bench/src/environment.rs
+index 6121e93e..8b0ba959 100644
+--- a/crates/omnigraph-bench/src/environment.rs
++++ b/crates/omnigraph-bench/src/environment.rs
+@@ -84,6 +84,28 @@ fn verify_linux(
+     scratch_path: &Path,
+     declared_filesystem: LocalFilesystem,
+     declared_storage: LocalStorageClass,
++) -> Result<LocalEnvironmentEvidence, String> {
++    // LOCAL, UNPUBLISHED PATCH (gq2-vs-gq3 measurement on a gVisor box):
++    // where the XFS/NVMe qualification refuses, record the box as
++    // unqualified, with the refusal as the evidence, instead of refusing.
++    match verify_linux_qualified(scratch_path, declared_filesystem, declared_storage) {
++        Ok(evidence) => Ok(evidence),
++        Err(refusal) => Ok(LocalEnvironmentEvidence {
++            filesystem: format!("unqualified ({refusal})"),
++            storage_class: "unqualified".to_string(),
++            mount_point: scratch_path.display().to_string(),
++            storage_protocol: "unqualified".to_string(),
++            available_bytes: 0,
++            probe: "unqualified-local-patch",
++        }),
++    }
++}
++
++#[cfg(target_os = "linux")]
++fn verify_linux_qualified(
++    scratch_path: &Path,
++    declared_filesystem: LocalFilesystem,
++    declared_storage: LocalStorageClass,
+ ) -> Result<LocalEnvironmentEvidence, String> {
+     let path = std::fs::canonicalize(scratch_path)
+         .map_err(|error| format!("could not resolve benchmark scratch path: {error}"))?;

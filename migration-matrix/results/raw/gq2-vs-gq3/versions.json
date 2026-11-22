@@ -1,0 +1,41 @@
+{
+ "old": {
+  "version": "0.16.1",
+  "channel": null,
+  "commit": null,
+  "http_contract": "0.14",
+  "protocols": {
+   "studio": 1,
+   "target": 2,
+   "credential": 2,
+   "access": 2
+  },
+  "internal_schema": {
+   "writes": 18,
+   "serves": [
+    14,
+    18
+   ]
+  }
+ },
+ "new": {
+  "version": "0.16.1",
+  "channel": null,
+  "commit": null,
+  "http_contract": "0.14",
+  "query_language": "gq3",
+  "protocols": {
+   "studio": 1,
+   "target": 2,
+   "credential": 2,
+   "access": 2
+  },
+  "internal_schema": {
+   "writes": 18,
+   "serves": [
+    14,
+    18
+   ]
+  }
+ }
+}

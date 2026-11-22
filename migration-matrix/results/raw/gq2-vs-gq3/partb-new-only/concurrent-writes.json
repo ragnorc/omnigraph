@@ -1,0 +1,2426 @@
+{
+  "runner_output_version": 2,
+  "store": "/src/gqb/store",
+  "at": [
+    {
+      "reference": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+      "commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+      "product": {
+        "path": "/src/gqb/bin/new/omnigraph",
+        "package_version": "0.16.1",
+        "http_contract": "0.14",
+        "internal_schema_writes": 18,
+        "executable_sha256": "53a082ecadc75594c896f50355a5c4dab9d5fd061ac7f275deebc242d2232c55",
+        "requested_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+        "server": {
+          "path": "/src/gqb/bin/new/omnigraph-server",
+          "executable_sha256": "01df4cdcb4538fd802afb4aca884652664e302eed1eff6b8407f6b6667068689"
+        }
+      },
+      "output": {
+        "runner_output_version": 2,
+        "suite": "concurrent-writes",
+        "suite_path": "/src/gqb/new/benchmarks/benchmarks.yaml",
+        "completed_run_count": 5,
+        "runs": [
+          {
+            "runner_output_version": 1,
+            "case_id": "concurrent-writes",
+            "case_path": "/src/gqb/new/benchmarks/benchmarks.yaml",
+            "point_id": "de89974c21b532fefcabad272e22557025018a2a797ea7f76501919fce3a10d0",
+            "point_name": "gqt-process-cold-de89974c21b5",
+            "requested_repetitions": 1,
+            "bound": {
+              "plan": {
+                "definition": {
+                  "version": 1,
+                  "id": "concurrent-writes",
+                  "scenario": "gqt-v1",
+                  "fixture": {
+                    "kind": "dataset",
+                    "path": "fixtures/concurrent_writes.gqt"
+                  },
+                  "workload": {
+                    "queries": "workloads/concurrent_writes.gqt",
+                    "measured_step": {
+                      "ordinal": 1,
+                      "text": "--- concurrent measured\nwriter x${W}: load generate: v1 seed: 42 mode: insert\n  tables:\n    - kind: node\n      name: Chunk\n      rows: 4096000\n      commits: 1000\n      columns:\n        slug: {kind: key, prefix: cw-, width: 7}\n        n: {kind: ordinal, start: 100000, step: 1}\nreader x4: query seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.n } }"
+                    }
+                  },
+                  "environment": {
+                    "backend": {
+                      "kind": "local-fs",
+                      "filesystem": "xfs",
+                      "storage_class": "nvme-ssd"
+                    },
+                    "target": "omnigraph-server",
+                    "network_position": "same-host"
+                  },
+                  "protocol": {
+                    "deadline_seconds": 60,
+                    "attribution": "off",
+                    "schedule": "manual",
+                    "reset": "rebuild",
+                    "timer": "monotonic"
+                  }
+                },
+                "dataset": {
+                  "kind": "gqt",
+                  "source": {
+                    "stem": "concurrent_writes",
+                    "text": "# issue: none\n# notes: Starting state of the concurrent-writes scenario: one keyed Chunk table with 4096 generated rows on main. The readers look one of them up by key while the writers append rows of their own.\n\n--- runner\ntimeout_ms: 60000\nenvironments:\n  - target: omnigraph-engine\n    storage: local-filesystem\n\n--- schema\nnode Chunk { slug: String @key n: I64 }\n\n--- seed generate: v1 seed: 7\ntables:\n  - kind: node\n    name: Chunk\n    rows: 4096\n    commits: 1\n    batch_rows: 4096\n    columns:\n      slug: {kind: key, prefix: seed-, width: 4}\n      n: {kind: ordinal, start: 0, step: 1}\n",
+                    "sha256": "a8f957e067a90d49b61b5804a0c0b11e830bdb231d61863673fd61cd436255eb"
+                  }
+                },
+                "queries": {
+                  "stem": "concurrent_writes",
+                  "text": "# issue: none\n# notes: W writers append dealt rows to main beside four readers that look a seeded row up by key. The block is the measured step: omnigraph-bench loops every worker for the bench section's warmup and duration, once per value of W, and reports acknowledged statements per second per label; a host with a scripted clock runs every worker once at the first value. The host reads every dealt row back after the block, and the query after it reads a seeded row, which holds however long the block ran.\n\n--- runner\ntimeout_ms: 60000\nenvironments:\n  - target: omnigraph-engine\n    storage: local-filesystem\n  - target: omnigraph-server\n    storage: local-filesystem\n\n--- bench\nwarmup_seconds: 5\nduration_seconds: 30\nsweep: { W: [1, 2, 4, 8, 16] }\n\n--- concurrent measured\nwriter x${W}: load generate: v1 seed: 42 mode: insert\n  tables:\n    - kind: node\n      name: Chunk\n      rows: 4096000\n      commits: 1000\n      columns:\n        slug: {kind: key, prefix: cw-, width: 7}\n        n: {kind: ordinal, start: 100000, step: 1}\nreader x4: query seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.n } }\n--- expect\nwriter: ok\nreader: ok\n\n--- query branch: main\nquery seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.slug, $c.n } }\n--- expect unordered\n{\"c.slug\":\"seed-0017\",\"c.n\":17}\n--- expect shape\nc.slug: String\nc.n: I64\n",
+                  "sha256": "fa82c7f3842a966f4498c97afd93e6491125a2473e60f88de817cb4de54e0777",
+                  "sweep": {
+                    "W": 1
+                  }
+                },
+                "recipe_sha256": "d14b6bb43e062df7b071d821a493d20019099b43f184f71de9f7e0018fe08183",
+                "case_digest": "c642d477852d218931b4176c2e574034ea16fdfd28bb4c29ff7accfefc0e23aa",
+                "planned_sha256": "4ccd3dcc09a9e426eb824604843b5f983e542d5e55b339b2ee7c030c7ccaacd5",
+                "cache_condition": {
+                  "process": "fresh-per-repetition",
+                  "engine": "preparation-only",
+                  "page_cache": "uncontrolled",
+                  "program": "none",
+                  "iterations": 0
+                },
+                "needs_indices": false,
+                "block": {
+                  "warmup_seconds": 5,
+                  "duration_seconds": 30
+                }
+              },
+              "identity": {
+                "identity_version": 1,
+                "scenario": "gqt-v1",
+                "dataset_recipe_sha256": "d14b6bb43e062df7b071d821a493d20019099b43f184f71de9f7e0018fe08183",
+                "dataset_logical_digest": "fd2ba3c355ddf667074595da0b690d90495d684e99db7daa907a2f58f4bf1f4f",
+                "dataset_identity_algorithm": "omnigraph-gqt-branches-lineage-equivalence-v1",
+                "queries_sha256": "fa82c7f3842a966f4498c97afd93e6491125a2473e60f88de817cb4de54e0777",
+                "measured_step": {
+                  "ordinal": 1,
+                  "text": "--- concurrent measured\nwriter x${W}: load generate: v1 seed: 42 mode: insert\n  tables:\n    - kind: node\n      name: Chunk\n      rows: 4096000\n      commits: 1000\n      columns:\n        slug: {kind: key, prefix: cw-, width: 7}\n        n: {kind: ordinal, start: 100000, step: 1}\nreader x4: query seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.n } }"
+                },
+                "cache_condition": {
+                  "process": "fresh-per-repetition",
+                  "engine": "preparation-only",
+                  "page_cache": "uncontrolled",
+                  "program": "none",
+                  "iterations": 0
+                },
+                "environment": {
+                  "backend": {
+                    "kind": "local-fs",
+                    "filesystem": "xfs",
+                    "storage_class": "nvme-ssd"
+                  },
+                  "target": "omnigraph-server",
+                  "network_position": "same-host"
+                },
+                "protocol": {
+                  "deadline_seconds": 60,
+                  "attribution": "off",
+                  "schedule": "manual",
+                  "reset": "rebuild",
+                  "timer": "monotonic"
+                },
+                "sweep": {
+                  "W": 1
+                }
+              },
+              "point_id": "de89974c21b532fefcabad272e22557025018a2a797ea7f76501919fce3a10d0",
+              "point_name": "gqt-process-cold-de89974c21b5"
+            },
+            "build": {
+              "source_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+              "source_tree_dirty": true,
+              "cargo_profile": "release",
+              "cargo_opt_level": "2",
+              "debug_assertions": false,
+              "effective_lance_mem_pool_size": {
+                "state": "unset"
+              },
+              "target_triple": "x86_64-unknown-linux-gnu",
+              "rustc_version": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+              "declared_release_lto": "thin",
+              "declared_release_codegen_units": 16,
+              "declared_release_strip": true,
+              "cargo_encoded_rustflags_present": false,
+              "release_profile_environment_overrides_supported": true,
+              "effective_codegen_options_proved": false,
+              "engine_feature_flags": [
+                "default"
+              ],
+              "enabled_techniques": [],
+              "worker_executable_sha256": "54c66d85c09f8dc98d07079714d5864708c83e43106b02642382067eca6535cb"
+            },
+            "machine": {
+              "format_version": 1,
+              "os_name": "linux",
+              "os_version": "unqualified gVisor sandbox",
+              "kernel_version": "4.19.0-gvisor",
+              "architecture": "x86_64",
+              "cpu_model": "unqualified: machine_probe_failed for resource_control: /proc/self/status contains no Cpus_allowed_list",
+              "logical_cores": 32,
+              "physical_cores": 32,
+              "total_memory_bytes": 68719476736,
+              "resource_control": {
+                "kind": "linux-uncontrolled",
+                "cpu_affinity_sha256": "60031dc12459b6b27c714d18d88650127d68996790861deb3d3fca96acafff26"
+              },
+              "scheduling": {
+                "nice_level": 0,
+                "policy": "other",
+                "priority": 0,
+                "reset_on_fork": false
+              },
+              "resource_limits": {
+                "scope_version": 1,
+                "values_sha256": "d1f7f49a10ef62916e9793d7b8df95524b5ea6a12e89ab333c0b309441d8c70c"
+              },
+              "machine_label": "hostname-sha256:bf2514dbbc66aeadbfbee7ec53ee976534ac40364314340a15e68823da82c18b"
+            },
+            "environment": {
+              "filesystem": "unqualified (scratch device 0:27 is not XFS)",
+              "storage_class": "unqualified",
+              "mount_point": "/src/gqb/store",
+              "storage_protocol": "unqualified",
+              "available_bytes": 0,
+              "probe": "unqualified-local-patch"
+            },
+            "dataset_cache_hit": true,
+            "base": {
+              "format_version": 1,
+              "key": "921181e1adacaa6031aae85dcbf42435f0c5f7984fc0a3ea4440728ee6e46a5d",
+              "recipe_sha256": "d14b6bb43e062df7b071d821a493d20019099b43f184f71de9f7e0018fe08183",
+              "engine_digest": "631153d6854beefce2be16cce234e34a47f0de4c29eec5bd523f46de9e35e258",
+              "needs_indices": false,
+              "storage_format": {
+                "internal_schema_version": 18,
+                "lance_version": "13.0.0",
+                "fts_certificate": {
+                  "format_version": 2,
+                  "profiles": [
+                    {
+                      "profile": "standard_v1",
+                      "native": "sha256:76e1636637778021f1690a9c0789bc743088efb9f95ae7906541480f1bc53593",
+                      "analyzer": "sha256:c91eac721fc165c523d6f0d89bf422fed19a9b3325023b195e63e1bbae6e4eec"
+                    },
+                    {
+                      "profile": "standard_folded_v1",
+                      "native": "sha256:de15802bb5cc886270be53e7770fcd38c278a760b15456493bcfe0851c807a53",
+                      "analyzer": "sha256:d403ea038f16e1bb3927809cdb5c4dc361bbe7de6d00023910681917b993121d"
+                    },
+                    {
+                      "profile": "english_v1",
+                      "native": "sha256:eb980aaeb2cda1a85139f541e09dcaaf2a10288f620a7d6aad1c70cd1c038822",
+                      "analyzer": "sha256:bdc9c2f22f06c5d5ad1f588f04d704ed3608b6876e028a8b7142215321c89208"
+                    }
+                  ]
+                }
+              },
+              "summary": {
+                "algorithm": "omnigraph-gqt-branches-lineage-equivalence-v1",
+                "logical_content_sha256": "fd2ba3c355ddf667074595da0b690d90495d684e99db7daa907a2f58f4bf1f4f",
+                "branches": [
+                  {
+                    "name": "main",
+                    "content_sha256": "6500ad8b61b3c160dcdd3c1f5f687acf89bc6d9de61557da9a92088548c3df9a",
+                    "schema_sha256": "3701bdf3bdfe610b0002d5d1b58037ed70cbda22f65d9139452a06334d5746eb",
+                    "lineage_sha256": "ad49f1c98ed4a29a9d17713b420ff30984a47e1e50236d9bbb8e7b7638265b3a",
+                    "history_commits": 2,
+                    "node_tables": [
+                      {
+                        "name": "Chunk",
+                        "rows": 4096
+                      }
+                    ],
+                    "edge_tables": [],
+                    "indexes": []
+                  }
+                ],
+                "relocation_self_contained": true,
+                "limitations": [
+                  "unkeyed-edge-ids-excluded",
+                  "historical-row-images-not-attested"
+                ]
+              },
+              "registered_source_identity": null,
+              "objects": [
+                {
+                  "path": "__history/schemas/6379502fc9ba54581893b1e6411fd50554d40bd16e94eb4d3834d9a9b80ddd10.schema",
+                  "bytes": 1789,
+                  "version": "6379502fc9ba54581893b1e6411fd50554d40bd16e94eb4d3834d9a9b80ddd10"
+                },
+                {
+                  "path": "__manifest/_transactions/0-a7880a1c-31d7-4e29-a436-2e89cf612962.txn",
+                  "bytes": 1273,
+                  "version": "4023af5b68472224d5ccdc38071522926d3a0ad5ef285e2ebf983b976c28e860"
+                },
+                {
+                  "path": "__manifest/_transactions/1-936700ee-444f-460e-9487-1fb8cd5e3cbf.txn",
+                  "bytes": 1275,
+                  "version": "7aea369354421db6d04819dee2c3bef6de4c63c95b9d7a3c82786bf40cc6ee33"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551613.manifest",
+                  "bytes": 2709,
+                  "version": "5c407f315a2aefe012c4f0fbb7aac0e0ee0628ebd1e4fc7814c785691d2c2589"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551614.manifest",
+                  "bytes": 2703,
+                  "version": "9ea51dcf5c556ed8ffea443d4d0289741b3bc1d29a6011c124994c5e88879cda"
+                },
+                {
+                  "path": "__manifest/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "732322c128ed67841ef5aa42c7cd04ffcd74a61b2d17d710cd502b713d62930d"
+                },
+                {
+                  "path": "__manifest/data/0101001001010000010100105c33bd4161aed2bf840f5654f1.lance",
+                  "bytes": 6510,
+                  "version": "e30560055959f8a1801bdef95d712245dfed622aaff83bb37fb39e5653c3f700"
+                },
+                {
+                  "path": "__manifest/data/0111100110111110000000107e642b4ebba4f8a3a93e4c66e8.lance",
+                  "bytes": 5677,
+                  "version": "7002ea8061c57d0dd51625c6b9586dfa550b5e1c43d8e7efa338267eb83d6583"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/0-dfae5fd8-9756-4604-962f-e7fda6c9d4d6.txn",
+                  "bytes": 246,
+                  "version": "7b7c769736de0d902a185c502c0aa94bb9c9c3d3f5cc2d68f8576faa3c2a12de"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/1-890fde69-1776-4c85-b1e9-9f8d2949df18.txn",
+                  "bytes": 33102,
+                  "version": "8658f2fa4565fe7a40839aea0876d655f15111906fef6080364a0f54f6e08810"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/18446744073709551614.manifest",
+                  "bytes": 572,
+                  "version": "1922f49a060aa45eb0062ad3d545dda69a565eed0cc58b13e32d5a2d82ac1421"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/d16471507960079716401.manifest",
+                  "bytes": 33560,
+                  "version": "60a3503d082be9e37e4d4b5fb6a919766419dc90ef98758bcffa31253a4ec85c"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "2430f1a2ad2982d0067885488a4c89e21ad1d7c83b115ba8f1b20acc88dfaea8"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/data/101001100011111110110101790e644ad78f25aea81149e3f7.lance",
+                  "bytes": 68944,
+                  "version": "a6fd42e85b29e8ae03e3c5df271096eaca91817891bc10f8969e479de869e8fb"
+                }
+              ],
+              "built_at_unix_ms": 1795329334880
+            },
+            "product": {
+              "path": "/src/gqb/bin/new/omnigraph",
+              "package_version": "0.16.1",
+              "http_contract": "0.14",
+              "internal_schema_writes": 18,
+              "executable_sha256": "53a082ecadc75594c896f50355a5c4dab9d5fd061ac7f275deebc242d2232c55",
+              "requested_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+              "server": {
+                "path": "/src/gqb/bin/new/omnigraph-server",
+                "executable_sha256": "01df4cdcb4538fd802afb4aca884652664e302eed1eff6b8407f6b6667068689"
+              }
+            },
+            "samples": [
+              {
+                "repetition": 1,
+                "elapsed_us": 35127080,
+                "peak_rss_bytes": 585912320,
+                "outcome": "expectations-passed",
+                "steps": [
+                  {
+                    "ordinal": 1,
+                    "occurrence": 1,
+                    "kind": "concurrent",
+                    "elapsed_us": 35127080
+                  },
+                  {
+                    "ordinal": 2,
+                    "occurrence": 1,
+                    "kind": "query",
+                    "elapsed_us": 107291
+                  }
+                ],
+                "verification": {
+                  "selected_assertion_passed": true,
+                  "assertions_passed": 2,
+                  "following_assertions": 1
+                },
+                "merge": null,
+                "client_peak_rss_bytes": 585912320,
+                "server_executable_sha256": "01df4cdcb4538fd802afb4aca884652664e302eed1eff6b8407f6b6667068689",
+                "concurrent": {
+                  "driver": "closed-loop",
+                  "claim_grade": false,
+                  "warmup_seconds": 5,
+                  "measured_seconds": 30,
+                  "sweep": {
+                    "W": 1
+                  },
+                  "window_us": 30001387,
+                  "drain_us": 124948,
+                  "tokio_unstable": false,
+                  "readback": {
+                    "rows": 750,
+                    "compared": 8
+                  },
+                  "labels": [
+                    {
+                      "label": "writer",
+                      "kind": "load",
+                      "workers": 1,
+                      "acked": 522,
+                      "warmup_acked": 228,
+                      "acked_in_drain": 1,
+                      "acked_per_second_millis": 17399,
+                      "per_worker": {
+                        "min": 522,
+                        "max": 522
+                      },
+                      "service_time_us": {
+                        "p50": 54783,
+                        "p99": 87551,
+                        "max": 88504
+                      },
+                      "authority_conflicts": 0,
+                      "acked_by_second": [
+                        26,
+                        26,
+                        24,
+                        23,
+                        21,
+                        21,
+                        19,
+                        24,
+                        21,
+                        21,
+                        21,
+                        18,
+                        18,
+                        18,
+                        16,
+                        16,
+                        17,
+                        15,
+                        15,
+                        14,
+                        14,
+                        14,
+                        13,
+                        13,
+                        12,
+                        13,
+                        12,
+                        12,
+                        12,
+                        12
+                      ]
+                    },
+                    {
+                      "label": "reader",
+                      "kind": "query",
+                      "workers": 4,
+                      "acked": 1582,
+                      "warmup_acked": 1030,
+                      "acked_in_drain": 4,
+                      "acked_per_second_millis": 52730,
+                      "per_worker": {
+                        "min": 394,
+                        "max": 397
+                      },
+                      "service_time_us": {
+                        "p50": 73727,
+                        "p99": 118783,
+                        "max": 133351
+                      },
+                      "authority_conflicts": 0,
+                      "acked_by_second": [
+                        97,
+                        88,
+                        85,
+                        78,
+                        69,
+                        71,
+                        66,
+                        63,
+                        59,
+                        57,
+                        58,
+                        53,
+                        48,
+                        50,
+                        47,
+                        47,
+                        46,
+                        44,
+                        42,
+                        41,
+                        41,
+                        40,
+                        38,
+                        36,
+                        37,
+                        37,
+                        34,
+                        36,
+                        36,
+                        34
+                      ]
+                    }
+                  ]
+                }
+              }
+            ],
+            "wall_clock": {
+              "observed_repetitions": 1,
+              "min_us": 35127080,
+              "p50_us": 35127080,
+              "max_us": 35127080,
+              "p95_supported": false
+            },
+            "durable_record": false
+          },
+          {
+            "runner_output_version": 1,
+            "case_id": "concurrent-writes",
+            "case_path": "/src/gqb/new/benchmarks/benchmarks.yaml",
+            "point_id": "74c307a8017b19e085a63bd19757c3b6253b934d8ba70455a5d92cff27032b4d",
+            "point_name": "gqt-process-cold-74c307a8017b",
+            "requested_repetitions": 1,
+            "bound": {
+              "plan": {
+                "definition": {
+                  "version": 1,
+                  "id": "concurrent-writes",
+                  "scenario": "gqt-v1",
+                  "fixture": {
+                    "kind": "dataset",
+                    "path": "fixtures/concurrent_writes.gqt"
+                  },
+                  "workload": {
+                    "queries": "workloads/concurrent_writes.gqt",
+                    "measured_step": {
+                      "ordinal": 1,
+                      "text": "--- concurrent measured\nwriter x${W}: load generate: v1 seed: 42 mode: insert\n  tables:\n    - kind: node\n      name: Chunk\n      rows: 4096000\n      commits: 1000\n      columns:\n        slug: {kind: key, prefix: cw-, width: 7}\n        n: {kind: ordinal, start: 100000, step: 1}\nreader x4: query seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.n } }"
+                    }
+                  },
+                  "environment": {
+                    "backend": {
+                      "kind": "local-fs",
+                      "filesystem": "xfs",
+                      "storage_class": "nvme-ssd"
+                    },
+                    "target": "omnigraph-server",
+                    "network_position": "same-host"
+                  },
+                  "protocol": {
+                    "deadline_seconds": 60,
+                    "attribution": "off",
+                    "schedule": "manual",
+                    "reset": "rebuild",
+                    "timer": "monotonic"
+                  }
+                },
+                "dataset": {
+                  "kind": "gqt",
+                  "source": {
+                    "stem": "concurrent_writes",
+                    "text": "# issue: none\n# notes: Starting state of the concurrent-writes scenario: one keyed Chunk table with 4096 generated rows on main. The readers look one of them up by key while the writers append rows of their own.\n\n--- runner\ntimeout_ms: 60000\nenvironments:\n  - target: omnigraph-engine\n    storage: local-filesystem\n\n--- schema\nnode Chunk { slug: String @key n: I64 }\n\n--- seed generate: v1 seed: 7\ntables:\n  - kind: node\n    name: Chunk\n    rows: 4096\n    commits: 1\n    batch_rows: 4096\n    columns:\n      slug: {kind: key, prefix: seed-, width: 4}\n      n: {kind: ordinal, start: 0, step: 1}\n",
+                    "sha256": "a8f957e067a90d49b61b5804a0c0b11e830bdb231d61863673fd61cd436255eb"
+                  }
+                },
+                "queries": {
+                  "stem": "concurrent_writes",
+                  "text": "# issue: none\n# notes: W writers append dealt rows to main beside four readers that look a seeded row up by key. The block is the measured step: omnigraph-bench loops every worker for the bench section's warmup and duration, once per value of W, and reports acknowledged statements per second per label; a host with a scripted clock runs every worker once at the first value. The host reads every dealt row back after the block, and the query after it reads a seeded row, which holds however long the block ran.\n\n--- runner\ntimeout_ms: 60000\nenvironments:\n  - target: omnigraph-engine\n    storage: local-filesystem\n  - target: omnigraph-server\n    storage: local-filesystem\n\n--- bench\nwarmup_seconds: 5\nduration_seconds: 30\nsweep: { W: [1, 2, 4, 8, 16] }\n\n--- concurrent measured\nwriter x${W}: load generate: v1 seed: 42 mode: insert\n  tables:\n    - kind: node\n      name: Chunk\n      rows: 4096000\n      commits: 1000\n      columns:\n        slug: {kind: key, prefix: cw-, width: 7}\n        n: {kind: ordinal, start: 100000, step: 1}\nreader x4: query seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.n } }\n--- expect\nwriter: ok\nreader: ok\n\n--- query branch: main\nquery seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.slug, $c.n } }\n--- expect unordered\n{\"c.slug\":\"seed-0017\",\"c.n\":17}\n--- expect shape\nc.slug: String\nc.n: I64\n",
+                  "sha256": "fa82c7f3842a966f4498c97afd93e6491125a2473e60f88de817cb4de54e0777",
+                  "sweep": {
+                    "W": 2
+                  }
+                },
+                "recipe_sha256": "d14b6bb43e062df7b071d821a493d20019099b43f184f71de9f7e0018fe08183",
+                "case_digest": "c642d477852d218931b4176c2e574034ea16fdfd28bb4c29ff7accfefc0e23aa",
+                "planned_sha256": "60d15766aa035bceed48ef571771b4d3dac311c98c818f2a32bdb637a4a6b78e",
+                "cache_condition": {
+                  "process": "fresh-per-repetition",
+                  "engine": "preparation-only",
+                  "page_cache": "uncontrolled",
+                  "program": "none",
+                  "iterations": 0
+                },
+                "needs_indices": false,
+                "block": {
+                  "warmup_seconds": 5,
+                  "duration_seconds": 30
+                }
+              },
+              "identity": {
+                "identity_version": 1,
+                "scenario": "gqt-v1",
+                "dataset_recipe_sha256": "d14b6bb43e062df7b071d821a493d20019099b43f184f71de9f7e0018fe08183",
+                "dataset_logical_digest": "fd2ba3c355ddf667074595da0b690d90495d684e99db7daa907a2f58f4bf1f4f",
+                "dataset_identity_algorithm": "omnigraph-gqt-branches-lineage-equivalence-v1",
+                "queries_sha256": "fa82c7f3842a966f4498c97afd93e6491125a2473e60f88de817cb4de54e0777",
+                "measured_step": {
+                  "ordinal": 1,
+                  "text": "--- concurrent measured\nwriter x${W}: load generate: v1 seed: 42 mode: insert\n  tables:\n    - kind: node\n      name: Chunk\n      rows: 4096000\n      commits: 1000\n      columns:\n        slug: {kind: key, prefix: cw-, width: 7}\n        n: {kind: ordinal, start: 100000, step: 1}\nreader x4: query seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.n } }"
+                },
+                "cache_condition": {
+                  "process": "fresh-per-repetition",
+                  "engine": "preparation-only",
+                  "page_cache": "uncontrolled",
+                  "program": "none",
+                  "iterations": 0
+                },
+                "environment": {
+                  "backend": {
+                    "kind": "local-fs",
+                    "filesystem": "xfs",
+                    "storage_class": "nvme-ssd"
+                  },
+                  "target": "omnigraph-server",
+                  "network_position": "same-host"
+                },
+                "protocol": {
+                  "deadline_seconds": 60,
+                  "attribution": "off",
+                  "schedule": "manual",
+                  "reset": "rebuild",
+                  "timer": "monotonic"
+                },
+                "sweep": {
+                  "W": 2
+                }
+              },
+              "point_id": "74c307a8017b19e085a63bd19757c3b6253b934d8ba70455a5d92cff27032b4d",
+              "point_name": "gqt-process-cold-74c307a8017b"
+            },
+            "build": {
+              "source_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+              "source_tree_dirty": true,
+              "cargo_profile": "release",
+              "cargo_opt_level": "2",
+              "debug_assertions": false,
+              "effective_lance_mem_pool_size": {
+                "state": "unset"
+              },
+              "target_triple": "x86_64-unknown-linux-gnu",
+              "rustc_version": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+              "declared_release_lto": "thin",
+              "declared_release_codegen_units": 16,
+              "declared_release_strip": true,
+              "cargo_encoded_rustflags_present": false,
+              "release_profile_environment_overrides_supported": true,
+              "effective_codegen_options_proved": false,
+              "engine_feature_flags": [
+                "default"
+              ],
+              "enabled_techniques": [],
+              "worker_executable_sha256": "54c66d85c09f8dc98d07079714d5864708c83e43106b02642382067eca6535cb"
+            },
+            "machine": {
+              "format_version": 1,
+              "os_name": "linux",
+              "os_version": "unqualified gVisor sandbox",
+              "kernel_version": "4.19.0-gvisor",
+              "architecture": "x86_64",
+              "cpu_model": "unqualified: machine_probe_failed for resource_control: /proc/self/status contains no Cpus_allowed_list",
+              "logical_cores": 32,
+              "physical_cores": 32,
+              "total_memory_bytes": 68719476736,
+              "resource_control": {
+                "kind": "linux-uncontrolled",
+                "cpu_affinity_sha256": "60031dc12459b6b27c714d18d88650127d68996790861deb3d3fca96acafff26"
+              },
+              "scheduling": {
+                "nice_level": 0,
+                "policy": "other",
+                "priority": 0,
+                "reset_on_fork": false
+              },
+              "resource_limits": {
+                "scope_version": 1,
+                "values_sha256": "d1f7f49a10ef62916e9793d7b8df95524b5ea6a12e89ab333c0b309441d8c70c"
+              },
+              "machine_label": "hostname-sha256:bf2514dbbc66aeadbfbee7ec53ee976534ac40364314340a15e68823da82c18b"
+            },
+            "environment": {
+              "filesystem": "unqualified (scratch device 0:27 is not XFS)",
+              "storage_class": "unqualified",
+              "mount_point": "/src/gqb/store",
+              "storage_protocol": "unqualified",
+              "available_bytes": 0,
+              "probe": "unqualified-local-patch"
+            },
+            "dataset_cache_hit": true,
+            "base": {
+              "format_version": 1,
+              "key": "921181e1adacaa6031aae85dcbf42435f0c5f7984fc0a3ea4440728ee6e46a5d",
+              "recipe_sha256": "d14b6bb43e062df7b071d821a493d20019099b43f184f71de9f7e0018fe08183",
+              "engine_digest": "631153d6854beefce2be16cce234e34a47f0de4c29eec5bd523f46de9e35e258",
+              "needs_indices": false,
+              "storage_format": {
+                "internal_schema_version": 18,
+                "lance_version": "13.0.0",
+                "fts_certificate": {
+                  "format_version": 2,
+                  "profiles": [
+                    {
+                      "profile": "standard_v1",
+                      "native": "sha256:76e1636637778021f1690a9c0789bc743088efb9f95ae7906541480f1bc53593",
+                      "analyzer": "sha256:c91eac721fc165c523d6f0d89bf422fed19a9b3325023b195e63e1bbae6e4eec"
+                    },
+                    {
+                      "profile": "standard_folded_v1",
+                      "native": "sha256:de15802bb5cc886270be53e7770fcd38c278a760b15456493bcfe0851c807a53",
+                      "analyzer": "sha256:d403ea038f16e1bb3927809cdb5c4dc361bbe7de6d00023910681917b993121d"
+                    },
+                    {
+                      "profile": "english_v1",
+                      "native": "sha256:eb980aaeb2cda1a85139f541e09dcaaf2a10288f620a7d6aad1c70cd1c038822",
+                      "analyzer": "sha256:bdc9c2f22f06c5d5ad1f588f04d704ed3608b6876e028a8b7142215321c89208"
+                    }
+                  ]
+                }
+              },
+              "summary": {
+                "algorithm": "omnigraph-gqt-branches-lineage-equivalence-v1",
+                "logical_content_sha256": "fd2ba3c355ddf667074595da0b690d90495d684e99db7daa907a2f58f4bf1f4f",
+                "branches": [
+                  {
+                    "name": "main",
+                    "content_sha256": "6500ad8b61b3c160dcdd3c1f5f687acf89bc6d9de61557da9a92088548c3df9a",
+                    "schema_sha256": "3701bdf3bdfe610b0002d5d1b58037ed70cbda22f65d9139452a06334d5746eb",
+                    "lineage_sha256": "ad49f1c98ed4a29a9d17713b420ff30984a47e1e50236d9bbb8e7b7638265b3a",
+                    "history_commits": 2,
+                    "node_tables": [
+                      {
+                        "name": "Chunk",
+                        "rows": 4096
+                      }
+                    ],
+                    "edge_tables": [],
+                    "indexes": []
+                  }
+                ],
+                "relocation_self_contained": true,
+                "limitations": [
+                  "unkeyed-edge-ids-excluded",
+                  "historical-row-images-not-attested"
+                ]
+              },
+              "registered_source_identity": null,
+              "objects": [
+                {
+                  "path": "__history/schemas/6379502fc9ba54581893b1e6411fd50554d40bd16e94eb4d3834d9a9b80ddd10.schema",
+                  "bytes": 1789,
+                  "version": "6379502fc9ba54581893b1e6411fd50554d40bd16e94eb4d3834d9a9b80ddd10"
+                },
+                {
+                  "path": "__manifest/_transactions/0-a7880a1c-31d7-4e29-a436-2e89cf612962.txn",
+                  "bytes": 1273,
+                  "version": "4023af5b68472224d5ccdc38071522926d3a0ad5ef285e2ebf983b976c28e860"
+                },
+                {
+                  "path": "__manifest/_transactions/1-936700ee-444f-460e-9487-1fb8cd5e3cbf.txn",
+                  "bytes": 1275,
+                  "version": "7aea369354421db6d04819dee2c3bef6de4c63c95b9d7a3c82786bf40cc6ee33"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551613.manifest",
+                  "bytes": 2709,
+                  "version": "5c407f315a2aefe012c4f0fbb7aac0e0ee0628ebd1e4fc7814c785691d2c2589"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551614.manifest",
+                  "bytes": 2703,
+                  "version": "9ea51dcf5c556ed8ffea443d4d0289741b3bc1d29a6011c124994c5e88879cda"
+                },
+                {
+                  "path": "__manifest/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "732322c128ed67841ef5aa42c7cd04ffcd74a61b2d17d710cd502b713d62930d"
+                },
+                {
+                  "path": "__manifest/data/0101001001010000010100105c33bd4161aed2bf840f5654f1.lance",
+                  "bytes": 6510,
+                  "version": "e30560055959f8a1801bdef95d712245dfed622aaff83bb37fb39e5653c3f700"
+                },
+                {
+                  "path": "__manifest/data/0111100110111110000000107e642b4ebba4f8a3a93e4c66e8.lance",
+                  "bytes": 5677,
+                  "version": "7002ea8061c57d0dd51625c6b9586dfa550b5e1c43d8e7efa338267eb83d6583"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/0-dfae5fd8-9756-4604-962f-e7fda6c9d4d6.txn",
+                  "bytes": 246,
+                  "version": "7b7c769736de0d902a185c502c0aa94bb9c9c3d3f5cc2d68f8576faa3c2a12de"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/1-890fde69-1776-4c85-b1e9-9f8d2949df18.txn",
+                  "bytes": 33102,
+                  "version": "8658f2fa4565fe7a40839aea0876d655f15111906fef6080364a0f54f6e08810"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/18446744073709551614.manifest",
+                  "bytes": 572,
+                  "version": "1922f49a060aa45eb0062ad3d545dda69a565eed0cc58b13e32d5a2d82ac1421"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/d16471507960079716401.manifest",
+                  "bytes": 33560,
+                  "version": "60a3503d082be9e37e4d4b5fb6a919766419dc90ef98758bcffa31253a4ec85c"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "2430f1a2ad2982d0067885488a4c89e21ad1d7c83b115ba8f1b20acc88dfaea8"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/data/101001100011111110110101790e644ad78f25aea81149e3f7.lance",
+                  "bytes": 68944,
+                  "version": "a6fd42e85b29e8ae03e3c5df271096eaca91817891bc10f8969e479de869e8fb"
+                }
+              ],
+              "built_at_unix_ms": 1795329334880
+            },
+            "product": {
+              "path": "/src/gqb/bin/new/omnigraph",
+              "package_version": "0.16.1",
+              "http_contract": "0.14",
+              "internal_schema_writes": 18,
+              "executable_sha256": "53a082ecadc75594c896f50355a5c4dab9d5fd061ac7f275deebc242d2232c55",
+              "requested_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+              "server": {
+                "path": "/src/gqb/bin/new/omnigraph-server",
+                "executable_sha256": "01df4cdcb4538fd802afb4aca884652664e302eed1eff6b8407f6b6667068689"
+              }
+            },
+            "samples": [
+              {
+                "repetition": 1,
+                "elapsed_us": 35824733,
+                "peak_rss_bytes": 587915264,
+                "outcome": "expectations-passed",
+                "steps": [
+                  {
+                    "ordinal": 1,
+                    "occurrence": 1,
+                    "kind": "concurrent",
+                    "elapsed_us": 35824733
+                  },
+                  {
+                    "ordinal": 2,
+                    "occurrence": 1,
+                    "kind": "query",
+                    "elapsed_us": 76321
+                  }
+                ],
+                "verification": {
+                  "selected_assertion_passed": true,
+                  "assertions_passed": 2,
+                  "following_assertions": 1
+                },
+                "merge": null,
+                "client_peak_rss_bytes": 587915264,
+                "server_executable_sha256": "01df4cdcb4538fd802afb4aca884652664e302eed1eff6b8407f6b6667068689",
+                "concurrent": {
+                  "driver": "closed-loop",
+                  "claim_grade": false,
+                  "warmup_seconds": 5,
+                  "measured_seconds": 30,
+                  "sweep": {
+                    "W": 2
+                  },
+                  "window_us": 30001659,
+                  "drain_us": 125607,
+                  "tokio_unstable": false,
+                  "readback": {
+                    "rows": 653,
+                    "compared": 16
+                  },
+                  "labels": [
+                    {
+                      "label": "writer",
+                      "kind": "load",
+                      "workers": 2,
+                      "acked": 499,
+                      "warmup_acked": 154,
+                      "acked_in_drain": 2,
+                      "acked_per_second_millis": 16632,
+                      "per_worker": {
+                        "min": 249,
+                        "max": 250
+                      },
+                      "service_time_us": {
+                        "p50": 114175,
+                        "p99": 240639,
+                        "max": 281428
+                      },
+                      "authority_conflicts": 0,
+                      "acked_by_second": [
+                        31,
+                        30,
+                        25,
+                        22,
+                        12,
+                        11,
+                        11,
+                        10,
+                        10,
+                        9,
+                        14,
+                        19,
+                        19,
+                        19,
+                        20,
+                        19,
+                        19,
+                        18,
+                        18,
+                        17,
+                        17,
+                        16,
+                        14,
+                        15,
+                        15,
+                        14,
+                        13,
+                        13,
+                        14,
+                        13
+                      ]
+                    },
+                    {
+                      "label": "reader",
+                      "kind": "query",
+                      "workers": 4,
+                      "acked": 1872,
+                      "warmup_acked": 733,
+                      "acked_in_drain": 5,
+                      "acked_per_second_millis": 62396,
+                      "per_worker": {
+                        "min": 467,
+                        "max": 469
+                      },
+                      "service_time_us": {
+                        "p50": 62975,
+                        "p99": 106495,
+                        "max": 125040
+                      },
+                      "authority_conflicts": 0,
+                      "acked_by_second": [
+                        129,
+                        120,
+                        103,
+                        92,
+                        76,
+                        72,
+                        67,
+                        65,
+                        68,
+                        58,
+                        71,
+                        68,
+                        64,
+                        63,
+                        60,
+                        52,
+                        56,
+                        55,
+                        50,
+                        50,
+                        49,
+                        48,
+                        43,
+                        44,
+                        44,
+                        42,
+                        42,
+                        37,
+                        40,
+                        39
+                      ]
+                    }
+                  ]
+                }
+              }
+            ],
+            "wall_clock": {
+              "observed_repetitions": 1,
+              "min_us": 35824733,
+              "p50_us": 35824733,
+              "max_us": 35824733,
+              "p95_supported": false
+            },
+            "durable_record": false
+          },
+          {
+            "runner_output_version": 1,
+            "case_id": "concurrent-writes",
+            "case_path": "/src/gqb/new/benchmarks/benchmarks.yaml",
+            "point_id": "b8b70ded2c06a49adc650a5991d3309381c6a1883b75b6c7211ee4e7fd387fa2",
+            "point_name": "gqt-process-cold-b8b70ded2c06",
+            "requested_repetitions": 1,
+            "bound": {
+              "plan": {
+                "definition": {
+                  "version": 1,
+                  "id": "concurrent-writes",
+                  "scenario": "gqt-v1",
+                  "fixture": {
+                    "kind": "dataset",
+                    "path": "fixtures/concurrent_writes.gqt"
+                  },
+                  "workload": {
+                    "queries": "workloads/concurrent_writes.gqt",
+                    "measured_step": {
+                      "ordinal": 1,
+                      "text": "--- concurrent measured\nwriter x${W}: load generate: v1 seed: 42 mode: insert\n  tables:\n    - kind: node\n      name: Chunk\n      rows: 4096000\n      commits: 1000\n      columns:\n        slug: {kind: key, prefix: cw-, width: 7}\n        n: {kind: ordinal, start: 100000, step: 1}\nreader x4: query seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.n } }"
+                    }
+                  },
+                  "environment": {
+                    "backend": {
+                      "kind": "local-fs",
+                      "filesystem": "xfs",
+                      "storage_class": "nvme-ssd"
+                    },
+                    "target": "omnigraph-server",
+                    "network_position": "same-host"
+                  },
+                  "protocol": {
+                    "deadline_seconds": 60,
+                    "attribution": "off",
+                    "schedule": "manual",
+                    "reset": "rebuild",
+                    "timer": "monotonic"
+                  }
+                },
+                "dataset": {
+                  "kind": "gqt",
+                  "source": {
+                    "stem": "concurrent_writes",
+                    "text": "# issue: none\n# notes: Starting state of the concurrent-writes scenario: one keyed Chunk table with 4096 generated rows on main. The readers look one of them up by key while the writers append rows of their own.\n\n--- runner\ntimeout_ms: 60000\nenvironments:\n  - target: omnigraph-engine\n    storage: local-filesystem\n\n--- schema\nnode Chunk { slug: String @key n: I64 }\n\n--- seed generate: v1 seed: 7\ntables:\n  - kind: node\n    name: Chunk\n    rows: 4096\n    commits: 1\n    batch_rows: 4096\n    columns:\n      slug: {kind: key, prefix: seed-, width: 4}\n      n: {kind: ordinal, start: 0, step: 1}\n",
+                    "sha256": "a8f957e067a90d49b61b5804a0c0b11e830bdb231d61863673fd61cd436255eb"
+                  }
+                },
+                "queries": {
+                  "stem": "concurrent_writes",
+                  "text": "# issue: none\n# notes: W writers append dealt rows to main beside four readers that look a seeded row up by key. The block is the measured step: omnigraph-bench loops every worker for the bench section's warmup and duration, once per value of W, and reports acknowledged statements per second per label; a host with a scripted clock runs every worker once at the first value. The host reads every dealt row back after the block, and the query after it reads a seeded row, which holds however long the block ran.\n\n--- runner\ntimeout_ms: 60000\nenvironments:\n  - target: omnigraph-engine\n    storage: local-filesystem\n  - target: omnigraph-server\n    storage: local-filesystem\n\n--- bench\nwarmup_seconds: 5\nduration_seconds: 30\nsweep: { W: [1, 2, 4, 8, 16] }\n\n--- concurrent measured\nwriter x${W}: load generate: v1 seed: 42 mode: insert\n  tables:\n    - kind: node\n      name: Chunk\n      rows: 4096000\n      commits: 1000\n      columns:\n        slug: {kind: key, prefix: cw-, width: 7}\n        n: {kind: ordinal, start: 100000, step: 1}\nreader x4: query seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.n } }\n--- expect\nwriter: ok\nreader: ok\n\n--- query branch: main\nquery seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.slug, $c.n } }\n--- expect unordered\n{\"c.slug\":\"seed-0017\",\"c.n\":17}\n--- expect shape\nc.slug: String\nc.n: I64\n",
+                  "sha256": "fa82c7f3842a966f4498c97afd93e6491125a2473e60f88de817cb4de54e0777",
+                  "sweep": {
+                    "W": 4
+                  }
+                },
+                "recipe_sha256": "d14b6bb43e062df7b071d821a493d20019099b43f184f71de9f7e0018fe08183",
+                "case_digest": "c642d477852d218931b4176c2e574034ea16fdfd28bb4c29ff7accfefc0e23aa",
+                "planned_sha256": "609a851885b1f255707d708cd418132fa7ee259bfa1d5748d1cd9db9f1f1b789",
+                "cache_condition": {
+                  "process": "fresh-per-repetition",
+                  "engine": "preparation-only",
+                  "page_cache": "uncontrolled",
+                  "program": "none",
+                  "iterations": 0
+                },
+                "needs_indices": false,
+                "block": {
+                  "warmup_seconds": 5,
+                  "duration_seconds": 30
+                }
+              },
+              "identity": {
+                "identity_version": 1,
+                "scenario": "gqt-v1",
+                "dataset_recipe_sha256": "d14b6bb43e062df7b071d821a493d20019099b43f184f71de9f7e0018fe08183",
+                "dataset_logical_digest": "fd2ba3c355ddf667074595da0b690d90495d684e99db7daa907a2f58f4bf1f4f",
+                "dataset_identity_algorithm": "omnigraph-gqt-branches-lineage-equivalence-v1",
+                "queries_sha256": "fa82c7f3842a966f4498c97afd93e6491125a2473e60f88de817cb4de54e0777",
+                "measured_step": {
+                  "ordinal": 1,
+                  "text": "--- concurrent measured\nwriter x${W}: load generate: v1 seed: 42 mode: insert\n  tables:\n    - kind: node\n      name: Chunk\n      rows: 4096000\n      commits: 1000\n      columns:\n        slug: {kind: key, prefix: cw-, width: 7}\n        n: {kind: ordinal, start: 100000, step: 1}\nreader x4: query seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.n } }"
+                },
+                "cache_condition": {
+                  "process": "fresh-per-repetition",
+                  "engine": "preparation-only",
+                  "page_cache": "uncontrolled",
+                  "program": "none",
+                  "iterations": 0
+                },
+                "environment": {
+                  "backend": {
+                    "kind": "local-fs",
+                    "filesystem": "xfs",
+                    "storage_class": "nvme-ssd"
+                  },
+                  "target": "omnigraph-server",
+                  "network_position": "same-host"
+                },
+                "protocol": {
+                  "deadline_seconds": 60,
+                  "attribution": "off",
+                  "schedule": "manual",
+                  "reset": "rebuild",
+                  "timer": "monotonic"
+                },
+                "sweep": {
+                  "W": 4
+                }
+              },
+              "point_id": "b8b70ded2c06a49adc650a5991d3309381c6a1883b75b6c7211ee4e7fd387fa2",
+              "point_name": "gqt-process-cold-b8b70ded2c06"
+            },
+            "build": {
+              "source_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+              "source_tree_dirty": true,
+              "cargo_profile": "release",
+              "cargo_opt_level": "2",
+              "debug_assertions": false,
+              "effective_lance_mem_pool_size": {
+                "state": "unset"
+              },
+              "target_triple": "x86_64-unknown-linux-gnu",
+              "rustc_version": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+              "declared_release_lto": "thin",
+              "declared_release_codegen_units": 16,
+              "declared_release_strip": true,
+              "cargo_encoded_rustflags_present": false,
+              "release_profile_environment_overrides_supported": true,
+              "effective_codegen_options_proved": false,
+              "engine_feature_flags": [
+                "default"
+              ],
+              "enabled_techniques": [],
+              "worker_executable_sha256": "54c66d85c09f8dc98d07079714d5864708c83e43106b02642382067eca6535cb"
+            },
+            "machine": {
+              "format_version": 1,
+              "os_name": "linux",
+              "os_version": "unqualified gVisor sandbox",
+              "kernel_version": "4.19.0-gvisor",
+              "architecture": "x86_64",
+              "cpu_model": "unqualified: machine_probe_failed for resource_control: /proc/self/status contains no Cpus_allowed_list",
+              "logical_cores": 32,
+              "physical_cores": 32,
+              "total_memory_bytes": 68719476736,
+              "resource_control": {
+                "kind": "linux-uncontrolled",
+                "cpu_affinity_sha256": "60031dc12459b6b27c714d18d88650127d68996790861deb3d3fca96acafff26"
+              },
+              "scheduling": {
+                "nice_level": 0,
+                "policy": "other",
+                "priority": 0,
+                "reset_on_fork": false
+              },
+              "resource_limits": {
+                "scope_version": 1,
+                "values_sha256": "d1f7f49a10ef62916e9793d7b8df95524b5ea6a12e89ab333c0b309441d8c70c"
+              },
+              "machine_label": "hostname-sha256:bf2514dbbc66aeadbfbee7ec53ee976534ac40364314340a15e68823da82c18b"
+            },
+            "environment": {
+              "filesystem": "unqualified (scratch device 0:27 is not XFS)",
+              "storage_class": "unqualified",
+              "mount_point": "/src/gqb/store",
+              "storage_protocol": "unqualified",
+              "available_bytes": 0,
+              "probe": "unqualified-local-patch"
+            },
+            "dataset_cache_hit": true,
+            "base": {
+              "format_version": 1,
+              "key": "921181e1adacaa6031aae85dcbf42435f0c5f7984fc0a3ea4440728ee6e46a5d",
+              "recipe_sha256": "d14b6bb43e062df7b071d821a493d20019099b43f184f71de9f7e0018fe08183",
+              "engine_digest": "631153d6854beefce2be16cce234e34a47f0de4c29eec5bd523f46de9e35e258",
+              "needs_indices": false,
+              "storage_format": {
+                "internal_schema_version": 18,
+                "lance_version": "13.0.0",
+                "fts_certificate": {
+                  "format_version": 2,
+                  "profiles": [
+                    {
+                      "profile": "standard_v1",
+                      "native": "sha256:76e1636637778021f1690a9c0789bc743088efb9f95ae7906541480f1bc53593",
+                      "analyzer": "sha256:c91eac721fc165c523d6f0d89bf422fed19a9b3325023b195e63e1bbae6e4eec"
+                    },
+                    {
+                      "profile": "standard_folded_v1",
+                      "native": "sha256:de15802bb5cc886270be53e7770fcd38c278a760b15456493bcfe0851c807a53",
+                      "analyzer": "sha256:d403ea038f16e1bb3927809cdb5c4dc361bbe7de6d00023910681917b993121d"
+                    },
+                    {
+                      "profile": "english_v1",
+                      "native": "sha256:eb980aaeb2cda1a85139f541e09dcaaf2a10288f620a7d6aad1c70cd1c038822",
+                      "analyzer": "sha256:bdc9c2f22f06c5d5ad1f588f04d704ed3608b6876e028a8b7142215321c89208"
+                    }
+                  ]
+                }
+              },
+              "summary": {
+                "algorithm": "omnigraph-gqt-branches-lineage-equivalence-v1",
+                "logical_content_sha256": "fd2ba3c355ddf667074595da0b690d90495d684e99db7daa907a2f58f4bf1f4f",
+                "branches": [
+                  {
+                    "name": "main",
+                    "content_sha256": "6500ad8b61b3c160dcdd3c1f5f687acf89bc6d9de61557da9a92088548c3df9a",
+                    "schema_sha256": "3701bdf3bdfe610b0002d5d1b58037ed70cbda22f65d9139452a06334d5746eb",
+                    "lineage_sha256": "ad49f1c98ed4a29a9d17713b420ff30984a47e1e50236d9bbb8e7b7638265b3a",
+                    "history_commits": 2,
+                    "node_tables": [
+                      {
+                        "name": "Chunk",
+                        "rows": 4096
+                      }
+                    ],
+                    "edge_tables": [],
+                    "indexes": []
+                  }
+                ],
+                "relocation_self_contained": true,
+                "limitations": [
+                  "unkeyed-edge-ids-excluded",
+                  "historical-row-images-not-attested"
+                ]
+              },
+              "registered_source_identity": null,
+              "objects": [
+                {
+                  "path": "__history/schemas/6379502fc9ba54581893b1e6411fd50554d40bd16e94eb4d3834d9a9b80ddd10.schema",
+                  "bytes": 1789,
+                  "version": "6379502fc9ba54581893b1e6411fd50554d40bd16e94eb4d3834d9a9b80ddd10"
+                },
+                {
+                  "path": "__manifest/_transactions/0-a7880a1c-31d7-4e29-a436-2e89cf612962.txn",
+                  "bytes": 1273,
+                  "version": "4023af5b68472224d5ccdc38071522926d3a0ad5ef285e2ebf983b976c28e860"
+                },
+                {
+                  "path": "__manifest/_transactions/1-936700ee-444f-460e-9487-1fb8cd5e3cbf.txn",
+                  "bytes": 1275,
+                  "version": "7aea369354421db6d04819dee2c3bef6de4c63c95b9d7a3c82786bf40cc6ee33"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551613.manifest",
+                  "bytes": 2709,
+                  "version": "5c407f315a2aefe012c4f0fbb7aac0e0ee0628ebd1e4fc7814c785691d2c2589"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551614.manifest",
+                  "bytes": 2703,
+                  "version": "9ea51dcf5c556ed8ffea443d4d0289741b3bc1d29a6011c124994c5e88879cda"
+                },
+                {
+                  "path": "__manifest/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "732322c128ed67841ef5aa42c7cd04ffcd74a61b2d17d710cd502b713d62930d"
+                },
+                {
+                  "path": "__manifest/data/0101001001010000010100105c33bd4161aed2bf840f5654f1.lance",
+                  "bytes": 6510,
+                  "version": "e30560055959f8a1801bdef95d712245dfed622aaff83bb37fb39e5653c3f700"
+                },
+                {
+                  "path": "__manifest/data/0111100110111110000000107e642b4ebba4f8a3a93e4c66e8.lance",
+                  "bytes": 5677,
+                  "version": "7002ea8061c57d0dd51625c6b9586dfa550b5e1c43d8e7efa338267eb83d6583"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/0-dfae5fd8-9756-4604-962f-e7fda6c9d4d6.txn",
+                  "bytes": 246,
+                  "version": "7b7c769736de0d902a185c502c0aa94bb9c9c3d3f5cc2d68f8576faa3c2a12de"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/1-890fde69-1776-4c85-b1e9-9f8d2949df18.txn",
+                  "bytes": 33102,
+                  "version": "8658f2fa4565fe7a40839aea0876d655f15111906fef6080364a0f54f6e08810"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/18446744073709551614.manifest",
+                  "bytes": 572,
+                  "version": "1922f49a060aa45eb0062ad3d545dda69a565eed0cc58b13e32d5a2d82ac1421"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/d16471507960079716401.manifest",
+                  "bytes": 33560,
+                  "version": "60a3503d082be9e37e4d4b5fb6a919766419dc90ef98758bcffa31253a4ec85c"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "2430f1a2ad2982d0067885488a4c89e21ad1d7c83b115ba8f1b20acc88dfaea8"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/data/101001100011111110110101790e644ad78f25aea81149e3f7.lance",
+                  "bytes": 68944,
+                  "version": "a6fd42e85b29e8ae03e3c5df271096eaca91817891bc10f8969e479de869e8fb"
+                }
+              ],
+              "built_at_unix_ms": 1795329334880
+            },
+            "product": {
+              "path": "/src/gqb/bin/new/omnigraph",
+              "package_version": "0.16.1",
+              "http_contract": "0.14",
+              "internal_schema_writes": 18,
+              "executable_sha256": "53a082ecadc75594c896f50355a5c4dab9d5fd061ac7f275deebc242d2232c55",
+              "requested_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+              "server": {
+                "path": "/src/gqb/bin/new/omnigraph-server",
+                "executable_sha256": "01df4cdcb4538fd802afb4aca884652664e302eed1eff6b8407f6b6667068689"
+              }
+            },
+            "samples": [
+              {
+                "repetition": 1,
+                "elapsed_us": 35244395,
+                "peak_rss_bytes": 616550400,
+                "outcome": "expectations-passed",
+                "steps": [
+                  {
+                    "ordinal": 1,
+                    "occurrence": 1,
+                    "kind": "concurrent",
+                    "elapsed_us": 35244395
+                  },
+                  {
+                    "ordinal": 2,
+                    "occurrence": 1,
+                    "kind": "query",
+                    "elapsed_us": 108797
+                  }
+                ],
+                "verification": {
+                  "selected_assertion_passed": true,
+                  "assertions_passed": 2,
+                  "following_assertions": 1
+                },
+                "merge": null,
+                "client_peak_rss_bytes": 588554240,
+                "server_executable_sha256": "01df4cdcb4538fd802afb4aca884652664e302eed1eff6b8407f6b6667068689",
+                "concurrent": {
+                  "driver": "closed-loop",
+                  "claim_grade": false,
+                  "warmup_seconds": 5,
+                  "measured_seconds": 30,
+                  "sweep": {
+                    "W": 4
+                  },
+                  "window_us": 30001025,
+                  "drain_us": 242203,
+                  "tokio_unstable": false,
+                  "readback": {
+                    "rows": 738,
+                    "compared": 32
+                  },
+                  "labels": [
+                    {
+                      "label": "writer",
+                      "kind": "load",
+                      "workers": 4,
+                      "acked": 509,
+                      "warmup_acked": 229,
+                      "acked_in_drain": 4,
+                      "acked_per_second_millis": 16966,
+                      "per_worker": {
+                        "min": 127,
+                        "max": 128
+                      },
+                      "service_time_us": {
+                        "p50": 227327,
+                        "p99": 348159,
+                        "max": 352056
+                      },
+                      "authority_conflicts": 0,
+                      "acked_by_second": [
+                        24,
+                        24,
+                        23,
+                        21,
+                        21,
+                        21,
+                        19,
+                        21,
+                        21,
+                        20,
+                        19,
+                        18,
+                        18,
+                        17,
+                        17,
+                        15,
+                        15,
+                        15,
+                        15,
+                        14,
+                        14,
+                        13,
+                        13,
+                        14,
+                        13,
+                        13,
+                        12,
+                        11,
+                        12,
+                        12
+                      ]
+                    },
+                    {
+                      "label": "reader",
+                      "kind": "query",
+                      "workers": 4,
+                      "acked": 1605,
+                      "warmup_acked": 1044,
+                      "acked_in_drain": 4,
+                      "acked_per_second_millis": 53498,
+                      "per_worker": {
+                        "min": 401,
+                        "max": 402
+                      },
+                      "service_time_us": {
+                        "p50": 75263,
+                        "p99": 117247,
+                        "max": 129003
+                      },
+                      "authority_conflicts": 0,
+                      "acked_by_second": [
+                        98,
+                        90,
+                        83,
+                        75,
+                        76,
+                        69,
+                        67,
+                        64,
+                        61,
+                        57,
+                        56,
+                        51,
+                        52,
+                        50,
+                        48,
+                        46,
+                        44,
+                        45,
+                        45,
+                        42,
+                        42,
+                        40,
+                        40,
+                        40,
+                        40,
+                        36,
+                        36,
+                        36,
+                        36,
+                        36
+                      ]
+                    }
+                  ]
+                }
+              }
+            ],
+            "wall_clock": {
+              "observed_repetitions": 1,
+              "min_us": 35244395,
+              "p50_us": 35244395,
+              "max_us": 35244395,
+              "p95_supported": false
+            },
+            "durable_record": false
+          },
+          {
+            "runner_output_version": 1,
+            "case_id": "concurrent-writes",
+            "case_path": "/src/gqb/new/benchmarks/benchmarks.yaml",
+            "point_id": "7dd1889d0f46339ef4910c257f9a3881e3c4541d5b4fdcf3e11ec87a056ac7f3",
+            "point_name": "gqt-process-cold-7dd1889d0f46",
+            "requested_repetitions": 1,
+            "bound": {
+              "plan": {
+                "definition": {
+                  "version": 1,
+                  "id": "concurrent-writes",
+                  "scenario": "gqt-v1",
+                  "fixture": {
+                    "kind": "dataset",
+                    "path": "fixtures/concurrent_writes.gqt"
+                  },
+                  "workload": {
+                    "queries": "workloads/concurrent_writes.gqt",
+                    "measured_step": {
+                      "ordinal": 1,
+                      "text": "--- concurrent measured\nwriter x${W}: load generate: v1 seed: 42 mode: insert\n  tables:\n    - kind: node\n      name: Chunk\n      rows: 4096000\n      commits: 1000\n      columns:\n        slug: {kind: key, prefix: cw-, width: 7}\n        n: {kind: ordinal, start: 100000, step: 1}\nreader x4: query seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.n } }"
+                    }
+                  },
+                  "environment": {
+                    "backend": {
+                      "kind": "local-fs",
+                      "filesystem": "xfs",
+                      "storage_class": "nvme-ssd"
+                    },
+                    "target": "omnigraph-server",
+                    "network_position": "same-host"
+                  },
+                  "protocol": {
+                    "deadline_seconds": 60,
+                    "attribution": "off",
+                    "schedule": "manual",
+                    "reset": "rebuild",
+                    "timer": "monotonic"
+                  }
+                },
+                "dataset": {
+                  "kind": "gqt",
+                  "source": {
+                    "stem": "concurrent_writes",
+                    "text": "# issue: none\n# notes: Starting state of the concurrent-writes scenario: one keyed Chunk table with 4096 generated rows on main. The readers look one of them up by key while the writers append rows of their own.\n\n--- runner\ntimeout_ms: 60000\nenvironments:\n  - target: omnigraph-engine\n    storage: local-filesystem\n\n--- schema\nnode Chunk { slug: String @key n: I64 }\n\n--- seed generate: v1 seed: 7\ntables:\n  - kind: node\n    name: Chunk\n    rows: 4096\n    commits: 1\n    batch_rows: 4096\n    columns:\n      slug: {kind: key, prefix: seed-, width: 4}\n      n: {kind: ordinal, start: 0, step: 1}\n",
+                    "sha256": "a8f957e067a90d49b61b5804a0c0b11e830bdb231d61863673fd61cd436255eb"
+                  }
+                },
+                "queries": {
+                  "stem": "concurrent_writes",
+                  "text": "# issue: none\n# notes: W writers append dealt rows to main beside four readers that look a seeded row up by key. The block is the measured step: omnigraph-bench loops every worker for the bench section's warmup and duration, once per value of W, and reports acknowledged statements per second per label; a host with a scripted clock runs every worker once at the first value. The host reads every dealt row back after the block, and the query after it reads a seeded row, which holds however long the block ran.\n\n--- runner\ntimeout_ms: 60000\nenvironments:\n  - target: omnigraph-engine\n    storage: local-filesystem\n  - target: omnigraph-server\n    storage: local-filesystem\n\n--- bench\nwarmup_seconds: 5\nduration_seconds: 30\nsweep: { W: [1, 2, 4, 8, 16] }\n\n--- concurrent measured\nwriter x${W}: load generate: v1 seed: 42 mode: insert\n  tables:\n    - kind: node\n      name: Chunk\n      rows: 4096000\n      commits: 1000\n      columns:\n        slug: {kind: key, prefix: cw-, width: 7}\n        n: {kind: ordinal, start: 100000, step: 1}\nreader x4: query seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.n } }\n--- expect\nwriter: ok\nreader: ok\n\n--- query branch: main\nquery seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.slug, $c.n } }\n--- expect unordered\n{\"c.slug\":\"seed-0017\",\"c.n\":17}\n--- expect shape\nc.slug: String\nc.n: I64\n",
+                  "sha256": "fa82c7f3842a966f4498c97afd93e6491125a2473e60f88de817cb4de54e0777",
+                  "sweep": {
+                    "W": 8
+                  }
+                },
+                "recipe_sha256": "d14b6bb43e062df7b071d821a493d20019099b43f184f71de9f7e0018fe08183",
+                "case_digest": "c642d477852d218931b4176c2e574034ea16fdfd28bb4c29ff7accfefc0e23aa",
+                "planned_sha256": "cc2e48e26af320726a395c72a9adcacf3df83909444a27befdb3591c6e46fec8",
+                "cache_condition": {
+                  "process": "fresh-per-repetition",
+                  "engine": "preparation-only",
+                  "page_cache": "uncontrolled",
+                  "program": "none",
+                  "iterations": 0
+                },
+                "needs_indices": false,
+                "block": {
+                  "warmup_seconds": 5,
+                  "duration_seconds": 30
+                }
+              },
+              "identity": {
+                "identity_version": 1,
+                "scenario": "gqt-v1",
+                "dataset_recipe_sha256": "d14b6bb43e062df7b071d821a493d20019099b43f184f71de9f7e0018fe08183",
+                "dataset_logical_digest": "fd2ba3c355ddf667074595da0b690d90495d684e99db7daa907a2f58f4bf1f4f",
+                "dataset_identity_algorithm": "omnigraph-gqt-branches-lineage-equivalence-v1",
+                "queries_sha256": "fa82c7f3842a966f4498c97afd93e6491125a2473e60f88de817cb4de54e0777",
+                "measured_step": {
+                  "ordinal": 1,
+                  "text": "--- concurrent measured\nwriter x${W}: load generate: v1 seed: 42 mode: insert\n  tables:\n    - kind: node\n      name: Chunk\n      rows: 4096000\n      commits: 1000\n      columns:\n        slug: {kind: key, prefix: cw-, width: 7}\n        n: {kind: ordinal, start: 100000, step: 1}\nreader x4: query seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.n } }"
+                },
+                "cache_condition": {
+                  "process": "fresh-per-repetition",
+                  "engine": "preparation-only",
+                  "page_cache": "uncontrolled",
+                  "program": "none",
+                  "iterations": 0
+                },
+                "environment": {
+                  "backend": {
+                    "kind": "local-fs",
+                    "filesystem": "xfs",
+                    "storage_class": "nvme-ssd"
+                  },
+                  "target": "omnigraph-server",
+                  "network_position": "same-host"
+                },
+                "protocol": {
+                  "deadline_seconds": 60,
+                  "attribution": "off",
+                  "schedule": "manual",
+                  "reset": "rebuild",
+                  "timer": "monotonic"
+                },
+                "sweep": {
+                  "W": 8
+                }
+              },
+              "point_id": "7dd1889d0f46339ef4910c257f9a3881e3c4541d5b4fdcf3e11ec87a056ac7f3",
+              "point_name": "gqt-process-cold-7dd1889d0f46"
+            },
+            "build": {
+              "source_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+              "source_tree_dirty": true,
+              "cargo_profile": "release",
+              "cargo_opt_level": "2",
+              "debug_assertions": false,
+              "effective_lance_mem_pool_size": {
+                "state": "unset"
+              },
+              "target_triple": "x86_64-unknown-linux-gnu",
+              "rustc_version": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+              "declared_release_lto": "thin",
+              "declared_release_codegen_units": 16,
+              "declared_release_strip": true,
+              "cargo_encoded_rustflags_present": false,
+              "release_profile_environment_overrides_supported": true,
+              "effective_codegen_options_proved": false,
+              "engine_feature_flags": [
+                "default"
+              ],
+              "enabled_techniques": [],
+              "worker_executable_sha256": "54c66d85c09f8dc98d07079714d5864708c83e43106b02642382067eca6535cb"
+            },
+            "machine": {
+              "format_version": 1,
+              "os_name": "linux",
+              "os_version": "unqualified gVisor sandbox",
+              "kernel_version": "4.19.0-gvisor",
+              "architecture": "x86_64",
+              "cpu_model": "unqualified: machine_probe_failed for resource_control: /proc/self/status contains no Cpus_allowed_list",
+              "logical_cores": 32,
+              "physical_cores": 32,
+              "total_memory_bytes": 68719476736,
+              "resource_control": {
+                "kind": "linux-uncontrolled",
+                "cpu_affinity_sha256": "60031dc12459b6b27c714d18d88650127d68996790861deb3d3fca96acafff26"
+              },
+              "scheduling": {
+                "nice_level": 0,
+                "policy": "other",
+                "priority": 0,
+                "reset_on_fork": false
+              },
+              "resource_limits": {
+                "scope_version": 1,
+                "values_sha256": "d1f7f49a10ef62916e9793d7b8df95524b5ea6a12e89ab333c0b309441d8c70c"
+              },
+              "machine_label": "hostname-sha256:bf2514dbbc66aeadbfbee7ec53ee976534ac40364314340a15e68823da82c18b"
+            },
+            "environment": {
+              "filesystem": "unqualified (scratch device 0:27 is not XFS)",
+              "storage_class": "unqualified",
+              "mount_point": "/src/gqb/store",
+              "storage_protocol": "unqualified",
+              "available_bytes": 0,
+              "probe": "unqualified-local-patch"
+            },
+            "dataset_cache_hit": true,
+            "base": {
+              "format_version": 1,
+              "key": "921181e1adacaa6031aae85dcbf42435f0c5f7984fc0a3ea4440728ee6e46a5d",
+              "recipe_sha256": "d14b6bb43e062df7b071d821a493d20019099b43f184f71de9f7e0018fe08183",
+              "engine_digest": "631153d6854beefce2be16cce234e34a47f0de4c29eec5bd523f46de9e35e258",
+              "needs_indices": false,
+              "storage_format": {
+                "internal_schema_version": 18,
+                "lance_version": "13.0.0",
+                "fts_certificate": {
+                  "format_version": 2,
+                  "profiles": [
+                    {
+                      "profile": "standard_v1",
+                      "native": "sha256:76e1636637778021f1690a9c0789bc743088efb9f95ae7906541480f1bc53593",
+                      "analyzer": "sha256:c91eac721fc165c523d6f0d89bf422fed19a9b3325023b195e63e1bbae6e4eec"
+                    },
+                    {
+                      "profile": "standard_folded_v1",
+                      "native": "sha256:de15802bb5cc886270be53e7770fcd38c278a760b15456493bcfe0851c807a53",
+                      "analyzer": "sha256:d403ea038f16e1bb3927809cdb5c4dc361bbe7de6d00023910681917b993121d"
+                    },
+                    {
+                      "profile": "english_v1",
+                      "native": "sha256:eb980aaeb2cda1a85139f541e09dcaaf2a10288f620a7d6aad1c70cd1c038822",
+                      "analyzer": "sha256:bdc9c2f22f06c5d5ad1f588f04d704ed3608b6876e028a8b7142215321c89208"
+                    }
+                  ]
+                }
+              },
+              "summary": {
+                "algorithm": "omnigraph-gqt-branches-lineage-equivalence-v1",
+                "logical_content_sha256": "fd2ba3c355ddf667074595da0b690d90495d684e99db7daa907a2f58f4bf1f4f",
+                "branches": [
+                  {
+                    "name": "main",
+                    "content_sha256": "6500ad8b61b3c160dcdd3c1f5f687acf89bc6d9de61557da9a92088548c3df9a",
+                    "schema_sha256": "3701bdf3bdfe610b0002d5d1b58037ed70cbda22f65d9139452a06334d5746eb",
+                    "lineage_sha256": "ad49f1c98ed4a29a9d17713b420ff30984a47e1e50236d9bbb8e7b7638265b3a",
+                    "history_commits": 2,
+                    "node_tables": [
+                      {
+                        "name": "Chunk",
+                        "rows": 4096
+                      }
+                    ],
+                    "edge_tables": [],
+                    "indexes": []
+                  }
+                ],
+                "relocation_self_contained": true,
+                "limitations": [
+                  "unkeyed-edge-ids-excluded",
+                  "historical-row-images-not-attested"
+                ]
+              },
+              "registered_source_identity": null,
+              "objects": [
+                {
+                  "path": "__history/schemas/6379502fc9ba54581893b1e6411fd50554d40bd16e94eb4d3834d9a9b80ddd10.schema",
+                  "bytes": 1789,
+                  "version": "6379502fc9ba54581893b1e6411fd50554d40bd16e94eb4d3834d9a9b80ddd10"
+                },
+                {
+                  "path": "__manifest/_transactions/0-a7880a1c-31d7-4e29-a436-2e89cf612962.txn",
+                  "bytes": 1273,
+                  "version": "4023af5b68472224d5ccdc38071522926d3a0ad5ef285e2ebf983b976c28e860"
+                },
+                {
+                  "path": "__manifest/_transactions/1-936700ee-444f-460e-9487-1fb8cd5e3cbf.txn",
+                  "bytes": 1275,
+                  "version": "7aea369354421db6d04819dee2c3bef6de4c63c95b9d7a3c82786bf40cc6ee33"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551613.manifest",
+                  "bytes": 2709,
+                  "version": "5c407f315a2aefe012c4f0fbb7aac0e0ee0628ebd1e4fc7814c785691d2c2589"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551614.manifest",
+                  "bytes": 2703,
+                  "version": "9ea51dcf5c556ed8ffea443d4d0289741b3bc1d29a6011c124994c5e88879cda"
+                },
+                {
+                  "path": "__manifest/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "732322c128ed67841ef5aa42c7cd04ffcd74a61b2d17d710cd502b713d62930d"
+                },
+                {
+                  "path": "__manifest/data/0101001001010000010100105c33bd4161aed2bf840f5654f1.lance",
+                  "bytes": 6510,
+                  "version": "e30560055959f8a1801bdef95d712245dfed622aaff83bb37fb39e5653c3f700"
+                },
+                {
+                  "path": "__manifest/data/0111100110111110000000107e642b4ebba4f8a3a93e4c66e8.lance",
+                  "bytes": 5677,
+                  "version": "7002ea8061c57d0dd51625c6b9586dfa550b5e1c43d8e7efa338267eb83d6583"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/0-dfae5fd8-9756-4604-962f-e7fda6c9d4d6.txn",
+                  "bytes": 246,
+                  "version": "7b7c769736de0d902a185c502c0aa94bb9c9c3d3f5cc2d68f8576faa3c2a12de"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/1-890fde69-1776-4c85-b1e9-9f8d2949df18.txn",
+                  "bytes": 33102,
+                  "version": "8658f2fa4565fe7a40839aea0876d655f15111906fef6080364a0f54f6e08810"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/18446744073709551614.manifest",
+                  "bytes": 572,
+                  "version": "1922f49a060aa45eb0062ad3d545dda69a565eed0cc58b13e32d5a2d82ac1421"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/d16471507960079716401.manifest",
+                  "bytes": 33560,
+                  "version": "60a3503d082be9e37e4d4b5fb6a919766419dc90ef98758bcffa31253a4ec85c"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "2430f1a2ad2982d0067885488a4c89e21ad1d7c83b115ba8f1b20acc88dfaea8"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/data/101001100011111110110101790e644ad78f25aea81149e3f7.lance",
+                  "bytes": 68944,
+                  "version": "a6fd42e85b29e8ae03e3c5df271096eaca91817891bc10f8969e479de869e8fb"
+                }
+              ],
+              "built_at_unix_ms": 1795329334880
+            },
+            "product": {
+              "path": "/src/gqb/bin/new/omnigraph",
+              "package_version": "0.16.1",
+              "http_contract": "0.14",
+              "internal_schema_writes": 18,
+              "executable_sha256": "53a082ecadc75594c896f50355a5c4dab9d5fd061ac7f275deebc242d2232c55",
+              "requested_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+              "server": {
+                "path": "/src/gqb/bin/new/omnigraph-server",
+                "executable_sha256": "01df4cdcb4538fd802afb4aca884652664e302eed1eff6b8407f6b6667068689"
+              }
+            },
+            "samples": [
+              {
+                "repetition": 1,
+                "elapsed_us": 35490827,
+                "peak_rss_bytes": 589131776,
+                "outcome": "expectations-passed",
+                "steps": [
+                  {
+                    "ordinal": 1,
+                    "occurrence": 1,
+                    "kind": "concurrent",
+                    "elapsed_us": 35490827
+                  },
+                  {
+                    "ordinal": 2,
+                    "occurrence": 1,
+                    "kind": "query",
+                    "elapsed_us": 102125
+                  }
+                ],
+                "verification": {
+                  "selected_assertion_passed": true,
+                  "assertions_passed": 2,
+                  "following_assertions": 1
+                },
+                "merge": null,
+                "client_peak_rss_bytes": 589131776,
+                "server_executable_sha256": "01df4cdcb4538fd802afb4aca884652664e302eed1eff6b8407f6b6667068689",
+                "concurrent": {
+                  "driver": "closed-loop",
+                  "claim_grade": false,
+                  "warmup_seconds": 5,
+                  "measured_seconds": 30,
+                  "sweep": {
+                    "W": 8
+                  },
+                  "window_us": 30000894,
+                  "drain_us": 488601,
+                  "tokio_unstable": false,
+                  "readback": {
+                    "rows": 725,
+                    "compared": 64
+                  },
+                  "labels": [
+                    {
+                      "label": "writer",
+                      "kind": "load",
+                      "workers": 8,
+                      "acked": 494,
+                      "warmup_acked": 231,
+                      "acked_in_drain": 8,
+                      "acked_per_second_millis": 16466,
+                      "per_worker": {
+                        "min": 61,
+                        "max": 62
+                      },
+                      "service_time_us": {
+                        "p50": 462847,
+                        "p99": 724991,
+                        "max": 739101
+                      },
+                      "authority_conflicts": 0,
+                      "acked_by_second": [
+                        16,
+                        23,
+                        21,
+                        21,
+                        20,
+                        19,
+                        19,
+                        19,
+                        20,
+                        18,
+                        17,
+                        18,
+                        18,
+                        17,
+                        17,
+                        16,
+                        17,
+                        15,
+                        15,
+                        15,
+                        14,
+                        13,
+                        14,
+                        13,
+                        12,
+                        13,
+                        12,
+                        12,
+                        11,
+                        11
+                      ]
+                    },
+                    {
+                      "label": "reader",
+                      "kind": "query",
+                      "workers": 4,
+                      "acked": 1560,
+                      "warmup_acked": 1029,
+                      "acked_in_drain": 4,
+                      "acked_per_second_millis": 51998,
+                      "per_worker": {
+                        "min": 389,
+                        "max": 391
+                      },
+                      "service_time_us": {
+                        "p50": 77823,
+                        "p99": 124415,
+                        "max": 133226
+                      },
+                      "authority_conflicts": 0,
+                      "acked_by_second": [
+                        84,
+                        81,
+                        75,
+                        75,
+                        72,
+                        64,
+                        64,
+                        65,
+                        57,
+                        56,
+                        49,
+                        54,
+                        52,
+                        51,
+                        48,
+                        49,
+                        47,
+                        46,
+                        45,
+                        45,
+                        41,
+                        42,
+                        40,
+                        38,
+                        37,
+                        38,
+                        38,
+                        35,
+                        34,
+                        34
+                      ]
+                    }
+                  ]
+                }
+              }
+            ],
+            "wall_clock": {
+              "observed_repetitions": 1,
+              "min_us": 35490827,
+              "p50_us": 35490827,
+              "max_us": 35490827,
+              "p95_supported": false
+            },
+            "durable_record": false
+          },
+          {
+            "runner_output_version": 1,
+            "case_id": "concurrent-writes",
+            "case_path": "/src/gqb/new/benchmarks/benchmarks.yaml",
+            "point_id": "998f3da603cd8d658b4ec25b45c17ab6176d1650e462b8afc1f860fa6764f83e",
+            "point_name": "gqt-process-cold-998f3da603cd",
+            "requested_repetitions": 1,
+            "bound": {
+              "plan": {
+                "definition": {
+                  "version": 1,
+                  "id": "concurrent-writes",
+                  "scenario": "gqt-v1",
+                  "fixture": {
+                    "kind": "dataset",
+                    "path": "fixtures/concurrent_writes.gqt"
+                  },
+                  "workload": {
+                    "queries": "workloads/concurrent_writes.gqt",
+                    "measured_step": {
+                      "ordinal": 1,
+                      "text": "--- concurrent measured\nwriter x${W}: load generate: v1 seed: 42 mode: insert\n  tables:\n    - kind: node\n      name: Chunk\n      rows: 4096000\n      commits: 1000\n      columns:\n        slug: {kind: key, prefix: cw-, width: 7}\n        n: {kind: ordinal, start: 100000, step: 1}\nreader x4: query seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.n } }"
+                    }
+                  },
+                  "environment": {
+                    "backend": {
+                      "kind": "local-fs",
+                      "filesystem": "xfs",
+                      "storage_class": "nvme-ssd"
+                    },
+                    "target": "omnigraph-server",
+                    "network_position": "same-host"
+                  },
+                  "protocol": {
+                    "deadline_seconds": 60,
+                    "attribution": "off",
+                    "schedule": "manual",
+                    "reset": "rebuild",
+                    "timer": "monotonic"
+                  }
+                },
+                "dataset": {
+                  "kind": "gqt",
+                  "source": {
+                    "stem": "concurrent_writes",
+                    "text": "# issue: none\n# notes: Starting state of the concurrent-writes scenario: one keyed Chunk table with 4096 generated rows on main. The readers look one of them up by key while the writers append rows of their own.\n\n--- runner\ntimeout_ms: 60000\nenvironments:\n  - target: omnigraph-engine\n    storage: local-filesystem\n\n--- schema\nnode Chunk { slug: String @key n: I64 }\n\n--- seed generate: v1 seed: 7\ntables:\n  - kind: node\n    name: Chunk\n    rows: 4096\n    commits: 1\n    batch_rows: 4096\n    columns:\n      slug: {kind: key, prefix: seed-, width: 4}\n      n: {kind: ordinal, start: 0, step: 1}\n",
+                    "sha256": "a8f957e067a90d49b61b5804a0c0b11e830bdb231d61863673fd61cd436255eb"
+                  }
+                },
+                "queries": {
+                  "stem": "concurrent_writes",
+                  "text": "# issue: none\n# notes: W writers append dealt rows to main beside four readers that look a seeded row up by key. The block is the measured step: omnigraph-bench loops every worker for the bench section's warmup and duration, once per value of W, and reports acknowledged statements per second per label; a host with a scripted clock runs every worker once at the first value. The host reads every dealt row back after the block, and the query after it reads a seeded row, which holds however long the block ran.\n\n--- runner\ntimeout_ms: 60000\nenvironments:\n  - target: omnigraph-engine\n    storage: local-filesystem\n  - target: omnigraph-server\n    storage: local-filesystem\n\n--- bench\nwarmup_seconds: 5\nduration_seconds: 30\nsweep: { W: [1, 2, 4, 8, 16] }\n\n--- concurrent measured\nwriter x${W}: load generate: v1 seed: 42 mode: insert\n  tables:\n    - kind: node\n      name: Chunk\n      rows: 4096000\n      commits: 1000\n      columns:\n        slug: {kind: key, prefix: cw-, width: 7}\n        n: {kind: ordinal, start: 100000, step: 1}\nreader x4: query seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.n } }\n--- expect\nwriter: ok\nreader: ok\n\n--- query branch: main\nquery seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.slug, $c.n } }\n--- expect unordered\n{\"c.slug\":\"seed-0017\",\"c.n\":17}\n--- expect shape\nc.slug: String\nc.n: I64\n",
+                  "sha256": "fa82c7f3842a966f4498c97afd93e6491125a2473e60f88de817cb4de54e0777",
+                  "sweep": {
+                    "W": 16
+                  }
+                },
+                "recipe_sha256": "d14b6bb43e062df7b071d821a493d20019099b43f184f71de9f7e0018fe08183",
+                "case_digest": "c642d477852d218931b4176c2e574034ea16fdfd28bb4c29ff7accfefc0e23aa",
+                "planned_sha256": "e66efa1b03e499fe5a28f1b0dcec1689446678bfc0c357ee81b10cda61bc85d3",
+                "cache_condition": {
+                  "process": "fresh-per-repetition",
+                  "engine": "preparation-only",
+                  "page_cache": "uncontrolled",
+                  "program": "none",
+                  "iterations": 0
+                },
+                "needs_indices": false,
+                "block": {
+                  "warmup_seconds": 5,
+                  "duration_seconds": 30
+                }
+              },
+              "identity": {
+                "identity_version": 1,
+                "scenario": "gqt-v1",
+                "dataset_recipe_sha256": "d14b6bb43e062df7b071d821a493d20019099b43f184f71de9f7e0018fe08183",
+                "dataset_logical_digest": "fd2ba3c355ddf667074595da0b690d90495d684e99db7daa907a2f58f4bf1f4f",
+                "dataset_identity_algorithm": "omnigraph-gqt-branches-lineage-equivalence-v1",
+                "queries_sha256": "fa82c7f3842a966f4498c97afd93e6491125a2473e60f88de817cb4de54e0777",
+                "measured_step": {
+                  "ordinal": 1,
+                  "text": "--- concurrent measured\nwriter x${W}: load generate: v1 seed: 42 mode: insert\n  tables:\n    - kind: node\n      name: Chunk\n      rows: 4096000\n      commits: 1000\n      columns:\n        slug: {kind: key, prefix: cw-, width: 7}\n        n: {kind: ordinal, start: 100000, step: 1}\nreader x4: query seeded_row() { match { $c: Chunk } where $c.slug = \"seed-0017\" return { $c.n } }"
+                },
+                "cache_condition": {
+                  "process": "fresh-per-repetition",
+                  "engine": "preparation-only",
+                  "page_cache": "uncontrolled",
+                  "program": "none",
+                  "iterations": 0
+                },
+                "environment": {
+                  "backend": {
+                    "kind": "local-fs",
+                    "filesystem": "xfs",
+                    "storage_class": "nvme-ssd"
+                  },
+                  "target": "omnigraph-server",
+                  "network_position": "same-host"
+                },
+                "protocol": {
+                  "deadline_seconds": 60,
+                  "attribution": "off",
+                  "schedule": "manual",
+                  "reset": "rebuild",
+                  "timer": "monotonic"
+                },
+                "sweep": {
+                  "W": 16
+                }
+              },
+              "point_id": "998f3da603cd8d658b4ec25b45c17ab6176d1650e462b8afc1f860fa6764f83e",
+              "point_name": "gqt-process-cold-998f3da603cd"
+            },
+            "build": {
+              "source_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+              "source_tree_dirty": true,
+              "cargo_profile": "release",
+              "cargo_opt_level": "2",
+              "debug_assertions": false,
+              "effective_lance_mem_pool_size": {
+                "state": "unset"
+              },
+              "target_triple": "x86_64-unknown-linux-gnu",
+              "rustc_version": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+              "declared_release_lto": "thin",
+              "declared_release_codegen_units": 16,
+              "declared_release_strip": true,
+              "cargo_encoded_rustflags_present": false,
+              "release_profile_environment_overrides_supported": true,
+              "effective_codegen_options_proved": false,
+              "engine_feature_flags": [
+                "default"
+              ],
+              "enabled_techniques": [],
+              "worker_executable_sha256": "54c66d85c09f8dc98d07079714d5864708c83e43106b02642382067eca6535cb"
+            },
+            "machine": {
+              "format_version": 1,
+              "os_name": "linux",
+              "os_version": "unqualified gVisor sandbox",
+              "kernel_version": "4.19.0-gvisor",
+              "architecture": "x86_64",
+              "cpu_model": "unqualified: machine_probe_failed for resource_control: /proc/self/status contains no Cpus_allowed_list",
+              "logical_cores": 32,
+              "physical_cores": 32,
+              "total_memory_bytes": 68719476736,
+              "resource_control": {
+                "kind": "linux-uncontrolled",
+                "cpu_affinity_sha256": "60031dc12459b6b27c714d18d88650127d68996790861deb3d3fca96acafff26"
+              },
+              "scheduling": {
+                "nice_level": 0,
+                "policy": "other",
+                "priority": 0,
+                "reset_on_fork": false
+              },
+              "resource_limits": {
+                "scope_version": 1,
+                "values_sha256": "d1f7f49a10ef62916e9793d7b8df95524b5ea6a12e89ab333c0b309441d8c70c"
+              },
+              "machine_label": "hostname-sha256:bf2514dbbc66aeadbfbee7ec53ee976534ac40364314340a15e68823da82c18b"
+            },
+            "environment": {
+              "filesystem": "unqualified (scratch device 0:27 is not XFS)",
+              "storage_class": "unqualified",
+              "mount_point": "/src/gqb/store",
+              "storage_protocol": "unqualified",
+              "available_bytes": 0,
+              "probe": "unqualified-local-patch"
+            },
+            "dataset_cache_hit": true,
+            "base": {
+              "format_version": 1,
+              "key": "921181e1adacaa6031aae85dcbf42435f0c5f7984fc0a3ea4440728ee6e46a5d",
+              "recipe_sha256": "d14b6bb43e062df7b071d821a493d20019099b43f184f71de9f7e0018fe08183",
+              "engine_digest": "631153d6854beefce2be16cce234e34a47f0de4c29eec5bd523f46de9e35e258",
+              "needs_indices": false,
+              "storage_format": {
+                "internal_schema_version": 18,
+                "lance_version": "13.0.0",
+                "fts_certificate": {
+                  "format_version": 2,
+                  "profiles": [
+                    {
+                      "profile": "standard_v1",
+                      "native": "sha256:76e1636637778021f1690a9c0789bc743088efb9f95ae7906541480f1bc53593",
+                      "analyzer": "sha256:c91eac721fc165c523d6f0d89bf422fed19a9b3325023b195e63e1bbae6e4eec"
+                    },
+                    {
+                      "profile": "standard_folded_v1",
+                      "native": "sha256:de15802bb5cc886270be53e7770fcd38c278a760b15456493bcfe0851c807a53",
+                      "analyzer": "sha256:d403ea038f16e1bb3927809cdb5c4dc361bbe7de6d00023910681917b993121d"
+                    },
+                    {
+                      "profile": "english_v1",
+                      "native": "sha256:eb980aaeb2cda1a85139f541e09dcaaf2a10288f620a7d6aad1c70cd1c038822",
+                      "analyzer": "sha256:bdc9c2f22f06c5d5ad1f588f04d704ed3608b6876e028a8b7142215321c89208"
+                    }
+                  ]
+                }
+              },
+              "summary": {
+                "algorithm": "omnigraph-gqt-branches-lineage-equivalence-v1",
+                "logical_content_sha256": "fd2ba3c355ddf667074595da0b690d90495d684e99db7daa907a2f58f4bf1f4f",
+                "branches": [
+                  {
+                    "name": "main",
+                    "content_sha256": "6500ad8b61b3c160dcdd3c1f5f687acf89bc6d9de61557da9a92088548c3df9a",
+                    "schema_sha256": "3701bdf3bdfe610b0002d5d1b58037ed70cbda22f65d9139452a06334d5746eb",
+                    "lineage_sha256": "ad49f1c98ed4a29a9d17713b420ff30984a47e1e50236d9bbb8e7b7638265b3a",
+                    "history_commits": 2,
+                    "node_tables": [
+                      {
+                        "name": "Chunk",
+                        "rows": 4096
+                      }
+                    ],
+                    "edge_tables": [],
+                    "indexes": []
+                  }
+                ],
+                "relocation_self_contained": true,
+                "limitations": [
+                  "unkeyed-edge-ids-excluded",
+                  "historical-row-images-not-attested"
+                ]
+              },
+              "registered_source_identity": null,
+              "objects": [
+                {
+                  "path": "__history/schemas/6379502fc9ba54581893b1e6411fd50554d40bd16e94eb4d3834d9a9b80ddd10.schema",
+                  "bytes": 1789,
+                  "version": "6379502fc9ba54581893b1e6411fd50554d40bd16e94eb4d3834d9a9b80ddd10"
+                },
+                {
+                  "path": "__manifest/_transactions/0-a7880a1c-31d7-4e29-a436-2e89cf612962.txn",
+                  "bytes": 1273,
+                  "version": "4023af5b68472224d5ccdc38071522926d3a0ad5ef285e2ebf983b976c28e860"
+                },
+                {
+                  "path": "__manifest/_transactions/1-936700ee-444f-460e-9487-1fb8cd5e3cbf.txn",
+                  "bytes": 1275,
+                  "version": "7aea369354421db6d04819dee2c3bef6de4c63c95b9d7a3c82786bf40cc6ee33"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551613.manifest",
+                  "bytes": 2709,
+                  "version": "5c407f315a2aefe012c4f0fbb7aac0e0ee0628ebd1e4fc7814c785691d2c2589"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551614.manifest",
+                  "bytes": 2703,
+                  "version": "9ea51dcf5c556ed8ffea443d4d0289741b3bc1d29a6011c124994c5e88879cda"
+                },
+                {
+                  "path": "__manifest/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "732322c128ed67841ef5aa42c7cd04ffcd74a61b2d17d710cd502b713d62930d"
+                },
+                {
+                  "path": "__manifest/data/0101001001010000010100105c33bd4161aed2bf840f5654f1.lance",
+                  "bytes": 6510,
+                  "version": "e30560055959f8a1801bdef95d712245dfed622aaff83bb37fb39e5653c3f700"
+                },
+                {
+                  "path": "__manifest/data/0111100110111110000000107e642b4ebba4f8a3a93e4c66e8.lance",
+                  "bytes": 5677,
+                  "version": "7002ea8061c57d0dd51625c6b9586dfa550b5e1c43d8e7efa338267eb83d6583"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/0-dfae5fd8-9756-4604-962f-e7fda6c9d4d6.txn",
+                  "bytes": 246,
+                  "version": "7b7c769736de0d902a185c502c0aa94bb9c9c3d3f5cc2d68f8576faa3c2a12de"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/1-890fde69-1776-4c85-b1e9-9f8d2949df18.txn",
+                  "bytes": 33102,
+                  "version": "8658f2fa4565fe7a40839aea0876d655f15111906fef6080364a0f54f6e08810"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/18446744073709551614.manifest",
+                  "bytes": 572,
+                  "version": "1922f49a060aa45eb0062ad3d545dda69a565eed0cc58b13e32d5a2d82ac1421"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/d16471507960079716401.manifest",
+                  "bytes": 33560,
+                  "version": "60a3503d082be9e37e4d4b5fb6a919766419dc90ef98758bcffa31253a4ec85c"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "2430f1a2ad2982d0067885488a4c89e21ad1d7c83b115ba8f1b20acc88dfaea8"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/data/101001100011111110110101790e644ad78f25aea81149e3f7.lance",
+                  "bytes": 68944,
+                  "version": "a6fd42e85b29e8ae03e3c5df271096eaca91817891bc10f8969e479de869e8fb"
+                }
+              ],
+              "built_at_unix_ms": 1795329334880
+            },
+            "product": {
+              "path": "/src/gqb/bin/new/omnigraph",
+              "package_version": "0.16.1",
+              "http_contract": "0.14",
+              "internal_schema_writes": 18,
+              "executable_sha256": "53a082ecadc75594c896f50355a5c4dab9d5fd061ac7f275deebc242d2232c55",
+              "requested_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+              "server": {
+                "path": "/src/gqb/bin/new/omnigraph-server",
+                "executable_sha256": "01df4cdcb4538fd802afb4aca884652664e302eed1eff6b8407f6b6667068689"
+              }
+            },
+            "samples": [
+              {
+                "repetition": 1,
+                "elapsed_us": 35937928,
+                "peak_rss_bytes": 620077056,
+                "outcome": "expectations-passed",
+                "steps": [
+                  {
+                    "ordinal": 1,
+                    "occurrence": 1,
+                    "kind": "concurrent",
+                    "elapsed_us": 35937928
+                  },
+                  {
+                    "ordinal": 2,
+                    "occurrence": 1,
+                    "kind": "query",
+                    "elapsed_us": 99310
+                  }
+                ],
+                "verification": {
+                  "selected_assertion_passed": true,
+                  "assertions_passed": 2,
+                  "following_assertions": 1
+                },
+                "merge": null,
+                "client_peak_rss_bytes": 589131776,
+                "server_executable_sha256": "01df4cdcb4538fd802afb4aca884652664e302eed1eff6b8407f6b6667068689",
+                "concurrent": {
+                  "driver": "closed-loop",
+                  "claim_grade": false,
+                  "warmup_seconds": 5,
+                  "measured_seconds": 30,
+                  "sweep": {
+                    "W": 16
+                  },
+                  "window_us": 30001332,
+                  "drain_us": 935233,
+                  "tokio_unstable": false,
+                  "readback": {
+                    "rows": 734,
+                    "compared": 128
+                  },
+                  "labels": [
+                    {
+                      "label": "writer",
+                      "kind": "load",
+                      "workers": 16,
+                      "acked": 495,
+                      "warmup_acked": 239,
+                      "acked_in_drain": 16,
+                      "acked_per_second_millis": 16499,
+                      "per_worker": {
+                        "min": 30,
+                        "max": 31
+                      },
+                      "service_time_us": {
+                        "p50": 925695,
+                        "p99": 1392639,
+                        "max": 1396123
+                      },
+                      "authority_conflicts": 0,
+                      "acked_by_second": [
+                        6,
+                        13,
+                        18,
+                        23,
+                        22,
+                        21,
+                        19,
+                        20,
+                        21,
+                        21,
+                        20,
+                        19,
+                        19,
+                        17,
+                        17,
+                        17,
+                        15,
+                        15,
+                        15,
+                        14,
+                        14,
+                        13,
+                        13,
+                        13,
+                        13,
+                        14,
+                        12,
+                        12,
+                        11,
+                        12
+                      ]
+                    },
+                    {
+                      "label": "reader",
+                      "kind": "query",
+                      "workers": 4,
+                      "acked": 1590,
+                      "warmup_acked": 1037,
+                      "acked_in_drain": 4,
+                      "acked_per_second_millis": 52997,
+                      "per_worker": {
+                        "min": 397,
+                        "max": 398
+                      },
+                      "service_time_us": {
+                        "p50": 72703,
+                        "p99": 163839,
+                        "max": 213365
+                      },
+                      "authority_conflicts": 0,
+                      "acked_by_second": [
+                        92,
+                        54,
+                        68,
+                        84,
+                        79,
+                        72,
+                        65,
+                        68,
+                        64,
+                        61,
+                        59,
+                        56,
+                        53,
+                        50,
+                        51,
+                        48,
+                        44,
+                        48,
+                        44,
+                        44,
+                        40,
+                        40,
+                        40,
+                        39,
+                        40,
+                        38,
+                        39,
+                        36,
+                        34,
+                        36
+                      ]
+                    }
+                  ]
+                }
+              }
+            ],
+            "wall_clock": {
+              "observed_repetitions": 1,
+              "min_us": 35937928,
+              "p50_us": 35937928,
+              "max_us": 35937928,
+              "p95_supported": false
+            },
+            "durable_record": false
+          }
+        ],
+        "store_records": {
+          "store": "/src/gqb/store",
+          "session_id": "01M81002GBETSDEN00C50BT07Z",
+          "records": [
+            {
+              "record_sha256": "571870d0d68ccf67ed93aa238a2e5b0ae77b7481263730660b055669885089b7",
+              "uri": "/src/gqb/store/records/571870d0d68ccf67ed93aa238a2e5b0ae77b7481263730660b055669885089b7.json"
+            },
+            {
+              "record_sha256": "5e70a42346d08ed37706dd55a6c6ed8100fe3493b4eed9ab1b73c9ddf4f1f3fe",
+              "uri": "/src/gqb/store/records/5e70a42346d08ed37706dd55a6c6ed8100fe3493b4eed9ab1b73c9ddf4f1f3fe.json"
+            },
+            {
+              "record_sha256": "762c702acf24aa42924cbd031a60189455f6f0037cfab08efb774b734a544c7c",
+              "uri": "/src/gqb/store/records/762c702acf24aa42924cbd031a60189455f6f0037cfab08efb774b734a544c7c.json"
+            },
+            {
+              "record_sha256": "ee9639f2ea8129231d43e226bb954e3af8fbba7cc248d61843f07fca623f4db3",
+              "uri": "/src/gqb/store/records/ee9639f2ea8129231d43e226bb954e3af8fbba7cc248d61843f07fca623f4db3.json"
+            },
+            {
+              "record_sha256": "71921b79eda6cd0967e79a8a6a9e3917dd14cc17a7065ff453786332436ff2f2",
+              "uri": "/src/gqb/store/records/71921b79eda6cd0967e79a8a6a9e3917dd14cc17a7065ff453786332436ff2f2.json"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

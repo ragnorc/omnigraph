@@ -1,0 +1,27 @@
+{
+  "ok": false,
+  "runner_output_version": 2,
+  "suite": "e2e-mixed-load",
+  "suite_path": "/src/gqb/new/benchmarks/benchmarks.yaml",
+  "completed_run_count": 0,
+  "completed_runs": [],
+  "error": {
+    "code": "worker_protocol_error",
+    "message": "worker failure carried invalid rejected-operation evidence: gqt_prepare_failed: GQT sample evidence disagrees with the admitted operation",
+    "gqt_settled_elapsed_us": 21345,
+    "repetition": 1,
+    "child_process": {
+      "stage": "verify-protocol",
+      "declared_deadline_us": 60000000,
+      "measurement_watchdog_us": 60000000,
+      "supervisor_elapsed_us": 474360,
+      "termination": "sigkill",
+      "exit_code": 1,
+      "peak_rss_bytes": 579055616,
+      "direct_child_reaped": true,
+      "process_group_gone": true,
+      "stdio_closed_cleanly": true,
+      "stderr_truncated": false
+    }
+  }
+}

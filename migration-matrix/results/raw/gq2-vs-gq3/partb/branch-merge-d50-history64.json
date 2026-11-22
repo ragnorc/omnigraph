@@ -1,0 +1,87 @@
+{
+  "ok": false,
+  "runner_output_version": 2,
+  "suite": "branch-merge-d50-history64",
+  "suite_path": "/src/gqb/new/benchmarks/benchmarks.yaml",
+  "completed_run_count": 0,
+  "completed_runs": [],
+  "error": {
+    "code": "gqt_verification_failed",
+    "message": "step 3 (query): query failed: parse error: expected clause",
+    "gqt_settled_elapsed_us": 667028,
+    "repetition": 1,
+    "gqt_settled_sample": {
+      "repetition": 1,
+      "elapsed_us": 667028,
+      "peak_rss_bytes": 574623744,
+      "outcome": "verification-failed",
+      "logical_store_calls": {
+        "manifest": {
+          "get": 50,
+          "put": 8,
+          "put_part": 0,
+          "head": 33,
+          "list": 0,
+          "delete": 3,
+          "copy": 0,
+          "rename": 0,
+          "multipart_complete": 0,
+          "multipart_abort": 0
+        },
+        "table": {
+          "get": 1479,
+          "put": 40,
+          "put_part": 0,
+          "head": 20,
+          "list": 0,
+          "delete": 0,
+          "copy": 0,
+          "rename": 0,
+          "multipart_complete": 0,
+          "multipart_abort": 0
+        },
+        "physical_attempts_observed": false
+      },
+      "steps": [
+        {
+          "ordinal": 1,
+          "occurrence": 1,
+          "kind": "branch-merge",
+          "elapsed_us": 667028
+        },
+        {
+          "ordinal": 2,
+          "occurrence": 1,
+          "kind": "query",
+          "elapsed_us": 329618
+        },
+        {
+          "ordinal": 3,
+          "occurrence": 1,
+          "kind": "query",
+          "elapsed_us": 24548
+        }
+      ],
+      "verification": {
+        "selected_assertion_passed": true,
+        "assertions_passed": 2,
+        "following_assertions": 1
+      },
+      "merge": null,
+      "base_manifest_sha256": "e6525d2e111a1e611766dd2ec8a354e4d867ceeda19ea21894741f5f5f0948d1"
+    },
+    "child_process": {
+      "stage": "Verify",
+      "declared_deadline_us": 60000000,
+      "measurement_watchdog_us": 60000000,
+      "supervisor_elapsed_us": 1494901,
+      "termination": "worker-failed",
+      "exit_code": 1,
+      "peak_rss_bytes": 580755456,
+      "direct_child_reaped": true,
+      "process_group_gone": true,
+      "stdio_closed_cleanly": true,
+      "stderr_truncated": false
+    }
+  }
+}

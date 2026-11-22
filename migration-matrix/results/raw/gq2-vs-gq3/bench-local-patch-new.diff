@@ -1,0 +1,97 @@
+diff --git a/crates/omnigraph-bench/src/environment.rs b/crates/omnigraph-bench/src/environment.rs
+index 6121e93e..8b0ba959 100644
+--- a/crates/omnigraph-bench/src/environment.rs
++++ b/crates/omnigraph-bench/src/environment.rs
+@@ -84,6 +84,28 @@ fn verify_linux(
+     scratch_path: &Path,
+     declared_filesystem: LocalFilesystem,
+     declared_storage: LocalStorageClass,
++) -> Result<LocalEnvironmentEvidence, String> {
++    // LOCAL, UNPUBLISHED PATCH (gq2-vs-gq3 measurement on a gVisor box):
++    // where the XFS/NVMe qualification refuses, record the box as
++    // unqualified, with the refusal as the evidence, instead of refusing.
++    match verify_linux_qualified(scratch_path, declared_filesystem, declared_storage) {
++        Ok(evidence) => Ok(evidence),
++        Err(refusal) => Ok(LocalEnvironmentEvidence {
++            filesystem: format!("unqualified ({refusal})"),
++            storage_class: "unqualified".to_string(),
++            mount_point: scratch_path.display().to_string(),
++            storage_protocol: "unqualified".to_string(),
++            available_bytes: 0,
++            probe: "unqualified-local-patch",
++        }),
++    }
++}
++
++#[cfg(target_os = "linux")]
++fn verify_linux_qualified(
++    scratch_path: &Path,
++    declared_filesystem: LocalFilesystem,
++    declared_storage: LocalStorageClass,
+ ) -> Result<LocalEnvironmentEvidence, String> {
+     let path = std::fs::canonicalize(scratch_path)
+         .map_err(|error| format!("could not resolve benchmark scratch path: {error}"))?;
+diff --git a/crates/omnigraph-bench/src/machine.rs b/crates/omnigraph-bench/src/machine.rs
+index 709fcb77..9aac0e5f 100644
+--- a/crates/omnigraph-bench/src/machine.rs
++++ b/crates/omnigraph-bench/src/machine.rs
+@@ -447,6 +447,59 @@ fn capture_platform_identity() -> Result<MachineIdentityV1, MachineIdentityError
+ 
+ #[cfg(target_os = "linux")]
+ fn capture_platform_identity() -> Result<MachineIdentityV1, MachineIdentityError> {
++    // LOCAL, UNPUBLISHED PATCH (gq2-vs-gq3 measurement on a gVisor box):
++    // where the Linux probe refuses (no Cpus_allowed_list, no topology ids,
++    // cgroup v1), record an identity marked unqualified, with the refusal in
++    // `cpu_model`, all cores counted as physical and affinity as all CPUs.
++    match capture_platform_identity_qualified() {
++        Ok(identity) => Ok(identity),
++        Err(refusal) => {
++            let logical = std::thread::available_parallelism()
++                .map(|n| n.get() as u32)
++                .unwrap_or(1);
++            let processors: Vec<u32> = (0..logical).collect();
++            let meminfo = read_bounded_utf8(
++                Path::new("/proc/meminfo"),
++                MAX_MEMINFO_BYTES,
++                "total_memory_bytes",
++            )?;
++            let hostname = read_bounded_utf8(
++                Path::new("/proc/sys/kernel/hostname"),
++                MAX_FACT_BYTES,
++                "machine_label",
++            )?;
++            let mut reason = format!("unqualified: {refusal}");
++            reason.truncate(MAX_FACT_BYTES.min(240));
++            Ok(MachineIdentityV1 {
++                format_version: MACHINE_IDENTITY_FORMAT_VERSION,
++                os_name: "linux".to_string(),
++                os_version: canonical_fact("os_version", "unqualified gVisor sandbox")?,
++                kernel_version: canonical_fact(
++                    "kernel_version",
++                    &read_bounded_utf8(
++                        Path::new("/proc/sys/kernel/osrelease"),
++                        MAX_FACT_BYTES,
++                        "kernel_version",
++                    )?,
++                )?,
++                architecture: std::env::consts::ARCH.to_string(),
++                cpu_model: canonical_fact("cpu_model", &reason)?,
++                logical_cores: logical,
++                physical_cores: logical,
++                total_memory_bytes: linux_total_memory_bytes(&meminfo)?,
++                resource_control: ResourceControlV1::LinuxUncontrolled {
++                    cpu_affinity_sha256: cpu_affinity_sha256(&processors),
++                },
++                scheduling: capture_process_scheduling()?,
++                resource_limits: capture_resource_limits()?,
++                machine_label: machine_label_from_hostname(&hostname)?,
++            })
++        }
++    }
++}
++
++#[cfg(target_os = "linux")]
++fn capture_platform_identity_qualified() -> Result<MachineIdentityV1, MachineIdentityError> {
+     let os_release = read_bounded_utf8(
+         Path::new("/etc/os-release"),
+         MAX_OS_RELEASE_BYTES,

@@ -1,0 +1,12 @@
+{
+  "cli_output_version": 1,
+  "ok": false,
+  "diagnostics": [
+    {
+      "severity": "error",
+      "code": "invalid_scenario",
+      "path": "very-long-history-10000-reopen",
+      "message": "unsupported_environment: the omnigraph binary has no command for step 1 (a measured restart: every step is its own process)"
+    }
+  ]
+}

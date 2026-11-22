@@ -1,0 +1,26 @@
+{
+  "ok": false,
+  "runner_output_version": 2,
+  "suite": "branch-merge-d50-warm",
+  "suite_path": "/src/gqb/new/benchmarks/benchmarks.yaml",
+  "completed_run_count": 0,
+  "completed_runs": [],
+  "error": {
+    "code": "gqt_prepare_failed",
+    "message": "step 2 (query): query failed: parse error: expected clause",
+    "repetition": 1,
+    "child_process": {
+      "stage": "Prepare",
+      "declared_deadline_us": 60000000,
+      "measurement_watchdog_us": 60000000,
+      "supervisor_elapsed_us": 782911,
+      "termination": "worker-failed",
+      "exit_code": 1,
+      "peak_rss_bytes": 581578752,
+      "direct_child_reaped": true,
+      "process_group_gone": true,
+      "stdio_closed_cleanly": true,
+      "stderr_truncated": false
+    }
+  }
+}

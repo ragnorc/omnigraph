@@ -1,0 +1,1052 @@
+{
+  "runner_output_version": 2,
+  "store": "/src/gqb/store",
+  "at": [
+    {
+      "reference": "84dbead889727260d0d547b3bbe33e079bfba4ec",
+      "commit": "84dbead889727260d0d547b3bbe33e079bfba4ec",
+      "product": {
+        "path": "/src/gqb/bin/old/omnigraph",
+        "package_version": "0.16.1",
+        "http_contract": "0.14",
+        "internal_schema_writes": 18,
+        "executable_sha256": "2be5f1d2815a72be035f9a683575d8a0e842ed8b1fbc8ee6b7694ce2f01fa38b",
+        "requested_commit": "84dbead889727260d0d547b3bbe33e079bfba4ec"
+      },
+      "output": {
+        "runner_output_version": 2,
+        "suite": "e2e-merge-all-changed",
+        "suite_path": "/src/gqb/new/benchmarks/benchmarks.yaml",
+        "completed_run_count": 1,
+        "runs": [
+          {
+            "runner_output_version": 1,
+            "case_id": "e2e-merge-all-changed",
+            "case_path": "/src/gqb/new/benchmarks/benchmarks.yaml",
+            "point_id": "3353628aaef20bb65dae12e228dc3ecebc8b1f9b658269f4cfcfc5e34417ebcb",
+            "point_name": "gqt-process-cold-3353628aaef2",
+            "requested_repetitions": 1,
+            "bound": {
+              "plan": {
+                "definition": {
+                  "version": 1,
+                  "id": "e2e-merge-all-changed",
+                  "scenario": "gqt-v1",
+                  "fixture": {
+                    "kind": "dataset",
+                    "path": "fixtures/e2e_merge_all_changed.gqt"
+                  },
+                  "workload": {
+                    "queries": "workloads/e2e_merge_all_changed.gqt",
+                    "measured_step": {
+                      "ordinal": 1,
+                      "text": "--- mutate\nbranch merge \"source\" into \"main\"\n"
+                    }
+                  },
+                  "environment": {
+                    "backend": {
+                      "kind": "local-fs",
+                      "filesystem": "xfs",
+                      "storage_class": "nvme-ssd"
+                    }
+                  },
+                  "protocol": {
+                    "deadline_seconds": 60,
+                    "attribution": "off",
+                    "schedule": "manual",
+                    "reset": "clone",
+                    "timer": "monotonic"
+                  }
+                },
+                "dataset": {
+                  "kind": "gqt",
+                  "source": {
+                    "stem": "e2e_merge_all_changed",
+                    "text": "# issue: none\n# notes: 64 Vector(4) rows, every source vector changed, one disjoint main insert. Bounded replacement for the Rust merge-all-changed experiment.\n\n--- runner\ntimeout_ms: 60000\nenvironments:\n  - target: omnigraph-engine\n    storage: local-filesystem\n\n--- schema\nnode Chunk { slug: String @key embedding: Vector(4) }\n\n--- seed\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base000\",\"embedding\":[0.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base001\",\"embedding\":[1.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base002\",\"embedding\":[2.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base003\",\"embedding\":[3.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base004\",\"embedding\":[4.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base005\",\"embedding\":[5.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base006\",\"embedding\":[6.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base007\",\"embedding\":[7.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base008\",\"embedding\":[8.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base009\",\"embedding\":[9.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base010\",\"embedding\":[10.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base011\",\"embedding\":[11.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base012\",\"embedding\":[12.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base013\",\"embedding\":[13.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base014\",\"embedding\":[14.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base015\",\"embedding\":[15.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base016\",\"embedding\":[16.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base017\",\"embedding\":[17.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base018\",\"embedding\":[18.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base019\",\"embedding\":[19.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base020\",\"embedding\":[20.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base021\",\"embedding\":[21.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base022\",\"embedding\":[22.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base023\",\"embedding\":[23.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base024\",\"embedding\":[24.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base025\",\"embedding\":[25.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base026\",\"embedding\":[26.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base027\",\"embedding\":[27.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base028\",\"embedding\":[28.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base029\",\"embedding\":[29.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base030\",\"embedding\":[30.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base031\",\"embedding\":[31.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base032\",\"embedding\":[32.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base033\",\"embedding\":[33.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base034\",\"embedding\":[34.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base035\",\"embedding\":[35.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base036\",\"embedding\":[36.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base037\",\"embedding\":[37.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base038\",\"embedding\":[38.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base039\",\"embedding\":[39.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base040\",\"embedding\":[40.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base041\",\"embedding\":[41.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base042\",\"embedding\":[42.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base043\",\"embedding\":[43.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base044\",\"embedding\":[44.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base045\",\"embedding\":[45.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base046\",\"embedding\":[46.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base047\",\"embedding\":[47.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base048\",\"embedding\":[48.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base049\",\"embedding\":[49.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base050\",\"embedding\":[50.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base051\",\"embedding\":[51.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base052\",\"embedding\":[52.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base053\",\"embedding\":[53.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base054\",\"embedding\":[54.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base055\",\"embedding\":[55.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base056\",\"embedding\":[56.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base057\",\"embedding\":[57.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base058\",\"embedding\":[58.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base059\",\"embedding\":[59.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base060\",\"embedding\":[60.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base061\",\"embedding\":[61.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base062\",\"embedding\":[62.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base063\",\"embedding\":[63.0,1.0,0.0,0.0]}}\n\n--- mutate\nbranch create \"source\" from \"main\"\n--- expect ok\n\n--- load generate: v1 seed: 0 mode: replace branch: source\ntables:\n  - kind: node\n    name: Chunk\n    rows: 64\n    commits: 1\n    batch_rows: 64\n    start: 0\n    columns:\n      slug: {kind: key, prefix: base, width: 3}\n      embedding: {kind: literal, value: [-1.0,0.0,0.0,0.0]}\n--- expect ok\n\n--- mutate branch: main\nquery insert_chunk($v: Vector(4)) { insert Chunk { slug: \"main-only\", embedding: $v } }\n--- params\n{\"v\":[500.0,0.0,0.0,0.0]}\n--- expect affected: nodes=1 edges=0\n\n--- query\nbranch list\n\n--- expect unordered\n{\"name\":\"main\"}\n{\"name\":\"source\"}\n--- expect shape\nname: String\n\n--- query branch: main\nquery chunk_rows() { match { $c: Chunk } return { $c.slug as slug, $c.embedding as embedding } }\n\n--- expect unordered\n{\"slug\":\"base000\",\"embedding\":[0.0,1.0,0.0,0.0]}\n{\"slug\":\"base001\",\"embedding\":[1.0,1.0,0.0,0.0]}\n{\"slug\":\"base002\",\"embedding\":[2.0,1.0,0.0,0.0]}\n{\"slug\":\"base003\",\"embedding\":[3.0,1.0,0.0,0.0]}\n{\"slug\":\"base004\",\"embedding\":[4.0,1.0,0.0,0.0]}\n{\"slug\":\"base005\",\"embedding\":[5.0,1.0,0.0,0.0]}\n{\"slug\":\"base006\",\"embedding\":[6.0,1.0,0.0,0.0]}\n{\"slug\":\"base007\",\"embedding\":[7.0,1.0,0.0,0.0]}\n{\"slug\":\"base008\",\"embedding\":[8.0,1.0,0.0,0.0]}\n{\"slug\":\"base009\",\"embedding\":[9.0,1.0,0.0,0.0]}\n{\"slug\":\"base010\",\"embedding\":[10.0,1.0,0.0,0.0]}\n{\"slug\":\"base011\",\"embedding\":[11.0,1.0,0.0,0.0]}\n{\"slug\":\"base012\",\"embedding\":[12.0,1.0,0.0,0.0]}\n{\"slug\":\"base013\",\"embedding\":[13.0,1.0,0.0,0.0]}\n{\"slug\":\"base014\",\"embedding\":[14.0,1.0,0.0,0.0]}\n{\"slug\":\"base015\",\"embedding\":[15.0,1.0,0.0,0.0]}\n{\"slug\":\"base016\",\"embedding\":[16.0,1.0,0.0,0.0]}\n{\"slug\":\"base017\",\"embedding\":[17.0,1.0,0.0,0.0]}\n{\"slug\":\"base018\",\"embedding\":[18.0,1.0,0.0,0.0]}\n{\"slug\":\"base019\",\"embedding\":[19.0,1.0,0.0,0.0]}\n{\"slug\":\"base020\",\"embedding\":[20.0,1.0,0.0,0.0]}\n{\"slug\":\"base021\",\"embedding\":[21.0,1.0,0.0,0.0]}\n{\"slug\":\"base022\",\"embedding\":[22.0,1.0,0.0,0.0]}\n{\"slug\":\"base023\",\"embedding\":[23.0,1.0,0.0,0.0]}\n{\"slug\":\"base024\",\"embedding\":[24.0,1.0,0.0,0.0]}\n{\"slug\":\"base025\",\"embedding\":[25.0,1.0,0.0,0.0]}\n{\"slug\":\"base026\",\"embedding\":[26.0,1.0,0.0,0.0]}\n{\"slug\":\"base027\",\"embedding\":[27.0,1.0,0.0,0.0]}\n{\"slug\":\"base028\",\"embedding\":[28.0,1.0,0.0,0.0]}\n{\"slug\":\"base029\",\"embedding\":[29.0,1.0,0.0,0.0]}\n{\"slug\":\"base030\",\"embedding\":[30.0,1.0,0.0,0.0]}\n{\"slug\":\"base031\",\"embedding\":[31.0,1.0,0.0,0.0]}\n{\"slug\":\"base032\",\"embedding\":[32.0,1.0,0.0,0.0]}\n{\"slug\":\"base033\",\"embedding\":[33.0,1.0,0.0,0.0]}\n{\"slug\":\"base034\",\"embedding\":[34.0,1.0,0.0,0.0]}\n{\"slug\":\"base035\",\"embedding\":[35.0,1.0,0.0,0.0]}\n{\"slug\":\"base036\",\"embedding\":[36.0,1.0,0.0,0.0]}\n{\"slug\":\"base037\",\"embedding\":[37.0,1.0,0.0,0.0]}\n{\"slug\":\"base038\",\"embedding\":[38.0,1.0,0.0,0.0]}\n{\"slug\":\"base039\",\"embedding\":[39.0,1.0,0.0,0.0]}\n{\"slug\":\"base040\",\"embedding\":[40.0,1.0,0.0,0.0]}\n{\"slug\":\"base041\",\"embedding\":[41.0,1.0,0.0,0.0]}\n{\"slug\":\"base042\",\"embedding\":[42.0,1.0,0.0,0.0]}\n{\"slug\":\"base043\",\"embedding\":[43.0,1.0,0.0,0.0]}\n{\"slug\":\"base044\",\"embedding\":[44.0,1.0,0.0,0.0]}\n{\"slug\":\"base045\",\"embedding\":[45.0,1.0,0.0,0.0]}\n{\"slug\":\"base046\",\"embedding\":[46.0,1.0,0.0,0.0]}\n{\"slug\":\"base047\",\"embedding\":[47.0,1.0,0.0,0.0]}\n{\"slug\":\"base048\",\"embedding\":[48.0,1.0,0.0,0.0]}\n{\"slug\":\"base049\",\"embedding\":[49.0,1.0,0.0,0.0]}\n{\"slug\":\"base050\",\"embedding\":[50.0,1.0,0.0,0.0]}\n{\"slug\":\"base051\",\"embedding\":[51.0,1.0,0.0,0.0]}\n{\"slug\":\"base052\",\"embedding\":[52.0,1.0,0.0,0.0]}\n{\"slug\":\"base053\",\"embedding\":[53.0,1.0,0.0,0.0]}\n{\"slug\":\"base054\",\"embedding\":[54.0,1.0,0.0,0.0]}\n{\"slug\":\"base055\",\"embedding\":[55.0,1.0,0.0,0.0]}\n{\"slug\":\"base056\",\"embedding\":[56.0,1.0,0.0,0.0]}\n{\"slug\":\"base057\",\"embedding\":[57.0,1.0,0.0,0.0]}\n{\"slug\":\"base058\",\"embedding\":[58.0,1.0,0.0,0.0]}\n{\"slug\":\"base059\",\"embedding\":[59.0,1.0,0.0,0.0]}\n{\"slug\":\"base060\",\"embedding\":[60.0,1.0,0.0,0.0]}\n{\"slug\":\"base061\",\"embedding\":[61.0,1.0,0.0,0.0]}\n{\"slug\":\"base062\",\"embedding\":[62.0,1.0,0.0,0.0]}\n{\"slug\":\"base063\",\"embedding\":[63.0,1.0,0.0,0.0]}\n{\"slug\":\"main-only\",\"embedding\":[500.0,0.0,0.0,0.0]}\n--- expect shape\nslug: String\nembedding: Vector(4)\n\n--- query branch: source\nquery chunk_rows() { match { $c: Chunk } return { $c.slug as slug, $c.embedding as embedding } }\n\n--- expect unordered\n{\"slug\":\"base000\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base001\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base002\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base003\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base004\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base005\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base006\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base007\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base008\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base009\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base010\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base011\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base012\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base013\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base014\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base015\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base016\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base017\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base018\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base019\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base020\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base021\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base022\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base023\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base024\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base025\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base026\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base027\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base028\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base029\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base030\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base031\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base032\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base033\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base034\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base035\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base036\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base037\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base038\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base039\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base040\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base041\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base042\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base043\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base044\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base045\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base046\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base047\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base048\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base049\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base050\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base051\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base052\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base053\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base054\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base055\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base056\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base057\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base058\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base059\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base060\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base061\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base062\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base063\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n--- expect shape\nslug: String\nembedding: Vector(4)\n\n",
+                    "sha256": "393425fc2fd8f3969371c97c295efbcd0124c57625608b1a343d13d209b19fed"
+                  }
+                },
+                "queries": {
+                  "stem": "e2e_merge_all_changed",
+                  "text": "# issue: none\n# notes: Merge all 64 changed vectors into a diverged target; exact rows on both branches, including the unrelated target insert. One operation on a fresh handle is timed; checks and restart are outside the timer.\n\n--- runner\ntimeout_ms: 60000\nenvironments:\n  - target: omnigraph-engine\n    storage: local-filesystem\n\n--- mutate\nbranch merge \"source\" into \"main\"\n--- expect outcome: merged\n\n--- query\nbranch list\n\n--- expect unordered\n{\"name\":\"main\"}\n{\"name\":\"source\"}\n--- expect shape\nname: String\n\n--- query branch: main\nquery chunk_rows() { match { $c: Chunk } return { $c.slug as slug, $c.embedding as embedding } }\n\n--- expect unordered\n{\"slug\":\"base000\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base001\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base002\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base003\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base004\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base005\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base006\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base007\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base008\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base009\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base010\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base011\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base012\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base013\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base014\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base015\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base016\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base017\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base018\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base019\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base020\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base021\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base022\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base023\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base024\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base025\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base026\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base027\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base028\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base029\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base030\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base031\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base032\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base033\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base034\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base035\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base036\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base037\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base038\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base039\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base040\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base041\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base042\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base043\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base044\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base045\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base046\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base047\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base048\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base049\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base050\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base051\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base052\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base053\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base054\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base055\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base056\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base057\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base058\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base059\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base060\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base061\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base062\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base063\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"main-only\",\"embedding\":[500.0,0.0,0.0,0.0]}\n--- expect shape\nslug: String\nembedding: Vector(4)\n\n--- query branch: source\nquery chunk_rows() { match { $c: Chunk } return { $c.slug as slug, $c.embedding as embedding } }\n\n--- expect unordered\n{\"slug\":\"base000\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base001\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base002\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base003\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base004\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base005\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base006\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base007\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base008\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base009\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base010\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base011\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base012\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base013\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base014\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base015\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base016\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base017\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base018\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base019\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base020\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base021\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base022\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base023\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base024\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base025\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base026\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base027\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base028\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base029\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base030\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base031\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base032\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base033\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base034\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base035\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base036\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base037\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base038\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base039\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base040\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base041\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base042\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base043\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base044\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base045\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base046\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base047\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base048\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base049\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base050\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base051\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base052\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base053\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base054\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base055\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base056\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base057\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base058\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base059\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base060\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base061\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base062\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base063\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n--- expect shape\nslug: String\nembedding: Vector(4)\n\n--- restart\n\n--- query\nbranch list\n\n--- expect unordered\n{\"name\":\"main\"}\n{\"name\":\"source\"}\n--- expect shape\nname: String\n\n--- query branch: main\nquery chunk_rows() { match { $c: Chunk } return { $c.slug as slug, $c.embedding as embedding } }\n\n--- expect unordered\n{\"slug\":\"base000\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base001\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base002\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base003\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base004\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base005\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base006\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base007\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base008\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base009\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base010\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base011\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base012\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base013\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base014\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base015\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base016\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base017\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base018\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base019\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base020\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base021\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base022\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base023\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base024\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base025\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base026\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base027\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base028\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base029\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base030\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base031\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base032\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base033\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base034\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base035\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base036\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base037\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base038\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base039\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base040\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base041\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base042\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base043\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base044\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base045\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base046\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base047\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base048\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base049\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base050\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base051\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base052\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base053\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base054\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base055\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base056\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base057\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base058\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base059\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base060\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base061\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base062\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base063\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"main-only\",\"embedding\":[500.0,0.0,0.0,0.0]}\n--- expect shape\nslug: String\nembedding: Vector(4)\n\n--- query branch: source\nquery chunk_rows() { match { $c: Chunk } return { $c.slug as slug, $c.embedding as embedding } }\n\n--- expect unordered\n{\"slug\":\"base000\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base001\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base002\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base003\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base004\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base005\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base006\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base007\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base008\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base009\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base010\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base011\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base012\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base013\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base014\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base015\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base016\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base017\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base018\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base019\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base020\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base021\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base022\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base023\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base024\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base025\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base026\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base027\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base028\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base029\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base030\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base031\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base032\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base033\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base034\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base035\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base036\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base037\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base038\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base039\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base040\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base041\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base042\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base043\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base044\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base045\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base046\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base047\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base048\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base049\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base050\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base051\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base052\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base053\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base054\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base055\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base056\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base057\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base058\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base059\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base060\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base061\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base062\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base063\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n--- expect shape\nslug: String\nembedding: Vector(4)\n\n",
+                  "sha256": "88d930c6d0f07ee4de04c64688ecb7a9d3a291a81af79dae5d539422c7d61480"
+                },
+                "recipe_sha256": "3c65fc91747aaccafb029dc2857ec4465066b71374a2e2c0125ac47268cf0a4c",
+                "case_digest": "5691a13544f49f8d0d122955ef6d1f5fc620dede767e961bca9d4473962eb514",
+                "planned_sha256": "06b6a0afff55b77267862f1f85417cfcc590f8cc3cd4ac059900914d4a909970",
+                "cache_condition": {
+                  "process": "fresh-per-step",
+                  "engine": "preparation-only",
+                  "page_cache": "uncontrolled",
+                  "program": "none",
+                  "iterations": 0
+                },
+                "needs_indices": false
+              },
+              "identity": {
+                "identity_version": 1,
+                "scenario": "gqt-v1",
+                "dataset_recipe_sha256": "3c65fc91747aaccafb029dc2857ec4465066b71374a2e2c0125ac47268cf0a4c",
+                "dataset_logical_digest": "b454b5dd839f1b5e77fe26f50e2013fd59204211c116470d4fbba9de796f97e5",
+                "dataset_identity_algorithm": "omnigraph-gqt-branches-lineage-equivalence-v1",
+                "queries_sha256": "88d930c6d0f07ee4de04c64688ecb7a9d3a291a81af79dae5d539422c7d61480",
+                "measured_step": {
+                  "ordinal": 1,
+                  "text": "--- mutate\nbranch merge \"source\" into \"main\"\n"
+                },
+                "cache_condition": {
+                  "process": "fresh-per-step",
+                  "engine": "preparation-only",
+                  "page_cache": "uncontrolled",
+                  "program": "none",
+                  "iterations": 0
+                },
+                "environment": {
+                  "backend": {
+                    "kind": "local-fs",
+                    "filesystem": "xfs",
+                    "storage_class": "nvme-ssd"
+                  }
+                },
+                "protocol": {
+                  "deadline_seconds": 60,
+                  "attribution": "off",
+                  "schedule": "manual",
+                  "reset": "clone",
+                  "timer": "monotonic"
+                }
+              },
+              "point_id": "3353628aaef20bb65dae12e228dc3ecebc8b1f9b658269f4cfcfc5e34417ebcb",
+              "point_name": "gqt-process-cold-3353628aaef2"
+            },
+            "build": {
+              "source_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+              "source_tree_dirty": true,
+              "cargo_profile": "release",
+              "cargo_opt_level": "2",
+              "debug_assertions": false,
+              "effective_lance_mem_pool_size": {
+                "state": "unset"
+              },
+              "target_triple": "x86_64-unknown-linux-gnu",
+              "rustc_version": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+              "declared_release_lto": "thin",
+              "declared_release_codegen_units": 16,
+              "declared_release_strip": true,
+              "cargo_encoded_rustflags_present": false,
+              "release_profile_environment_overrides_supported": true,
+              "effective_codegen_options_proved": false,
+              "engine_feature_flags": [
+                "default"
+              ],
+              "enabled_techniques": [],
+              "worker_executable_sha256": "54c66d85c09f8dc98d07079714d5864708c83e43106b02642382067eca6535cb"
+            },
+            "machine": {
+              "format_version": 1,
+              "os_name": "linux",
+              "os_version": "unqualified gVisor sandbox",
+              "kernel_version": "4.19.0-gvisor",
+              "architecture": "x86_64",
+              "cpu_model": "unqualified: machine_probe_failed for resource_control: /proc/self/status contains no Cpus_allowed_list",
+              "logical_cores": 32,
+              "physical_cores": 32,
+              "total_memory_bytes": 68719476736,
+              "resource_control": {
+                "kind": "linux-uncontrolled",
+                "cpu_affinity_sha256": "60031dc12459b6b27c714d18d88650127d68996790861deb3d3fca96acafff26"
+              },
+              "scheduling": {
+                "nice_level": 5,
+                "policy": "other",
+                "priority": 0,
+                "reset_on_fork": false
+              },
+              "resource_limits": {
+                "scope_version": 1,
+                "values_sha256": "d1f7f49a10ef62916e9793d7b8df95524b5ea6a12e89ab333c0b309441d8c70c"
+              },
+              "machine_label": "hostname-sha256:bf2514dbbc66aeadbfbee7ec53ee976534ac40364314340a15e68823da82c18b"
+            },
+            "environment": {
+              "filesystem": "unqualified (scratch device 0:27 is not XFS)",
+              "storage_class": "unqualified",
+              "mount_point": "/src/gqb/store",
+              "storage_protocol": "unqualified",
+              "available_bytes": 0,
+              "probe": "unqualified-local-patch"
+            },
+            "dataset_cache_hit": false,
+            "base": {
+              "format_version": 1,
+              "key": "00dc4fd48bca4c1946c484d2dc56258afd1c2584375ea35523ba5a41cb1f85e0",
+              "recipe_sha256": "3c65fc91747aaccafb029dc2857ec4465066b71374a2e2c0125ac47268cf0a4c",
+              "engine_digest": "631153d6854beefce2be16cce234e34a47f0de4c29eec5bd523f46de9e35e258",
+              "needs_indices": false,
+              "storage_format": {
+                "internal_schema_version": 18,
+                "lance_version": "13.0.0",
+                "fts_certificate": {
+                  "format_version": 2,
+                  "profiles": [
+                    {
+                      "profile": "standard_v1",
+                      "native": "sha256:76e1636637778021f1690a9c0789bc743088efb9f95ae7906541480f1bc53593",
+                      "analyzer": "sha256:c91eac721fc165c523d6f0d89bf422fed19a9b3325023b195e63e1bbae6e4eec"
+                    },
+                    {
+                      "profile": "standard_folded_v1",
+                      "native": "sha256:de15802bb5cc886270be53e7770fcd38c278a760b15456493bcfe0851c807a53",
+                      "analyzer": "sha256:d403ea038f16e1bb3927809cdb5c4dc361bbe7de6d00023910681917b993121d"
+                    },
+                    {
+                      "profile": "english_v1",
+                      "native": "sha256:eb980aaeb2cda1a85139f541e09dcaaf2a10288f620a7d6aad1c70cd1c038822",
+                      "analyzer": "sha256:bdc9c2f22f06c5d5ad1f588f04d704ed3608b6876e028a8b7142215321c89208"
+                    }
+                  ]
+                }
+              },
+              "summary": {
+                "algorithm": "omnigraph-gqt-branches-lineage-equivalence-v1",
+                "logical_content_sha256": "b454b5dd839f1b5e77fe26f50e2013fd59204211c116470d4fbba9de796f97e5",
+                "branches": [
+                  {
+                    "name": "main",
+                    "content_sha256": "a40d5309ca959293e08bade03effc6693accf0e868929a374d16cea698710341",
+                    "schema_sha256": "8abed6f714304b5594b43aa3778d3f8e00271371fbdb6a78b95d39923b964390",
+                    "lineage_sha256": "edebf9c9517b5d3f49d7a511345de85f583c6122b2bae014ea410228d0e35804",
+                    "history_commits": 3,
+                    "node_tables": [
+                      {
+                        "name": "Chunk",
+                        "rows": 65
+                      }
+                    ],
+                    "edge_tables": [],
+                    "indexes": []
+                  },
+                  {
+                    "name": "source",
+                    "content_sha256": "755da1a5b5e4de129acc9482b776df973991a3ee58323c8d8e71cd3eb59e4312",
+                    "schema_sha256": "8abed6f714304b5594b43aa3778d3f8e00271371fbdb6a78b95d39923b964390",
+                    "lineage_sha256": "3a3b10a70a3e9e774268620a7276ec675b937bcd7355378cc047d32b98f1c8c6",
+                    "history_commits": 3,
+                    "node_tables": [
+                      {
+                        "name": "Chunk",
+                        "rows": 64
+                      }
+                    ],
+                    "edge_tables": [],
+                    "indexes": []
+                  }
+                ],
+                "relocation_self_contained": false,
+                "limitations": [
+                  "unkeyed-edge-ids-excluded",
+                  "historical-row-images-not-attested"
+                ]
+              },
+              "registered_source_identity": null,
+              "objects": [
+                {
+                  "path": "__history/schemas/a33c92626f37c60c25f49fa047862a50f7e437b1d1c8cd577b9355989fd9b03d.schema",
+                  "bytes": 1847,
+                  "version": "a33c92626f37c60c25f49fa047862a50f7e437b1d1c8cd577b9355989fd9b03d"
+                },
+                {
+                  "path": "__manifest/_transactions/0-40fc1b2e-fdd8-41ef-b5ec-ce38852b3487.txn",
+                  "bytes": 1273,
+                  "version": "3791f5631864425affb8b0a775d79401b370172cd8b10dfe18554ac8f2f17b46"
+                },
+                {
+                  "path": "__manifest/_transactions/1-b28fd312-4fc5-43a1-bdd5-dfab44a77adf.txn",
+                  "bytes": 1275,
+                  "version": "dc5d34f8f4c68f0ada0f14b1d626936c31e4d75864599ea08f7c23c2afe50fb6"
+                },
+                {
+                  "path": "__manifest/_transactions/2-0ae730cf-5cd7-4113-b36c-32e951a796f1.txn",
+                  "bytes": 1449,
+                  "version": "782954d57a17af44c4f41486906fad6101fc0215302191414a71d1fade8d3075"
+                },
+                {
+                  "path": "__manifest/_transactions/3-69ba82ef-fde6-4116-8bcc-a24d1fba49ad.txn",
+                  "bytes": 1275,
+                  "version": "1c8fb30bd819f1da9b8037bd252da3f6a8f643d5368e93318601fd839dec447f"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551611.manifest",
+                  "bytes": 2848,
+                  "version": "2c03717f5110c530d7d33f414750705fe9d153179eeeffb6fc59f5eca1c3bc9b"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551612.manifest",
+                  "bytes": 3022,
+                  "version": "67515c5ab9b49ac7943a619ce2fd9ed77254d9fe1240dcb70dad87ec334d3685"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551613.manifest",
+                  "bytes": 2709,
+                  "version": "08ea265c4345ca2a27a44d38b201b09d4b9527e40594ee164257adb9c279fa6d"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551614.manifest",
+                  "bytes": 2703,
+                  "version": "84a7929ea41cf25dbf8d2ae455ebd2e39be3916d99639da6b94ac50b3eb00637"
+                },
+                {
+                  "path": "__manifest/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "99fd67c89da37e7ca5f6d62c8c814dbb3dae1ba7e760c3e8ff804a45590680b2"
+                },
+                {
+                  "path": "__manifest/data/010100100100100010110100c8c68f43f0a08c00a2bc8ba18d.lance",
+                  "bytes": 5741,
+                  "version": "6d7f00915b26235260a3f4af03c24f8ee8b8f3a0a20c1b3784b67e7a41f6f534"
+                },
+                {
+                  "path": "__manifest/data/100100001001011001000100baa98847318dbfab095ec12a9f.lance",
+                  "bytes": 7215,
+                  "version": "69c02c3a784e391fde7f04c851b1f1c9a335c8bc931d5109c22eb3f5d38c981c"
+                },
+                {
+                  "path": "__manifest/data/111011110010100011100110d5dde1408da536e800941aafd6.lance",
+                  "bytes": 6574,
+                  "version": "66a5fa8aba36fd5338327a151d9a58dcc3c8089721eb6e8fc29a4347350ced9c"
+                },
+                {
+                  "path": "__manifest/tree/source.01M80YZG3YDG99VVRYRPVC9RKK/_transactions/2-91263d64-71b2-47ab-9f40-e8b700a3f0f8.txn",
+                  "bytes": 1275,
+                  "version": "81fe4166961b47ec88d004850ef76ba1ab01dd3fba975f8d15065ab83b5b202e"
+                },
+                {
+                  "path": "__manifest/tree/source.01M80YZG3YDG99VVRYRPVC9RKK/_transactions/2-dac999af-f825-4afe-9e1e-dd1ab306c627.txn",
+                  "bytes": 186,
+                  "version": "e206ce65bd0c2a4ac775bfa5716fe1a517690dbc98f8b0ab050998fdfcac56c8"
+                },
+                {
+                  "path": "__manifest/tree/source.01M80YZG3YDG99VVRYRPVC9RKK/_versions/18446744073709551612.manifest",
+                  "bytes": 2853,
+                  "version": "e433bc1f4cadc92a3aa3049129df95eca787d24f41e14f3c70167b39b83c527b"
+                },
+                {
+                  "path": "__manifest/tree/source.01M80YZG3YDG99VVRYRPVC9RKK/_versions/18446744073709551613.manifest",
+                  "bytes": 1766,
+                  "version": "2390f77f66ae6b170da58bbcecfd94817c7ea44abbcd99f6b805fd040d15a959"
+                },
+                {
+                  "path": "__manifest/tree/source.01M80YZG3YDG99VVRYRPVC9RKK/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "9af23cea10a478f3bb916ff35c07a36debe444adf9b56814ab63861ec674ab8b"
+                },
+                {
+                  "path": "__manifest/tree/source.01M80YZG3YDG99VVRYRPVC9RKK/data/01010011110110110011111161d75e48148c9085a03fe794a5.lance",
+                  "bytes": 7343,
+                  "version": "7cf5dd3e24566290789bd48d72536e8127163857f374a7785d96116c15c11a30"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/0-0939b02a-7c22-4313-93e5-5575c7b732f9.txn",
+                  "bytes": 272,
+                  "version": "6d944347b33d2435289c93cd35c7f67ad4c439c064edbadfe0f9d906398d5ba4"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/1-e5094e47-178e-4258-b2d9-ae2a35b977ee.txn",
+                  "bytes": 493,
+                  "version": "87b426d2623de99150b1f4f8ab4f2d064767ad2deafb5e02980c8f902587cdc6"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/14290206018079130801-c0bf4915-3087-481d-a321-39714e676246.txn",
+                  "bytes": 33135,
+                  "version": "07e3e621cbe44f31cdfc854d0d33d9830074e941b60d1ae5b0cbf72e43d476a3"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/14290206018079130801-ec0a5b68-19e2-4afb-8d2a-8bfb5027924a.txn",
+                  "bytes": 33142,
+                  "version": "2bf97ec01bcc41935ebc82f2514d8a60c56f8be7609b769f7a8d7b3fdedd05cc"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/18446744073709551614.manifest",
+                  "bytes": 624,
+                  "version": "a049c76f1a1446539f375eb764cc2aecb37a55d5d7c34c3482e3c0354d01b61c"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/d12494362061295135464.manifest",
+                  "bytes": 33775,
+                  "version": "5f00bf2de3b475bfcc898e8b5d84cd4e64c70a0d58e0cd1a1d9f244f5a1d5892"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/d14290206018079130801.manifest",
+                  "bytes": 971,
+                  "version": "67acb146e5aa3130ac2b19c65d473dc2bf434edccc70f3608704af9a364fb134"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/d17802455288023542885.manifest",
+                  "bytes": 33643,
+                  "version": "f1962db73c813e38e22254b6598fd8305cff1c4cff181dfe35f065bfbc2a95c4"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "2430f1a2ad2982d0067885488a4c89e21ad1d7c83b115ba8f1b20acc88dfaea8"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/data/000111110101000011101010a1b95648938eeb4d73c3fea01e.lance",
+                  "bytes": 3509,
+                  "version": "d7d907ed24f35a3b00bfbe778b3494459bfc0159488a4e7f87cfbe39e0e5ae8a"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/data/1010101111101001010101100519894c0cab167a9cae51b722.lance",
+                  "bytes": 908,
+                  "version": "7092824f36910dd1ca1ba6a56d6b8975bf23927599b10365ab0c5112a795e70f"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/data/11110001001111001100101155d8a145119363571469908787.lance",
+                  "bytes": 3509,
+                  "version": "a4727a5113fedc56ed86c056a7174e7ff4d737b91197f30186def68155e8e826"
+                }
+              ],
+              "built_at_unix_ms": 1795328819383
+            },
+            "product": {
+              "path": "/src/gqb/bin/old/omnigraph",
+              "package_version": "0.16.1",
+              "http_contract": "0.14",
+              "internal_schema_writes": 18,
+              "executable_sha256": "2be5f1d2815a72be035f9a683575d8a0e842ed8b1fbc8ee6b7694ce2f01fa38b",
+              "requested_commit": "84dbead889727260d0d547b3bbe33e079bfba4ec"
+            },
+            "samples": [
+              {
+                "repetition": 1,
+                "elapsed_us": 97122,
+                "peak_rss_bytes": 573698048,
+                "outcome": "expectations-passed",
+                "logical_store_calls": {
+                  "manifest": {
+                    "get": 22,
+                    "put": 8,
+                    "put_part": 0,
+                    "head": 29,
+                    "list": 0,
+                    "delete": 3,
+                    "copy": 0,
+                    "rename": 0,
+                    "multipart_complete": 0,
+                    "multipart_abort": 0
+                  },
+                  "table": {
+                    "get": 20,
+                    "put": 7,
+                    "put_part": 0,
+                    "head": 4,
+                    "list": 0,
+                    "delete": 0,
+                    "copy": 0,
+                    "rename": 0,
+                    "multipart_complete": 0,
+                    "multipart_abort": 0
+                  },
+                  "physical_attempts_observed": false
+                },
+                "steps": [
+                  {
+                    "ordinal": 1,
+                    "occurrence": 1,
+                    "kind": "branch-merge",
+                    "elapsed_us": 97122
+                  },
+                  {
+                    "ordinal": 2,
+                    "occurrence": 1,
+                    "kind": "branch-list",
+                    "elapsed_us": 45223
+                  },
+                  {
+                    "ordinal": 3,
+                    "occurrence": 1,
+                    "kind": "query",
+                    "elapsed_us": 48909
+                  },
+                  {
+                    "ordinal": 4,
+                    "occurrence": 1,
+                    "kind": "query",
+                    "elapsed_us": 52336
+                  },
+                  {
+                    "ordinal": 6,
+                    "occurrence": 1,
+                    "kind": "branch-list",
+                    "elapsed_us": 46841
+                  },
+                  {
+                    "ordinal": 7,
+                    "occurrence": 1,
+                    "kind": "query",
+                    "elapsed_us": 49931
+                  },
+                  {
+                    "ordinal": 8,
+                    "occurrence": 1,
+                    "kind": "query",
+                    "elapsed_us": 52557
+                  }
+                ],
+                "verification": {
+                  "selected_assertion_passed": true,
+                  "assertions_passed": 8,
+                  "following_assertions": 6
+                },
+                "merge": null,
+                "client_peak_rss_bytes": 579178496,
+                "base_manifest_sha256": "656203bcac44dc19bb3ee3e79e4f53810178524e7aa48aad4dc3b203d870dff4"
+              }
+            ],
+            "wall_clock": {
+              "observed_repetitions": 1,
+              "min_us": 97122,
+              "p50_us": 97122,
+              "max_us": 97122,
+              "p95_supported": false
+            },
+            "durable_record": false
+          }
+        ],
+        "store_records": {
+          "store": "/src/gqb/store",
+          "session_id": "01M80YZFFARR446KHA7ESNHKJS",
+          "records": [
+            {
+              "record_sha256": "a35fd552c990e04089359fec5dea94570fdd82ac8af8e735c498fa507b4ba7af",
+              "uri": "/src/gqb/store/records/a35fd552c990e04089359fec5dea94570fdd82ac8af8e735c498fa507b4ba7af.json"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "reference": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+      "commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+      "product": {
+        "path": "/src/gqb/bin/new/omnigraph",
+        "package_version": "0.16.1",
+        "http_contract": "0.14",
+        "internal_schema_writes": 18,
+        "executable_sha256": "53a082ecadc75594c896f50355a5c4dab9d5fd061ac7f275deebc242d2232c55",
+        "requested_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b"
+      },
+      "output": {
+        "runner_output_version": 2,
+        "suite": "e2e-merge-all-changed",
+        "suite_path": "/src/gqb/new/benchmarks/benchmarks.yaml",
+        "completed_run_count": 1,
+        "runs": [
+          {
+            "runner_output_version": 1,
+            "case_id": "e2e-merge-all-changed",
+            "case_path": "/src/gqb/new/benchmarks/benchmarks.yaml",
+            "point_id": "3353628aaef20bb65dae12e228dc3ecebc8b1f9b658269f4cfcfc5e34417ebcb",
+            "point_name": "gqt-process-cold-3353628aaef2",
+            "requested_repetitions": 1,
+            "bound": {
+              "plan": {
+                "definition": {
+                  "version": 1,
+                  "id": "e2e-merge-all-changed",
+                  "scenario": "gqt-v1",
+                  "fixture": {
+                    "kind": "dataset",
+                    "path": "fixtures/e2e_merge_all_changed.gqt"
+                  },
+                  "workload": {
+                    "queries": "workloads/e2e_merge_all_changed.gqt",
+                    "measured_step": {
+                      "ordinal": 1,
+                      "text": "--- mutate\nbranch merge \"source\" into \"main\"\n"
+                    }
+                  },
+                  "environment": {
+                    "backend": {
+                      "kind": "local-fs",
+                      "filesystem": "xfs",
+                      "storage_class": "nvme-ssd"
+                    }
+                  },
+                  "protocol": {
+                    "deadline_seconds": 60,
+                    "attribution": "off",
+                    "schedule": "manual",
+                    "reset": "clone",
+                    "timer": "monotonic"
+                  }
+                },
+                "dataset": {
+                  "kind": "gqt",
+                  "source": {
+                    "stem": "e2e_merge_all_changed",
+                    "text": "# issue: none\n# notes: 64 Vector(4) rows, every source vector changed, one disjoint main insert. Bounded replacement for the Rust merge-all-changed experiment.\n\n--- runner\ntimeout_ms: 60000\nenvironments:\n  - target: omnigraph-engine\n    storage: local-filesystem\n\n--- schema\nnode Chunk { slug: String @key embedding: Vector(4) }\n\n--- seed\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base000\",\"embedding\":[0.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base001\",\"embedding\":[1.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base002\",\"embedding\":[2.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base003\",\"embedding\":[3.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base004\",\"embedding\":[4.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base005\",\"embedding\":[5.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base006\",\"embedding\":[6.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base007\",\"embedding\":[7.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base008\",\"embedding\":[8.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base009\",\"embedding\":[9.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base010\",\"embedding\":[10.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base011\",\"embedding\":[11.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base012\",\"embedding\":[12.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base013\",\"embedding\":[13.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base014\",\"embedding\":[14.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base015\",\"embedding\":[15.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base016\",\"embedding\":[16.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base017\",\"embedding\":[17.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base018\",\"embedding\":[18.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base019\",\"embedding\":[19.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base020\",\"embedding\":[20.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base021\",\"embedding\":[21.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base022\",\"embedding\":[22.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base023\",\"embedding\":[23.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base024\",\"embedding\":[24.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base025\",\"embedding\":[25.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base026\",\"embedding\":[26.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base027\",\"embedding\":[27.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base028\",\"embedding\":[28.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base029\",\"embedding\":[29.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base030\",\"embedding\":[30.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base031\",\"embedding\":[31.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base032\",\"embedding\":[32.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base033\",\"embedding\":[33.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base034\",\"embedding\":[34.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base035\",\"embedding\":[35.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base036\",\"embedding\":[36.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base037\",\"embedding\":[37.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base038\",\"embedding\":[38.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base039\",\"embedding\":[39.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base040\",\"embedding\":[40.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base041\",\"embedding\":[41.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base042\",\"embedding\":[42.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base043\",\"embedding\":[43.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base044\",\"embedding\":[44.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base045\",\"embedding\":[45.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base046\",\"embedding\":[46.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base047\",\"embedding\":[47.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base048\",\"embedding\":[48.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base049\",\"embedding\":[49.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base050\",\"embedding\":[50.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base051\",\"embedding\":[51.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base052\",\"embedding\":[52.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base053\",\"embedding\":[53.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base054\",\"embedding\":[54.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base055\",\"embedding\":[55.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base056\",\"embedding\":[56.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base057\",\"embedding\":[57.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base058\",\"embedding\":[58.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base059\",\"embedding\":[59.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base060\",\"embedding\":[60.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base061\",\"embedding\":[61.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base062\",\"embedding\":[62.0,1.0,0.0,0.0]}}\n{\"type\":\"Chunk\",\"data\":{\"slug\":\"base063\",\"embedding\":[63.0,1.0,0.0,0.0]}}\n\n--- mutate\nbranch create \"source\" from \"main\"\n--- expect ok\n\n--- load generate: v1 seed: 0 mode: replace branch: source\ntables:\n  - kind: node\n    name: Chunk\n    rows: 64\n    commits: 1\n    batch_rows: 64\n    start: 0\n    columns:\n      slug: {kind: key, prefix: base, width: 3}\n      embedding: {kind: literal, value: [-1.0,0.0,0.0,0.0]}\n--- expect ok\n\n--- mutate branch: main\nquery insert_chunk($v: Vector(4)) { insert Chunk { slug: \"main-only\", embedding: $v } }\n--- params\n{\"v\":[500.0,0.0,0.0,0.0]}\n--- expect affected: nodes=1 edges=0\n\n--- query\nbranch list\n\n--- expect unordered\n{\"name\":\"main\"}\n{\"name\":\"source\"}\n--- expect shape\nname: String\n\n--- query branch: main\nquery chunk_rows() { match { $c: Chunk } return { $c.slug as slug, $c.embedding as embedding } }\n\n--- expect unordered\n{\"slug\":\"base000\",\"embedding\":[0.0,1.0,0.0,0.0]}\n{\"slug\":\"base001\",\"embedding\":[1.0,1.0,0.0,0.0]}\n{\"slug\":\"base002\",\"embedding\":[2.0,1.0,0.0,0.0]}\n{\"slug\":\"base003\",\"embedding\":[3.0,1.0,0.0,0.0]}\n{\"slug\":\"base004\",\"embedding\":[4.0,1.0,0.0,0.0]}\n{\"slug\":\"base005\",\"embedding\":[5.0,1.0,0.0,0.0]}\n{\"slug\":\"base006\",\"embedding\":[6.0,1.0,0.0,0.0]}\n{\"slug\":\"base007\",\"embedding\":[7.0,1.0,0.0,0.0]}\n{\"slug\":\"base008\",\"embedding\":[8.0,1.0,0.0,0.0]}\n{\"slug\":\"base009\",\"embedding\":[9.0,1.0,0.0,0.0]}\n{\"slug\":\"base010\",\"embedding\":[10.0,1.0,0.0,0.0]}\n{\"slug\":\"base011\",\"embedding\":[11.0,1.0,0.0,0.0]}\n{\"slug\":\"base012\",\"embedding\":[12.0,1.0,0.0,0.0]}\n{\"slug\":\"base013\",\"embedding\":[13.0,1.0,0.0,0.0]}\n{\"slug\":\"base014\",\"embedding\":[14.0,1.0,0.0,0.0]}\n{\"slug\":\"base015\",\"embedding\":[15.0,1.0,0.0,0.0]}\n{\"slug\":\"base016\",\"embedding\":[16.0,1.0,0.0,0.0]}\n{\"slug\":\"base017\",\"embedding\":[17.0,1.0,0.0,0.0]}\n{\"slug\":\"base018\",\"embedding\":[18.0,1.0,0.0,0.0]}\n{\"slug\":\"base019\",\"embedding\":[19.0,1.0,0.0,0.0]}\n{\"slug\":\"base020\",\"embedding\":[20.0,1.0,0.0,0.0]}\n{\"slug\":\"base021\",\"embedding\":[21.0,1.0,0.0,0.0]}\n{\"slug\":\"base022\",\"embedding\":[22.0,1.0,0.0,0.0]}\n{\"slug\":\"base023\",\"embedding\":[23.0,1.0,0.0,0.0]}\n{\"slug\":\"base024\",\"embedding\":[24.0,1.0,0.0,0.0]}\n{\"slug\":\"base025\",\"embedding\":[25.0,1.0,0.0,0.0]}\n{\"slug\":\"base026\",\"embedding\":[26.0,1.0,0.0,0.0]}\n{\"slug\":\"base027\",\"embedding\":[27.0,1.0,0.0,0.0]}\n{\"slug\":\"base028\",\"embedding\":[28.0,1.0,0.0,0.0]}\n{\"slug\":\"base029\",\"embedding\":[29.0,1.0,0.0,0.0]}\n{\"slug\":\"base030\",\"embedding\":[30.0,1.0,0.0,0.0]}\n{\"slug\":\"base031\",\"embedding\":[31.0,1.0,0.0,0.0]}\n{\"slug\":\"base032\",\"embedding\":[32.0,1.0,0.0,0.0]}\n{\"slug\":\"base033\",\"embedding\":[33.0,1.0,0.0,0.0]}\n{\"slug\":\"base034\",\"embedding\":[34.0,1.0,0.0,0.0]}\n{\"slug\":\"base035\",\"embedding\":[35.0,1.0,0.0,0.0]}\n{\"slug\":\"base036\",\"embedding\":[36.0,1.0,0.0,0.0]}\n{\"slug\":\"base037\",\"embedding\":[37.0,1.0,0.0,0.0]}\n{\"slug\":\"base038\",\"embedding\":[38.0,1.0,0.0,0.0]}\n{\"slug\":\"base039\",\"embedding\":[39.0,1.0,0.0,0.0]}\n{\"slug\":\"base040\",\"embedding\":[40.0,1.0,0.0,0.0]}\n{\"slug\":\"base041\",\"embedding\":[41.0,1.0,0.0,0.0]}\n{\"slug\":\"base042\",\"embedding\":[42.0,1.0,0.0,0.0]}\n{\"slug\":\"base043\",\"embedding\":[43.0,1.0,0.0,0.0]}\n{\"slug\":\"base044\",\"embedding\":[44.0,1.0,0.0,0.0]}\n{\"slug\":\"base045\",\"embedding\":[45.0,1.0,0.0,0.0]}\n{\"slug\":\"base046\",\"embedding\":[46.0,1.0,0.0,0.0]}\n{\"slug\":\"base047\",\"embedding\":[47.0,1.0,0.0,0.0]}\n{\"slug\":\"base048\",\"embedding\":[48.0,1.0,0.0,0.0]}\n{\"slug\":\"base049\",\"embedding\":[49.0,1.0,0.0,0.0]}\n{\"slug\":\"base050\",\"embedding\":[50.0,1.0,0.0,0.0]}\n{\"slug\":\"base051\",\"embedding\":[51.0,1.0,0.0,0.0]}\n{\"slug\":\"base052\",\"embedding\":[52.0,1.0,0.0,0.0]}\n{\"slug\":\"base053\",\"embedding\":[53.0,1.0,0.0,0.0]}\n{\"slug\":\"base054\",\"embedding\":[54.0,1.0,0.0,0.0]}\n{\"slug\":\"base055\",\"embedding\":[55.0,1.0,0.0,0.0]}\n{\"slug\":\"base056\",\"embedding\":[56.0,1.0,0.0,0.0]}\n{\"slug\":\"base057\",\"embedding\":[57.0,1.0,0.0,0.0]}\n{\"slug\":\"base058\",\"embedding\":[58.0,1.0,0.0,0.0]}\n{\"slug\":\"base059\",\"embedding\":[59.0,1.0,0.0,0.0]}\n{\"slug\":\"base060\",\"embedding\":[60.0,1.0,0.0,0.0]}\n{\"slug\":\"base061\",\"embedding\":[61.0,1.0,0.0,0.0]}\n{\"slug\":\"base062\",\"embedding\":[62.0,1.0,0.0,0.0]}\n{\"slug\":\"base063\",\"embedding\":[63.0,1.0,0.0,0.0]}\n{\"slug\":\"main-only\",\"embedding\":[500.0,0.0,0.0,0.0]}\n--- expect shape\nslug: String\nembedding: Vector(4)\n\n--- query branch: source\nquery chunk_rows() { match { $c: Chunk } return { $c.slug as slug, $c.embedding as embedding } }\n\n--- expect unordered\n{\"slug\":\"base000\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base001\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base002\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base003\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base004\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base005\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base006\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base007\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base008\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base009\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base010\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base011\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base012\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base013\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base014\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base015\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base016\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base017\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base018\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base019\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base020\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base021\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base022\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base023\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base024\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base025\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base026\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base027\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base028\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base029\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base030\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base031\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base032\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base033\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base034\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base035\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base036\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base037\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base038\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base039\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base040\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base041\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base042\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base043\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base044\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base045\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base046\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base047\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base048\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base049\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base050\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base051\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base052\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base053\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base054\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base055\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base056\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base057\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base058\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base059\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base060\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base061\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base062\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base063\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n--- expect shape\nslug: String\nembedding: Vector(4)\n\n",
+                    "sha256": "393425fc2fd8f3969371c97c295efbcd0124c57625608b1a343d13d209b19fed"
+                  }
+                },
+                "queries": {
+                  "stem": "e2e_merge_all_changed",
+                  "text": "# issue: none\n# notes: Merge all 64 changed vectors into a diverged target; exact rows on both branches, including the unrelated target insert. One operation on a fresh handle is timed; checks and restart are outside the timer.\n\n--- runner\ntimeout_ms: 60000\nenvironments:\n  - target: omnigraph-engine\n    storage: local-filesystem\n\n--- mutate\nbranch merge \"source\" into \"main\"\n--- expect outcome: merged\n\n--- query\nbranch list\n\n--- expect unordered\n{\"name\":\"main\"}\n{\"name\":\"source\"}\n--- expect shape\nname: String\n\n--- query branch: main\nquery chunk_rows() { match { $c: Chunk } return { $c.slug as slug, $c.embedding as embedding } }\n\n--- expect unordered\n{\"slug\":\"base000\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base001\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base002\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base003\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base004\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base005\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base006\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base007\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base008\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base009\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base010\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base011\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base012\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base013\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base014\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base015\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base016\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base017\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base018\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base019\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base020\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base021\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base022\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base023\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base024\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base025\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base026\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base027\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base028\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base029\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base030\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base031\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base032\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base033\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base034\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base035\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base036\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base037\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base038\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base039\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base040\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base041\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base042\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base043\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base044\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base045\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base046\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base047\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base048\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base049\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base050\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base051\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base052\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base053\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base054\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base055\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base056\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base057\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base058\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base059\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base060\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base061\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base062\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base063\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"main-only\",\"embedding\":[500.0,0.0,0.0,0.0]}\n--- expect shape\nslug: String\nembedding: Vector(4)\n\n--- query branch: source\nquery chunk_rows() { match { $c: Chunk } return { $c.slug as slug, $c.embedding as embedding } }\n\n--- expect unordered\n{\"slug\":\"base000\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base001\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base002\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base003\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base004\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base005\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base006\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base007\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base008\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base009\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base010\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base011\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base012\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base013\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base014\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base015\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base016\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base017\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base018\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base019\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base020\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base021\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base022\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base023\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base024\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base025\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base026\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base027\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base028\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base029\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base030\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base031\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base032\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base033\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base034\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base035\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base036\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base037\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base038\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base039\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base040\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base041\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base042\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base043\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base044\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base045\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base046\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base047\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base048\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base049\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base050\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base051\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base052\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base053\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base054\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base055\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base056\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base057\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base058\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base059\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base060\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base061\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base062\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base063\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n--- expect shape\nslug: String\nembedding: Vector(4)\n\n--- restart\n\n--- query\nbranch list\n\n--- expect unordered\n{\"name\":\"main\"}\n{\"name\":\"source\"}\n--- expect shape\nname: String\n\n--- query branch: main\nquery chunk_rows() { match { $c: Chunk } return { $c.slug as slug, $c.embedding as embedding } }\n\n--- expect unordered\n{\"slug\":\"base000\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base001\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base002\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base003\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base004\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base005\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base006\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base007\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base008\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base009\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base010\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base011\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base012\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base013\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base014\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base015\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base016\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base017\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base018\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base019\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base020\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base021\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base022\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base023\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base024\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base025\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base026\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base027\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base028\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base029\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base030\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base031\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base032\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base033\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base034\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base035\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base036\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base037\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base038\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base039\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base040\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base041\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base042\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base043\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base044\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base045\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base046\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base047\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base048\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base049\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base050\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base051\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base052\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base053\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base054\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base055\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base056\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base057\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base058\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base059\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base060\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base061\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base062\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base063\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"main-only\",\"embedding\":[500.0,0.0,0.0,0.0]}\n--- expect shape\nslug: String\nembedding: Vector(4)\n\n--- query branch: source\nquery chunk_rows() { match { $c: Chunk } return { $c.slug as slug, $c.embedding as embedding } }\n\n--- expect unordered\n{\"slug\":\"base000\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base001\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base002\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base003\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base004\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base005\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base006\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base007\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base008\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base009\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base010\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base011\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base012\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base013\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base014\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base015\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base016\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base017\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base018\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base019\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base020\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base021\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base022\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base023\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base024\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base025\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base026\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base027\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base028\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base029\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base030\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base031\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base032\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base033\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base034\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base035\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base036\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base037\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base038\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base039\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base040\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base041\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base042\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base043\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base044\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base045\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base046\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base047\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base048\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base049\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base050\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base051\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base052\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base053\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base054\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base055\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base056\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base057\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base058\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base059\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base060\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base061\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base062\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n{\"slug\":\"base063\",\"embedding\":[-1.0,0.0,0.0,0.0]}\n--- expect shape\nslug: String\nembedding: Vector(4)\n\n",
+                  "sha256": "88d930c6d0f07ee4de04c64688ecb7a9d3a291a81af79dae5d539422c7d61480"
+                },
+                "recipe_sha256": "3c65fc91747aaccafb029dc2857ec4465066b71374a2e2c0125ac47268cf0a4c",
+                "case_digest": "5691a13544f49f8d0d122955ef6d1f5fc620dede767e961bca9d4473962eb514",
+                "planned_sha256": "06b6a0afff55b77267862f1f85417cfcc590f8cc3cd4ac059900914d4a909970",
+                "cache_condition": {
+                  "process": "fresh-per-step",
+                  "engine": "preparation-only",
+                  "page_cache": "uncontrolled",
+                  "program": "none",
+                  "iterations": 0
+                },
+                "needs_indices": false
+              },
+              "identity": {
+                "identity_version": 1,
+                "scenario": "gqt-v1",
+                "dataset_recipe_sha256": "3c65fc91747aaccafb029dc2857ec4465066b71374a2e2c0125ac47268cf0a4c",
+                "dataset_logical_digest": "b454b5dd839f1b5e77fe26f50e2013fd59204211c116470d4fbba9de796f97e5",
+                "dataset_identity_algorithm": "omnigraph-gqt-branches-lineage-equivalence-v1",
+                "queries_sha256": "88d930c6d0f07ee4de04c64688ecb7a9d3a291a81af79dae5d539422c7d61480",
+                "measured_step": {
+                  "ordinal": 1,
+                  "text": "--- mutate\nbranch merge \"source\" into \"main\"\n"
+                },
+                "cache_condition": {
+                  "process": "fresh-per-step",
+                  "engine": "preparation-only",
+                  "page_cache": "uncontrolled",
+                  "program": "none",
+                  "iterations": 0
+                },
+                "environment": {
+                  "backend": {
+                    "kind": "local-fs",
+                    "filesystem": "xfs",
+                    "storage_class": "nvme-ssd"
+                  }
+                },
+                "protocol": {
+                  "deadline_seconds": 60,
+                  "attribution": "off",
+                  "schedule": "manual",
+                  "reset": "clone",
+                  "timer": "monotonic"
+                }
+              },
+              "point_id": "3353628aaef20bb65dae12e228dc3ecebc8b1f9b658269f4cfcfc5e34417ebcb",
+              "point_name": "gqt-process-cold-3353628aaef2"
+            },
+            "build": {
+              "source_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b",
+              "source_tree_dirty": true,
+              "cargo_profile": "release",
+              "cargo_opt_level": "2",
+              "debug_assertions": false,
+              "effective_lance_mem_pool_size": {
+                "state": "unset"
+              },
+              "target_triple": "x86_64-unknown-linux-gnu",
+              "rustc_version": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+              "declared_release_lto": "thin",
+              "declared_release_codegen_units": 16,
+              "declared_release_strip": true,
+              "cargo_encoded_rustflags_present": false,
+              "release_profile_environment_overrides_supported": true,
+              "effective_codegen_options_proved": false,
+              "engine_feature_flags": [
+                "default"
+              ],
+              "enabled_techniques": [],
+              "worker_executable_sha256": "54c66d85c09f8dc98d07079714d5864708c83e43106b02642382067eca6535cb"
+            },
+            "machine": {
+              "format_version": 1,
+              "os_name": "linux",
+              "os_version": "unqualified gVisor sandbox",
+              "kernel_version": "4.19.0-gvisor",
+              "architecture": "x86_64",
+              "cpu_model": "unqualified: machine_probe_failed for resource_control: /proc/self/status contains no Cpus_allowed_list",
+              "logical_cores": 32,
+              "physical_cores": 32,
+              "total_memory_bytes": 68719476736,
+              "resource_control": {
+                "kind": "linux-uncontrolled",
+                "cpu_affinity_sha256": "60031dc12459b6b27c714d18d88650127d68996790861deb3d3fca96acafff26"
+              },
+              "scheduling": {
+                "nice_level": 5,
+                "policy": "other",
+                "priority": 0,
+                "reset_on_fork": false
+              },
+              "resource_limits": {
+                "scope_version": 1,
+                "values_sha256": "d1f7f49a10ef62916e9793d7b8df95524b5ea6a12e89ab333c0b309441d8c70c"
+              },
+              "machine_label": "hostname-sha256:bf2514dbbc66aeadbfbee7ec53ee976534ac40364314340a15e68823da82c18b"
+            },
+            "environment": {
+              "filesystem": "unqualified (scratch device 0:27 is not XFS)",
+              "storage_class": "unqualified",
+              "mount_point": "/src/gqb/store",
+              "storage_protocol": "unqualified",
+              "available_bytes": 0,
+              "probe": "unqualified-local-patch"
+            },
+            "dataset_cache_hit": true,
+            "base": {
+              "format_version": 1,
+              "key": "00dc4fd48bca4c1946c484d2dc56258afd1c2584375ea35523ba5a41cb1f85e0",
+              "recipe_sha256": "3c65fc91747aaccafb029dc2857ec4465066b71374a2e2c0125ac47268cf0a4c",
+              "engine_digest": "631153d6854beefce2be16cce234e34a47f0de4c29eec5bd523f46de9e35e258",
+              "needs_indices": false,
+              "storage_format": {
+                "internal_schema_version": 18,
+                "lance_version": "13.0.0",
+                "fts_certificate": {
+                  "format_version": 2,
+                  "profiles": [
+                    {
+                      "profile": "standard_v1",
+                      "native": "sha256:76e1636637778021f1690a9c0789bc743088efb9f95ae7906541480f1bc53593",
+                      "analyzer": "sha256:c91eac721fc165c523d6f0d89bf422fed19a9b3325023b195e63e1bbae6e4eec"
+                    },
+                    {
+                      "profile": "standard_folded_v1",
+                      "native": "sha256:de15802bb5cc886270be53e7770fcd38c278a760b15456493bcfe0851c807a53",
+                      "analyzer": "sha256:d403ea038f16e1bb3927809cdb5c4dc361bbe7de6d00023910681917b993121d"
+                    },
+                    {
+                      "profile": "english_v1",
+                      "native": "sha256:eb980aaeb2cda1a85139f541e09dcaaf2a10288f620a7d6aad1c70cd1c038822",
+                      "analyzer": "sha256:bdc9c2f22f06c5d5ad1f588f04d704ed3608b6876e028a8b7142215321c89208"
+                    }
+                  ]
+                }
+              },
+              "summary": {
+                "algorithm": "omnigraph-gqt-branches-lineage-equivalence-v1",
+                "logical_content_sha256": "b454b5dd839f1b5e77fe26f50e2013fd59204211c116470d4fbba9de796f97e5",
+                "branches": [
+                  {
+                    "name": "main",
+                    "content_sha256": "a40d5309ca959293e08bade03effc6693accf0e868929a374d16cea698710341",
+                    "schema_sha256": "8abed6f714304b5594b43aa3778d3f8e00271371fbdb6a78b95d39923b964390",
+                    "lineage_sha256": "edebf9c9517b5d3f49d7a511345de85f583c6122b2bae014ea410228d0e35804",
+                    "history_commits": 3,
+                    "node_tables": [
+                      {
+                        "name": "Chunk",
+                        "rows": 65
+                      }
+                    ],
+                    "edge_tables": [],
+                    "indexes": []
+                  },
+                  {
+                    "name": "source",
+                    "content_sha256": "755da1a5b5e4de129acc9482b776df973991a3ee58323c8d8e71cd3eb59e4312",
+                    "schema_sha256": "8abed6f714304b5594b43aa3778d3f8e00271371fbdb6a78b95d39923b964390",
+                    "lineage_sha256": "3a3b10a70a3e9e774268620a7276ec675b937bcd7355378cc047d32b98f1c8c6",
+                    "history_commits": 3,
+                    "node_tables": [
+                      {
+                        "name": "Chunk",
+                        "rows": 64
+                      }
+                    ],
+                    "edge_tables": [],
+                    "indexes": []
+                  }
+                ],
+                "relocation_self_contained": false,
+                "limitations": [
+                  "unkeyed-edge-ids-excluded",
+                  "historical-row-images-not-attested"
+                ]
+              },
+              "registered_source_identity": null,
+              "objects": [
+                {
+                  "path": "__history/schemas/a33c92626f37c60c25f49fa047862a50f7e437b1d1c8cd577b9355989fd9b03d.schema",
+                  "bytes": 1847,
+                  "version": "a33c92626f37c60c25f49fa047862a50f7e437b1d1c8cd577b9355989fd9b03d"
+                },
+                {
+                  "path": "__manifest/_transactions/0-40fc1b2e-fdd8-41ef-b5ec-ce38852b3487.txn",
+                  "bytes": 1273,
+                  "version": "3791f5631864425affb8b0a775d79401b370172cd8b10dfe18554ac8f2f17b46"
+                },
+                {
+                  "path": "__manifest/_transactions/1-b28fd312-4fc5-43a1-bdd5-dfab44a77adf.txn",
+                  "bytes": 1275,
+                  "version": "dc5d34f8f4c68f0ada0f14b1d626936c31e4d75864599ea08f7c23c2afe50fb6"
+                },
+                {
+                  "path": "__manifest/_transactions/2-0ae730cf-5cd7-4113-b36c-32e951a796f1.txn",
+                  "bytes": 1449,
+                  "version": "782954d57a17af44c4f41486906fad6101fc0215302191414a71d1fade8d3075"
+                },
+                {
+                  "path": "__manifest/_transactions/3-69ba82ef-fde6-4116-8bcc-a24d1fba49ad.txn",
+                  "bytes": 1275,
+                  "version": "1c8fb30bd819f1da9b8037bd252da3f6a8f643d5368e93318601fd839dec447f"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551611.manifest",
+                  "bytes": 2848,
+                  "version": "2c03717f5110c530d7d33f414750705fe9d153179eeeffb6fc59f5eca1c3bc9b"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551612.manifest",
+                  "bytes": 3022,
+                  "version": "67515c5ab9b49ac7943a619ce2fd9ed77254d9fe1240dcb70dad87ec334d3685"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551613.manifest",
+                  "bytes": 2709,
+                  "version": "08ea265c4345ca2a27a44d38b201b09d4b9527e40594ee164257adb9c279fa6d"
+                },
+                {
+                  "path": "__manifest/_versions/18446744073709551614.manifest",
+                  "bytes": 2703,
+                  "version": "84a7929ea41cf25dbf8d2ae455ebd2e39be3916d99639da6b94ac50b3eb00637"
+                },
+                {
+                  "path": "__manifest/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "99fd67c89da37e7ca5f6d62c8c814dbb3dae1ba7e760c3e8ff804a45590680b2"
+                },
+                {
+                  "path": "__manifest/data/010100100100100010110100c8c68f43f0a08c00a2bc8ba18d.lance",
+                  "bytes": 5741,
+                  "version": "6d7f00915b26235260a3f4af03c24f8ee8b8f3a0a20c1b3784b67e7a41f6f534"
+                },
+                {
+                  "path": "__manifest/data/100100001001011001000100baa98847318dbfab095ec12a9f.lance",
+                  "bytes": 7215,
+                  "version": "69c02c3a784e391fde7f04c851b1f1c9a335c8bc931d5109c22eb3f5d38c981c"
+                },
+                {
+                  "path": "__manifest/data/111011110010100011100110d5dde1408da536e800941aafd6.lance",
+                  "bytes": 6574,
+                  "version": "66a5fa8aba36fd5338327a151d9a58dcc3c8089721eb6e8fc29a4347350ced9c"
+                },
+                {
+                  "path": "__manifest/tree/source.01M80YZG3YDG99VVRYRPVC9RKK/_transactions/2-91263d64-71b2-47ab-9f40-e8b700a3f0f8.txn",
+                  "bytes": 1275,
+                  "version": "81fe4166961b47ec88d004850ef76ba1ab01dd3fba975f8d15065ab83b5b202e"
+                },
+                {
+                  "path": "__manifest/tree/source.01M80YZG3YDG99VVRYRPVC9RKK/_transactions/2-dac999af-f825-4afe-9e1e-dd1ab306c627.txn",
+                  "bytes": 186,
+                  "version": "e206ce65bd0c2a4ac775bfa5716fe1a517690dbc98f8b0ab050998fdfcac56c8"
+                },
+                {
+                  "path": "__manifest/tree/source.01M80YZG3YDG99VVRYRPVC9RKK/_versions/18446744073709551612.manifest",
+                  "bytes": 2853,
+                  "version": "e433bc1f4cadc92a3aa3049129df95eca787d24f41e14f3c70167b39b83c527b"
+                },
+                {
+                  "path": "__manifest/tree/source.01M80YZG3YDG99VVRYRPVC9RKK/_versions/18446744073709551613.manifest",
+                  "bytes": 1766,
+                  "version": "2390f77f66ae6b170da58bbcecfd94817c7ea44abbcd99f6b805fd040d15a959"
+                },
+                {
+                  "path": "__manifest/tree/source.01M80YZG3YDG99VVRYRPVC9RKK/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "9af23cea10a478f3bb916ff35c07a36debe444adf9b56814ab63861ec674ab8b"
+                },
+                {
+                  "path": "__manifest/tree/source.01M80YZG3YDG99VVRYRPVC9RKK/data/01010011110110110011111161d75e48148c9085a03fe794a5.lance",
+                  "bytes": 7343,
+                  "version": "7cf5dd3e24566290789bd48d72536e8127163857f374a7785d96116c15c11a30"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/0-0939b02a-7c22-4313-93e5-5575c7b732f9.txn",
+                  "bytes": 272,
+                  "version": "6d944347b33d2435289c93cd35c7f67ad4c439c064edbadfe0f9d906398d5ba4"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/1-e5094e47-178e-4258-b2d9-ae2a35b977ee.txn",
+                  "bytes": 493,
+                  "version": "87b426d2623de99150b1f4f8ab4f2d064767ad2deafb5e02980c8f902587cdc6"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/14290206018079130801-c0bf4915-3087-481d-a321-39714e676246.txn",
+                  "bytes": 33135,
+                  "version": "07e3e621cbe44f31cdfc854d0d33d9830074e941b60d1ae5b0cbf72e43d476a3"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_transactions/14290206018079130801-ec0a5b68-19e2-4afb-8d2a-8bfb5027924a.txn",
+                  "bytes": 33142,
+                  "version": "2bf97ec01bcc41935ebc82f2514d8a60c56f8be7609b769f7a8d7b3fdedd05cc"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/18446744073709551614.manifest",
+                  "bytes": 624,
+                  "version": "a049c76f1a1446539f375eb764cc2aecb37a55d5d7c34c3482e3c0354d01b61c"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/d12494362061295135464.manifest",
+                  "bytes": 33775,
+                  "version": "5f00bf2de3b475bfcc898e8b5d84cd4e64c70a0d58e0cd1a1d9f244f5a1d5892"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/d14290206018079130801.manifest",
+                  "bytes": 971,
+                  "version": "67acb146e5aa3130ac2b19c65d473dc2bf434edccc70f3608704af9a364fb134"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/d17802455288023542885.manifest",
+                  "bytes": 33643,
+                  "version": "f1962db73c813e38e22254b6598fd8305cff1c4cff181dfe35f065bfbc2a95c4"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/_versions/latest_version_hint.json",
+                  "bytes": 13,
+                  "version": "2430f1a2ad2982d0067885488a4c89e21ad1d7c83b115ba8f1b20acc88dfaea8"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/data/000111110101000011101010a1b95648938eeb4d73c3fea01e.lance",
+                  "bytes": 3509,
+                  "version": "d7d907ed24f35a3b00bfbe778b3494459bfc0159488a4e7f87cfbe39e0e5ae8a"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/data/1010101111101001010101100519894c0cab167a9cae51b722.lance",
+                  "bytes": 908,
+                  "version": "7092824f36910dd1ca1ba6a56d6b8975bf23927599b10365ab0c5112a795e70f"
+                },
+                {
+                  "path": "nodes/0000000000000001-0000000000000004/data/11110001001111001100101155d8a145119363571469908787.lance",
+                  "bytes": 3509,
+                  "version": "a4727a5113fedc56ed86c056a7174e7ff4d737b91197f30186def68155e8e826"
+                }
+              ],
+              "built_at_unix_ms": 1795328819383
+            },
+            "product": {
+              "path": "/src/gqb/bin/new/omnigraph",
+              "package_version": "0.16.1",
+              "http_contract": "0.14",
+              "internal_schema_writes": 18,
+              "executable_sha256": "53a082ecadc75594c896f50355a5c4dab9d5fd061ac7f275deebc242d2232c55",
+              "requested_commit": "cf133eae7a9665afb63f117dac3a315c3d0c1b3b"
+            },
+            "samples": [
+              {
+                "repetition": 1,
+                "elapsed_us": 102541,
+                "peak_rss_bytes": 579039232,
+                "outcome": "expectations-passed",
+                "logical_store_calls": {
+                  "manifest": {
+                    "get": 22,
+                    "put": 8,
+                    "put_part": 0,
+                    "head": 29,
+                    "list": 0,
+                    "delete": 3,
+                    "copy": 0,
+                    "rename": 0,
+                    "multipart_complete": 0,
+                    "multipart_abort": 0
+                  },
+                  "table": {
+                    "get": 20,
+                    "put": 3,
+                    "put_part": 0,
+                    "head": 4,
+                    "list": 0,
+                    "delete": 0,
+                    "copy": 0,
+                    "rename": 0,
+                    "multipart_complete": 0,
+                    "multipart_abort": 0
+                  },
+                  "physical_attempts_observed": false
+                },
+                "steps": [
+                  {
+                    "ordinal": 1,
+                    "occurrence": 1,
+                    "kind": "branch-merge",
+                    "elapsed_us": 102541
+                  },
+                  {
+                    "ordinal": 2,
+                    "occurrence": 1,
+                    "kind": "branch-list",
+                    "elapsed_us": 44614
+                  },
+                  {
+                    "ordinal": 3,
+                    "occurrence": 1,
+                    "kind": "query",
+                    "elapsed_us": 50850
+                  },
+                  {
+                    "ordinal": 4,
+                    "occurrence": 1,
+                    "kind": "query",
+                    "elapsed_us": 57309
+                  },
+                  {
+                    "ordinal": 6,
+                    "occurrence": 1,
+                    "kind": "branch-list",
+                    "elapsed_us": 47014
+                  },
+                  {
+                    "ordinal": 7,
+                    "occurrence": 1,
+                    "kind": "query",
+                    "elapsed_us": 55891
+                  },
+                  {
+                    "ordinal": 8,
+                    "occurrence": 1,
+                    "kind": "query",
+                    "elapsed_us": 64961
+                  }
+                ],
+                "verification": {
+                  "selected_assertion_passed": true,
+                  "assertions_passed": 8,
+                  "following_assertions": 6
+                },
+                "merge": null,
+                "client_peak_rss_bytes": 588382208,
+                "base_manifest_sha256": "656203bcac44dc19bb3ee3e79e4f53810178524e7aa48aad4dc3b203d870dff4"
+              }
+            ],
+            "wall_clock": {
+              "observed_repetitions": 1,
+              "min_us": 102541,
+              "p50_us": 102541,
+              "max_us": 102541,
+              "p95_supported": false
+            },
+            "durable_record": false
+          }
+        ],
+        "store_records": {
+          "store": "/src/gqb/store",
+          "session_id": "01M80YZFFAERP8V7JJ40CC2NQ6",
+          "records": [
+            {
+              "record_sha256": "80e8f1f878febd743f31a2a29671db7498e7c597c2895a3a66370ea9137482ea",
+              "uri": "/src/gqb/store/records/80e8f1f878febd743f31a2a29671db7498e7c597c2895a3a66370ea9137482ea.json"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
