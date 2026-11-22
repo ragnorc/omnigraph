@@ -1,0 +1,38 @@
+# GQ language version reported from GQ_LANGUAGE_VERSION alone (a74de1407)
+# debug build of gq3/phase-0-front-end at a74de1407; server on a one-graph local cluster, --unauthenticated
+
+$ omnigraph version
+omnigraph 0.16.1
+internal-schema 18 (serves v14 to v18)
+http-contract 0.14
+gq-language 3.0
+
+$ omnigraph version --json
+{
+  "version": "0.16.1",
+  "channel": null,
+  "commit": null,
+  "http_contract": "0.14",
+  "gq_language": "3.0",
+  "protocols": {
+    "studio": 1,
+    "target": 2,
+    "credential": 2,
+    "access": 2
+  },
+  "internal_schema": {
+    "writes": 18,
+    "serves": [
+      14,
+      18
+    ]
+  }
+}
+
+$ curl -i http://127.0.0.1:18731/healthz
+HTTP/1.1 200 OK
+content-type: application/json
+omnigraph-http-api: 0.14
+cache-control: no-store
+
+{"status":"ok","version":"0.16.1","internal_schema_version":18,"gq_language":"3.0"}
