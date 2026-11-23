@@ -1,0 +1,11 @@
+$ cargo test -p omnigraph-engine --locked --features failpoints --test failpoints branch_merge_into_main_lands_over_a_concurrent_branch_delete
+# engine at main 454d3cea, test added
+running 1 test
+test branch_merge_into_main_lands_over_a_concurrent_branch_delete ... FAILED
+
+---- branch_merge_into_main_lands_over_a_concurrent_branch_delete stdout ----
+
+thread 'branch_merge_into_main_lands_over_a_concurrent_branch_delete' (51034) panicked at crates/omnigraph/tests/failpoints.rs:9056:33:
+a branch delete refused a merge into main: write authority 'branch_merge_target:main' changed during preparation (expected 6, current 7) — reprepare from the current branch state
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 197 filtered out; finished in 0.24s

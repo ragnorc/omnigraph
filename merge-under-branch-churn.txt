@@ -1,0 +1,15 @@
+Merges into main beside branch creates and deletes, one server, local root, debug builds.
+tools/stress/mcont.py (ragnorc/omnigraph@stress/20261123): one client writes a row to m/src and
+merges it into main; other clients only create and delete their own branches.
+
+$ OG=main/omnigraph OGS=main/omnigraph-server mcont.py 12 30 2        # main 454d3cea
+{"seed": 12, "churners": 2, "pace": 0.0, "seconds": 4.8, "churn_ok": 70, "churn_other": {}, "merges": {"('merge', 200, None, '')": 10, "('merge', 409, 'conflict', \"write authority 'branch_merge_target:main' changed during pr\")": 1, "('merge', 409, 'conflict', \"write authority 'branch_merge_input_capture' changed during \")": 19}, "main_rows": 29}
+
+$ OG=fix/omnigraph OGS=fix/omnigraph-server mcont.py 12 30 2          # this branch
+{"seed": 12, "churners": 2, "pace": 0.0, "seconds": 2.4, "churn_ok": 64, "churn_other": {}, "merges": {"('merge', 200, None, '')": 30}, "main_rows": 30}
+
+$ OG=main/omnigraph OGS=main/omnigraph-server mcont.py 13 60 3        # main 454d3cea
+{"seed": 13, "churners": 3, "pace": 0.0, "seconds": 4.4, "churn_ok": 186, "churn_other": {}, "merges": {"('merge', 200, None, '')": 13, "('merge', 409, 'conflict', \"write authority 'branch_merge_input_capture' changed during \")": 47}, "main_rows": 58}
+
+$ OG=fix/omnigraph OGS=fix/omnigraph-server mcont.py 13 60 3          # this branch
+{"seed": 13, "churners": 3, "pace": 0.0, "seconds": 6.0, "churn_ok": 186, "churn_other": {}, "merges": {"('merge', 200, None, '')": 60}, "main_rows": 60}
