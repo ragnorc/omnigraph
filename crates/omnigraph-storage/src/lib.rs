@@ -3198,34 +3198,16 @@ fn parse_s3_uri(uri: &str) -> Result<S3Location> {
     })
 }
 
-/// The key the `s3://` URI `uri`, parsed as `url`, names: its URL path as
-/// `url` spelled it through 2.5.8, which the store takes literally. From 2.5.9
-/// a `^` is written `%5E`; here it stays a caret, so no `url` release moves an object.
+/// The key the `s3://` URI `uri`, parsed as `url`, names: its URL path
+/// percent-decoded, the key Lance's object store and the Azure adapter derive,
+/// so every route of one root addresses one set of objects. A path the decode
+/// refuses keeps its spelling as written.
 #[doc(hidden)]
 pub fn s3_object_key(uri: &str, url: &Url) -> String {
-    let path = url.path().trim_start_matches('/');
-    let tilde_for_caret = uri
-        .contains('^')
-        .then(|| Url::parse(&uri.replace('^', "~")).ok())
-        .flatten();
-    let Some(tilde_for_caret) = tilde_for_caret else {
-        return path.to_string();
-    };
-    let mut twin = tilde_for_caret.path().trim_start_matches('/');
-    let mut rest = path;
-    let mut key = String::with_capacity(path.len());
-    while let Some(character) = rest.chars().next() {
-        if twin.starts_with('~') && !rest.starts_with('~') {
-            key.push('^');
-            rest = rest.strip_prefix("%5E").unwrap_or(&rest[1..]);
-            twin = &twin[1..];
-        } else {
-            key.push(character);
-            rest = &rest[character.len_utf8()..];
-            twin = twin.get(character.len_utf8()..).unwrap_or_default();
-        }
-    }
-    key
+    let _ = uri;
+    ObjectPath::from_url_path(url.path())
+        .map(|path| path.to_string())
+        .unwrap_or_else(|_| url.path().trim_start_matches('/').to_string())
 }
 
 fn storage_backend_error(action: &str, uri: &str, err: object_store::Error) -> StorageError {

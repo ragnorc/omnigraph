@@ -474,3 +474,50 @@ async fn object_storage_offline_deployment(root: &str) {
     force_unlock_storage_root(root, &lock).await.unwrap();
     adapter.delete_prefix(root).await.unwrap();
 }
+
+/// #1527: a root whose prefix holds a space names one set of keys, so removing
+/// a graph deletes the objects Lance wrote and the graph can be declared again.
+/// Lance's own route opens the graph root, since the adapter's spelling of it
+/// is the one under test.
+#[tokio::test(flavor = "multi_thread")]
+async fn s3_cluster_root_with_space_removes_graph_and_declares_it_again() {
+    let Some(root) = s3_storage_root("encoded root") else {
+        eprintln!("skipping s3 cluster e2e: OMNIGRAPH_S3_TEST_BUCKET is not set");
+        return;
+    };
+    let dir = tempfile::tempdir().unwrap();
+    write_cluster_fixture(dir.path(), &root, SCHEMA_V1);
+    let created = deploy_fixture(dir.path(), &root).await;
+    let snapshot = read_serving_snapshot_from_storage(&root).await.unwrap();
+    let graph_root = snapshot.graphs[0].root.to_string_lossy().to_string();
+    assert!(Omnigraph::open_read_only(&graph_root).await.is_ok());
+
+    fs::write(
+        dir.path().join("cluster.yaml"),
+        format!("version: 1\nstorage: {root}\ngraphs: {{}}\n"),
+    )
+    .unwrap();
+    let deleted = deploy_fixture(dir.path(), &root).await;
+    assert!(matches!(
+        &deleted.graphs["knowledge"],
+        omnigraph_cluster::GraphDeploymentResult::Deleted { .. }
+    ));
+    assert!(
+        Omnigraph::open_read_only(&graph_root).await.is_err(),
+        "graph {graph_root} still opens after its removal applied"
+    );
+
+    write_cluster_fixture(dir.path(), &root, SCHEMA_V1);
+    let caller = DeploymentCaller::storage_owner(Some("act-admin".into()));
+    let again = apply_deployment(dir.path(), None, &caller, |_, _, _| {}).await;
+    assert!(
+        matches!(&again, Ok(DeploymentLookup::Complete { result }) if result.converged),
+        "declaring the removed graph again: {again:?}"
+    );
+    assert_ne!(created.id, deleted.id);
+    omnigraph_storage::storage_for_uri(&root)
+        .unwrap()
+        .delete_prefix(&root)
+        .await
+        .unwrap();
+}
