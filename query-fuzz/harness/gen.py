@@ -14,7 +14,7 @@ one `random.Random(seed)`, so a case is reproduced from its seed alone.
 
 from __future__ import annotations
 
-GEN_VERSION = 1
+GEN_VERSION = 2  # v2 adds the compatible-text mode for seeds >= COMPAT_SEEDS; seeds below draw exactly as v1
 
 import json
 import random
@@ -566,7 +566,11 @@ class QGen:
         return a
 
     # -- read ----------------------------------------------------------------
+    compat = False  # draw only edition-2 texts GQ 3 also parses (gen v2)
+
     def read(self, qname: str) -> Query:
+        if self.compat:
+            return self.read_compat(qname)
         rng = self.rng
         self.vc = 0
         self.pc = 0
@@ -704,6 +708,31 @@ class QGen:
             self.forms.add("limit_no_order")
         return Query(qname, text, dict(self.params), "read", set(self.forms))
 
+    def read_compat(self, qname: str) -> Query:
+        """A read both editions parse: one binding in `match` (edition 2 has no
+        separator between elements, GQ 3 no filter inside the braces), comma
+        lists, projections, aggregates, `distinct`, order and limit."""
+        rng = self.rng
+        self.vc = 0
+        self.pc = 0
+        self.params = {}
+        self.params_decl = []
+        self.forms = {"compat"}
+        n = rng.choice(self.w.nodes)
+        v = self.fresh(n.name[0].lower())
+        bound = {v: ("node", n.name)}
+        ret, order, limit, distinct = self.projection(bound, [], compat=True)
+        params = ", ".join(self.params_decl)
+        text = f"query {qname}({params}) {{\n  match {{ {v}: {n.name} }}\n  {ret}\n"
+        if order:
+            text += f"  {order}\n"
+        if limit:
+            text += f"  {limit}\n"
+        text += "}\n"
+        if order is None and limit:
+            self.forms.add("limit_no_order")
+        return Query(qname, text, dict(self.params), "read", set(self.forms))
+
     def block(self, bound) -> str:
         rng = self.rng
         node_vars = [v for v, (k, _) in bound.items() if k == "node"]
@@ -766,7 +795,7 @@ class QGen:
                 return e.dst if parts[2] == nv else e.src
         raise KeyError(nv)
 
-    def projection(self, bound, fts_vars):
+    def projection(self, bound, fts_vars, compat=False):
         rng = self.rng
         items = []
         aliases = []
@@ -808,7 +837,7 @@ class QGen:
                 alias = f"c{len(items)}"
             items.append(f"{expr} as {alias}" if alias else expr)
             orderable.append(alias or expr)
-        if rng.random() < (0.08 if not agg_mode else 0.015):
+        if rng.random() < (0.08 if not agg_mode else 0.015) and (not compat or rng.random() < 0.6):
             # a Boolean return item (needs an alias in edition 2)
             v = rng.choice(node_vars)
             f = self.filter_on(v, bound[v][1], self.w.node(bound[v][1]).props)
@@ -845,7 +874,7 @@ class QGen:
         # rankings
         rank_order = None
         vec_vars = [(v, self.w.node(bound[v][1])) for v in node_vars if any(p.ty == "vector" for p in self.w.node(bound[v][1]).props)]
-        rk = rng.random()
+        rk = rng.random() if not compat else 1.0
         rank_expr = None
         if vec_vars and rk < 0.25:
             v, n = rng.choice(vec_vars)
@@ -883,7 +912,7 @@ class QGen:
             self.forms.add("rank_under_aggregate")
         if distinct and rank_expr:
             self.forms.add("rank_under_distinct")
-        sep = ", " if rng.random() < 0.7 else "  "
+        sep = ", " if (compat or rng.random() < 0.7) else "  "
         if sep == "  " and len(items) > 1:
             self.forms.add("ws_list")
         ret = f"return {'distinct ' if distinct else ''}{{ {sep.join(items)} }}"
@@ -911,6 +940,8 @@ class QGen:
 
     # -- write ---------------------------------------------------------------
     def write(self, qname: str) -> Query:
+        if self.compat:
+            return self.write_compat(qname)
         rng = self.rng
         self.vc = 0
         self.pc = 0
@@ -934,6 +965,40 @@ class QGen:
             self.forms.add("multi_statement")
         params = ", ".join(self.params_decl)
         text = f"query {qname}({params}) {{\n" + "".join(f"  {s}\n" for s in stmts) + "}\n"
+        return Query(qname, text, dict(self.params), "write", set(self.forms))
+
+    def write_compat(self, qname: str) -> Query:
+        """Node inserts with comma-separated assignments, which both editions parse."""
+        rng = self.rng
+        self.vc = 0
+        self.pc = 0
+        self.params = {}
+        self.params_decl = []
+        self.forms = {"compat"}
+        stmts = []
+        for _ in range(rng.choice([1, 1, 2, 3])):
+            n = rng.choice(self.w.nodes)
+            parts = []
+            reuse = None
+            if n.key and self.w.rows[n.name] and rng.random() < 0.3:
+                reuse = rng.choice(self.w.rows[n.name])["data"]
+                self.forms.add("insert_keyed_existing")
+            for p in n.props:
+                if p.name in n.key:
+                    v = reuse[p.name] if reuse else scalar_value(rng, p.ty, p.enum)
+                    if p.ty == "String" and v == "":
+                        v = "k"
+                    parts.append(f"{p.name}: {self.value_expr(p, v) if not (isinstance(v, int) and v < 0) else self.new_param(p.ty, v)}")
+                elif not p.nullable or rng.random() < 0.5:
+                    parts.append(f"{p.name}: {self.assign_val(p, n.name)}")
+            if not parts:
+                p = rng.choice(n.props)
+                parts.append(f"{p.name}: {self.assign_val(p, n.name)}")
+            self.forms.add("insert_keyed" if n.key else "insert_unkeyed")
+            stmts.append(f"insert {n.name} {{ {', '.join(parts)} }}")
+        if len(stmts) > 1:
+            self.forms.add("multi_statement")
+        text = f"query {qname}({', '.join(self.params_decl)}) {{\n" + "".join(f"  {s}\n" for s in stmts) + "}\n"
         return Query(qname, text, dict(self.params), "write", set(self.forms))
 
     def assign_val(self, p: Prop, tname=None):
@@ -1169,9 +1234,15 @@ def rank_asc(q: Query, rng):
 # --------------------------------------------------------------------------
 
 
+COMPAT_SEEDS = 500000  # seeds from here on draw gen v2's compatible texts
+
+
 def draw_queries(world: World, seed: int, n: int, refuse_share: float = 0.12, write_share: float = 0.22):
     rng = random.Random(seed * 7919 + 17)
     g = QGen(world, rng)
+    if seed >= COMPAT_SEEDS:
+        g.compat = True
+        refuse_share = 0.0
     out = []
     names = ["q", "rows", "people", "find", "count", "nearest", "bm25", "search", "lower", "match_terms", "terms", "from", "distance", "union", "exists", "contains", "now"]
     i = 0

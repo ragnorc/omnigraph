@@ -72,7 +72,7 @@ def parse_json(text: str):
         return None
 
 
-PANIC = re.compile(r"panicked at|RUST_BACKTRACE|stack overflow|SIGSEGV|fatal runtime error")
+PANIC = re.compile(r"panicked|RUST_BACKTRACE|stack overflow|SIGSEGV|fatal runtime error")
 
 
 def observe(res: dict) -> dict:
