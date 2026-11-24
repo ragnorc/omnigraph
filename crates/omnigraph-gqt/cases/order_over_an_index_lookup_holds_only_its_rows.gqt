@@ -1,0 +1,87 @@
+# issue: none
+# notes: The memory a held sort is charged depends on the rows it holds, not on how the
+# notes: table is laid out. An index lookup that matches scattered rows makes Lance read
+# notes: one short range per row, and each batch it yields slices a page it decoded whole
+# notes: (a sliced string array keeps its page's whole values buffer). The pool charges a
+# notes: buffer by its allocation, so a sort holding those slices was charged for every
+# notes: page they touched. Here 32 of 8,192 rows with a 246-byte key: the same rows loaded
+# notes: through the CLI needed 358,352 bytes after `index build` against 35,732 before it,
+# notes: when Lance filters the rows itself, and this read was refused at 131072 bytes. Every
+# notes: batch a read yields now holds only its rows (`WorkMemory::stream`): 54,192 bytes.
+# notes: `traversal: auto` only builds the seed's indexes; the read has no traversal.
+# traversal: auto
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+    id: String @key
+    bucket: I64 @index
+    n: I64
+}
+
+--- seed generate: v1 seed: 0
+tables:
+  - kind: node
+    name: Item
+    rows: 8192
+    commits: 2
+    columns:
+      id: {kind: key, prefix: kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk, width: 6}
+      bucket: {kind: modulo, modulus: 256}
+      n: {kind: ordinal, start: 0, step: 1}
+
+--- query
+set query_memory_bytes = 131072;
+query scattered_lookup_sorted() {
+    match {
+        $i: Item
+        $i.bucket = 0
+    }
+    return { $i.n }
+    order { $i.id }
+}
+
+--- expect ordered
+{"i.n": 0}
+{"i.n": 256}
+{"i.n": 512}
+{"i.n": 768}
+{"i.n": 1024}
+{"i.n": 1280}
+{"i.n": 1536}
+{"i.n": 1792}
+{"i.n": 2048}
+{"i.n": 2304}
+{"i.n": 2560}
+{"i.n": 2816}
+{"i.n": 3072}
+{"i.n": 3328}
+{"i.n": 3584}
+{"i.n": 3840}
+{"i.n": 4096}
+{"i.n": 4352}
+{"i.n": 4608}
+{"i.n": 4864}
+{"i.n": 5120}
+{"i.n": 5376}
+{"i.n": 5632}
+{"i.n": 5888}
+{"i.n": 6144}
+{"i.n": 6400}
+{"i.n": 6656}
+{"i.n": 6912}
+{"i.n": 7168}
+{"i.n": 7424}
+{"i.n": 7680}
+{"i.n": 7936}
+
+--- expect shape
+i.n: I64
+
+--- expect plan
+scan Item as $i: access index_probe bucket
