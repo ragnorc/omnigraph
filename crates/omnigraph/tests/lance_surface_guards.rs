@@ -4738,6 +4738,144 @@ async fn nearest_scan_stats_report_partitions_searched_and_ranked() {
     );
 }
 
+// --- Guard: a stable-row-id compaction leaves the rows it dropped in a vector index, unmasked ---
+//
+// Lance 13 carries a row-id-domain index's coverage to the fragments a
+// stable-row-id rewrite writes (`recalculate_fragment_bitmap`,
+// lance-table `transaction/index_maintenance.rs`) and does not remap the index,
+// so the IVF partitions keep an entry for every row the rewrite dropped. The
+// prefilter derives its deletion mask only from the deletion files and missing
+// fragments of the index's coverage (`DatasetPreFilter::create_deletion_mask_impl`,
+// lance `index/prefilter.rs`); the rewritten fragment has neither, so an
+// unfiltered kNN builds no mask. The search ranks the dropped rows into its `k`
+// candidates and the take drops them (`MissingRowPolicy::Ignore`), so the scan
+// answers fewer than `k` rows although `k` live rows exist, with the first of
+// the true nearest in order. A filtered kNN is unaffected: its prefilter's
+// allow list holds only live rows. A red guard here means Lance masks or prunes
+// the dropped rows; the engine's handling of this state is then a design review.
+
+#[tokio::test]
+async fn stable_row_id_compaction_leaves_dropped_rows_ranked_by_an_unfiltered_vector_search() {
+    use arrow_array::types::Int32Type;
+    use lance::index::vector::VectorIndexParams;
+    use lance_linalg::distance::MetricType;
+
+    const ROWS: usize = 10;
+    const DIMENSION: usize = 2;
+    const K: usize = 5;
+
+    let dir = tempfile::tempdir().unwrap();
+    let uri = dir.path().join("compaction_dropped_rows.lance");
+    let uri = uri.to_str().unwrap();
+    // Row i sits at distance i^2 from the origin, all in one fragment.
+    let mut dataset = linear_vector_dataset(uri, ROWS, DIMENSION, ROWS).await;
+    dataset
+        .create_index_builder(
+            &["vector"],
+            IndexType::Vector,
+            &VectorIndexParams::ivf_flat(1, MetricType::L2),
+        )
+        .name("vector_idx".to_string())
+        .replace(true)
+        .await
+        .unwrap();
+    let deleted = dataset.delete("id % 2 = 1").await.unwrap();
+    let mut dataset = (*deleted.new_dataset).clone();
+
+    let query = arrow_array::Float32Array::from(vec![0.0_f32; DIMENSION]);
+    async fn nearest_ids(
+        dataset: &Dataset,
+        query: &arrow_array::Float32Array,
+        use_index: bool,
+    ) -> Vec<i32> {
+        let mut scanner = dataset.scan();
+        scanner.project(&["id"]).unwrap();
+        scanner.nearest("vector", query, K).unwrap();
+        scanner.use_index(use_index);
+        let batch = scanner.try_into_batch().await.unwrap();
+        batch
+            .column_by_name("id")
+            .unwrap()
+            .as_primitive::<Int32Type>()
+            .values()
+            .to_vec()
+    }
+    let live_nearest = vec![0, 2, 4, 6, 8];
+    assert_eq!(
+        nearest_ids(&dataset, &query, true).await,
+        live_nearest,
+        "before the rewrite the deletion file masks the deleted rows' entries"
+    );
+
+    compact_files(&mut dataset, CompactionOptions::default(), None)
+        .await
+        .unwrap();
+    assert_eq!(dataset.count_rows(None).await.unwrap(), ROWS / 2);
+    let fragments = dataset.get_fragments();
+    assert!(
+        fragments
+            .iter()
+            .all(|fragment| fragment.metadata().deletion_file.is_none()),
+        "the rewrite materialized the deletions"
+    );
+    let index = dataset
+        .load_indices()
+        .await
+        .unwrap()
+        .iter()
+        .find(|index| index.name == "vector_idx")
+        .cloned()
+        .unwrap();
+    let covered = index.fragment_bitmap.clone().unwrap();
+    assert!(
+        fragments
+            .iter()
+            .all(|fragment| covered.contains(fragment.id() as u32)),
+        "the rewrite carries the index's coverage to the new fragments"
+    );
+    let stats: serde_json::Value =
+        serde_json::from_str(&dataset.index_statistics("vector_idx").await.unwrap()).unwrap();
+    let entries: u64 = stats["indices"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|delta| delta["partitions"].as_array().unwrap())
+        .map(|partition| partition["size"].as_u64().unwrap())
+        .sum();
+    assert_eq!(
+        entries, ROWS as u64,
+        "the IVF partitions still hold an entry for every dropped row; stats: {stats}"
+    );
+
+    assert_eq!(
+        nearest_ids(&dataset, &query, false).await,
+        live_nearest,
+        "the flat kNN answers the k live rows"
+    );
+    assert_eq!(
+        nearest_ids(&dataset, &query, true).await,
+        vec![0, 2, 4],
+        "the indexed kNN ranks the dropped rows 1 and 3 into its k candidates and \
+         loses them at the take: three of the five live rows"
+    );
+    let mut filtered = dataset.scan();
+    filtered.project(&["id"]).unwrap();
+    filtered.filter("id >= 0").unwrap();
+    filtered.prefilter(true);
+    filtered.nearest("vector", &query, K).unwrap();
+    let batch = filtered.try_into_batch().await.unwrap();
+    assert_eq!(
+        batch
+            .column_by_name("id")
+            .unwrap()
+            .as_primitive::<Int32Type>()
+            .values()
+            .to_vec(),
+        live_nearest,
+        "a prefiltered kNN masks by an allow list of live rows, so it answers k rows"
+    );
+}
+
 // --- Guard: an explicit projection may name `_distance` before `nearest` ---
 //
 // Lance 13 resolves the scoring columns (`_distance`, `_score`) in

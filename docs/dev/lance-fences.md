@@ -425,8 +425,21 @@ which no engine writer creates (`forbidden_apis.rs` refuses an
 public Lance write API commits one), so optimize's compaction causes no fold
 after it and its index-rows ceiling measures the lag the plan shows.
 
+Coverage is carried, but the rows a rewrite drops are not: the index is not
+remapped, so its entries for the deleted rows stay, and the prefilter builds its
+deletion mask only from the deletion files and missing fragments of the index's
+coverage (`DatasetPreFilter::create_deletion_mask_impl`), which the rewritten
+fragment does not have. A kNN with no filter then ranks the dropped rows into
+its `k` candidates and loses them at the take, so it returns fewer than `k`
+rows; a prefiltered kNN masks by an allow list of live rows and is unaffected.
+Index statistics count rows from coverage, so they do not show the dropped rows.
+The engine does not yet handle this state ([contract](contract.md#gaps) `G15`).
+
 **Owners:** `integration/scalar_indexes.rs`, `search.rs`,
-`integration/maintenance.rs`
+`integration/maintenance.rs`,
+`lance_surface_guards.rs::stable_row_id_compaction_leaves_dropped_rows_ranked_by_an_unfiltered_vector_search`,
+`integration/maintenance.rs::optimize_after_a_delete_keeps_an_unfiltered_nearest_answering_k_live_rows`
+(red until `G15` is closed)
 
 ### Index segments
 
