@@ -198,11 +198,14 @@ impl Gathered {
     }
 
     /// Hold `batch` and add it; `true` once the gathered rows reach the row
-    /// target or their bytes the byte target.
+    /// target or their bytes (what their rows hold, the bytes the send's
+    /// concatenation copies) the byte target.
     fn push(&mut self, batch: RecordBatch) -> DfResult<bool> {
         self.work.hold(&batch)?;
         self.rows += batch.num_rows();
-        self.bytes = self.bytes.saturating_add(batch.get_array_memory_size());
+        self.bytes =
+            self.bytes
+                .saturating_add(self.work.slice_bytes(&batch, 0, batch.num_rows())?);
         self.batches.push(batch);
         Ok(self.rows >= self.row_target || self.bytes >= self.byte_target)
     }

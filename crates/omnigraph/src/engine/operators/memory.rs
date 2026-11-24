@@ -12,6 +12,7 @@ use datafusion::arrow::buffer::Buffer;
 use datafusion::common::{DataFusionError, Result as DfResult};
 use datafusion::execution::TaskContext;
 use datafusion::execution::memory_pool::{MemoryConsumer, MemoryPool, MemoryReservation};
+use datafusion::physical_plan::stream::RecordBatchStreamAdapter;
 use datafusion::physical_plan::{ExecutionPlan, SendableRecordBatchStream};
 use futures::StreamExt;
 
@@ -162,6 +163,31 @@ fn charged_size(buffer: &Buffer) -> usize {
         .saturating_add(std::mem::size_of::<BufferCharge>() + 32)
 }
 
+/// The bytes `data`'s buffers keep alive: every buffer, null bitmap and child
+/// buffer at its allocation's size, the size the pool charges it by, whatever
+/// part of it `data`'s rows reach.
+fn pinned_bytes(data: &ArrayData) -> usize {
+    data.buffers()
+        .iter()
+        .chain(data.nulls().map(|nulls| nulls.buffer()))
+        .map(|buffer| buffer.capacity().max(buffer.len()))
+        .chain(data.child_data().iter().map(pinned_bytes))
+        .fold(0usize, usize::saturating_add)
+}
+
+/// What Arrow's allocation of `data`'s buffers adds to their contents at most:
+/// every buffer, null bitmap and child buffer rounded up to a multiple of 64
+/// bytes. A column pinning more than its rows plus this holds bytes outside
+/// its rows.
+fn allocation_rounding(data: &ArrayData) -> usize {
+    const ROUNDING: usize = 64;
+    let buffers = data.buffers().len() + usize::from(data.nulls().is_some());
+    data.child_data()
+        .iter()
+        .map(allocation_rounding)
+        .fold(buffers.saturating_mul(ROUNDING), usize::saturating_add)
+}
+
 /// The Arrow bytes `hold` registers for `batch`: every buffer, null bitmap
 /// and child buffer at its charged size, shared buffers counted once each
 /// time they appear; what a copy of the batch costs its holder.
@@ -254,6 +280,62 @@ impl QueryResources {
         let reservation = MemoryConsumer::new("graph batch handles").register(&self.pool);
         reservation.grow(bytes);
         Ok(reservation)
+    }
+
+    /// `batch` with each column whose buffers keep alive more than its own
+    /// rows' bytes (beyond Arrow's allocation rounding) copied at its own
+    /// size, the copy admitted while it is built. A decoder may yield a
+    /// zero-copy slice of what it decoded for many more rows: Lance slices a
+    /// decoded page into the arrays it yields, and a sliced string array
+    /// keeps its whole values buffer. The pool charges a buffer by its
+    /// allocation, so an operator retaining such a slice would be charged
+    /// for, and keep alive, rows it never selected, and how many would depend
+    /// on the table's fragments and indexes rather than on its rows. A column
+    /// already at its own size passes through uncopied. The copy is the
+    /// reading operator's work, so a refusal is recorded under `owner`.
+    fn unpinned(&self, batch: RecordBatch, owner: &str) -> DfResult<RecordBatch> {
+        let rows = batch.num_rows();
+        let mut pinned = Vec::new();
+        let mut bytes = 0usize;
+        for (index, column) in batch.columns().iter().enumerate() {
+            let data = column.to_data();
+            // A layout Arrow cannot size passes through as it came.
+            let Ok(own) = slice_memory_size(&data, 0, rows) else {
+                continue;
+            };
+            if pinned_bytes(&data) > own.saturating_add(allocation_rounding(&data)) {
+                bytes = bytes
+                    .saturating_add(own)
+                    .saturating_add(take_scratch_size(&data, rows));
+                pinned.push(index);
+            }
+        }
+        if pinned.is_empty() {
+            return Ok(batch);
+        }
+        let positions = u32::try_from(rows).map_err(|_| {
+            super::external(OmniError::manifest_internal(
+                "a read batch exceeds the row index range",
+            ))
+        })?;
+        let admitted = self
+            .unrecorded(
+                "pinned batch copy",
+                bytes.saturating_add(rows.saturating_mul(std::mem::size_of::<u32>())),
+            )
+            .inspect_err(|_| self.refused(owner))?;
+        let indices = UInt32Array::from_iter_values(0..positions);
+        let mut columns = batch.columns().to_vec();
+        for index in pinned {
+            columns[index] = arrow_select::take::take(columns[index].as_ref(), &indices, None)?;
+        }
+        let result = RecordBatch::try_new_with_options(
+            batch.schema(),
+            columns,
+            &RecordBatchOptions::new().with_row_count(Some(rows)),
+        )?;
+        drop(admitted);
+        Ok(result)
     }
 
     fn batch(&self, batch: &RecordBatch, share: Option<&LoadShare>) -> DfResult<BatchLease> {
@@ -822,6 +904,11 @@ impl WorkMemory {
         Ok(batch)
     }
 
+    /// `plan` executed under the query: its scan-plan sorts' inputs capped,
+    /// its partitions merged, and every batch it yields holding only its own
+    /// rows ([`QueryResources::unpinned`]). Every Lance read of a query runs
+    /// through here, so what an operator retains from a read is charged, and
+    /// kept alive, by the rows it selected, whatever the table's layout.
     pub(in crate::engine) fn stream(
         &self,
         plan: Arc<dyn ExecutionPlan>,
@@ -830,7 +917,15 @@ impl WorkMemory {
         let plan = crate::table_store::cap_sort_inputs_and_merge_partitions(plan, input_limit)?;
         let stream = plan.execute(0, Arc::clone(&self.ctx))?;
         self.share_spills(&plan);
-        Ok((plan, stream))
+        let schema = stream.schema();
+        let resources = Arc::clone(&self.resources);
+        let owner = self.name.clone();
+        let stream =
+            stream.map(move |batch| batch.and_then(|batch| resources.unpinned(batch, &owner)));
+        Ok((
+            plan,
+            Box::pin(RecordBatchStreamAdapter::new(schema, stream)),
+        ))
     }
 
     /// Registers the spill counters of `plan`, a DataFusion plan this
@@ -1453,6 +1548,70 @@ mod tests {
             drop(resources);
             assert_eq!(pool.reserved(), 0);
         }
+    }
+
+    /// A read's batch that slices a buffer decoded for many more rows reaches
+    /// its operator copied at its own size, so holding it charges its rows
+    /// rather than the decode; a batch already at its own size passes through
+    /// as it came. Which buffers a held batch keeps alive is invisible to a
+    /// case's rows; `order_over_an_index_lookup_holds_only_its_rows.gqt` is
+    /// the refusal it caused.
+    #[tokio::test(flavor = "current_thread")]
+    async fn a_read_yields_batches_holding_only_their_rows() {
+        use arrow_array::StringArray;
+        use datafusion::datasource::memory::MemorySourceConfig;
+        use futures::TryStreamExt;
+        let rows = 4_096;
+        let decoded = RecordBatch::try_new(
+            Arc::new(Schema::new(vec![
+                Field::new("text", DataType::Utf8, false),
+                Field::new("n", DataType::Int64, false),
+            ])),
+            vec![
+                Arc::new(StringArray::from_iter_values(
+                    (0..rows).map(|n| format!("{n:0>64}")),
+                )),
+                Arc::new(Int64Array::from_iter_values(0..rows as i64)),
+            ],
+        )
+        .unwrap();
+        let slices: Vec<RecordBatch> = (0..rows)
+            .step_by(512)
+            .map(|row| decoded.slice(row, 1))
+            .collect();
+        let (pool, memory) = test_memory(1_048_576);
+        let plan =
+            MemorySourceConfig::try_new_exec(std::slice::from_ref(&slices), decoded.schema(), None)
+                .unwrap();
+        let (_, stream) = memory.stream(plan).unwrap();
+        let read: Vec<RecordBatch> = stream.try_collect().await.unwrap();
+        assert_eq!(read, slices);
+        for batch in &read {
+            memory.hold(batch).unwrap();
+        }
+        assert!(
+            pool.reserved() < 8 * 1024,
+            "{} bytes held for {} rows of a {}-byte decode",
+            pool.reserved(),
+            slices.len(),
+            decoded.get_array_memory_size(),
+        );
+        memory.release_work();
+        drop(read);
+
+        let own = decoded.project(&[1]).unwrap();
+        let plan =
+            MemorySourceConfig::try_new_exec(&[vec![own.clone()]], own.schema(), None).unwrap();
+        let (_, stream) = memory.stream(plan).unwrap();
+        let read: Vec<RecordBatch> = stream.try_collect().await.unwrap();
+        assert_eq!(
+            read[0].column(0).to_data().buffers()[0].as_ptr(),
+            own.column(0).to_data().buffers()[0].as_ptr(),
+            "a column at its own size is not copied",
+        );
+        drop(read);
+        drop(memory);
+        assert_eq!(pool.reserved(), 0);
     }
 
     /// Reads the pool's reserved bytes after a refusal; the 1 KiB flag column
