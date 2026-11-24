@@ -723,6 +723,112 @@ async fn optimize_fails_a_table_whose_plan_size_cannot_be_read() {
     }
 }
 
+/// `optimize` never changes an answer (invariant 7): after a vector index
+/// build, a delete and the rewrite that drops the deleted rows, an unfiltered
+/// `nearest(k)` still answers the `k` nearest live rows, and so does a graph
+/// whose index `index build` has seen since. The rewrite carries the index's
+/// coverage to the new fragment while its partitions keep the dropped rows,
+/// and no deletion file is left to mask them
+/// (`lance_surface_guards.rs::stable_row_id_compaction_leaves_dropped_rows_ranked_by_an_unfiltered_vector_search`).
+// contract: E7, E5, read:4
+#[tokio::test]
+async fn optimize_after_a_delete_keeps_an_unfiltered_nearest_answering_k_live_rows() {
+    const SCHEMA: &str =
+        "node T {\n    slug: String @key\n    n: I64\n    v: Vector(2) @index\n}\n";
+    const QUERIES: &str = r#"
+query near($q: Vector(2)) {
+    match { $t: T }
+    return { $t.slug }
+    order { nearest($t.v, $q) }
+    limit 5
+}
+query drop_odd() {
+    delete T where n > 0
+}
+"#;
+    async fn nearest_slugs(db: &helpers::Session) -> Vec<String> {
+        let result = helpers::query_main(
+            db,
+            QUERIES,
+            "near",
+            &helpers::vector_param("q", &[0.0, 1.0]),
+        )
+        .await
+        .unwrap();
+        result
+            .to_rust_json()
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|row| row["t.slug"].as_str().unwrap().to_string())
+            .collect()
+    }
+
+    let dir = tempfile::tempdir().unwrap();
+    let db = helpers::session(
+        Omnigraph::init(dir.path().to_str().unwrap(), SCHEMA)
+            .await
+            .unwrap(),
+    );
+    // Row i sits at [i/10, 1 - i/10]; the odd rows carry a positive `n`.
+    let lines = (0..10)
+        .map(|i| {
+            serde_json::json!({
+                "type": "T",
+                "data": {
+                    "slug": format!("t{i}"),
+                    "n": if i % 2 == 1 { i } else { -i - 1 },
+                    "v": [i as f32 / 10.0, 1.0 - i as f32 / 10.0],
+                },
+            })
+            .to_string()
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    db.load_jsonl(&lines, LoadMode::Merge).await.unwrap();
+    db.ensure_indices_on_as("main", None).await.unwrap();
+    let ds = snapshot_main(&db)
+        .await
+        .unwrap()
+        .open_dataset("node:T")
+        .await
+        .unwrap();
+    assert!(ds.has_vector_index("v").await.unwrap(), "test precondition");
+    mutate_main(
+        &db,
+        QUERIES,
+        "drop_odd",
+        &omnigraph_compiler::ir::ParamMap::new(),
+    )
+    .await
+    .unwrap();
+    let live_nearest = ["t0", "t2", "t4", "t6", "t8"].map(String::from).to_vec();
+    assert_eq!(nearest_slugs(&db).await, live_nearest, "before optimize");
+
+    let optimized = db
+        .optimize_as(None, OptimizeRequest::default())
+        .await
+        .unwrap();
+    let table = optimized
+        .datasets
+        .iter()
+        .find(|stat| stat.type_key == "node:T")
+        .unwrap();
+    assert!(
+        table.committed(),
+        "test precondition: the rewrite drops the deleted rows: {table:?}"
+    );
+    assert_eq!(nearest_slugs(&db).await, live_nearest, "after optimize");
+
+    db.ensure_indices_on_as("main", None).await.unwrap();
+    assert_eq!(
+        nearest_slugs(&db).await,
+        live_nearest,
+        "after an index build"
+    );
+}
+
 /// A stable-row-id rewrite carries every BTREE and vector index's coverage to
 /// the new fragments (Lance 13 drops coverage only for zone-map, Bloom and FM
 /// indexes, which the engine does not build), so compaction alone is no index

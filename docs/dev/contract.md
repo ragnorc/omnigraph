@@ -300,7 +300,7 @@ failure shape; the embedded engine returns its own error type.
 
 **E7. It stays in its kind.** An operation changes only what its kind may
 change. Only `reclaim` removes published commits `D1`. Only `maintain`
-rewrites physical state, and it never changes an answer `G3`: a read says
+rewrites physical state, and it never changes an answer `G3` `G15`: a read says
 what it wants, never how to find it.
 *Why:* history is the agents' memory, and a search must mean the same
 whatever has been built to speed it up. *Kept by:* invariants 7 and 12.
@@ -636,6 +636,7 @@ statement. "See" names the invariant or the design that bears on it.
 | `G12` | `read:9` | Types and properties carry descriptions, and nothing searches them | No design yet |
 | `G13` | Boundary, Processes | One server serves a cluster, and read-only CLI commands may read beside it. There is no read-only serving mode | [Graph access and cross-process writes](../rfcs/2026-10-16-graph-access-serving-and-cross-process-writes.md) |
 | `G14` | `read:11`, `E7` | A `limit` without an `order` returns the first rows in physical order, which `optimize` can change. No test pins it | [GQ 3](https://github.com/ModernRelay/omnigraph/pull/1302), draft: one total order for every read |
+| `G15` | `E7`, `E5`, `read:4` | After a vector index build, a delete and `optimize`, a `nearest` with no filter returns fewer than `k` rows although `k` live rows exist: the first of the true nearest, in order, reported as exhaustive. `index build` finds no work, so no command repairs the index; a filtered `nearest` is not affected | [Lance compatibility fences](lance-fences.md#index-coverage); no design yet |
 
 ## Decisions
 
