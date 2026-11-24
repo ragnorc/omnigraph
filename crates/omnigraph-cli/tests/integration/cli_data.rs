@@ -1347,6 +1347,92 @@ fn maintenance_refuses_server_targets_before_network() {
     server.assert_complete();
 }
 
+/// A direct maintenance command asked for `--json` reports its refusal as the
+/// coded error document `snapshot --json` writes, on stdout with exit 1 and
+/// with no plain-text report on stderr, whatever refused it: the engine, the
+/// open of a missing graph, or the command's own flag check. It makes no
+/// `disposition` claim, which only a classified command does. Human output
+/// keeps the plain-text report.
+#[test]
+fn maintenance_json_refusal_is_a_coded_document() {
+    let temp = tempdir().unwrap();
+    let graph = graph_path(temp.path());
+    init_graph(&graph);
+    let missing = temp.path().join("missing.omni");
+    for (target, command, code, message) in [
+        (
+            &graph,
+            &["index", "build", "--branch", "nope"][..],
+            "not_found",
+            "branch 'nope' not found",
+        ),
+        (
+            &graph,
+            &[
+                "index",
+                "rebuild",
+                "--kind",
+                "full-text",
+                "--branch",
+                "nope",
+            ],
+            "not_found",
+            "branch 'nope' not found",
+        ),
+        (
+            &graph,
+            &["rebuild-full-text-indexes", "--branch", "nope"],
+            "not_found",
+            "branch 'nope' not found",
+        ),
+        (
+            &graph,
+            &["optimize", "--datasets", "nope"],
+            "bad_request",
+            "names no node or edge type",
+        ),
+        (&missing, &["optimize"], "not_found", "no graph at"),
+        (
+            &missing,
+            &["cleanup", "--keep", "1", "--confirm"],
+            "not_found",
+            "no graph at",
+        ),
+        (
+            &graph,
+            &["cleanup", "--older-than", "bogus", "--confirm"],
+            "internal",
+            "invalid duration 'bogus'",
+        ),
+    ] {
+        let output = output_failure(
+            cli()
+                .args(command)
+                .arg("--target")
+                .arg(target)
+                .arg("--json"),
+        );
+        assert_eq!(output.status.code(), Some(1), "{command:?}: {output:?}");
+        let refusal = parse_stdout_json(&output);
+        assert_eq!(refusal["code"], code, "{command:?}: {refusal}");
+        assert!(
+            refusal["error"].as_str().unwrap().contains(message),
+            "{command:?}: {refusal}"
+        );
+        assert!(refusal.get("disposition").is_none(), "{refusal}");
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(!stderr.contains(message), "{command:?}: {stderr}");
+
+        let human = output_failure(cli().args(command).arg("--target").arg(target));
+        assert_eq!(human.status.code(), Some(1), "{command:?}: {human:?}");
+        assert!(human.stdout.is_empty(), "{command:?}: {human:?}");
+        assert!(
+            String::from_utf8_lossy(&human.stderr).contains(message),
+            "{command:?}: {human:?}"
+        );
+    }
+}
+
 /// `--timeout` bounds every wait, the submission included: a server that
 /// answers the submission only after the deadline does not hold the CLI,
 /// which names the operation and exits as in doubt.

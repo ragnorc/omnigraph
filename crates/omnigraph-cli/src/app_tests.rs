@@ -2261,3 +2261,204 @@ fn server_test_target(endpoint: &str) -> crate::targets::ResolvedTarget {
         },
     )
 }
+
+/// Every leaf of the command tree whose own or ancestor arguments offer a
+/// machine format: its parser, and the argument list that selects it with
+/// the flag that asks for JSON.
+fn machine_format_leaves() -> Vec<(clap::Command, Vec<String>)> {
+    fn machine_flag(command: &clap::Command) -> Option<Vec<String>> {
+        command
+            .get_arguments()
+            .find_map(|arg| match arg.get_id().as_str() {
+                "json" => Some(vec!["--json".to_owned()]),
+                "format"
+                    if arg
+                        .get_possible_values()
+                        .iter()
+                        .any(|value| value.get_name() == "json") =>
+                {
+                    Some(vec!["--format".to_owned(), "json".to_owned()])
+                }
+                _ => None,
+            })
+    }
+    fn walk(
+        command: &clap::Command,
+        args: &mut Vec<String>,
+        machine: bool,
+        out: &mut Vec<(clap::Command, Vec<String>)>,
+    ) {
+        let own = machine_flag(command).filter(|_| !machine);
+        let mark = args.len();
+        args.extend(own.iter().flatten().cloned());
+        let machine = machine || own.is_some();
+        if command.has_subcommands() {
+            for child in command.get_subcommands() {
+                args.push(child.get_name().to_owned());
+                walk(child, args, machine, out);
+                args.pop();
+            }
+        } else if machine {
+            out.push((command.clone(), args.clone()));
+        }
+        args.truncate(mark);
+    }
+    let mut out = Vec::new();
+    walk(
+        &crate::invocation::command(),
+        &mut Vec::new(),
+        false,
+        &mut out,
+    );
+    out
+}
+
+/// `args` with every argument the parser asks for added, each given its
+/// first possible value or `value`: clap names what is missing, including
+/// alternatives (`required_unless_present`), so no command needs a row here.
+fn complete_arguments(
+    leaf: &clap::Command,
+    mut args: Vec<String>,
+    value: &str,
+) -> Result<crate::invocation::ParsedInvocation, String> {
+    use clap::error::{ContextKind, ContextValue, ErrorKind};
+    for _ in 0..8 {
+        let error = match crate::invocation::parse_from(args.iter()) {
+            Ok(parsed) => return Ok(parsed),
+            Err(error) if error.kind() == ErrorKind::MissingRequiredArgument => error,
+            Err(error) => return Err(format!("{}: {error}", args.join(" "))),
+        };
+        let Some(ContextValue::Strings(missing)) = error.get(ContextKind::InvalidArg) else {
+            return Err(format!("{}: {error}", args.join(" ")));
+        };
+        let Some(arg) = leaf.get_arguments().find(|arg| {
+            let spelled = match arg.get_long() {
+                Some(long) => format!("--{long}"),
+                None => format!(
+                    "<{}>",
+                    arg.get_value_names()
+                        .and_then(|names| names.first())
+                        .map_or_else(|| arg.get_id().as_str().to_uppercase(), ToString::to_string)
+                ),
+            };
+            missing[0].split_whitespace().next() == Some(spelled.as_str())
+        }) else {
+            return Err(format!(
+                "{}: no argument matches {missing:?}",
+                args.join(" ")
+            ));
+        };
+        let value = arg
+            .get_possible_values()
+            .first()
+            .map_or_else(|| value.to_owned(), |value| value.get_name().to_owned());
+        match (arg.get_long(), arg.get_action().takes_values()) {
+            (Some(long), false) => args.push(format!("--{long}")),
+            (Some(long), true) => args.extend([format!("--{long}"), value]),
+            (None, _) => args.push(value),
+        }
+    }
+    Err(format!("{}: still incomplete", args.join(" ")))
+}
+
+/// The JSON documents a stream holds: the whole stream, else each one that
+/// starts a line, after the plain diagnostic lines before it.
+fn json_documents(bytes: &[u8]) -> Option<Vec<Value>> {
+    let text = std::str::from_utf8(bytes).ok()?;
+    let start = if text.starts_with('{') {
+        0
+    } else {
+        text.find("\n{")? + 1
+    };
+    serde_json::Deserializer::from_str(&text[start..])
+        .into_iter::<Value>()
+        .collect::<Result<_, _>>()
+        .ok()
+}
+
+/// Every command that offers a machine format reports each failure in it:
+/// stdout holds one JSON document, never the plain-text report `main` writes
+/// for an error the application returns, and every error document carries a
+/// `code`. A command whose report already reached stdout puts the error
+/// document on stderr. The command tree is walked, so a new command is held
+/// to this without a row here; each leaf runs with no target, a missing
+/// target and a graph, and must fail in at least one.
+#[tokio::test]
+async fn every_machine_format_command_reports_failure_as_a_coded_document() {
+    let temp = tempfile::tempdir().unwrap();
+    let home = temp.path().join("home");
+    std::fs::create_dir_all(&home).unwrap();
+    let graph = temp.path().join("graph.omni");
+    omnigraph::db::Omnigraph::init(graph.to_str().unwrap(), "node Doc { k: String @key }")
+        .await
+        .unwrap();
+    let missing = temp.path().join("missing.omni");
+    let value = temp.path().join("placeholder");
+    let mut violations = Vec::new();
+    let leaves = machine_format_leaves();
+    assert!(leaves.len() > 60, "the walk found {} leaves", leaves.len());
+    for (leaf, path) in leaves {
+        let mut failed = false;
+        for target in [None, Some(&missing), Some(&graph)] {
+            let mut args = vec!["omnigraph".to_owned()];
+            if let Some(target) = target {
+                args.extend(["--target".to_owned(), target.to_str().unwrap().to_owned()]);
+            }
+            args.extend(path.iter().cloned());
+            let parsed = match complete_arguments(&leaf, args.clone(), value.to_str().unwrap()) {
+                Ok(parsed) => parsed,
+                Err(refused) => {
+                    violations.push(format!("does not parse: {refused}"));
+                    continue;
+                }
+            };
+            let mut stdout = Vec::new();
+            let mut stderr = Vec::new();
+            let result = super::execute(
+                parsed,
+                crate::operator::InvocationConfig::at(Some(home.clone()), None),
+                &mut io::empty(),
+                false,
+                &mut stdout,
+                false,
+                &mut stderr,
+            )
+            .await;
+            let invocation = args.join(" ");
+            let completion = match result {
+                Ok(completion) => completion,
+                Err(error) => {
+                    violations.push(format!("{invocation}: plain-text error: {error}"));
+                    continue;
+                }
+            };
+            if completion.code() == 0 {
+                continue;
+            }
+            failed = true;
+            let reported = json_documents(&stdout)
+                .filter(|documents| documents.len() == 1)
+                .map(|mut documents| {
+                    documents.extend(json_documents(&stderr).unwrap_or_default());
+                    documents
+                });
+            let coded = reported.as_ref().is_some_and(|documents| {
+                documents
+                    .iter()
+                    .all(|document| document.get("error").is_none() || document["code"].is_string())
+            });
+            if !coded {
+                violations.push(format!(
+                    "{invocation}: exit {} with stdout {:?} and stderr {:?}",
+                    completion.code(),
+                    String::from_utf8_lossy(&stdout),
+                    String::from_utf8_lossy(&stderr),
+                ));
+            }
+        }
+        if !failed {
+            violations.push(format!("{}: no failure exercised", path.join(" ")));
+        }
+    }
+    assert!(violations.is_empty(), "{}", violations.join("\n"));
+}

@@ -40,7 +40,7 @@ pub(crate) fn single_selector(flag: &'static str) -> clap::builder::ValueParser 
     })
 }
 
-fn command() -> clap::Command {
+pub(crate) fn command() -> clap::Command {
     Cli::command().arg(
         Arg::new("version")
             .short('v')
