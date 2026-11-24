@@ -1,0 +1,10 @@
+$ git show d29e55bc:changelog.d/branch-name-refusal-names-the-branch.fixed.md   # before
+- `branch create` refuses a name with a space, a character such as `^` or `~`, or a trailing `/` by the name as written, not by an internal ref; the branching guide states the rule.
+
+$ git show a55c359d:changelog.d/branch-name-refusal-names-the-branch.fixed.md   # after
+- `branch create` refuses a name with a space, a character such as `^` or `~`, a `..`, or a final `.` or `/` by the name as written, not by an internal ref; the branching guide states the rule.
+
+$ python3 scripts/check-release-note.py --title=... --range <merge-base>...a55c359d
+ok: the pull request carries the release notes its title needs
+$ python3 scripts/check-docs.py
+Documentation OK (591 Markdown files checked).
