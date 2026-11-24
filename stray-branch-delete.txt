@@ -1,0 +1,69 @@
+# Stray branch from a name ending in '/': made by v0.16.0, handled by PR head a55c359d
+
+$ omnigraph version   # release CLI
+omnigraph 0.16.0
+internal-schema 17 (serves v14 to v17)
+http-contract 0.14
+commit 00b8cca842f2bf009bebeefcf765672b5ff64b26
+
+$ omnigraph init --schema schema.pg ./g.omni
+initialized g.omni
+
+$ omnigraph branch create 'a/' --target ./g.omni --json   # v0.16.0 accepts it
+{
+  "uri": "g.omni",
+  "from": "main",
+  "name": "a/",
+  "actor_id": null,
+  "from_commit_id": "01M85Z0Y5ECTFH38X2V2K8SW4A"
+}
+
+$ omnigraph branch list --target ./g.omni --json
+{
+  "branches": [
+    "a/.01M85Z0Y6WXCC65WY7FSY3SJFQ",
+    "main"
+  ]
+}
+
+$ omnigraph-head version   # built from a55c359d
+omnigraph 0.16.1
+internal-schema 18 (serves v14 to v18)
+http-contract 0.14
+
+$ omnigraph-head branch delete 'a/' --target ./g.omni --json
+{
+  "error": "branch 'a/' not found",
+  "code": "not_found",
+  "disposition": {
+    "effects": "none",
+    "action": "fix"
+  }
+}
+(exit 1)
+
+$ omnigraph-head branch delete 'a/.01M85Z0Y6WXCC65WY7FSY3SJFQ' --target ./g.omni --json   # by its listed name
+{
+  "uri": "g.omni",
+  "name": "a/.01M85Z0Y6WXCC65WY7FSY3SJFQ",
+  "actor_id": null
+}
+(exit 0)
+
+$ omnigraph-head branch list --target ./g.omni --json
+{
+  "branches": [
+    "main"
+  ]
+}
+
+$ omnigraph-head branch create 'a/' --target ./g.omni --json   # refused at head
+{
+  "error": "branch name 'a/' has an empty segment; '/' must separate non-empty segments",
+  "code": "bad_request",
+  "disposition": {
+    "effects": "none",
+    "action": "fix"
+  }
+}
+(exit 1)

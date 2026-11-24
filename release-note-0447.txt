@@ -1,0 +1,10 @@
+# Release notes at a55c359d (before) and c85e9f8e (after)
+
+## Before: changelog.d/branch-name-refusal-names-the-branch.fixed.md
+- `branch create` refuses a name with a space, a character such as `^` or `~`, a `..`, or a final `.` or `/` by the name as written, not by an internal ref; the branching guide states the rule.
+
+## After: changelog.d/branch-name-refusal-names-the-branch.fixed.md
+- `branch create` refuses a name with a space, a character such as `^` or `~`, a `..`, or a final `.` by the name as written, not by an internal ref; the branching guide states the rule.
+
+## After (new): changelog.d/branch-name-final-slash-refused.fixed.md
+- `branch create` refuses a name that ends in `/`. It used to create a branch that `branch list` shows as `a/.<ULID>` and that `a/` does not name; delete such a branch by its listed name.
