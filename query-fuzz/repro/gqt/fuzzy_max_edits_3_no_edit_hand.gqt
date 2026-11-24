@@ -1,0 +1,30 @@
+# issue: none
+# notes: query-fuzz repro `fuzzy-max-edits-3-no-edit-hand` (query-fuzz/README.md); the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc { title: String @index }
+
+--- seed
+{"type":"Doc","id":"d1","data":{"title":"running dogs"}}
+
+--- query
+query f() {
+  match {
+    $d: Doc
+    fuzzy($d.title, "rnu", 3)
+  }
+  return { $d.title }
+}
+
+--- expect unordered
+{"d.title":"running dogs"}
+
+
+--- expect shape
+d.title: String

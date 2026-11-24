@@ -1,0 +1,7 @@
+node Doc {
+  slug: [Bool]
+}
+node Person {
+  body: enum(low, mid, high) @index
+  born: [I64]
+}

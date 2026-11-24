@@ -1,0 +1,7 @@
+query search() {
+  match {
+    $o1: Org
+    search($o1.vec, "cafe")
+  }
+  return { $o1.@id }
+}

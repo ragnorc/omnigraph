@@ -1,0 +1,36 @@
+# issue: none
+# notes: query-fuzz repro `later-outer-name-in-block` (query-fuzz/README.md); the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person { name: String @key }
+node Company { name: String @key }
+edge Knows: Person -> Person
+
+--- seed
+{"type":"Person","data":{"name":"p"}}
+{"type":"Person","data":{"name":"q"}}
+{"type":"Company","data":{"name":"idle"}}
+{"edge":"Knows","from":"p","to":"q"}
+
+--- query
+query s() {
+  match {
+    $p: Person { name: "p" }
+    exists { $p knows $x }
+    $x: Company { name: "idle" }
+  }
+  return { $p.name, $x.name }
+}
+
+--- expect unordered
+{"p.name": "p", "x.name": "idle"}
+
+--- expect shape
+p.name: String
+x.name: String

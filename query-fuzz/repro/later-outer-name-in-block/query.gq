@@ -1,0 +1,8 @@
+query s() {
+  match {
+    $p: Person { name: "p" }
+    exists { $p knows $x }
+    $x: Company { name: "idle" }
+  }
+  return { $p.name, $x.name }
+}

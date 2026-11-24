@@ -1,0 +1,9 @@
+query q21($arg1: String, $arg2: Vector(2)) {
+  match {
+    $p2: Person
+    $p1 (wrote | cites) $p2
+  }
+  return { $p2.rank }
+  order { rrf(nearest($p1.rank, $arg2), bm25($p1.text, "hello world"), 1) desc }
+  limit 10
+}

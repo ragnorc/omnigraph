@@ -1,0 +1,7 @@
+query f() {
+  match {
+    $d: Doc
+    fuzzy($d.title, "rnu", 3)
+  }
+  return { $d.title }
+}

@@ -1,0 +1,4 @@
+query from($arg1: Blob, $arg2: [I64]) {
+  update Doc set { slug: [true, true] } where slug contains false
+  insert Person { body: "low", born: $arg2 }
+}

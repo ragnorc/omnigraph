@@ -1,0 +1,15 @@
+{
+ "schema": "node Item {\n  vec: String @key\n}\nnode Org {\n  title: [F64]?\n}\nnode Place {\n  vec: I64 @key\n}\nedge Knows: Place -> Org\nedge Owns: Item -> Org\n",
+ "data": "",
+ "query": "query q16($arg1: String) {\n  match {\n    $i1 owns $o2\n    $p3: Place\n    $o2 knows $p3\n    fuzzy($i1.vec, $arg1, 3)\n  }\n  return { $o2.title }\n}\n",
+ "params": {
+  "arg1": "xyz"
+ },
+ "kind": "read",
+ "index_build": false,
+ "predicate": "unfixed-T71",
+ "origin": {
+  "seed": 1005,
+  "qi": 15
+ }
+}

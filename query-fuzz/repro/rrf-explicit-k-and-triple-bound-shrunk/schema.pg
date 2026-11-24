@@ -1,0 +1,8 @@
+node Person {
+  rank: Vector(2)
+  text: String? @index
+}
+edge Wrote: Person -> Person {
+}
+edge Cites: Person -> Person {
+}

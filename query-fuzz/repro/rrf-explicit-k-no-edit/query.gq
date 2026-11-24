@@ -1,0 +1,6 @@
+query r($q: Vector(2)) {
+  match { $d: Doc }
+  return { $d.slug }
+  order { rrf(nearest($d.emb, $q), bm25($d.body, "x"), 60) }
+  limit 2
+}

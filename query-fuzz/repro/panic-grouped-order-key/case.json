@@ -1,0 +1,16 @@
+{
+ "schema": "node Org {\n  name: [I64]\n}\n",
+ "data": "",
+ "query": "query q20() {\n  match {\n    $o1: Org\n  }\n  return { $o3, $o1.name, count($o3) as a0 }\n  order { $o1.name desc }\n}\n",
+ "params": {
+  "arg1": -1,
+  "arg2": 9007199254740993
+ },
+ "kind": "read",
+ "index_build": false,
+ "predicate": "lint-panic",
+ "origin": {
+  "seed": 2180,
+  "qi": 19
+ }
+}

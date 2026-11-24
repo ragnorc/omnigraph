@@ -1,0 +1,74 @@
+{
+ "e2": {
+  "secs": 0.1,
+  "status": "ok",
+  "affected": [
+   1,
+   0
+  ],
+  "committed": true,
+  "export": [
+   "{\"type\":\"Person\",\"id\":\"01M85X70PASE6NR54D811D7KHT\",\"data\":{\"body\":\"low\",\"born\":[-9007199254740993,-2147483648]}}"
+  ]
+ },
+ "new": {
+  "secs": 0.046,
+  "status": "error",
+  "error": "parse error: `update Doc … where …` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows",
+  "code": "Q008",
+  "error_kind": null,
+  "position": {
+   "line": 2,
+   "column": 3,
+   "byte": 42
+  },
+  "end": {
+   "line": 2,
+   "column": 66,
+   "byte": 105
+  },
+  "fix": "match { $x: Doc } where $x.slug contains false  update $x set { slug: [true, true] }",
+  "suggestion": {
+   "applicability": "machine_applicable",
+   "edits": [
+    {
+     "start": 42,
+     "end": 105,
+     "replacement": "match { $x: Doc } where $x.slug contains false  update $x set { slug: [true, true] }"
+    }
+   ]
+  },
+  "further": [],
+  "export": []
+ },
+ "fix": {
+  "rc": 0,
+  "status": "fixed",
+  "applied": {
+   "Q008": 1,
+   "T7": 1
+  },
+  "applied_for_review": null,
+  "passes": 2,
+  "stopped_at_pass": null,
+  "unfixed": null,
+  "results": [
+   {
+    "name": "from",
+    "status": "ok"
+   }
+  ],
+  "findings": [],
+  "text": "query from($arg1: Blob, $arg2: [I64]) {\n  match { $x: Doc } where false in $x.slug  update $x set { slug: [true, true] }\n  insert Person { body: \"low\", born: $arg2 }\n}\n"
+ },
+ "fixed": {
+  "secs": 0.083,
+  "status": "ok",
+  "affected": [
+   0,
+   0
+  ],
+  "committed": false,
+  "export": []
+ }
+}

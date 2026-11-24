@@ -1,0 +1,26 @@
+# issue: none
+# notes: query-fuzz repro `read-named-after-function-no-edit` (query-fuzz/README.md); the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc { title: String @index }
+
+--- seed
+{"type":"Doc","id":"d1","data":{"title":"dog"}}
+
+--- query
+query count() {
+  match { $d: Doc }
+  return { $d.title }
+}
+
+--- expect unordered
+{"d.title": "dog"}
+
+--- expect shape
+d.title: String

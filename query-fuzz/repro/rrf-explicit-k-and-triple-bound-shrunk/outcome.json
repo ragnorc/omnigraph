@@ -1,0 +1,94 @@
+{
+ "e2": {
+  "secs": 0.073,
+  "status": "ok",
+  "columns": [
+   "p2.rank"
+  ],
+  "rows": [],
+  "types": [
+   "p2.rank: Vector(2)"
+  ]
+ },
+ "new": {
+  "secs": 0.042,
+  "status": "error",
+  "error": "parse error: elements are separated by commas; a space or a newline is not a separator",
+  "code": "Q016",
+  "error_kind": null,
+  "position": {
+   "line": 3,
+   "column": 16,
+   "byte": 70
+  },
+  "end": {
+   "line": 5,
+   "column": 4,
+   "byte": 102
+  },
+  "fix": "match { $p2: Person, $p1 (wrote | cites) $p2 }",
+  "suggestion": {
+   "applicability": "machine_applicable",
+   "edits": [
+    {
+     "start": 47,
+     "end": 102,
+     "replacement": "match { $p2: Person, $p1 (wrote | cites) $p2 }"
+    }
+   ]
+  },
+  "further": []
+ },
+ "fix": {
+  "rc": 1,
+  "status": "unfixed",
+  "applied": {
+   "Q016": 1
+  },
+  "applied_for_review": null,
+  "passes": 1,
+  "stopped_at_pass": 1,
+  "unfixed": [
+   {
+    "code": "T65",
+    "message": "`rrf` is a relation function; a ranking is drawn with `from`, and its score is a column",
+    "suggestion": null
+   }
+  ],
+  "results": [],
+  "findings": [
+   {
+    "code": "Q016",
+    "severity": "error",
+    "message": "line 3, column 16: elements are separated by commas; a space or a newline is not a separator"
+   }
+  ],
+  "text": "query q21($arg1: String, $arg2: Vector(2)) {\n  match {\n    $p2: Person\n    $p1 (wrote | cites) $p2\n  }\n  return { $p2.rank }\n  order { rrf(nearest($p1.rank, $arg2), bm25($p1.text, \"hello world\"), 1) desc }\n  limit 10\n}\n"
+ },
+ "fix_review": {
+  "rc": 1,
+  "status": "unfixed",
+  "applied": {
+   "Q016": 1
+  },
+  "applied_for_review": null,
+  "passes": 1,
+  "stopped_at_pass": 1,
+  "unfixed": [
+   {
+    "code": "T65",
+    "message": "`rrf` is a relation function; a ranking is drawn with `from`, and its score is a column",
+    "suggestion": null
+   }
+  ],
+  "results": [],
+  "findings": [
+   {
+    "code": "Q016",
+    "severity": "error",
+    "message": "line 3, column 16: elements are separated by commas; a space or a newline is not a separator"
+   }
+  ],
+  "text": "query q21($arg1: String, $arg2: Vector(2)) {\n  match {\n    $p2: Person\n    $p1 (wrote | cites) $p2\n  }\n  return { $p2.rank }\n  order { rrf(nearest($p1.rank, $arg2), bm25($p1.text, \"hello world\"), 1) desc }\n  limit 10\n}\n"
+ }
+}

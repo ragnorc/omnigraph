@@ -1,0 +1,25 @@
+# issue: none
+# notes: query-fuzz repro `empty-list-assignment-accepted` (query-fuzz/README.md); the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  weight: enum(red, green, blue, x-1)
+  age: String
+  title: String @index
+  vec: [I64]
+}
+
+--- seed
+
+--- mutate
+query q19() {
+  insert Item { weight: "red", age: "data base", title: "café", vec: [] }
+}
+
+--- expect error: T3

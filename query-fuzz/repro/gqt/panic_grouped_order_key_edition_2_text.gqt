@@ -1,0 +1,54 @@
+# issue: none
+# notes: query-fuzz repro `panic-grouped-order-key-edition-2-text` (query-fuzz/README.md); the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  level: Blob?
+}
+node Org {
+  name: [I64]
+  @index(name)
+}
+edge Near: Place -> Org {
+  weight: String?
+  role: Bool?
+}
+
+--- seed
+{"type":"Place","id":"p0","data":{}}
+{"type":"Place","id":"p1","data":{"level":"base64:AAEC"}}
+{"type":"Place","id":"p2","data":{"level":"base64:AAEC"}}
+{"type":"Org","id":"o0","data":{"name":[-1]}}
+{"type":"Org","id":"o1","data":{"name":[100,42,9007199254740993]}}
+{"type":"Org","id":"o2","data":{"name":[3,-1,9007199254740993]}}
+{"type":"Org","id":"o3","data":{"name":[100,-5,1]}}
+{"type":"Org","id":"o4","data":{"name":[2147483647]}}
+{"type":"Org","id":"o5","data":{"name":[]}}
+
+--- query
+query q20($arg1: I64, $arg2: I64) {
+  match {
+    $o1: Org
+    $o1 near $p2
+    $p2 near $o3
+    $p4 near $o3
+    $o5: Org
+    $arg1 in $o5.name or $o5.name contains $arg2
+  }
+  return { $o3, $o1.name, count($o3) as a0 }
+  order { $o1.name desc }
+}
+
+--- params
+{"arg1": -1, "arg2": 9007199254740993}
+
+--- expect ordered
+
+
+--- expect shape

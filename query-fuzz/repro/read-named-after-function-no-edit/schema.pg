@@ -1,0 +1,1 @@
+node Doc { title: String @index }

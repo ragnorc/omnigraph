@@ -1,0 +1,6 @@
+node Item {
+  weight: enum(red, green, blue, x-1)
+  age: String
+  title: String @index
+  vec: [I64]
+}

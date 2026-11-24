@@ -1,0 +1,33 @@
+# issue: none
+# notes: query-fuzz repro `read-named-search-shrunk` (query-fuzz/README.md); the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  vec: String @index
+}
+
+--- seed
+
+--- query
+query search() {
+  match {
+    $o1: Org
+    search($o1.vec, "cafe")
+  }
+  return { $o1.@id }
+}
+
+--- params
+{"arg1": "Dogs"}
+
+--- expect unordered
+
+
+--- expect shape
+o1.@id: String

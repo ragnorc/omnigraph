@@ -1,0 +1,3 @@
+node Doc { slug: String @key  body: String @index  emb: Vector(2) }
+node Topic { name: String @key }
+edge About: Doc -> Topic

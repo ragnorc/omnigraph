@@ -1,0 +1,40 @@
+# issue: none
+# notes: query-fuzz repro `rrf-explicit-k-and-triple-bound-shrunk` (query-fuzz/README.md); the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  rank: Vector(2)
+  text: String? @index
+}
+edge Wrote: Person -> Person {
+}
+edge Cites: Person -> Person {
+}
+
+--- seed
+
+--- query
+query q21($arg1: String, $arg2: Vector(2)) {
+  match {
+    $p2: Person
+    $p1 (wrote | cites) $p2
+  }
+  return { $p2.rank }
+  order { rrf(nearest($p1.rank, $arg2), bm25($p1.text, "hello world"), 1) desc }
+  limit 10
+}
+
+--- params
+{"arg1": "dgo", "arg2": [0.2, -1.0]}
+
+--- expect ordered
+
+
+--- expect shape
+p2.rank: Vector(2)

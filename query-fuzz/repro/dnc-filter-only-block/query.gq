@@ -1,0 +1,7 @@
+query q19() {
+  match {
+    $t1: Tag
+    count { $t1.count > 2 } != 0
+  }
+  return { max($t1.count) as a0 }
+}

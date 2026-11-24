@@ -1,0 +1,30 @@
+# issue: none
+# notes: query-fuzz repro `count-block-filter-only-hand` (query-fuzz/README.md); the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag { count: I32? }
+
+--- seed
+{"type":"Tag","id":"t1","data":{"count":3}}
+{"type":"Tag","id":"t2","data":{"count":1}}
+
+--- query
+query q() {
+  match {
+    $t: Tag
+    count { $t.count > 2 } != 0
+  }
+  return { $t.@id }
+}
+
+--- expect unordered
+{"t.@id": "t1"}
+
+--- expect shape
+t.@id: String

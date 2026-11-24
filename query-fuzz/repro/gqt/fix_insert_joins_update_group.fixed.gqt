@@ -1,0 +1,31 @@
+# issue: none
+# notes: query-fuzz repro `fix-insert-joins-update-group` (query-fuzz/README.md); the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  slug: [Bool]
+}
+node Person {
+  body: enum(low, mid, high) @index
+  born: [I64]
+}
+
+--- seed
+
+--- mutate
+query from($arg1: Blob, $arg2: [I64]) {
+  match { $x: Doc } where false in $x.slug  update $x set { slug: [true, true] }
+  insert Person { body: "low", born: $arg2 }
+}
+
+--- params
+{"arg1": "base64:", "arg2": [-9007199254740993, -2147483648]}
+
+--- expect affected: nodes=1 edges=0

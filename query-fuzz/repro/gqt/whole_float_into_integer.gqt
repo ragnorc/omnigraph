@@ -1,0 +1,20 @@
+# issue: none
+# notes: query-fuzz repro `whole-float-into-integer` (query-fuzz/README.md); the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node T { k: String @key  n: I32? }
+
+--- seed
+
+--- mutate
+query m() {
+  insert T { k: "a", n: 100.0 }
+}
+
+--- expect error: cannot convert Float(100.0) to Int32

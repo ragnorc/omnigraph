@@ -1,0 +1,11 @@
+node Item {
+  vec: String @key
+}
+node Org {
+  title: [F64]?
+}
+node Place {
+  vec: I64 @key
+}
+edge Knows: Place -> Org
+edge Owns: Item -> Org

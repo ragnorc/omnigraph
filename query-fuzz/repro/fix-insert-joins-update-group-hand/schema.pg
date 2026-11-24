@@ -1,0 +1,2 @@
+node Doc { name: String @key  n: I32? }
+node Note { text: String? }

@@ -1,0 +1,9 @@
+query q16($arg1: String) {
+  match {
+    $i1 owns $o2
+    $p3: Place
+    $o2 knows $p3
+    fuzzy($i1.vec, $arg1, 3)
+  }
+  return { $o2.title }
+}

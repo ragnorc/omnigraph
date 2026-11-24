@@ -1,0 +1,4 @@
+query m() {
+  update Doc set { n: 5 } where n = 1
+  insert Note { text: "once" }
+}

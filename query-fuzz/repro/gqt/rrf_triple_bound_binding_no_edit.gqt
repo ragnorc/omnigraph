@@ -1,0 +1,35 @@
+# issue: none
+# notes: query-fuzz repro `rrf-triple-bound-binding-no-edit` (query-fuzz/README.md); the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc { slug: String @key  body: String @index  emb: Vector(2) }
+node Topic { name: String @key }
+edge About: Doc -> Topic
+
+--- seed
+
+--- query
+query r($q: Vector(2)) {
+  match {
+    $t: Topic
+    $d about $t
+  }
+  return { $d.slug }
+  order { rrf(nearest($d.emb, $q), bm25($d.body, "x")) }
+  limit 2
+}
+
+--- params
+{"q": [1.0, 0.0]}
+
+--- expect ordered
+
+
+--- expect shape
+d.slug: String

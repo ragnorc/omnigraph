@@ -1,0 +1,43 @@
+# issue: none
+# notes: query-fuzz repro `fuzzy-max-edits-3-shrunk` (query-fuzz/README.md); the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  vec: String @key
+}
+node Org {
+  title: [F64]?
+}
+node Place {
+  vec: I64 @key
+}
+edge Knows: Place -> Org
+edge Owns: Item -> Org
+
+--- seed
+
+--- query
+query q16($arg1: String) {
+  match {
+    $i1 owns $o2
+    $p3: Place
+    $o2 knows $p3
+    fuzzy($i1.vec, $arg1, 3)
+  }
+  return { $o2.title }
+}
+
+--- params
+{"arg1": "xyz"}
+
+--- expect unordered
+
+
+--- expect shape
+o2.title: [F64]

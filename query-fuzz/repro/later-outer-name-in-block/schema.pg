@@ -1,0 +1,3 @@
+node Person { name: String @key }
+node Company { name: String @key }
+edge Knows: Person -> Person

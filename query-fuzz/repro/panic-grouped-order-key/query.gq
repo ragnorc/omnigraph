@@ -1,0 +1,7 @@
+query q20() {
+  match {
+    $o1: Org
+  }
+  return { $o3, $o1.name, count($o3) as a0 }
+  order { $o1.name desc }
+}

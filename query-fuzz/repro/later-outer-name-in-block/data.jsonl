@@ -1,0 +1,4 @@
+{"type":"Person","data":{"name":"p"}}
+{"type":"Person","data":{"name":"q"}}
+{"type":"Company","data":{"name":"idle"}}
+{"edge":"Knows","from":"p","to":"q"}

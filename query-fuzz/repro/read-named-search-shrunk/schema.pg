@@ -1,0 +1,3 @@
+node Org {
+  vec: String @index
+}

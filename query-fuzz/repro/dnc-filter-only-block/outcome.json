@@ -1,0 +1,116 @@
+{
+ "e2": {
+  "secs": 0.074,
+  "status": "ok",
+  "columns": [
+   "a0"
+  ],
+  "rows": [
+   {}
+  ],
+  "types": [
+   "a0: I32?"
+  ]
+ },
+ "new": {
+  "secs": 0.046,
+  "status": "error",
+  "error": "parse error: a filter is not an element of `match { … }`: a predicate belongs in the `where` after the braces",
+  "code": "Q017",
+  "error_kind": null,
+  "position": {
+   "line": 4,
+   "column": 13,
+   "byte": 49
+  },
+  "end": {
+   "line": 4,
+   "column": 26,
+   "byte": 62
+  },
+  "fix": " where $t1.count > 2",
+  "suggestion": {
+   "applicability": "machine_applicable",
+   "edits": [
+    {
+     "start": 49,
+     "end": 62,
+     "replacement": " where $t1.count > 2"
+    }
+   ]
+  },
+  "further": []
+ },
+ "fix": {
+  "rc": 1,
+  "status": "does_not_converge",
+  "applied": {
+   "Q014": 8,
+   "Q017": 8
+  },
+  "applied_for_review": null,
+  "passes": 16,
+  "stopped_at_pass": 16,
+  "unfixed": [
+   {
+    "code": "Q017",
+    "message": "a filter is not an element of `match { … }`: a predicate belongs in the `where` after the braces",
+    "suggestion": {
+     "applicability": "machine_applicable",
+     "edits": [
+      {
+       "start": 57,
+       "end": 70,
+       "replacement": " where $t1.count > 2"
+      }
+     ]
+    }
+   }
+  ],
+  "results": [],
+  "findings": [
+   {
+    "code": "Q017",
+    "severity": "error",
+    "message": "line 4, column 13: a filter is not an element of `match { … }`: a predicate belongs in the `where` after the braces"
+   }
+  ],
+  "text": "query q19() {\n  match {\n    $t1: Tag\n    count { $t1.count > 2 } != 0\n  }\n  return { max($t1.count) as a0 }\n}\n"
+ },
+ "fix_review": {
+  "rc": 1,
+  "status": "does_not_converge",
+  "applied": {
+   "Q014": 8,
+   "Q017": 8
+  },
+  "applied_for_review": null,
+  "passes": 16,
+  "stopped_at_pass": 16,
+  "unfixed": [
+   {
+    "code": "Q017",
+    "message": "a filter is not an element of `match { … }`: a predicate belongs in the `where` after the braces",
+    "suggestion": {
+     "applicability": "machine_applicable",
+     "edits": [
+      {
+       "start": 57,
+       "end": 70,
+       "replacement": " where $t1.count > 2"
+      }
+     ]
+    }
+   }
+  ],
+  "results": [],
+  "findings": [
+   {
+    "code": "Q017",
+    "severity": "error",
+    "message": "line 4, column 13: a filter is not an element of `match { … }`: a predicate belongs in the `where` after the braces"
+   }
+  ],
+  "text": "query q19() {\n  match {\n    $t1: Tag\n    count { $t1.count > 2 } != 0\n  }\n  return { max($t1.count) as a0 }\n}\n"
+ }
+}

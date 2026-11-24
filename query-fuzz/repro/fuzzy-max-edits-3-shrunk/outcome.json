@@ -1,0 +1,98 @@
+{
+ "e2": {
+  "secs": 0.087,
+  "status": "ok",
+  "columns": [
+   "o2.title"
+  ],
+  "rows": [],
+  "types": [
+   "o2.title: [F64]?"
+  ]
+ },
+ "new": {
+  "secs": 0.048,
+  "status": "error",
+  "error": "parse error: elements are separated by commas; a space or a newline is not a separator",
+  "code": "Q016",
+  "error_kind": null,
+  "position": {
+   "line": 3,
+   "column": 17,
+   "byte": 53
+  },
+  "end": {
+   "line": 7,
+   "column": 4,
+   "byte": 119
+  },
+  "fix": "match { $i1 owns $o2, $p3: Place, $o2 knows $p3 } where fuzzy($i1.vec, $arg1, 3)",
+  "suggestion": {
+   "applicability": "machine_applicable",
+   "edits": [
+    {
+     "start": 29,
+     "end": 119,
+     "replacement": "match { $i1 owns $o2, $p3: Place, $o2 knows $p3 } where fuzzy($i1.vec, $arg1, 3)"
+    }
+   ]
+  },
+  "further": []
+ },
+ "fix": {
+  "rc": 1,
+  "status": "unfixed",
+  "applied": {
+   "Q016": 1,
+   "T6": 1,
+   "T82": 1
+  },
+  "applied_for_review": null,
+  "passes": 2,
+  "stopped_at_pass": 2,
+  "unfixed": [
+   {
+    "code": "T71",
+    "message": "`max_edits: 3` is outside 0..=2",
+    "suggestion": null
+   }
+  ],
+  "results": [],
+  "findings": [
+   {
+    "code": "Q016",
+    "severity": "error",
+    "message": "line 3, column 17: elements are separated by commas; a space or a newline is not a separator"
+   }
+  ],
+  "text": "query q16($arg1: String) {\n  match {\n    $i1 owns $o2\n    $p3: Place\n    $o2 knows $p3\n    fuzzy($i1.vec, $arg1, 3)\n  }\n  return { $o2.title }\n}\n"
+ },
+ "fix_review": {
+  "rc": 1,
+  "status": "unfixed",
+  "applied": {
+   "Q016": 1,
+   "T6": 1,
+   "T82": 1
+  },
+  "applied_for_review": null,
+  "passes": 2,
+  "stopped_at_pass": 2,
+  "unfixed": [
+   {
+    "code": "T71",
+    "message": "`max_edits: 3` is outside 0..=2",
+    "suggestion": null
+   }
+  ],
+  "results": [],
+  "findings": [
+   {
+    "code": "Q016",
+    "severity": "error",
+    "message": "line 3, column 17: elements are separated by commas; a space or a newline is not a separator"
+   }
+  ],
+  "text": "query q16($arg1: String) {\n  match {\n    $i1 owns $o2\n    $p3: Place\n    $o2 knows $p3\n    fuzzy($i1.vec, $arg1, 3)\n  }\n  return { $o2.title }\n}\n"
+ }
+}

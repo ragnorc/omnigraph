@@ -1,0 +1,51 @@
+{
+ "e2": {
+  "secs": 0.071,
+  "status": "error",
+  "error": "type error: T6: variable `$o3` is not bound",
+  "code": "T6",
+  "error_kind": "bad_request",
+  "position": null,
+  "end": null,
+  "fix": null,
+  "suggestion": null,
+  "further": []
+ },
+ "new": {
+  "secs": 0.076,
+  "panic": "target /tmp/qf-shrink-55ozc96r/graph-new (inline): direct graph /tmp/qf-shrink-55ozc96r/graph-new; requested=/tmp/qf-shrink-55ozc96r/graph-new; provider=Local\n\u001b[31mThe application panicked (crashed).\u001b[0m\nMessage:  \u001b[36mindex out of bounds: the len is 1 but the index is 1\u001b[0m\nLocation: \u001b[35mcrates/omnigraph-compiler/src/query/check/mod.rs\u001b[0m:\u001b[35m2772\u001b[0m\n",
+  "status": "error",
+  "error": "target /tmp/qf-shrink-55ozc96r/graph-new (inline): direct graph /tmp/qf-shrink-55ozc96r/graph-new; requested=/tmp/qf-shrink-55ozc96r/graph-new; provider=Local\n\u001b[31mThe application panicked (crashed).\u001b[0m\nMessage:  \u001b[36mindex out of bounds: the len is 1 but the index is 1\u001b[0m\nLocation: \u001b[35mcrates/omnigraph-compiler/src/query/check/mod.rs\u001b[0m:\u001b[35m2772\u001b[0m\n",
+  "code": null,
+  "uncoded": true,
+  "unstructured": true
+ },
+ "fix": {
+  "rc": 101,
+  "status": null,
+  "applied": null,
+  "applied_for_review": null,
+  "passes": null,
+  "stopped_at_pass": null,
+  "unfixed": null,
+  "results": [],
+  "findings": [],
+  "text": "query q20() {\n  match {\n    $o1: Org\n  }\n  return { $o3, $o1.name, count($o3) as a0 }\n  order { $o1.name desc }\n}\n",
+  "panic": "\u001b[31mThe application panicked (crashed).\u001b[0m\nMessage:  \u001b[36mindex out of bounds: the len is 1 but the index is 1\u001b[0m\nLocation: \u001b[35mcrates/omnigraph-compiler/src/query/check/mod.rs\u001b[0m:\u001b[35m2772\u001b[0m\n",
+  "raw": "\u001b[31mThe application panicked (crashed).\u001b[0m\nMessage:  \u001b[36mindex out of bounds: the len is 1 but the index is 1\u001b[0m\nLocation: \u001b[35mcrates/omnigraph-compiler/src/query/check/mod.rs\u001b[0m:\u001b[35m2772\u001b[0m\n"
+ },
+ "fix_review": {
+  "rc": 101,
+  "status": null,
+  "applied": null,
+  "applied_for_review": null,
+  "passes": null,
+  "stopped_at_pass": null,
+  "unfixed": null,
+  "results": [],
+  "findings": [],
+  "text": "query q20() {\n  match {\n    $o1: Org\n  }\n  return { $o3, $o1.name, count($o3) as a0 }\n  order { $o1.name desc }\n}\n",
+  "panic": "\u001b[31mThe application panicked (crashed).\u001b[0m\nMessage:  \u001b[36mindex out of bounds: the len is 1 but the index is 1\u001b[0m\nLocation: \u001b[35mcrates/omnigraph-compiler/src/query/check/mod.rs\u001b[0m:\u001b[35m2772\u001b[0m\n",
+  "raw": "\u001b[31mThe application panicked (crashed).\u001b[0m\nMessage:  \u001b[36mindex out of bounds: the len is 1 but the index is 1\u001b[0m\nLocation: \u001b[35mcrates/omnigraph-compiler/src/query/check/mod.rs\u001b[0m:\u001b[35m2772\u001b[0m\n"
+ }
+}

@@ -1,0 +1,29 @@
+# issue: none
+# notes: query-fuzz repro `panic-grouped-order-key` (query-fuzz/README.md); the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  name: [I64]
+}
+
+--- seed
+
+--- query
+query q20() {
+  match {
+    $o1: Org
+  }
+  return { $o3, $o1.name, count($o3) as a0 }
+  order { $o1.name desc }
+}
+
+--- params
+{"arg1": -1, "arg2": 9007199254740993}
+
+--- expect error: T6

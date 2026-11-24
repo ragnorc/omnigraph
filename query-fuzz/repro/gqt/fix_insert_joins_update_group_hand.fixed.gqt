@@ -1,0 +1,25 @@
+# issue: none
+# notes: query-fuzz repro `fix-insert-joins-update-group-hand` (query-fuzz/README.md); the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc { name: String @key  n: I32? }
+node Note { text: String? }
+
+--- seed
+{"type":"Doc","data":{"name":"a","n":1}}
+{"type":"Doc","data":{"name":"b","n":1}}
+
+--- mutate
+query m() {
+  match { $x: Doc } where $x.n = 1  update $x set { n: 5 }
+  insert Note { text: "once" }
+}
+
+--- expect affected: nodes=3 edges=0

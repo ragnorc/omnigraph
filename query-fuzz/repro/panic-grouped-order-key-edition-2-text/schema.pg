@@ -1,0 +1,11 @@
+node Place {
+  level: Blob?
+}
+node Org {
+  name: [I64]
+  @index(name)
+}
+edge Near: Place -> Org {
+  weight: String?
+  role: Bool?
+}

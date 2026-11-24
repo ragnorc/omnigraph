@@ -1,0 +1,9 @@
+{"type": "Place", "id": "p0", "data": {}}
+{"type": "Place", "id": "p1", "data": {"level": "base64:AAEC"}}
+{"type": "Place", "id": "p2", "data": {"level": "base64:AAEC"}}
+{"type": "Org", "id": "o0", "data": {"name": [-1]}}
+{"type": "Org", "id": "o1", "data": {"name": [100, 42, 9007199254740993]}}
+{"type": "Org", "id": "o2", "data": {"name": [3, -1, 9007199254740993]}}
+{"type": "Org", "id": "o3", "data": {"name": [100, -5, 1]}}
+{"type": "Org", "id": "o4", "data": {"name": [2147483647]}}
+{"type": "Org", "id": "o5", "data": {"name": []}}

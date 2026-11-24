@@ -1,0 +1,3 @@
+query q19() {
+  insert Item { weight: "red", age: "data base", title: "café", vec: [] }
+}

@@ -1,0 +1,15 @@
+{
+ "schema": "node Org {\n  vec: String @index\n}\n",
+ "data": "",
+ "query": "query search() {\n  match {\n    $o1: Org\n    search($o1.vec, \"cafe\")\n  }\n  return { $o1.@id }\n}\n",
+ "params": {
+  "arg1": "Dogs"
+ },
+ "kind": "read",
+ "index_build": false,
+ "predicate": "unfixed-T69",
+ "origin": {
+  "seed": 1031,
+  "qi": 23
+ }
+}

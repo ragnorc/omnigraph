@@ -1,0 +1,7 @@
+query search() {
+  match {
+    $d: Doc
+    search($d.title, "dog")
+  }
+  return { $d.title }
+}

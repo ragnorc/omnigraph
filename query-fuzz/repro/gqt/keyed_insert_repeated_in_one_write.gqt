@@ -1,0 +1,21 @@
+# issue: none
+# notes: query-fuzz repro `keyed-insert-repeated-in-one-write` (query-fuzz/README.md); the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node T { k: String @key  n: I32? }
+
+--- seed
+
+--- mutate
+query m() {
+  insert T { k: "a", n: 1 }
+  insert T { k: "a", n: 2 }
+}
+
+--- expect affected: nodes=2 edges=0

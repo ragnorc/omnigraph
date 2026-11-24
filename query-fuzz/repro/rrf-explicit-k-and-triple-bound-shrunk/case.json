@@ -1,0 +1,19 @@
+{
+ "schema": "node Person {\n  rank: Vector(2)\n  text: String? @index\n}\nedge Wrote: Person -> Person {\n}\nedge Cites: Person -> Person {\n}\n",
+ "data": "",
+ "query": "query q21($arg1: String, $arg2: Vector(2)) {\n  match {\n    $p2: Person\n    $p1 (wrote | cites) $p2\n  }\n  return { $p2.rank }\n  order { rrf(nearest($p1.rank, $arg2), bm25($p1.text, \"hello world\"), 1) desc }\n  limit 10\n}\n",
+ "params": {
+  "arg1": "dgo",
+  "arg2": [
+   0.2,
+   -1.0
+  ]
+ },
+ "kind": "read",
+ "index_build": false,
+ "predicate": "unfixed-T65",
+ "origin": {
+  "seed": 1020,
+  "qi": 20
+ }
+}

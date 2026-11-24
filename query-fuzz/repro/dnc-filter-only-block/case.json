@@ -1,0 +1,13 @@
+{
+ "schema": "node Tag {\n  count: I32?\n}\n",
+ "data": "",
+ "query": "query q19() {\n  match {\n    $t1: Tag\n    count { $t1.count > 2 } != 0\n  }\n  return { max($t1.count) as a0 }\n}\n",
+ "params": {},
+ "kind": "read",
+ "index_build": false,
+ "predicate": "dnc",
+ "origin": {
+  "seed": 1001,
+  "qi": 18
+ }
+}

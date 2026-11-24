@@ -1,0 +1,13 @@
+{
+ "schema": "node Item {\n  weight: enum(red, green, blue, x-1)\n  age: String\n  title: String @index\n  vec: [I64]\n}\n",
+ "data": "",
+ "query": "query q19() {\n  insert Item { weight: \"red\", age: \"data base\", title: \"café\", vec: [] }\n}\n",
+ "params": {},
+ "kind": "write",
+ "index_build": false,
+ "predicate": "e2-refused-new-accepts",
+ "origin": {
+  "seed": 1037,
+  "qi": 18
+ }
+}

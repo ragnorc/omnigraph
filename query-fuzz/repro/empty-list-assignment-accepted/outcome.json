@@ -1,0 +1,44 @@
+{
+ "e2": {
+  "secs": 0.075,
+  "status": "error",
+  "error": "type error: T3: property `vec` has type [I64] but got [String]",
+  "code": "T3",
+  "error_kind": "bad_request",
+  "position": null,
+  "end": null,
+  "fix": null,
+  "suggestion": null,
+  "further": [],
+  "export": []
+ },
+ "new": {
+  "secs": 0.104,
+  "status": "ok",
+  "affected": [
+   1,
+   0
+  ],
+  "committed": true,
+  "export": [
+   "{\"type\":\"Item\",\"id\":\"01M861D8XJKBCYDVK2GRH8FYJS\",\"data\":{\"age\":\"data base\",\"title\":\"café\",\"vec\":[],\"weight\":\"red\"}}"
+  ]
+ },
+ "fix": {
+  "rc": 0,
+  "status": "unchanged",
+  "applied": {},
+  "applied_for_review": null,
+  "passes": 0,
+  "stopped_at_pass": null,
+  "unfixed": null,
+  "results": [
+   {
+    "name": "q19",
+    "status": "ok"
+   }
+  ],
+  "findings": [],
+  "text": "query q19() {\n  insert Item { weight: \"red\", age: \"data base\", title: \"café\", vec: [] }\n}\n"
+ }
+}

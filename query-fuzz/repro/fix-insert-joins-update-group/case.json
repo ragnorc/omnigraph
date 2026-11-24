@@ -1,0 +1,19 @@
+{
+ "schema": "node Doc {\n  slug: [Bool]\n}\nnode Person {\n  body: enum(low, mid, high) @index\n  born: [I64]\n}\n",
+ "data": "",
+ "query": "query from($arg1: Blob, $arg2: [I64]) {\n  update Doc set { slug: [true, true] } where slug contains false\n  insert Person { body: \"low\", born: $arg2 }\n}\n",
+ "params": {
+  "arg1": "base64:",
+  "arg2": [
+   -9007199254740993,
+   -2147483648
+  ]
+ },
+ "kind": "write",
+ "index_build": false,
+ "predicate": "fixed-state",
+ "origin": {
+  "seed": 1010,
+  "qi": 2
+ }
+}

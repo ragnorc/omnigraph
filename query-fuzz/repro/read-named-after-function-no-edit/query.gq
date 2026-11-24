@@ -1,0 +1,4 @@
+query count() {
+  match { $d: Doc }
+  return { $d.title }
+}

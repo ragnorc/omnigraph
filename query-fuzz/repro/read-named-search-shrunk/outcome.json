@@ -1,0 +1,94 @@
+{
+ "e2": {
+  "secs": 0.066,
+  "status": "ok",
+  "columns": [
+   "o1.@id"
+  ],
+  "rows": [],
+  "types": [
+   "o1.@id: String"
+  ]
+ },
+ "new": {
+  "secs": 0.038,
+  "status": "error",
+  "error": "parse error: a filter is not an element of `match { … }`: a predicate belongs in the `where` after the braces",
+  "code": "Q017",
+  "error_kind": null,
+  "position": {
+   "line": 4,
+   "column": 5,
+   "byte": 44
+  },
+  "end": {
+   "line": 5,
+   "column": 4,
+   "byte": 71
+  },
+  "fix": "match { $o1: Org } where search($o1.vec, \"cafe\")",
+  "suggestion": {
+   "applicability": "machine_applicable",
+   "edits": [
+    {
+     "start": 19,
+     "end": 71,
+     "replacement": "match { $o1: Org } where search($o1.vec, \"cafe\")"
+    }
+   ]
+  },
+  "further": []
+ },
+ "fix": {
+  "rc": 1,
+  "status": "unfixed",
+  "applied": {
+   "Q017": 1
+  },
+  "applied_for_review": null,
+  "passes": 1,
+  "stopped_at_pass": 1,
+  "unfixed": [
+   {
+    "code": "T69",
+    "message": "`search(…)` is a relation; a scalar is read here",
+    "suggestion": null
+   }
+  ],
+  "results": [],
+  "findings": [
+   {
+    "code": "Q017",
+    "severity": "error",
+    "message": "line 4, column 5: a filter is not an element of `match { … }`: a predicate belongs in the `where` after the braces"
+   }
+  ],
+  "text": "query search() {\n  match {\n    $o1: Org\n    search($o1.vec, \"cafe\")\n  }\n  return { $o1.@id }\n}\n"
+ },
+ "fix_review": {
+  "rc": 1,
+  "status": "unfixed",
+  "applied": {
+   "Q017": 1
+  },
+  "applied_for_review": null,
+  "passes": 1,
+  "stopped_at_pass": 1,
+  "unfixed": [
+   {
+    "code": "T69",
+    "message": "`search(…)` is a relation; a scalar is read here",
+    "suggestion": null
+   }
+  ],
+  "results": [],
+  "findings": [
+   {
+    "code": "Q017",
+    "severity": "error",
+    "message": "line 4, column 5: a filter is not an element of `match { … }`: a predicate belongs in the `where` after the braces"
+   }
+  ],
+  "text": "query search() {\n  match {\n    $o1: Org\n    search($o1.vec, \"cafe\")\n  }\n  return { $o1.@id }\n}\n"
+ }
+}

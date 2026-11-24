@@ -1,0 +1,1 @@
+node Doc { slug: String @key  body: String @index  emb: Vector(2) }

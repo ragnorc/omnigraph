@@ -1,0 +1,4 @@
+query m() {
+  insert T { k: "a", n: 1 }
+  insert T { k: "a", n: 2 }
+}

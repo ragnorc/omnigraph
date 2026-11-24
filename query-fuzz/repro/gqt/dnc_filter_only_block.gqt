@@ -1,0 +1,30 @@
+# issue: none
+# notes: query-fuzz repro `dnc-filter-only-block` (query-fuzz/README.md); the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag {
+  count: I32?
+}
+
+--- seed
+
+--- query
+query q19() {
+  match {
+    $t1: Tag
+    count { $t1.count > 2 } != 0
+  }
+  return { max($t1.count) as a0 }
+}
+
+--- expect unordered
+{}
+
+--- expect shape
+a0: I32?
