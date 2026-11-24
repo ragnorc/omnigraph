@@ -185,8 +185,10 @@ merged-parent ids, optional `actor_id`, and `created_at` in Unix microseconds. A
 that changes no entities returns `"commit": null`. On every target `load --json` prints the body of
 `POST /graphs/{id}/load/ndjson`, with the write's `actor_id` and a `base_branch` that is `null` without `--from`.
 
-`--json`, read `--format json`, and read `--format toon` preserve structured errors on stdout. `--format toon` encodes the same error document as `--format json`. Data-write and read failures
-report [whole-command outcomes and exits](../operations/troubleshooting.md#failed-data-write-commands); a refused command line exits 64.
+`--json`, and a read's `--format json`, `jsonl` or `toon`, report every failure
+as one coded error document ([output and errors](index.md#output-and-errors)).
+Data-write and read failures report
+[whole-command outcomes and exits](../operations/troubleshooting.md#failed-data-write-commands); a refused command line exits 64.
 Verified conditional mismatches exit 4, embedded or served, when nothing else in the command ran.
 
 ### Conditional mutations

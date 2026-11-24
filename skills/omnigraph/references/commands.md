@@ -575,6 +575,16 @@ For params:
 - `jsonl` — NDJSON, one per line, with metadata line first
 - `json` — pretty `ReadOutput` envelope (metadata, columns, and rows); the `rows` array is printed compact and verbatim
 
+Every command's `--json`, and a read's `json`, `jsonl` or `toon`, reports a
+failure as one error document: `error` and `code` (the HTTP API's code for the
+same failure; `internal` when the CLI cannot type it), plus typed details. It
+is on stdout, or on stderr once part of the result reached stdout. Data reads
+and writes (`query`, `mutate`, `load`, `branch`, `commit`, `blob`, `snapshot`,
+`export`, `diff`, `changes`, `schema apply`) add `disposition`; maintenance
+(`optimize`, `index`, `cleanup`) and `cluster` errors do not. A
+usage error exits 64 with plain text on stderr. See
+[output and errors](../../../docs/user/cli/index.md#output-and-errors).
+
 `query --format arrow` writes the result's columns and rows to stdout as one
 Arrow IPC stream (pyarrow `ipc.open_stream`, Polars `read_ipc_stream`), with
 each column's declared type and real nulls. The stream carries no

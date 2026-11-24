@@ -193,7 +193,9 @@ single source of truth.
 
 Select one complete destination with `--target NAME|ADDRESS` or the operator
 file's `defaults.target`. Every backend invocation prints the resolved target to
-stderr; machine results remain on stdout. An unknown or unsupported target
+stderr; machine results remain on stdout. With `--json`, a failure of any
+command is one document with `error` and `code` (branch on `code`); data
+commands add `disposition`. An unknown or unsupported target
 refuses without fallback. Source files and current directories never select a
 backend. `--config DIR` is source input only.
 

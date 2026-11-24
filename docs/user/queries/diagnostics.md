@@ -77,8 +77,8 @@ do not mean there is no possible fix.
 - **CLI, machine formats**: `--json` and `--format json` print the API's error
   body pretty with its `disposition`, `--format jsonl` prints it as one line, and
   `--format toon` prints that same body as TOON. All of them go on stdout with
-  exit status 1. A served refusal keeps the server's `code` field
-  (`bad_request`); an embedded one has none.
+  exit status 1. A served or embedded refusal carries the `code` field
+  `bad_request`, whose `disposition` action is `fix`.
 - **HTTP**: a `400` that refuses a query carries the additive `diagnostic`
   object in its error body. See
   [HTTP errors](../operations/troubleshooting.md#http-errors).

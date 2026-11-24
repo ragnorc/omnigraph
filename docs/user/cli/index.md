@@ -213,9 +213,25 @@ and the [managed command reference](reference.md#managed-cluster-commands).
 
 For `query` and `alias`, output selection follows `--json`, then `--format`,
 then operator `defaults.output`, then `table`. Aliases have no format field.
-Structured execution errors use the selected JSON, JSONL, or TOON format. Mutations
-require explicit `--json` for structured errors. Target diagnostics go to
-stderr and cannot be suppressed by a quiet flag.
+Target diagnostics go to stderr and cannot be suppressed by a quiet flag.
+
+Every command that takes `--json`, and a read with `--format json`, `jsonl` or
+`toon`, reports a failure as one error document in that format: `error`, the
+message, and `code`, plus the typed details that apply. Without one of these
+flags a failure is text on stderr. The document is on stdout, or on stderr when
+part of the result already reached stdout, so stdout never holds two
+documents. A `code` is the one the HTTP API answers for the same failure (for
+example `not_found` for a missing branch or graph); an error the CLI cannot
+type is `internal`. Branch on `code`, never on the message.
+
+Data-write and read failures also carry a `disposition` and report
+[whole-command outcomes and exits](../operations/troubleshooting.md#failed-data-write-commands).
+The error document of any other command, such as `optimize`, `index build`,
+`cleanup` or `cluster status`, has no `disposition`. A command whose result is
+a report (`upgrade`, `lint`, `queries validate`, `cluster plan`) states its
+findings in that report, and a managed command answers the control plane's
+problem document. A refused command line exits 64 with the parser's text on
+stderr.
 
 Each invocation reads operator configuration once when needed. Edits cannot
 change its destination or presentation defaults during execution. Unknown

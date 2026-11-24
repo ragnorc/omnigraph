@@ -1,7 +1,7 @@
 # Troubleshooting
 
 CLI failures include a human-readable message. Add `--json` where supported to
-receive structured fields suitable for automation. Every HTTP error the server
+receive [one coded error document](../cli/index.md#output-and-errors) instead. Every HTTP error the server
 answers, an unknown route, a method the route does not serve and a malformed
 body, query string or path parameter included, uses a JSON body with `error`,
 `code`, `disposition` and optional details for conflicts, limits, Blob ranges,

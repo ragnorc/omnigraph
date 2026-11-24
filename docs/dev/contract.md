@@ -258,7 +258,7 @@ hold only for the constraints it is told.
 **E4. Its answer is true and final.** Success names the commit `D15`, or says
 that nothing was published, and comes only after the commit is stored for good
 and visible to every later read `G1`. A failure says what it left behind:
-nothing, part, or unknown `D12`, and whether sending it again can succeed:
+nothing, part, or unknown `D12` `G15`, and whether sending it again can succeed:
 a moved head or contention may, a broken constraint or a denial cannot. A
 write can carry a request identity its client chose: sent again with the same
 identity, it applies at most once and returns the first answer `G7`. Without
@@ -294,7 +294,7 @@ server with no authentication. Both choices are logged at startup. A policy
 change binds the requests admitted after it; a request already admitted
 finishes under the policy it was admitted with. The CLI,
 HTTP and MCP share one list of operations, one set of error codes and one
-failure shape; the embedded engine returns its own error type.
+failure shape `G15`; the embedded engine returns its own error type.
 *Why:* agents of different authority share one graph.
 *Kept by:* invariant 10.
 
@@ -636,6 +636,7 @@ statement. "See" names the invariant or the design that bears on it.
 | `G12` | `read:9` | Types and properties carry descriptions, and nothing searches them | No design yet |
 | `G13` | Boundary, Processes | One server serves a cluster, and read-only CLI commands may read beside it. There is no read-only serving mode | [Graph access and cross-process writes](../rfcs/2026-10-16-graph-access-serving-and-cross-process-writes.md) |
 | `G14` | `read:11`, `E7` | A `limit` without an `order` returns the first rows in physical order, which `optimize` can change. No test pins it | [GQ 3](https://github.com/ModernRelay/omnigraph/pull/1302), draft: one total order for every read |
+| `G15` | `E4`, `E6` | A CLI failure under `--json` is one document with `error` and `code` for every command, but only a data read or write adds `disposition`: a failed `optimize`, `index build`, `cleanup`, `upgrade` or cluster command does not say what it left behind. A managed command answers the control plane's problem document (`type`, `title`, `detail`) | No design yet |
 
 ## Decisions
 
