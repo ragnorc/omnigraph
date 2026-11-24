@@ -1304,10 +1304,12 @@ fn local_cli_optimize_runs_a_recorded_operation() {
         let refused = optimize(&extra);
         assert_eq!(refused.status.code(), Some(1), "{extra:?}: {refused:?}");
         assert!(
-            String::from_utf8_lossy(&refused.stderr).contains(message),
+            stdout_refusal(&refused)["error"]
+                .as_str()
+                .unwrap()
+                .contains(message),
             "{extra:?}: {refused:?}"
         );
-        assert!(refused.stdout.is_empty(), "{extra:?}: {refused:?}");
     }
 
     let direct = cli()

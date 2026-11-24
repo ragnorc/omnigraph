@@ -317,7 +317,9 @@ async fn handled_lint_failure_allows_a_following_successful_invocation() {
                 &mut stderr,
             )
             .await;
-            if fault.is_some() {
+            if matches!(fault, Some(OutputFault::Flush)) && expected == 0 {
+                // A complete result whose final flush failed may already be
+                // delivered, so no second document follows it.
                 assert_eq!(
                     result
                         .unwrap_err()
@@ -326,12 +328,23 @@ async fn handled_lint_failure_allows_a_following_successful_invocation() {
                         .kind(),
                     io::ErrorKind::BrokenPipe
                 );
+                assert!(stderr.is_empty());
+            } else if fault.is_some() {
+                // The report failed while the command wrote it, after part of
+                // it reached stdout, so the coded failure goes to stderr.
+                assert_eq!(result.unwrap().code(), 1, "{source}");
+                let failure: Value = serde_json::from_slice(&stderr).unwrap();
+                assert_eq!(failure["code"], "internal", "{failure}");
+                assert!(
+                    failure["error"].as_str().unwrap().contains("output closed"),
+                    "{failure}"
+                );
             } else {
                 assert_eq!(result.unwrap().code(), expected, "{source}");
                 let report: Value = serde_json::from_slice(&delivered).unwrap();
                 assert_eq!(report["status"], if expected == 0 { "ok" } else { "error" });
+                assert!(stderr.is_empty());
             }
-            assert!(stderr.is_empty());
         }
     }
 }

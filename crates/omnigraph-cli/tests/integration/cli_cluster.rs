@@ -183,7 +183,9 @@ fn core_remote_status_uses_only_the_selected_target_credential() {
         let refused =
             output_failure(command.args(["cluster", "status", "--target", &api.origin, "--json"]));
         assert!(
-            String::from_utf8_lossy(&refused.stderr)
+            stdout_refusal(&refused)["error"]
+                .as_str()
+                .unwrap()
                 .contains("inline access supports local storage only"),
             "{refused:?}"
         );
@@ -244,11 +246,18 @@ fn core_remote_retired_selectors_refuse_before_operator_or_backend_access() {
             (64, "unexpected argument")
         };
         assert_eq!(output.status.code(), Some(exit), "{output:?}");
-        assert!(output.stdout.is_empty(), "{output:?}");
-        assert!(
-            String::from_utf8_lossy(&output.stderr).contains(diagnostic),
-            "{output:?}"
-        );
+        // A usage refusal is Clap's, on stderr; a refusal the command makes
+        // is the coded document on stdout.
+        let reported = if exit == 64 {
+            assert!(output.stdout.is_empty(), "{output:?}");
+            String::from_utf8_lossy(&output.stderr).into_owned()
+        } else {
+            stdout_refusal(&output)["error"]
+                .as_str()
+                .unwrap()
+                .to_owned()
+        };
+        assert!(reported.contains(diagnostic), "{output:?}");
     }
     assert!(api.requests().is_empty());
     assert_no_core_effects(home.path());
@@ -1252,9 +1261,11 @@ fn managed_cluster_members_requires_cluster_target_and_rejects_duplicate_selecto
         managed_account_cli(temp.path(), &api.origin).args(["members", "list", "--json"]),
     );
     assert_eq!(output.status.code(), Some(1));
-    assert!(output.stdout.is_empty());
     assert!(
-        String::from_utf8_lossy(&output.stderr).contains("cluster does not accept --profile"),
+        stdout_refusal(&output)["error"]
+            .as_str()
+            .unwrap()
+            .contains("cluster does not accept --profile"),
         "{output:?}"
     );
     for args in [
@@ -1700,9 +1711,11 @@ fn managed_data_process_refuses_missing_graph_and_actor_override_before_keychain
             .unwrap();
         if code == "argument_conflict" {
             assert_eq!(output.status.code(), Some(1), "{args:?}: {output:?}");
-            assert!(output.stdout.is_empty());
             assert!(
-                String::from_utf8_lossy(&output.stderr).contains(message),
+                stdout_refusal(&output)["error"]
+                    .as_str()
+                    .unwrap()
+                    .contains(message),
                 "{output:?}"
             );
             assert_no_core_effects(temp.path());
@@ -3406,10 +3419,16 @@ async fn v2_root_admission_blocks_cli_write_and_native_control_doors() {
         ],
     ] {
         let output = output_failure(cli().args(&args).arg("--target").arg(&graph).arg("--yes"));
-        assert!(
-            String::from_utf8_lossy(&output.stderr).contains("state_lock_held"),
-            "{args:?}: {output:?}"
-        );
+        // `--json` reports the refusal as the coded document on stdout.
+        let reported = if args.contains(&"--json") {
+            stdout_refusal(&output)["error"]
+                .as_str()
+                .unwrap()
+                .to_owned()
+        } else {
+            String::from_utf8_lossy(&output.stderr).into_owned()
+        };
+        assert!(reported.contains("state_lock_held"), "{args:?}: {output:?}");
     }
     assert!(!graph.join("__clone").exists());
     assert_eq!(
@@ -3632,10 +3651,11 @@ fn optimize_unknown_cluster_graph_id_errors() {
             .arg("does-not-exist")
             .arg("--json"),
     );
-    let stderr = String::from_utf8_lossy(&out.stderr);
+    let refusal = stdout_refusal(&out);
+    let error = refusal["error"].as_str().unwrap();
     assert!(
-        stderr.contains("is not applied in cluster") && stderr.contains("cluster apply"),
-        "expected an unapplied-graph error pointing at cluster apply; got: {stderr}"
+        error.contains("is not applied in cluster") && error.contains("cluster apply"),
+        "expected an unapplied-graph error pointing at cluster apply; got: {refusal}"
     );
 }
 
@@ -3852,7 +3872,10 @@ fn optimize_by_cluster_works_when_catalog_payloads_are_degraded() {
     let refused = optimize();
     assert!(!refused.status.success(), "{refused:?}");
     assert!(
-        String::from_utf8_lossy(&refused.stderr).contains("catalog_payload_missing"),
+        stdout_refusal(&refused)["error"]
+            .as_str()
+            .unwrap()
+            .contains("catalog_payload_missing"),
         "{refused:?}"
     );
 }
@@ -4373,11 +4396,18 @@ fn managed_organization_refuses_invalid_targets_and_retired_grants_before_extern
             (1, "this operation selects --profile, not --target")
         };
         assert_eq!(output.status.code(), Some(exit), "{output:?}");
-        assert!(output.stdout.is_empty());
-        assert!(
-            String::from_utf8_lossy(&output.stderr).contains(diagnostic),
-            "{output:?}"
-        );
+        // A usage refusal is Clap's, on stderr; a refusal the command makes
+        // is the coded document on stdout.
+        let reported = if exit == 64 {
+            assert!(output.stdout.is_empty(), "{output:?}");
+            String::from_utf8_lossy(&output.stderr).into_owned()
+        } else {
+            stdout_refusal(&output)["error"]
+                .as_str()
+                .unwrap()
+                .to_owned()
+        };
+        assert!(reported.contains(diagnostic), "{output:?}");
     }
     let output = organization_cli(temp.path(), &api.origin)
         .args(["members", "list", "--organization", "foreign", "--json"])

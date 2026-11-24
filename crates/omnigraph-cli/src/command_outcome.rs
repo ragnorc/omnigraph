@@ -368,7 +368,7 @@ impl Failure {
                     Ok(engine) => omnigraph_server::engine_error_output(engine),
                     // Keep the cause chain the stderr report used to print.
                     Err(error) => crate::error_output_of(&error)
-                        .unwrap_or_else(|| ErrorOutput::message(format!("{error:#}"))),
+                        .unwrap_or_else(|| crate::app::untyped_error_output(&error)),
                 },
             }
         };

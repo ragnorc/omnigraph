@@ -297,46 +297,57 @@ fn finish(
     let actor_refused = observed
         .as_ref()
         .is_some_and(|observed| command_outcome::actor_assertion_refused(&error, observed));
-    if let Some(output) = error_output_of(&error) {
-        let refusal = RemoteRefusalOutput {
-            output: &output,
-            missing_credential: error
-                .downcast_ref::<RemoteErrorCli>()
-                .and_then(|remote| remote.missing_credential.as_ref()),
-        };
-        match machine {
-            Some(format) => {
-                write_machine(&refusal, format, stdout)?;
-                stdout.flush()?;
-            }
-            None => match &output.diagnostic {
-                Some(diagnostic) => {
-                    writeln!(stderr, "{}", render_diagnostic(&output, diagnostic))?;
-                    stderr.flush()?;
-                }
-                None if actor_refused => {
-                    writeln!(stderr, "{}", output.error)?;
-                    stderr.flush()?;
-                }
+    let exit = if actor_refused {
+        EXIT_PRECONDITION_FAILED
+    } else {
+        1
+    };
+    let Some(format) = machine else {
+        // Human output: a refusal with a diagnostic renders it; every other
+        // error keeps the report `main` writes on stderr.
+        let output = error_output_of(&error);
+        match output.as_ref().and_then(|output| {
+            output
+                .diagnostic
+                .as_ref()
+                .map(|diagnostic| render_diagnostic(output, diagnostic))
+        }) {
+            Some(rendered) => writeln!(stderr, "{rendered}")?,
+            None => match output.filter(|_| actor_refused) {
+                Some(output) => writeln!(stderr, "{}", output.error)?,
                 None => return Err(error),
             },
         }
-        return Ok(Completion::exit(if actor_refused {
-            EXIT_PRECONDITION_FAILED
-        } else {
-            1
-        }));
-    }
-    if let Some(contract) = error.downcast_ref::<graph_http::ApiContractError>() {
-        match machine {
-            Some(format) => write_machine(contract, format, stdout)?,
-            None => return Err(error),
-        }
-        stdout.flush()?;
-        return Ok(Completion::exit(1));
-    }
-    // Unstructured transport errors keep their stderr-only diagnostic path.
-    Err(error)
+        stderr.flush()?;
+        return Ok(Completion::exit(exit));
+    };
+    // A machine format reports every error as one coded document, whatever
+    // the command and whatever failed: on stdout, or on stderr when part of a
+    // result already reached stdout, so stdout never holds two documents.
+    let sink: &mut dyn Write = if result_started { stderr } else { stdout };
+    let delivered = if let Some(contract) = error.downcast_ref::<graph_http::ApiContractError>() {
+        write_machine(contract, format, sink)
+    } else {
+        let missing_credential = error
+            .downcast_ref::<RemoteErrorCli>()
+            .and_then(|remote| remote.missing_credential.clone());
+        let output = error_envelope(error);
+        write_machine(
+            &RemoteRefusalOutput {
+                output: &output,
+                missing_credential: missing_credential.as_ref(),
+            },
+            format,
+            sink,
+        )
+        .map_err(|delivery| {
+            let body = serde_json::to_string(&output).unwrap_or_else(|_| output.error.clone());
+            delivery.wrap_err(format!("could not deliver CLI diagnostic: {body}"))
+        })
+    };
+    delivered?;
+    sink.flush()?;
+    Ok(Completion::exit(exit))
 }
 
 fn write_machine<T: Serialize>(
@@ -411,9 +422,45 @@ pub(crate) fn error_output_of(error: &color_eyre::Report) -> Option<ErrorOutput>
     } else {
         None
     }?;
+    // A diagnostic is a compiler refusal, which a server answers as
+    // `bad_request`.
     let mut output = ErrorOutput::message(error.to_string());
+    output.code = Some(omnigraph_api_types::ErrorCode::BadRequest);
     output.diagnostic = Some(omnigraph_api_types::DiagnosticOutput::from(diagnostic));
     Some(output)
+}
+
+/// The coded error body of any failed run, for a command that does not
+/// classify its outcome: [`error_output_of`] where it applies, an engine
+/// error under the code a server answers it with, and any other error as
+/// `internal`, the code a server answers an error it cannot type with. It
+/// carries no `disposition`: only a classified command accounts for its
+/// effects.
+pub(crate) fn error_envelope(error: color_eyre::Report) -> ErrorOutput {
+    if let Some(output) = error_output_of(&error) {
+        return output;
+    }
+    // An embedded write marks its engine error as its own; the code is the
+    // engine error's either way.
+    let engine = match error.downcast::<command_outcome::EngineWriteError>() {
+        Ok(command_outcome::EngineWriteError(engine)) => Ok(engine),
+        Err(error) => error.downcast::<omnigraph::error::OmniError>(),
+    };
+    match engine {
+        Ok(engine) => {
+            let mut output = omnigraph_server::engine_error_output(engine);
+            output.disposition = None;
+            output
+        }
+        Err(error) => untyped_error_output(&error),
+    }
+}
+
+/// An error no type names: its whole cause chain, as `internal`.
+pub(crate) fn untyped_error_output(error: &color_eyre::Report) -> ErrorOutput {
+    let mut output = ErrorOutput::message(format!("{error:#}"));
+    output.code = Some(omnigraph_api_types::ErrorCode::Internal);
+    output
 }
 
 /// The human rendering of the diagnostics contract: the code and the

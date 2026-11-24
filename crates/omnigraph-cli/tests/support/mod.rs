@@ -283,6 +283,17 @@ pub fn parse_stdout_json(output: &Output) -> Value {
     serde_json::from_slice(&output.stdout).unwrap()
 }
 
+/// The coded error document a failed command asked for `--json` writes as
+/// its whole stdout: an `error` message and a `code`.
+pub fn stdout_refusal(output: &Output) -> Value {
+    let refusal = parse_stdout_json(output);
+    assert!(
+        refusal["error"].is_string() && refusal["code"].is_string(),
+        "not a coded error document: {refusal}"
+    );
+    refusal
+}
+
 pub fn init_graph(graph: &Path) {
     let schema = fixture("test.pg");
     output_success(cli().arg("init").arg("--schema").arg(&schema).arg(graph));

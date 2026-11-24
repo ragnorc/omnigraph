@@ -1987,11 +1987,10 @@ query list_people() {
             .arg(temp.path().join("missing.pg"))
             .arg("--json"),
     );
-    assert!(output.stdout.is_empty());
-    let stderr = String::from_utf8_lossy(&output.stderr);
+    let refusal = stdout_refusal(&output);
     assert!(
-        stderr.contains("UTF-8"),
-        "query read must come first: {stderr}"
+        refusal["error"].as_str().unwrap().contains("UTF-8"),
+        "query read must come first: {refusal}"
     );
 }
 
@@ -5655,11 +5654,17 @@ fn cleanup_against_local_scope_executes_with_confirm() {
             .output()
             .unwrap();
         assert_eq!(output.status.success(), success, "{output:?}");
-        assert!(output.stdout.is_empty());
-        assert!(
-            String::from_utf8_lossy(&output.stderr).contains(message),
-            "{output:?}"
-        );
+        // A preview writes no result; a refusal is the coded document.
+        let reported = if success {
+            assert!(output.stdout.is_empty(), "{output:?}");
+            String::from_utf8_lossy(&output.stderr).into_owned()
+        } else {
+            stdout_refusal(&output)["error"]
+                .as_str()
+                .unwrap()
+                .to_owned()
+        };
+        assert!(reported.contains(message), "{output:?}");
         assert_eq!(manifest_dataset_version(&graph), version_before);
         let after = parse_stdout_json(&output_success(
             cli()
@@ -7455,8 +7460,12 @@ query insert_person($name: String, $age: I32) {
         let before = manifest_dataset_version(&store);
         let refused = maintain(args, "act-writer");
         assert!(!refused.status.success(), "{args:?}: {refused:?}");
-        let stderr = String::from_utf8_lossy(&refused.stderr);
-        assert!(stderr.contains(action), "{args:?}: {stderr}");
+        let refusal = stdout_refusal(&refused);
+        assert_eq!(refusal["code"], "forbidden", "{args:?}: {refusal}");
+        assert!(
+            refusal["error"].as_str().unwrap().contains(action),
+            "{args:?}: {refusal}"
+        );
         assert_eq!(manifest_dataset_version(&store), before, "{args:?}");
         let admitted = maintain(args, "act-maintainer");
         assert!(admitted.status.success(), "{args:?}: {admitted:?}");

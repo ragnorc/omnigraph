@@ -1635,8 +1635,13 @@ fn queries_validate_graph_filter_selects_one_graph() {
             .arg(dir)
             .args(["--graph", "missing", "--json"]),
     );
-    assert!(missing.stdout.is_empty());
-    assert!(stderr_string(&missing).contains("graph `missing` is not applied"));
+    assert!(
+        stdout_refusal(&missing)["error"]
+            .as_str()
+            .unwrap()
+            .contains("graph `missing` is not applied"),
+        "{missing:?}"
+    );
     assert_eq!(fs::read(&state_path).unwrap(), before);
     assert!(!dir.join("__cluster/lock.json").exists());
 }
@@ -1668,9 +1673,13 @@ fn a_query_without_its_parameter_list_reports_q002_in_every_output_format() {
     assert_eq!(json["diagnostic"]["position"]["line"], 1);
     assert_eq!(json["diagnostic"]["position"]["column"], 11);
     assert_eq!(json["diagnostic"]["suggestion"], suggestion);
-    assert!(
-        json.get("code").is_none(),
-        "an embedded refusal has no HTTP code: {json}"
+    // An embedded refusal carries the code a server answers it with, so its
+    // action is the code's: fix the query.
+    assert_eq!(json["code"], "bad_request", "{json}");
+    assert_eq!(
+        json["disposition"],
+        serde_json::json!({"effects": "none", "action": "fix"}),
+        "{json}"
     );
 
     let jsonl = output_failure(

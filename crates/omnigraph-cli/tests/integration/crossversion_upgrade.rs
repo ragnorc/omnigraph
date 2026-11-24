@@ -1812,8 +1812,14 @@ fn storage_upgrade_refuses_cluster_path_aliases() {
                 command.arg("--check");
             }
             let output = output_failure(&mut command);
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            assert!(stderr.contains("inside cluster"), "{alias}: {stderr}");
+            let refusal = support::stdout_refusal(&output);
+            assert!(
+                refusal["error"]
+                    .as_str()
+                    .unwrap()
+                    .contains("inside cluster"),
+                "{alias}: {refusal}"
+            );
             assert_eq!(
                 graph_files(&cluster),
                 before,
