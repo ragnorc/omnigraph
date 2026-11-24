@@ -1,0 +1,78 @@
+=== nearest_after_optimize.sh BIN=GQ2-REL (edition 2)
+after delete (5 live rows): 5 rows [-1, -3, -5, -7, -9]
+after optimize: 3 rows [-1, -3, -5]
+index build: 0 indexes, 0 pending
+after index build: 3 rows [-1, -3, -5]
+fresh graph from the export: 5 rows [-1, -3, -5, -7, -9]
+=== nearest_after_optimize.sh BIN=GQ2-MAIN (edition 2)
+after delete (5 live rows): 5 rows [-1, -3, -5, -7, -9]
+after optimize: 3 rows [-1, -3, -5]
+index build: 0 indexes, 0 pending
+after index build: 3 rows [-1, -3, -5]
+fresh graph from the export: 5 rows [-1, -3, -5, -7, -9]
+=== nearest_after_optimize.sh BIN=NEW
+after delete (5 live rows): 5 rows [-1, -3, -5, -7, -9]
+after optimize: 3 rows [-1, -3, -5]
+index build: 0 indexes, 0 pending
+after index build: 3 rows [-1, -3, -5]
+fresh graph from the export: 5 rows [-1, -3, -5, -7, -9]
+=== index_build_duplicate_ngram.sh GQ2=GQ2-REL NEW=NEW
+$ <NEW> index build --target <tmp>/g --json
+  exit 0 [('__id', 'btree', 'built'), ('body', 'btree', 'built'), ('body', 'ngram', 'built'), ('k', 'btree', 'built')]
+$ <GQ2> index build --target <tmp>/g --json
+  exit 0 [('__id', 'btree', 'refreshed'), ('body', 'btree', 'refreshed'), ('body', 'btree', 'refreshed'), ('body', 'full_text', 'built'), ('k', 'btree', 'refreshed'), ('k', 'full_text', 'built')]
+$ <NEW> index build --target <tmp>/g --json
+  exit 1 no JSON on stdout; stderr: ['Error:', '0: \x1b[91mstage index batch on node:Doc ([Scalar { column: "body", family: NGram }]): index batch produced duplicate index name \'body_ngram\'\x1b[0m']
+$ <NEW> index rebuild --kind full-text --target <tmp>/g --json
+  exit 0 
+$ <NEW> index build --target <tmp>/g --json
+  exit 1 no JSON on stdout; stderr: ['Error:', '0: \x1b[91mstage index batch on node:Doc ([Scalar { column: "body", family: NGram }]): index batch produced duplicate index name \'body_ngram\'\x1b[0m']
+=== index_build_duplicate_ngram.sh GQ2=GQ2-MAIN NEW=NEW
+$ <NEW> index build --target <tmp>/g --json
+  exit 0 [('__id', 'btree', 'built'), ('body', 'btree', 'built'), ('body', 'ngram', 'built'), ('k', 'btree', 'built')]
+$ <GQ2> index build --target <tmp>/g --json
+  exit 0 [('__id', 'btree', 'refreshed'), ('body', 'btree', 'refreshed'), ('body', 'btree', 'refreshed'), ('body', 'full_text', 'built'), ('k', 'btree', 'refreshed'), ('k', 'full_text', 'built')]
+$ <NEW> index build --target <tmp>/g --json
+  exit 1 no JSON on stdout; stderr: ['Error:', '0: \x1b[91mstage index batch on node:Doc ([Scalar { column: "body", family: NGram }]): index batch produced duplicate index name \'body_ngram\'\x1b[0m']
+$ <NEW> index rebuild --kind full-text --target <tmp>/g --json
+  exit 0 
+$ <NEW> index build --target <tmp>/g --json
+  exit 1 no JSON on stdout; stderr: ['Error:', '0: \x1b[91mstage index batch on node:Doc ([Scalar { column: "body", family: NGram }]): index batch produced duplicate index name \'body_ngram\'\x1b[0m']
+=== maintenance_json_plain_text.sh BIN=REL
+$ omnigraph snapshot --branch nope --json -> exit 1, stdout: {  "error": "branch 'nope' not found",  "code": "not_found",  "disposition": {    "effects, stderr: 
+$ omnigraph index build --branch nope --json -> exit 1, stdout: , stderr: Error:    0: branch 'nope' not found
+$ omnigraph index rebuild --kind full-text --branch nope --json -> exit 1, stdout: , stderr: Error:    0: branch 'nope' not found
+=== maintenance_json_plain_text.sh BIN=MAIN
+$ omnigraph snapshot --branch nope --json -> exit 1, stdout: {  "error": "branch 'nope' not found",  "code": "not_found",  "disposition": {    "effects, stderr: 
+$ omnigraph index build --branch nope --json -> exit 1, stdout: , stderr: Error:    0: branch 'nope' not found
+$ omnigraph index rebuild --kind full-text --branch nope --json -> exit 1, stdout: , stderr: Error:    0: branch 'nope' not found
+=== maintenance_json_plain_text.sh BIN=NEW
+$ omnigraph snapshot --branch nope --json -> exit 1, stdout: {  "error": "branch 'nope' not found",  "code": "not_found",  "disposition": {    "effects, stderr: 
+$ omnigraph index build --branch nope --json -> exit 1, stdout: , stderr: Error:    0: branch 'nope' not found
+$ omnigraph index rebuild --kind full-text --branch nope --json -> exit 1, stdout: , stderr: Error:    0: branch 'nope' not found
+=== old_fulltext_not_reported_pending.sh GQ2=GQ2-REL NEW=NEW
+GQ 2 index build: [('__id', 'btree', 'built'), ('body', 'full_text', 'built'), ('k', 'full_text', 'built')] pending: []
+NEW index build after NEW's rows: [('__id', 'btree', 'refreshed'), ('body', 'btree', 'built'), ('body', 'ngram', 'built'), ('k', 'btree', 'built')] pending: []
+NEW index build again: [] pending: []
+GQ 2 index build on the same graph: [] pending: [('body', "full-text index 'body_idx' has incomplete or unknown coverage; run omn"), ('k', "full-text index 'k_idx' has incomplete or unknown coverage; run omnigr")]
+=== zero_step_plan_lists_no_one_way.sh GQ2=GQ2-REL NEW=NEW
+plan s1 over s0:   steps ['change_full_text_analysis'] one_way_constructs ['full_text_index', 'full_text_analyzer']
+apply s1:          steps ['change_full_text_analysis'] one_way_constructs ['full_text_index', 'full_text_analyzer']
+plan s1 again:     steps [] one_way_constructs []
+GQ 2 opens it:     conflict schema evolution is locked down in phase 1: schema feature 'full-text-analysis' in the sch
+=== memory_refusal_depends_on_layout.sh BIN=GQ2-MAIN (edition 2)
+loaded: answers at a query_memory_bytes of 26655859, refused at 26643655
+after index build: answers at a query_memory_bytes of 26692470, refused at 26680266
+after optimize: answers at a query_memory_bytes of 26655859, refused at 26643655
+with query_memory_bytes=26655859 (the loaded graph's need) the same read, same rows:
+  a: 3466 rows
+  b: None resource limit exceeded for query_memory_bytes: actual 26688506, limit 26655859
+  c: 3466 rows
+=== memory_refusal_depends_on_layout.sh BIN=NEW
+loaded: answers at a query_memory_bytes of 26655859, refused at 26643655
+after index build: answers at a query_memory_bytes of 26692470, refused at 26680266
+after optimize: answers at a query_memory_bytes of 26655859, refused at 26643655
+with query_memory_bytes=26655859 (the loaded graph's need) the same read, same rows:
+  a: 3466 rows
+  b: None resource limit exceeded for query_memory_bytes: actual 26688962, limit 26655859
+  c: 3466 rows

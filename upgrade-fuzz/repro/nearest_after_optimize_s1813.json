@@ -1,0 +1,88 @@
+{
+ "seed": 1813,
+ "kind": "fresh_graph_differs",
+ "sig_prefix": "near",
+ "alternate": false,
+ "trials": 151,
+ "schema": "// upgrade-fuzz seed 1813\nnode T1 {\n    s0: I32\n    v0: Vector(2)? @index\n}\n",
+ "cfg": {
+  "seed": 1813,
+  "nodes": [
+   {
+    "name": "T1",
+    "props": [
+     {
+      "name": "s0",
+      "ty": "I32",
+      "nullable": false,
+      "dim": 0,
+      "enum_vals": [],
+      "index": false,
+      "body_index": false,
+      "unique": false,
+      "key": false,
+      "fulltext": false,
+      "analyzer": null,
+      "scorer": null,
+      "distance": null,
+      "rename_from": null,
+      "rng_range": null
+     },
+     {
+      "name": "v0",
+      "ty": "vector",
+      "nullable": true,
+      "dim": 2,
+      "enum_vals": [],
+      "index": true,
+      "body_index": false,
+      "unique": false,
+      "key": false,
+      "fulltext": false,
+      "analyzer": null,
+      "scorer": null,
+      "distance": null,
+      "rename_from": null,
+      "rng_range": null
+     }
+    ],
+    "key_mode": "none",
+    "compound": []
+   }
+  ],
+  "edges": [],
+  "sizes": {
+   "T1": 11
+  },
+  "builder": "rel",
+  "queries": [
+   "grph",
+   "tariff",
+   "Tariffs"
+  ],
+  "vec_query": {
+   "T1.v0": [
+    0.271484375,
+    -0.3330078125
+   ]
+  },
+  "stress": false
+ },
+ "script": {
+  "gq2": [
+   {
+    "op": "index_build"
+   },
+   {
+    "op": "delete",
+    "type": "T1",
+    "key": 3,
+    "seed": 640255969
+   },
+   {
+    "op": "optimize"
+   }
+  ],
+  "new": []
+ }
+}

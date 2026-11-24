@@ -1,0 +1,96 @@
+{
+ "seed": 1168,
+ "kind": "fresh_graph_differs",
+ "sig_prefix": "near",
+ "alternate": false,
+ "trials": 170,
+ "schema": "// upgrade-fuzz seed 1168\nnode T0 {\n    s2: I32\n    v0: Vector(8) @index\n}\n",
+ "cfg": {
+  "seed": 1168,
+  "nodes": [
+   {
+    "name": "T0",
+    "props": [
+     {
+      "name": "s2",
+      "ty": "I32",
+      "nullable": false,
+      "dim": 0,
+      "enum_vals": [],
+      "index": false,
+      "body_index": false,
+      "unique": false,
+      "key": false,
+      "fulltext": false,
+      "analyzer": null,
+      "scorer": null,
+      "distance": null,
+      "rename_from": null,
+      "rng_range": null
+     },
+     {
+      "name": "v0",
+      "ty": "vector",
+      "nullable": false,
+      "dim": 8,
+      "enum_vals": [],
+      "index": true,
+      "body_index": false,
+      "unique": false,
+      "key": false,
+      "fulltext": false,
+      "analyzer": null,
+      "scorer": null,
+      "distance": null,
+      "rename_from": null,
+      "rng_range": null
+     }
+    ],
+    "key_mode": "none",
+    "compound": []
+   }
+  ],
+  "edges": [],
+  "sizes": {
+   "T0": 10
+  },
+  "builder": "rel",
+  "queries": [
+   "graphs running café",
+   "tariff",
+   "file"
+  ],
+  "vec_query": {
+   "T0.v0": [
+    0.5654296875,
+    -0.216796875,
+    0.9052734375,
+    -0.787109375,
+    -1.0,
+    -0.37890625,
+    0.27734375,
+    -0.71484375
+   ]
+  },
+  "stress": false
+ },
+ "script": {
+  "gq2": [
+   {
+    "op": "optimize"
+   }
+  ],
+  "new": [
+   {
+    "step": "write",
+    "kind": "delete",
+    "type": "T0",
+    "key": 3,
+    "seed": 681527360
+   },
+   {
+    "step": "optimize"
+   }
+  ]
+ }
+}
