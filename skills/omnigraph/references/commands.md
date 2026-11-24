@@ -305,6 +305,11 @@ Aliases are read-only. Invoke a served stored mutation with `omnigraph mutate
 
 ## Maintenance
 
+Maintenance never changes whether a read fits `query_memory_bytes`: a read is charged
+for the rows it holds, so `optimize` or `index build` neither causes nor cures a
+`resource limit exceeded for query_memory_bytes` refusal. Raise the setting, or
+narrow the read (a `limit`, fewer returned columns), instead.
+
 ### `optimize` — compaction and index reconciliation
 
 ```bash

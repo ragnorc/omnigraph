@@ -292,6 +292,23 @@ that honors the passed scheduler for every base.
 `integration/engine_v2_memory.rs::hydration_on_a_graph_branch_reads_in_coalesced_requests`,
 `integration/engine_v2_memory.rs::hydrated_copies_of_a_joined_row_stay_within_the_chunk_bound`
 
+### Decoded read batches
+
+Lance's decoders yield zero-copy slices of what they decoded: a page's decoded
+buffer is cut into the arrays of each batch, and a sliced string array keeps
+the page's whole values buffer. An index lookup that matches scattered rows,
+or a late-materialized filtered read over a large fragment, reads one short
+range per run of matching rows, so each batch can keep alive pages many times
+its rows. Since the pool charges a buffer by its allocation, `WorkMemory::stream`
+copies each column that keeps alive more than its rows (beyond Arrow's 64-byte
+rounding) at its own size before any operator holds it; hydration copies each
+row for the same reason. This is Arrow slicing, not a Lance defect, so no bump
+removes it.
+
+**Owners:** in-source
+`operators::memory::tests::a_read_yields_batches_holding_only_their_rows`,
+`cases/order_over_an_index_lookup_holds_only_its_rows.gqt`
+
 ## Schema evolution and compaction
 
 ### Schema evolution
