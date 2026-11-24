@@ -1,0 +1,44 @@
+$ omnigraph --version   # fix branch @ 08ab83a0 on main 5ef95c7d
+omnigraph 0.16.1
+$ omnigraph branch create 'sp ace' --target ./g --json
+{
+  "error": "branch name 'sp ace' contains ' '; only letters, digits, '.', '-', '_' and '/' are allowed",
+  "code": "bad_request",
+  "disposition": {
+    "effects": "none",
+    "action": "fix"
+  }
+}
+$ omnigraph branch create 'a~b' --target ./g --json
+{
+  "error": "branch name 'a~b' contains '~'; only letters, digits, '.', '-', '_' and '/' are allowed",
+  "code": "bad_request",
+  "disposition": {
+    "effects": "none",
+    "action": "fix"
+  }
+}
+$ omnigraph branch create 'a/' --target ./g --json
+{
+  "error": "branch name 'a/' has an empty segment; '/' must separate non-empty segments",
+  "code": "bad_request",
+  "disposition": {
+    "effects": "none",
+    "action": "fix"
+  }
+}
+$ omnigraph branch create 'é/ü' --target ./g --json
+{
+  "uri": "/tmp/bnev/g",
+  "from": "main",
+  "name": "é/ü",
+  "actor_id": null,
+  "from_commit_id": "01M85FFSS8GH0AYST6CFX7KE87"
+}
+$ omnigraph branch list --target ./g --json
+{
+  "branches": [
+    "main",
+    "é/ü"
+  ]
+}

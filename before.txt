@@ -1,0 +1,44 @@
+$ omnigraph --version
+omnigraph 0.16.0
+$ omnigraph branch create 'sp ace' --target ./g --json
+{
+  "error": "Ref is invalid: Branch segment 'sp ace.01M85E46CQWMR94WSGEV7J7QA8' contains invalid characters. Only alphanumeric, '.', '-', '_' are allowed.",
+  "code": "bad_request",
+  "disposition": {
+    "effects": "none",
+    "action": "fix"
+  }
+}
+$ omnigraph branch create 'a~b' --target ./g --json
+{
+  "error": "Ref is invalid: Branch segment 'a~b.01M85E46DDYKWRV90NZKRM8ZEZ' contains invalid characters. Only alphanumeric, '.', '-', '_' are allowed.",
+  "code": "bad_request",
+  "disposition": {
+    "effects": "none",
+    "action": "fix"
+  }
+}
+$ omnigraph branch create 'a/' --target ./g --json
+{
+  "uri": "/tmp/bnev/g",
+  "from": "main",
+  "name": "a/",
+  "actor_id": null,
+  "from_commit_id": "01M85E46ARC71P4ZV66ADSDACA"
+}
+$ omnigraph branch list --target ./g --json
+{
+  "branches": [
+    "a/.01M85E46E3GP37DZ9ZM1FGM5A4",
+    "main"
+  ]
+}
+$ omnigraph branch delete 'a/' --target ./g --json
+{
+  "error": "branch 'a/' not found",
+  "code": "not_found",
+  "disposition": {
+    "effects": "none",
+    "action": "fix"
+  }
+}
