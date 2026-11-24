@@ -1,0 +1,26 @@
+$ git rev-parse --short HEAD
+5736d03c
+$ cargo test -p omnigraph-engine --locked --features failpoints --test failpoints branch_merge
+test branch_merge_captured_source_survives_concurrent_cleanup ... ok
+test branch_merge_pointer_failure_retries_without_sidecar ... ok
+test branch_merge_failure_after_table_effects_leaves_no_residue ... ok
+test branch_merge_pointer_keeps_an_unregistered_target_ref ... ok
+test branch_merge_failure_before_publish_leaves_no_residue ... ok
+test branch_merge_rejects_fresh_target_manifest_change_before_effects ... ok
+test branch_merge_rewrite_partial_after_delete_leaves_no_residue ... ok
+test branch_merge_fences_concurrent_sync_on_same_handle ... ok
+test branch_merge_source_advance_keeps_captured_source_parent ... ok
+test branch_merge_fences_target_delete_recreate_aba ... ok
+test branch_merge_foreign_linear_commit_after_effects_does_not_block_the_merge ... ok
+test branch_merge_into_a_named_target_stages_on_the_inherited_table ... ok
+test branch_merge_rewrite_partial_after_merge_leaves_no_residue ... ok
+test branch_merge_in_doubt_keeps_input_tags_until_cleanup ... ok
+test branch_merge_pointer_adoption_carries_the_source_pin ... ok
+test branch_merge_onto_main_never_reaches_adopt_after_upsert ... ok
+test branch_merge_into_main_lands_over_a_concurrent_branch_delete ... ok
+test branch_merge_loses_the_manifest_cas_after_detached_effects ... ok
+test branch_merge_multichunk_insert_onto_main_never_reaches_the_chunk_seam ... ok
+test branch_merge_multichunk_delete_onto_main_never_reaches_the_chunk_seam ... ok
+test branch_merge_onto_main_never_reaches_adopt_after_append ... ok
+test branch_merge_rewrite_partial_after_insert_leaves_no_residue ... ok
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 176 filtered out; finished in 7.22s
