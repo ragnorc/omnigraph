@@ -1,0 +1,51 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2806, case 3; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  code: Date? @index
+  size: U32?
+  name: Vector(2)?
+}
+node Person {
+  age: Date?
+  body: Blob?
+}
+node Org {
+  tags: String @key
+}
+edge Tagged: Person -> Person
+edge Cites: Org -> Org {
+  w: U32?
+}
+
+--- seed
+{"type":"Place","id":"p0","data":{"code":"2020-01-01","size":1,"name":[0.69,-0.9]}}
+{"type":"Place","id":"p1","data":{"code":null,"name":[-0.27,0.44]}}
+{"type":"Place","id":"p2","data":{"code":null,"size":0,"name":[1.45,1.1]}}
+{"type":"Place","id":"p3","data":{"size":4294967295,"name":[-1.26,1.22]}}
+{"type":"Place","id":"p4","data":{"code":"2020-01-01","size":0,"name":[0.88,-0.67]}}
+{"type":"Org","data":{"tags":"of the and"}}
+{"edge":"Cites","from":"of the and","to":"of the and","data":{"w":0}}
+
+--- query
+query q4($arg1: String, $arg2: String) {
+  match {
+    $o1: Org { tags: "of the and" }  $o2 <cites> $o1  $o1.tags in ["of the and", "of the and", "of the and"] or $o1.tags >= "the dog"  fuzzy($o1.tags, $arg1)
+  }
+  return { $o1.tags as c0  $o2.tags as c1  count($o1) as a0  bm25($o1.tags, $arg2) as r }
+  order { bm25($o1.tags, $arg2) desc, c0 }
+  limit 2
+}
+
+--- params
+{"arg1": "dog", "arg2": "run"}
+
+--- expect error: T9

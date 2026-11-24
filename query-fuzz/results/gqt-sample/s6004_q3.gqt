@@ -1,0 +1,58 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 6004, case 3; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  nums: Bool
+  tags: U32
+  content: I64
+}
+node Tag {
+  note: Bool? @index
+  weight: I32 @key
+  slug: DateTime @index
+  code: [String]
+  @index(code)
+  @range(weight, -10..1000)
+}
+node Item {
+  count: F64? @index
+  title: I32? @index
+  age: enum(a, b) @unique @index
+  text: String @index
+  emb: Vector(3)?
+}
+
+--- seed
+{"type":"Place","id":"p0","data":{"nums":false,"tags":42,"content":-1}}
+{"type":"Place","id":"p1","data":{"nums":false,"tags":42,"content":2147483647}}
+{"type":"Tag","data":{"note":false,"weight":-5,"slug":"2020-01-01T00:00:00.123Z","code":["hello world"]}}
+{"type":"Tag","data":{"note":false,"weight":7,"slug":"1999-12-31T23:59:59Z","code":[]}}
+{"type":"Tag","data":{"note":null,"weight":100,"slug":"2020-01-01T00:00:00.123Z","code":["running dogs"]}}
+{"type":"Item","id":"i0","data":{"count":-2.25,"title":1,"age":"b","text":"x running a the","emb":[-0.77,-1.83,1.22]}}
+{"type":"Item","id":"i3","data":{"title":100,"age":"a","text":"runs x dog the","emb":[1.79,1.02,-0.01]}}
+
+--- query
+query q4($arg1: Vector(3)) {
+  match {
+    $i1: Item
+    $i1.age != "b"
+    not { $i1.text starts_with "" }
+    search($i1.text, "Running")
+  }
+  return { $i1.age, $i1.title, $i1.@id, nearest($i1.emb, $arg1) as r }
+  order { nearest($i1.emb, $arg1), $i1.age }
+  limit 10
+}
+
+--- params
+{"arg1": [0.6, 0.5, -0.6]}
+
+--- expect error: 28

@@ -1,0 +1,53 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3912, case 23; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  nums: I32
+  seen: DateTime?
+  level: I64 @key
+  count: Vector(2)?
+  vec: I32?
+}
+node Person {
+  slug: String
+  tags: String? @index
+}
+node Doc {
+  tags: F64?
+  born: I64 @key
+  slug: Blob?
+  body: [Date]?
+  flag: [I64]
+  @index(flag)
+  @range(born, -10..1000)
+}
+edge Near: Person -> Person @card(0..2)
+edge Wrote: Person -> Item {
+  weight: I64?
+  role: I32
+}
+
+--- seed
+{"type":"Person","id":"p0","data":{"slug":"and the","tags":"Run"}}
+{"type":"Person","id":"p1","data":{"slug":"dog house","tags":"abc"}}
+{"type":"Person","id":"p2","data":{"slug":"it's","tags":"of the and"}}
+{"type":"Person","id":"p3","data":{"slug":"café","tags":"fox"}}
+{"edge":"Near","from":"p1","to":"p1"}
+{"edge":"Near","from":"p1","to":"p3"}
+{"edge":"Near","from":"p0","to":"p0"}
+{"edge":"Near","from":"p3","to":"p1"}
+
+--- mutate
+query q24() {
+  insert Item { nums: 0, seen: now(), level: 9007199254740993 }
+}
+
+--- expect affected: nodes=1 edges=0

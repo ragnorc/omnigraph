@@ -1,0 +1,60 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2059, case 23; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  size: F64 @index
+  note: Bool @index
+  flag: String @key
+  text: String? @index
+  emb: Vector(3)?
+  @range(size, -10..1000)
+}
+node Item {
+  content: Vector(2)
+}
+node Org {
+  age: enum(a, b)
+  code: U32
+}
+edge Cites: Item -> Item
+
+--- seed
+{"type":"Person","data":{"size":-2.25,"note":true,"flag":"a","text":"a runs","emb":null}}
+{"type":"Person","data":{"size":1.5,"note":true,"flag":"hello world","text":"café"}}
+{"type":"Person","data":{"size":3.0,"note":false,"flag":"running","text":""}}
+{"type":"Person","data":{"size":3.0,"note":true,"flag":"fox","text":"a ran","emb":[-0.52,1.14,0.31]}}
+{"type":"Person","data":{"size":0.0,"note":true,"flag":"database","text":null,"emb":[1.62,-1.77,0.71]}}
+{"type":"Person","data":{"size":0.0,"note":false,"flag":"k","text":"dog","emb":[0.24,-0.48,-0.42]}}
+{"type":"Person","data":{"size":1.5,"note":true,"flag":"of the and","text":null,"emb":[-1.0,-1.0,-1.0]}}
+{"type":"Person","data":{"size":0.0,"note":false,"flag":"and the","text":"dog a runs a","emb":null}}
+{"type":"Item","id":"i0","data":{"content":[-1.0,-1.0]}}
+{"type":"Item","id":"i1","data":{"content":[0.0,0.0]}}
+{"type":"Item","id":"i2","data":{"content":[1.0,1.0]}}
+{"type":"Item","id":"i3","data":{"content":[0.9,0.44]}}
+{"type":"Item","id":"i4","data":{"content":[-0.13,0.25]}}
+{"type":"Item","id":"i5","data":{"content":[1.17,-0.47]}}
+{"type":"Item","id":"i6","data":{"content":[1.0,0.0]}}
+{"type":"Item","id":"i7","data":{"content":[1.46,0.57]}}
+{"type":"Org","id":"o0","data":{"age":"b","code":0}}
+{"type":"Org","id":"o1","data":{"age":"b","code":2}}
+{"type":"Org","id":"o2","data":{"age":"b","code":2}}
+{"type":"Org","id":"o3","data":{"age":"a","code":1}}
+
+--- query
+query q24() {
+  match { $p1: Person } where contains($p1.flag, "R") and (starts_with($p1.flag, "data") or not $p1.note) and not coalesce($p1.flag in ["a", "dog", "x y z"], false)
+  return { $p1.emb,  $p1.note }
+}
+
+--- expect unordered
+
+
+--- expect shape

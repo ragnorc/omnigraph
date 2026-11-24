@@ -1,0 +1,49 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 4650, case 9; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag {
+  rank: enum(low, mid, high)? @unique @index
+  note: Vector(3)
+  seen: Bool?
+  age: I64?
+  born: I32? @index
+}
+node Doc {
+  content: [Date]?
+  count: Vector(3)
+  code: U64
+  @index(content)
+}
+
+--- seed
+{"type":"Tag","id":"t0","data":{"rank":"mid","note":[0.19,2.0,0.34],"seen":true,"age":100,"born":7}}
+{"type":"Doc","id":"d0","data":{"content":["1999-12-31","1970-01-01","2020-01-01"],"count":[0.94,-0.51,0.43],"code":0}}
+{"type":"Doc","id":"d1","data":{"content":["2024-02-29","2020-01-01","1999-12-31"],"count":[0.94,1.96,0.68],"code":2147483647}}
+{"type":"Doc","id":"d2","data":{"content":[],"count":[-1.76,0.4,-0.2],"code":0}}
+{"type":"Doc","id":"d3","data":{"content":["2024-02-29"],"count":[1.0,0.0,0.0],"code":100}}
+{"type":"Doc","id":"d4","data":{"count":[1.0,0.0,0.0],"code":7}}
+
+--- query
+query q10() {
+  match {
+    $d1: Doc
+    date("2024-02-29") in $d1.content and $d1.code > 0
+  }
+  return { $d1.content, $d1.count }
+  order { $d1.content, $d1.count }
+}
+
+--- expect ordered
+{"d1.content": ["2024-02-29"], "d1.count": [1.0, 0.0, 0.0]}
+{"d1.content": ["2024-02-29", "2020-01-01", "1999-12-31"], "d1.count": [0.94, 1.96, 0.68]}
+
+--- expect shape
+d1.content: [Date]
+d1.count: Vector(3)

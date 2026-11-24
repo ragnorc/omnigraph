@@ -1,0 +1,66 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5449, case 0; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  code: [Bool]?
+  count: F64
+  size: F32
+  name: Vector(2)
+  title: String @key
+  @index(code)
+}
+node Person {
+  tags: Bool?
+  nums: F32? @index
+  score: enum(red, green, blue, x-1)?
+  level: [I64]?
+}
+node Place {
+  note: F64? @index
+  code: [F64]
+  level: enum(red, green, blue, x-1)?
+  vec: Vector(3)
+  tags: enum(red, green, blue, x-1)?
+}
+
+--- seed
+{"type":"Item","data":{"code":[true,false],"count":10000000000.0,"size":0.0,"name":[-0.97,-0.97],"title":"Run"}}
+{"type":"Item","data":{"code":[false],"count":0.1,"size":0.0,"name":[-0.5,-1.68],"title":"RUN"}}
+{"type":"Item","data":{"code":[false],"count":2.5,"size":0.5,"name":[0.0,0.0],"title":"dog"}}
+{"type":"Item","data":{"count":10000000000.0,"size":0.0,"name":[-1.0,-1.0],"title":"and the"}}
+{"type":"Item","data":{"code":[false],"count":0.0,"size":0.5,"name":[1.0,0.0],"title":"dog house"}}
+{"type":"Item","data":{"count":1.5,"size":7.0,"name":[-1.86,-0.42],"title":"Dogs"}}
+{"type":"Item","data":{"code":[],"count":10000000000.0,"size":0.5,"name":[-1.0,-1.0],"title":"café"}}
+{"type":"Item","data":{"code":[],"count":7.0,"size":-2.25,"name":[1.0,1.0],"title":"café"}}
+{"type":"Place","id":"p0","data":{"note":0.1,"code":[-2.25,0.1,1.5],"level":"x-1","vec":[-1.23,1.64,1.46],"tags":"blue"}}
+{"type":"Place","id":"p1","data":{"note":null,"code":[-2.25],"vec":[-0.98,-1.96,-0.41],"tags":"red"}}
+{"type":"Place","id":"p2","data":{"note":10000000000.0,"code":[0.1],"level":"blue","vec":[1.0,0.0,0.0],"tags":"blue"}}
+{"type":"Place","id":"p3","data":{"note":0.0,"code":[],"level":null,"vec":[-1.79,0.78,-1.28]}}
+
+--- query
+query q1($arg1: Vector(3)) {
+  match {
+    $p1: Place
+    $p1.tags != "red"
+  }
+  return { $p1.@id as c0 }
+  order { nearest($p1.vec, $arg1) }
+  limit 2
+}
+
+--- params
+{"arg1": [0.3, 0.2, -0.4]}
+
+--- expect ordered
+{"c0": "p2"}
+{"c0": "p0"}
+
+--- expect shape
+c0: String

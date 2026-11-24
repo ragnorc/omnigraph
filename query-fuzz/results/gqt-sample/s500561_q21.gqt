@@ -1,0 +1,48 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500561, case 21; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  weight: enum(red, green, blue, x-1) @index
+}
+node Item {
+  name: Blob?
+  count: enum(low, mid, high)?
+  nums: U64?
+}
+node Tag {
+  nums: Blob?
+}
+
+--- seed
+{"type":"Item","id":"i0","data":{"name":"base64:","count":"mid","nums":4611686018427387904}}
+{"type":"Item","id":"i1","data":{"name":"base64:AAEC","count":"high","nums":2147483647}}
+{"type":"Item","id":"i2","data":{"name":"base64:AAEC","count":"low","nums":2147483647}}
+{"type":"Item","id":"i3","data":{"name":"base64:","count":"mid","nums":9007199254740993}}
+{"type":"Item","id":"i4","data":{"name":"base64:SGVsbG8=","count":"mid","nums":42}}
+{"type":"Tag","id":"t0","data":{}}
+{"type":"Tag","id":"t1","data":{"nums":"base64:"}}
+{"type":"Tag","id":"t2","data":{"nums":"base64:AAEC"}}
+{"type":"Tag","id":"t3","data":{}}
+
+--- query
+query contains() {
+  match { $i1: Item }
+  return { $i1.count, $i1.nums as c1, count($i1) as a0 }
+  order { a0 asc }
+}
+
+--- expect ordered
+{"i1.count": "mid", "c1": 4611686018427387904, "a0": 1}
+{"i1.count": "high", "c1": 2147483647, "a0": 1}
+{"i1.count": "low", "c1": 2147483647, "a0": 1}
+{"i1.count": "mid", "c1": 9007199254740993, "a0": 1}
+{"i1.count": "mid", "c1": 42, "a0": 1}
+
+--- expect shape

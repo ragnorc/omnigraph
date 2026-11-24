@@ -1,0 +1,63 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5501, case 8; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  level: [I32]
+  age: I64? @index
+  size: [Bool]?
+  name: U32?
+  score: enum(a, b)? @index
+}
+node Item {
+  score: F32?
+  content: I64
+  level: I64 @index
+  body: U64
+  slug: U32?
+  @key(content, level)
+  @range(content, -10..1000)
+}
+edge Tagged: Item -> Item {
+  role: [String]?
+}
+edge Wrote: Item -> Item @card(0..1) {
+  @unique(@src, @dst)
+}
+
+--- seed
+{"type":"Doc","id":"d0","data":{"level":[-2147483648],"age":null,"size":[true,true,false]}}
+{"type":"Doc","id":"d1","data":{"level":[],"size":[true],"name":100,"score":"b"}}
+{"type":"Doc","id":"d2","data":{"level":[3],"age":2,"size":[false,true],"name":100,"score":"b"}}
+{"type":"Doc","id":"d3","data":{"level":[3,0,2],"size":[false,false],"name":3,"score":"b"}}
+{"type":"Doc","id":"d4","data":{"level":[42,-1],"age":9007199254740992,"size":[false,false,true],"name":2}}
+{"type":"Doc","id":"d5","data":{"level":[-1],"age":null,"size":[true,true]}}
+{"type":"Item","data":{"score":1.5,"content":-1,"level":-2147483648,"body":0,"slug":null}}
+{"type":"Item","data":{"score":3.0,"content":1,"level":0,"body":9007199254740993,"slug":7}}
+{"type":"Item","data":{"content":-5,"level":3,"body":1,"slug":0}}
+{"edge":"Tagged","from":"[\"-5\",\"3\"]","to":"[\"1\",\"0\"]","data":{"role":["data base","database"]}}
+{"edge":"Tagged","from":"[\"1\",\"0\"]","to":"[\"-5\",\"3\"]","data":{"role":["runs","Dogs","x y z"]}}
+{"edge":"Tagged","from":"[\"-1\",\"-2147483648\"]","to":"[\"1\",\"0\"]","data":{"role":["café","Dogs","Run"]}}
+{"edge":"Tagged","from":"[\"1\",\"0\"]","to":"[\"-1\",\"-2147483648\"]","data":{"role":["ran","dog","RUN"]}}
+{"edge":"Wrote","from":"[\"-1\",\"-2147483648\"]","to":"[\"-5\",\"3\"]"}
+{"edge":"Wrote","from":"[\"-5\",\"3\"]","to":"[\"1\",\"0\"]"}
+
+--- query
+query q9() {
+  match { $i1: Item, $i1 wrote $i2 } where $i2.slug is not null and $i2.slug = 7
+  return { $i2.content, $i1, avg($i2.content) as a0 }
+  order { a0, $i2.content }
+}
+
+--- expect ordered
+{"i2.content": 1, "i1": {"@id": "[\"-5\",\"3\"]", "body": 1, "content": -5, "level": 3, "slug": 0}, "a0": 1.0}
+
+--- expect shape

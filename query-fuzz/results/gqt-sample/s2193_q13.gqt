@@ -1,0 +1,50 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2193, case 13; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  count: Bool? @index
+  name: F64
+}
+node Item {
+  title: [String]?
+  slug: String?
+  nums: I64
+  rank: I64 @index
+  level: String
+  @key(nums, level)
+}
+node Tag {
+  slug: I32 @key
+  rank: [I32]
+  count: [Date]
+  vec: DateTime?
+}
+edge Knows: Person -> Tag
+
+--- seed
+{"type":"Person","id":"p0","data":{"count":true,"name":7.0}}
+{"type":"Person","id":"p1","data":{"count":false,"name":2.5}}
+{"type":"Item","data":{"title":["running","hello world"],"slug":"abc","nums":-1,"rank":100,"level":""}}
+{"type":"Item","data":{"title":["a","naïve"],"nums":0,"rank":-5,"level":"data base"}}
+{"type":"Item","data":{"title":["a"],"slug":"runs","nums":2147483647,"rank":2,"level":"dog house"}}
+{"type":"Item","data":{"title":["dog house"],"slug":"café","nums":9007199254740992,"rank":9007199254740993,"level":"a"}}
+{"type":"Item","data":{"title":["abc"],"nums":1,"rank":-9007199254740993,"level":"run"}}
+{"type":"Item","data":{"title":["","dog","naïve"],"slug":"x","nums":100,"rank":-5,"level":"running"}}
+{"type":"Item","data":{"title":[],"slug":null,"nums":9007199254740992,"rank":7,"level":"hello world"}}
+{"type":"Item","data":{"title":[],"slug":null,"nums":100,"rank":-2147483648,"level":"café"}}
+
+--- mutate
+query q14() {
+  delete Person where @id = "p1"
+  delete Knows where @id = "x"
+}
+
+--- expect affected: nodes=1 edges=0

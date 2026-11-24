@@ -1,0 +1,63 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5514, case 13; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  rank: String @key
+  flag: [I32]?
+  nums: String @unique
+  @index(flag)
+}
+node Tag {
+  age: String?
+  rank: U64 @unique
+  content: DateTime @index
+  text: String? @index
+  emb: Vector(3)?
+}
+node Person {
+  flag: enum(a, b)
+  name: Vector(3)?
+  vec: Blob?
+}
+edge Knows: Item -> Item @card(0..1)
+edge Near: Item -> Person
+
+--- seed
+{"type":"Item","data":{"rank":"ab","flag":null,"nums":"café"}}
+{"type":"Tag","id":"t0","data":{"age":"ab","rank":2147483647,"content":"1999-12-31T23:59:59Z","text":"Run Run","emb":[0.5,0.5,0.5]}}
+{"type":"Tag","id":"t1","data":{"age":"x y z","rank":0,"content":"1999-12-31T23:59:59Z","text":"the runs Dogs running","emb":[0.5,0.5,0.5]}}
+{"type":"Tag","id":"t2","data":{"rank":4611686018427387904,"content":"2020-01-01T00:00:00.123Z","text":"","emb":[-1.0,-1.0,-1.0]}}
+{"type":"Tag","id":"t3","data":{"age":"Hello World","rank":3,"content":"1999-12-31T23:59:59Z","text":"base","emb":[0.0,0.0,0.0]}}
+{"type":"Tag","id":"t4","data":{"age":"Ünïcode","rank":7,"content":"2024-02-29T12:00:00Z","text":"run Dogs x the","emb":[0.19,1.0,-1.82]}}
+{"type":"Tag","id":"t6","data":{"rank":1,"content":"1999-12-31T23:59:59Z","text":"a running RUN"}}
+{"type":"Tag","id":"t7","data":{"age":"a","rank":9007199254740993,"content":"2024-02-29T12:00:00Z","text":"running","emb":[1.0,1.0,1.0]}}
+{"type":"Tag","id":"t9","data":{"age":"RUN","rank":2,"content":"2024-02-29T12:00:00Z","emb":[1.0,1.0,1.0]}}
+{"type":"Person","id":"p0","data":{"flag":"b","name":[-1.99,1.99,-1.55],"vec":"base64:SGVsbG8="}}
+{"edge":"Knows","from":"ab","to":"ab"}
+{"edge":"Near","from":"ab","to":"p0"}
+{"edge":"Near","from":"ab","to":"p0"}
+{"edge":"Near","from":"ab","to":"p0"}
+
+--- query
+query q14($arg1: String) {
+  match { $p1: Person, $i2 near $p1 } where $p1.flag = "a" and match_terms($i2.rank, terms($arg1, mode: any))
+  return { $i2.rank as c0 }
+  order { c0 }
+}
+
+--- params
+{"arg1": "the"}
+
+--- expect ordered
+
+
+--- expect shape

@@ -1,0 +1,62 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1395, case 2; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  size: Vector(3)
+  code: enum(a, b)
+  nums: String @key
+  vec: enum(red, green, blue, x-1)? @unique
+}
+node Tag {
+  age: DateTime?
+  vec: I32
+  body: enum(low, mid, high)?
+  weight: I64 @key
+  @range(weight, -10..1000)
+}
+node Doc {
+  slug: Blob?
+  nums: I64?
+  text: String? @index
+  emb: Vector(3)
+}
+node Item {
+  weight: String @index
+  code: Bool? @index
+  level: U64
+}
+edge Likes: Tag -> Person
+
+--- seed
+{"type":"Person","data":{"size":[0.41,1.35,0.79],"code":"a","nums":"the","vec":"red"}}
+{"type":"Tag","data":{"age":"1999-12-31T23:59:59Z","vec":0,"body":"high","weight":2}}
+{"type":"Tag","data":{"age":null,"vec":3,"body":null,"weight":7}}
+{"type":"Tag","data":{"age":"2020-01-01T00:00:00Z","vec":3,"body":null,"weight":0}}
+{"type":"Tag","data":{"age":"2020-01-01T00:00:00Z","vec":0,"body":"low","weight":100}}
+{"type":"Tag","data":{"age":null,"vec":2147483647,"body":"mid","weight":-5}}
+{"type":"Tag","data":{"age":"2024-02-29T12:00:00Z","vec":0,"body":"high","weight":42}}
+{"type":"Tag","data":{"age":"2020-01-01T00:00:00Z","vec":2147483647,"body":"high","weight":-1}}
+{"type":"Doc","id":"d0","data":{"slug":null,"nums":1,"text":"a hello RUN a","emb":[0.0,0.0,0.0]}}
+{"type":"Doc","id":"d1","data":{"slug":"base64:SGVsbG8=","nums":9007199254740992,"text":"café","emb":[0.94,1.11,-0.37]}}
+{"type":"Item","id":"i0","data":{"weight":"fox","code":true,"level":4611686018427387904}}
+{"type":"Item","id":"i1","data":{"weight":"dog","code":false,"level":0}}
+{"type":"Item","id":"i2","data":{"weight":"the dog","code":true,"level":4611686018427387904}}
+{"edge":"Likes","from":"0","to":"the"}
+
+--- mutate
+query distance($arg1: Vector(3), $arg2: Vector(3)) {
+  update Doc set { emb: $arg1, text: "café" } where nums is null
+  update Doc set { emb: $arg2, nums: 9007199254740993 } where nums < 1
+}
+
+--- params
+{"arg1": [-0.4, -0.1, -0.3], "arg2": [0.7, 0.0, -0.5]}
+
+--- expect affected: nodes=0 edges=0

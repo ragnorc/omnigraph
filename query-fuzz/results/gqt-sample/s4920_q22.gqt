@@ -1,0 +1,51 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 4920, case 22; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag {
+  vec: I32 @key
+  @range(vec, -10..1000)
+}
+node Doc {
+  slug: enum(low, mid, high)?
+  tags: Bool?
+  content: DateTime?
+  text: String? @index
+  emb: Vector(3)?
+}
+edge Likes: Doc -> Tag
+edge Near: Doc -> Tag {
+  @unique(@src, @dst)
+}
+edge Cites: Doc -> Tag
+edge Links: Doc -> Doc {
+  weight: enum(a, b)?
+  role: [String]?
+}
+
+--- seed
+{"type":"Tag","data":{"vec":1}}
+
+--- query
+query q25() {
+  match {
+    $d1: Doc { content: datetime("2024-02-29T12:00:00Z") }
+    $d2 links $d1
+    $d3 links $d1
+    $d2.text > "x y z"
+  }
+  return { $d1.content, count($d2) as a0 }
+  order { bm25($d3.text, "Running") desc }
+  limit 1
+}
+
+--- expect ordered
+
+
+--- expect shape

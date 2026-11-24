@@ -1,0 +1,106 @@
+count	oracle	signature	sanction
+7083	4	fix-does-not-converge	fix.filter-only-block-loops
+4804	4	fix-stops-unfixed:T74	fix.read-named-after-function-no-edit
+3859	4	fix-stops-unfixed:T65	e2-refused-too
+3033	4	fix-stops-unfixed:T65	language.ranking-under-aggregate-no-edit
+2678	4	fix-stops-unfixed:T91	open:write-groups-one-snapshot
+1955	1	unchanged:write:error:ok->conflict	writes.keyed-insert
+1907	4	fix-stops-unfixed:T6	e2-refused-too
+1717	3	fixed:read:types:FN->FN	results.bm25-f64
+1498	4	fix-stops-unfixed:T42	e2-refused-too
+1483	2	refusal-without-fix:T74	fix.read-named-after-function-no-edit
+1389	4	fix-stops-unfixed:T43	e2-refused-too
+1327	3	fixed:write:error:ok->conflict	writes.keyed-insert
+894	3	fixed:read:columns:rename _distance	results.distance-rename
+856	3	fixed:read:columns:rename _score	results.bm25-score-rename
+767	4	fix-stops-unfixed:T91	e2-refused-too
+651	1	unchanged:read:rows:different-identities N->N	results.limit-tie-rule
+643	3	fixed:write:affected:[…] -> […]	fix.statements-join-match-group
+562	4	fix-stops-unfixed:T71	fix.fuzzy-max-edits-above-2-no-edit
+525	5	e2-refused-new-accepts:T3	accepted.empty-list-in-assignment
+499	3	fixed:write:state:-N +N lines	fix.statements-join-match-group
+469	4	fix-stops-unfixed:T15	e2-refused-too
+467	1	unchanged:write:error:bad_request->ok	accepted.whole-float-into-integer
+405	3	fixed:read:rows:different-identities N->N	results.hop-range-self-loop
+401	4	fix-stops-unfixed:T74	e2-refused-too
+377	4	fix-stops-unfixed:T3	e2-refused-too
+370	4	fix-stops-unfixed:T65	fix.rrf-explicit-k-no-edit
+362	3	fixed:read:rows:same-identities-other-order	contract.D10-ties
+320	1	unchanged:read:rows:same-identities-other-order	contract.D10-ties
+317	5	e2-refused-new-accepts:Q001	language.accepted-spelling
+275	4	fix-stops-unfixed:Q005	e2-refused-too
+260	3	fixed:read:rows:different-identities N->N	results.limit-tie-rule
+227	4	fix-stops-unfixed:T65,T74	e2-refused-too
+217	4	fix-stops-unfixed:T65,T74	fix.read-named-after-function-no-edit
+215	4	fix-stops-unfixed:T65,T81	e2-refused-too
+205	4	fix-stops-unfixed:T74,T81	fix.read-named-after-function-no-edit
+200	4	fix-stops-unfixed:T71	e2-refused-too
+187	4	fix-stops-unfixed:T65,T81	language.ranking-under-aggregate-no-edit
+125	4	fix-stops-unfixed:T6,T65	e2-refused-too
+124	4	fix-stops-unfixed:T76	e2-refused-too
+111	3	fixed:read:rows:different-identities N->N	results.full-text-analysis
+94	4	fix-stops-unfixed:T6,T74	e2-refused-too
+85	4	fix-stops-unfixed:T42,T74	e2-refused-too
+77	4	fix-stops-unfixed:Q018	e2-refused-too
+75	4	fix-stops-unfixed:T43,T74	e2-refused-too
+68	3	fixed:read:columns:rename _rrf	results.rank-column-rename
+65	4	fix-stops-unfixed:T15,T65	e2-refused-too
+64	3	fixed:read:rows:values-equal-within-fN	results.bm25-f64
+64	4	fix-stops-unfixed:T43,T81	e2-refused-too
+62	4	fix-stops-unfixed:T42,T81	e2-refused-too
+57	4	fix-stops-unfixed:T42,T6	e2-refused-too
+57	4	fix-stops-unfixed:T6,T81	e2-refused-too
+57	3	fixed:read:rows:different-identities N->N	contract.D10-ties
+51	1	unchanged:read:rows:different-identities N->N	contract.D10-ties
+49	4	fix-stops-unfixed:T74,T81	e2-refused-too
+48	4	fix-stops-unfixed:T76,T91	e2-refused-too
+48	3	fixed:read:rows:different-identities N->N	results.integer-float-comparison
+42	4	fix-stops-unfixed:T65	fix.rrf-over-a-triple-bound-binding-no-edit
+42	5	e2-refused-new-accepts:T9	language.accepted-item-beside-aggregates
+34	3	fixed:read:rows:different-identities N->N	results.fusion-window
+31	4	fix-stops-unfixed:T42,T43	e2-refused-too
+31	3	fixed:write:affected:[…] -> […]	results.integer-float-comparison
+29	3	fixed:write:error:ok->conflict	fix.statements-join-match-group
+27	4	fix-stops-unfixed:T15,T74	e2-refused-too
+26	4	fix-stops-unfixed:T65	language.rrf-two-bindings
+26	3	fixed:write:state:-N +N lines	results.integer-float-comparison
+24	4	fix-stops-unfixed:T65,T81	fix.rrf-explicit-k-no-edit
+22	4	fix-stops-unfixed:T65,T81	language.rrf-two-bindings
+22	4	fix-stops-unfixed:T3,T91	e2-refused-too
+16	4	fix-stops-unfixed:T65,T74,T81	fix.read-named-after-function-no-edit
+15	4	fix-stops-unfixed:T15,T42	e2-refused-too
+13	3	fixed:write:error:ok->bad_request	fix.statements-join-match-group
+13	4	fix-stops-unfixed:T15,T6	e2-refused-too
+13	4	fix-stops-unfixed:T6,T65,T74	e2-refused-too
+13	4	fix-stops-unfixed:T65,T74,T81	e2-refused-too
+13	1	unchanged:write:error:ok->conflict	writes.keyed-insert-repeated-in-one-write
+10	4	fix-stops-unfixed:T69	fix.read-named-after-function-no-edit
+10	6	panic:lint	panic.grouped-order-key
+10	1	unchanged:read:rows:values-equal-within-fN	results.avg-exact-integer
+9	4	fix-status:None	panic.grouped-order-key
+8	4	fix-stops-unfixed:T15,T43	e2-refused-too
+8	3	fixed:read:rows:values-equal-within-fN	results.avg-exact-integer
+7	3	fixed:read:rows:same-identities-other-order	ranking-tie?
+4	4	fix-stops-unfixed:T69	e2-refused-too
+4	5	e2-refused-new-accepts:Q001	accepted.exponent-float-literal
+3	4	fix-stops-unfixed:T65,T81	fix.rrf-over-a-triple-bound-binding-no-edit
+3	3	fixed:write:error:ok->conflict	writes.keyed-insert-repeated-in-one-write
+3	4	fix-stops-unfixed:T42,T74,T81	e2-refused-too
+3	4	fix-stops-unfixed:T65,T69	e2-refused-too
+2	4	fix-stops-unfixed:T42,T6,T81	e2-refused-too
+2	3	fixed:read:rows:same-identities-other-order	None
+2	4	fix-stops-unfixed:T42,T6,T74	e2-refused-too
+2	2	refusal-code-not-in-guide:T69	fix.read-named-after-function-no-edit
+2	4	fix-stops-unfixed:T27	e2-refused-too
+2	4	fix-stops-unfixed:T43,T74,T81	e2-refused-too
+1	6	panic:new	panic.grouped-order-key
+1	6	uncoded-error:new	panic.grouped-order-key
+1	4	fix-stops-unfixed:T6,T74,T81	e2-refused-too
+1	4	fix-stops-unfixed:T15,T43,T74	e2-refused-too
+1	4	fix-stops-unfixed:T71,T81	fix.fuzzy-max-edits-above-2-no-edit
+1	4	fix-stops-unfixed:T42,T43,T74	e2-refused-too
+1	4	fix-stops-unfixed:T15,T65,T74	e2-refused-too
+1	3	fixed:write:error:ok->conflict	conflict-without-existing-key?
+1	4	fix-stops-unfixed:T43,T71	e2-refused-too
+1	4	fix-stops-unfixed:T15,T42,T74	e2-refused-too
+1	4	fix-stops-unfixed:T6,T65,T81	e2-refused-too

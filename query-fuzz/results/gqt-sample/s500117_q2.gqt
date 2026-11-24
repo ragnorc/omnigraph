@@ -1,0 +1,65 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500117, case 2; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  content: DateTime?
+  tags: Blob?
+  seen: F32
+}
+node Person {
+  count: F32 @index
+  rank: enum(a, b)?
+  body: [Date]?
+}
+node Item {
+  score: enum(a, b)
+  body: [String]
+  seen: I32 @key
+  weight: String @unique @index
+  @index(body)
+}
+edge Tagged: Person -> Item @card(0..2)
+
+--- seed
+{"type":"Doc","id":"d0","data":{"content":"2020-01-01T00:00:00.123Z","tags":"base64:AAEC","seen":0.5}}
+{"type":"Doc","id":"d1","data":{"content":"2020-01-01T00:00:00Z","seen":2.5}}
+{"type":"Doc","id":"d2","data":{"content":"2024-02-29T12:00:00Z","tags":"base64:AAEC","seen":2.5}}
+{"type":"Doc","id":"d3","data":{"content":"1999-12-31T23:59:59Z","tags":"base64:SGVsbG8=","seen":7.0}}
+{"type":"Doc","id":"d4","data":{"tags":"base64:","seen":2.5}}
+{"type":"Doc","id":"d5","data":{"content":"1999-12-31T23:59:59Z","tags":"base64:SGVsbG8=","seen":7.0}}
+{"type":"Person","id":"p0","data":{"count":2.5,"body":["1999-12-31","2020-01-01","2024-02-29"]}}
+{"type":"Item","data":{"score":"b","body":[],"seen":100,"weight":"RUN"}}
+{"type":"Item","data":{"score":"a","body":["dog house"],"seen":1,"weight":"café"}}
+{"type":"Item","data":{"score":"b","body":[],"seen":3,"weight":"and the"}}
+{"type":"Item","data":{"score":"a","body":["it's"],"seen":7,"weight":"run"}}
+{"type":"Item","data":{"score":"b","body":["hello world","naïve"],"seen":-1,"weight":"abc"}}
+{"type":"Item","data":{"score":"b","body":[],"seen":2147483647,"weight":"it's"}}
+{"type":"Item","data":{"score":"b","body":["dog house"],"seen":2,"weight":"running"}}
+{"type":"Item","data":{"score":"b","body":[],"seen":-5,"weight":"x"}}
+{"edge":"Tagged","from":"p0","to":"-5"}
+{"edge":"Tagged","from":"p0","to":"2"}
+
+--- query
+query q3() {
+  match { $d1: Doc }
+  return distinct { $d1.content as c0 }
+  order { c0 }
+}
+
+--- expect ordered
+{}
+{"c0": "1999-12-31T23:59:59"}
+{"c0": "2020-01-01T00:00:00"}
+{"c0": "2020-01-01T00:00:00.123"}
+{"c0": "2024-02-29T12:00:00"}
+
+--- expect shape
+c0: DateTime?

@@ -1,0 +1,69 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1798, case 17; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  tags: enum(red, green, blue, x-1)? @unique @index
+  body: F32? @index
+}
+node Person {
+  rank: I32 @key
+  code: [F64]?
+  flag: F64?
+  note: DateTime?
+  @index(code)
+}
+node Place {
+  nums: I64 @key
+  seen: I64? @index
+}
+edge Links: Person -> Place {
+  role: I32?
+  since: String?
+}
+edge Near: Person -> Place
+edge Tagged: Person -> Org
+edge Owns: Place -> Place @card(0..1)
+
+--- seed
+{"type":"Org","id":"o0","data":{"tags":null,"body":1.5}}
+{"type":"Org","id":"o1","data":{"tags":"blue","body":0.5}}
+{"type":"Org","id":"o2","data":{"body":0.5}}
+{"type":"Org","id":"o3","data":{"tags":"green","body":0.0}}
+{"type":"Org","id":"o5","data":{"tags":"x-1","body":null}}
+{"type":"Person","data":{"rank":-1,"flag":7.0,"note":null}}
+{"type":"Person","data":{"rank":-5,"code":[],"flag":7.0,"note":"2020-01-01T00:00:00Z"}}
+{"type":"Person","data":{"rank":100,"code":[],"flag":3.0,"note":"2020-01-01T00:00:00Z"}}
+{"type":"Person","data":{"rank":2147483647,"code":[7.0,0.1],"note":"2020-01-01T00:00:00.123Z"}}
+{"type":"Person","data":{"rank":2,"code":[0.1],"flag":3.0,"note":"2020-01-01T00:00:00Z"}}
+{"type":"Person","data":{"rank":42,"code":[],"note":"2024-02-29T12:00:00Z"}}
+{"type":"Person","data":{"rank":-2147483648,"code":[],"note":"2020-01-01T00:00:00Z"}}
+{"type":"Person","data":{"rank":3,"code":[2.5],"flag":3.0,"note":"2020-01-01T00:00:00Z"}}
+{"type":"Place","data":{"nums":9007199254740992,"seen":9007199254740993}}
+{"type":"Place","data":{"nums":-9007199254740993,"seen":-5}}
+{"edge":"Links","from":"-2147483648","to":"9007199254740992","data":{"since":"x"}}
+{"edge":"Links","from":"100","to":"9007199254740992","data":{"role":42}}
+{"edge":"Near","from":"3","to":"-9007199254740993"}
+{"edge":"Near","from":"2","to":"9007199254740992"}
+{"edge":"Near","from":"-5","to":"9007199254740992"}
+{"edge":"Near","from":"-5","to":"-9007199254740993"}
+{"edge":"Tagged","from":"-5","to":"o5"}
+
+--- mutate
+query q18($arg1: DateTime, $arg2: F64) {
+  insert Near { @src: "-2147483648", @dst: "9007199254740992" }
+  match { $x: Person } where $arg2 in $x.code  update $x set { note: $arg1 }
+}
+
+--- params
+{"arg1": "2024-02-29T12:00:00Z", "arg2": 10000000000.0}
+
+--- expect affected: nodes=0 edges=1

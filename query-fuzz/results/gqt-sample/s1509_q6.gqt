@@ -1,0 +1,50 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1509, case 6; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  body: [F64]?
+  score: [String]?
+  name: U64? @unique @index
+}
+node Doc {
+  title: F32?
+  text: String @index
+  emb: Vector(3)?
+}
+edge Tagged: Place -> Place {
+  since: Date
+}
+
+--- seed
+{"type":"Doc","id":"d0","data":{"title":1.5,"text":"café RUN","emb":[-1.0,-1.0,-1.0]}}
+{"type":"Doc","id":"d1","data":{"title":null,"text":"","emb":[1.0,1.0,1.0]}}
+{"type":"Doc","id":"d2","data":{"title":0.5,"text":"the","emb":[1.03,-0.77,1.08]}}
+{"type":"Doc","id":"d3","data":{"title":1.5,"text":"dog the running","emb":[-1.9,-0.26,-0.25]}}
+{"type":"Doc","id":"d4","data":{"title":1.5,"text":"the a the","emb":[-1.0,-1.0,-1.0]}}
+{"type":"Doc","id":"d5","data":{"title":null,"text":"a dog","emb":[-1.0,-1.0,-1.0]}}
+{"type":"Doc","id":"d6","data":{"title":0.5,"text":""}}
+{"type":"Doc","id":"d7","data":{"title":2.5,"text":"","emb":[0.03,-0.56,-0.59]}}
+
+--- query
+query q7() {
+  match {
+    $p1: Place { name: 9007199254740993 }
+  }
+  return { $p1.@id, $p1.score as c1 }
+  order { $p1.@id, c1 }
+}
+
+--- expect ordered
+
+
+--- expect shape
+p1.@id: String
+c1: [String]

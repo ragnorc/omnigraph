@@ -1,0 +1,59 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500774, case 11; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  age: I32 @unique @index
+  note: [I32]
+  tags: I32 @key
+  text: String @index
+  emb: Vector(3)?
+}
+node Doc {
+  age: [String]
+  code: enum(red, green, blue, x-1)?
+}
+node Person {
+  count: enum(low, mid, high)? @unique
+  content: I32?
+  nums: String @key
+}
+edge Likes: Person -> Person {
+  role: I32?
+}
+edge Cites: Person -> Org
+edge Tagged: Person -> Doc {
+  @unique(@src, @dst)
+}
+
+--- seed
+{"type":"Org","data":{"age":-2147483648,"note":[],"tags":-1,"text":"data the","emb":[-1.0,-1.0,-1.0]}}
+{"type":"Org","data":{"age":0,"note":[-2147483648],"tags":3,"text":"base a base ran","emb":[-0.29,-1.15,0.63]}}
+{"type":"Org","data":{"age":-5,"note":[3],"tags":0,"text":"","emb":null}}
+{"type":"Org","data":{"age":2,"note":[0],"tags":7,"text":"dog Dogs running hello","emb":[1.0,0.0,0.0]}}
+{"type":"Doc","id":"d0","data":{"age":["Ünïcode","ran","Run"],"code":"green"}}
+{"type":"Doc","id":"d1","data":{"age":["Run"],"code":"red"}}
+{"type":"Person","data":{"count":"mid","content":2147483647,"nums":"dog house"}}
+{"type":"Person","data":{"count":"high","content":-1,"nums":"abc"}}
+{"edge":"Likes","from":"dog house","to":"dog house"}
+{"edge":"Likes","from":"dog house","to":"abc","data":{"role":2147483647}}
+{"edge":"Likes","from":"abc","to":"dog house","data":{"role":3}}
+{"edge":"Cites","from":"dog house","to":"0"}
+{"edge":"Cites","from":"abc","to":"0"}
+{"edge":"Tagged","from":"dog house","to":"d0"}
+{"edge":"Tagged","from":"dog house","to":"d1"}
+{"edge":"Tagged","from":"abc","to":"d1"}
+{"edge":"Tagged","from":"abc","to":"d0"}
+
+--- mutate
+query q12() {
+  insert Person { count: "high", nums: "ran" }
+}
+
+--- expect error: value 'high' held by 'abc' and 'ran'

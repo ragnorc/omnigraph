@@ -1,0 +1,75 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 6059, case 20; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  born: String
+}
+node Place {
+  rank: [String]?
+  flag: I64 @key
+  body: [String]?
+  born: U32?
+  @range(flag, -10..1000)
+}
+node Person {
+  level: Blob?
+  age: Date? @index
+  born: I32? @unique @index
+  name: [F64]
+  nums: enum(a, b)? @unique
+}
+edge Knows: Person -> Person @card(0..1) {
+  role: [F64]?
+  weight: I32?
+}
+edge Near: Person -> Person {
+  role: Date?
+  w: enum(a, b)?
+}
+
+--- seed
+{"type":"Org","id":"o0","data":{"born":"café"}}
+{"type":"Org","id":"o1","data":{"born":"the dog"}}
+{"type":"Place","data":{"flag":-1,"body":null,"born":0}}
+{"type":"Place","data":{"rank":["naïve","dog house"],"flag":42,"body":["Dogs","it's"],"born":0}}
+{"type":"Place","data":{"rank":["data base"],"flag":7,"body":["it's","Run","hello world"],"born":null}}
+{"type":"Place","data":{"rank":["database"],"flag":100,"body":[],"born":42}}
+{"type":"Place","data":{"rank":["dog"],"flag":3,"body":["database"],"born":4294967295}}
+{"type":"Place","data":{"rank":["data base"],"flag":1,"body":["the dog","it's"],"born":1}}
+{"type":"Place","data":{"rank":["database","Hello World","RUN"],"flag":0,"body":["Ünïcode","dog house","dog"]}}
+{"type":"Place","data":{"rank":["it's"],"flag":-5,"body":["running","data base","data base"],"born":0}}
+{"type":"Person","id":"p0","data":{"level":"base64:AAEC","age":"1970-01-01","born":7,"name":[2.5,-2.25],"nums":"a"}}
+{"type":"Person","id":"p1","data":{"level":null,"age":"1970-01-01","born":2147483647,"name":[2.5]}}
+{"type":"Person","id":"p4","data":{"level":"base64:AAEC","born":null,"name":[10000000000.0]}}
+{"type":"Person","id":"p6","data":{"level":"base64:","age":"1999-12-31","born":0,"name":[7.0,0.0],"nums":"b"}}
+{"type":"Person","id":"p7","data":{"level":"base64:","born":-5,"name":[7.0,1.5,1.5],"nums":null}}
+{"type":"Person","id":"p10","data":{"level":"base64:AAEC","age":"2020-01-01","born":100,"name":[0.1,2.5,3.0]}}
+{"type":"Person","id":"p13","data":{"level":"base64:AAEC","age":"1970-01-01","born":2,"name":[-2.25]}}
+{"edge":"Knows","from":"p0","to":"p7","data":{"role":[0.1],"weight":-1}}
+{"edge":"Knows","from":"p6","to":"p7","data":{"weight":-5}}
+{"edge":"Near","from":"p1","to":"p1","data":{"w":"a"}}
+{"edge":"Near","from":"p13","to":"p13","data":{"role":"2024-02-29","w":"a"}}
+{"edge":"Near","from":"p13","to":"p10","data":{"role":"1970-01-01","w":"b"}}
+{"edge":"Near","from":"p4","to":"p7","data":{"role":"2020-01-01","w":"b"}}
+{"edge":"Near","from":"p6","to":"p7","data":{"role":"1999-12-31","w":"a"}}
+{"edge":"Near","from":"p4","to":"p7","data":{"role":"1970-01-01"}}
+
+--- query
+query q21() {
+  match { $o1: Org } where $o1.born in ["", "the dog", "the dog"] and not coalesce($o1.born in ["the dog"], false)
+  return { $o1.born as c0 }
+}
+
+--- expect unordered
+
+
+--- expect shape

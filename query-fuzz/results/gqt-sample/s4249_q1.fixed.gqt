@@ -1,0 +1,56 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 4249, case 1; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag {
+  vec: enum(a, b)
+  code: [I32]
+  born: [I32]
+  @index(code)
+}
+node Item {
+  count: Blob?
+  text: String? @index
+  emb: Vector(3)
+}
+
+--- seed
+{"type":"Tag","id":"t0","data":{"vec":"b","code":[],"born":[0,3,-2147483648]}}
+{"type":"Tag","id":"t1","data":{"vec":"a","code":[42],"born":[42]}}
+{"type":"Tag","id":"t2","data":{"vec":"b","code":[-5],"born":[]}}
+{"type":"Tag","id":"t3","data":{"vec":"a","code":[-5],"born":[]}}
+{"type":"Tag","id":"t4","data":{"vec":"b","code":[2],"born":[]}}
+{"type":"Tag","id":"t5","data":{"vec":"b","code":[],"born":[0]}}
+{"type":"Tag","id":"t6","data":{"vec":"b","code":[2147483647,2147483647,2],"born":[100]}}
+{"type":"Tag","id":"t7","data":{"vec":"a","code":[2147483647],"born":[3]}}
+{"type":"Item","id":"i0","data":{"count":"base64:SGVsbG8=","text":"and the the an","emb":[-0.41,0.18,-0.4]}}
+{"type":"Item","id":"i1","data":{"count":"base64:AAEC","text":null,"emb":[1.24,-1.88,1.63]}}
+{"type":"Item","id":"i2","data":{"count":"base64:AAEC","text":"run","emb":[1.0,0.0,0.0]}}
+{"type":"Item","id":"i3","data":{"count":"base64:SGVsbG8=","text":"Run run  a","emb":[-0.62,-0.27,1.01]}}
+{"type":"Item","id":"i4","data":{"count":"base64:","text":"running café run","emb":[-0.28,0.75,-1.03]}}
+{"type":"Item","id":"i5","data":{"count":"base64:","text":"","emb":[1.0,1.0,1.0]}}
+
+--- query
+query q2() {
+  match {
+    $i1: Item
+  }
+  return { $i1.text,  count($i1) as a0,  count($i1) as a1 }
+}
+
+--- expect unordered
+{"i1.text": "and the the an", "a0": 1, "a1": 1}
+{"a0": 1, "a1": 1}
+{"i1.text": "run", "a0": 1, "a1": 1}
+{"i1.text": "Run run  a", "a0": 1, "a1": 1}
+{"i1.text": "running café run", "a0": 1, "a1": 1}
+{"i1.text": "", "a0": 1, "a1": 1}
+
+--- expect shape

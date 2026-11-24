@@ -1,0 +1,90 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500328, case 11; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  tags: Bool? @index
+  body: F32
+  note: Bool?
+}
+node Item {
+  note: [I64]
+  flag: enum(red, green, blue, x-1)?
+  level: [I64]
+}
+node Doc {
+  body: [F64]
+  age: I64?
+  count: I64
+  text: String @index
+  emb: Vector(3)?
+}
+edge Likes: Org -> Item {
+  role: String?
+  weight: Bool
+}
+edge Links: Org -> Item {
+  weight: String?
+  role: [String]?
+  @key(@src, @dst)
+}
+edge Near: Org -> Org {
+  w: F64?
+}
+
+--- seed
+{"type":"Org","id":"o0","data":{"tags":false,"body":1.5,"note":true}}
+{"type":"Org","id":"o1","data":{"tags":false,"body":0.0,"note":null}}
+{"type":"Org","id":"o2","data":{"tags":false,"body":1.5,"note":false}}
+{"type":"Org","id":"o3","data":{"tags":null,"body":7.0,"note":false}}
+{"type":"Org","id":"o4","data":{"tags":true,"body":2.5,"note":true}}
+{"type":"Item","id":"i0","data":{"note":[],"flag":"blue","level":[-5,7]}}
+{"type":"Item","id":"i1","data":{"note":[0,9007199254740992],"flag":"x-1","level":[9007199254740993,9007199254740992,3]}}
+{"type":"Item","id":"i2","data":{"note":[9007199254740992,9007199254740993,-2147483648],"flag":null,"level":[1]}}
+{"type":"Item","id":"i3","data":{"note":[-1],"flag":"red","level":[9007199254740993]}}
+{"type":"Item","id":"i4","data":{"note":[9007199254740993],"flag":"green","level":[9007199254740993,42]}}
+{"type":"Doc","id":"d0","data":{"body":[7.0,-2.25],"age":-2147483648,"count":9007199254740993,"text":"","emb":[0.03,-0.83,-1.62]}}
+{"edge":"Likes","from":"o2","to":"i1","data":{"weight":false}}
+{"edge":"Likes","from":"o1","to":"i1","data":{"role":"it's","weight":true}}
+{"edge":"Likes","from":"o2","to":"i3","data":{"role":"run","weight":false}}
+{"edge":"Likes","from":"o0","to":"i0","data":{"role":"the dog","weight":false}}
+{"edge":"Likes","from":"o4","to":"i1","data":{"weight":false}}
+{"edge":"Likes","from":"o0","to":"i3","data":{"role":"the dog","weight":false}}
+{"edge":"Likes","from":"o2","to":"i1","data":{"role":"abc","weight":false}}
+{"edge":"Likes","from":"o1","to":"i0","data":{"role":"runs","weight":true}}
+{"edge":"Links","from":"o1","to":"i0"}
+{"edge":"Links","from":"o2","to":"i4","data":{"role":[]}}
+{"edge":"Near","from":"o1","to":"o1","data":{"w":3.0}}
+{"edge":"Near","from":"o2","to":"o0","data":{"w":3.0}}
+{"edge":"Near","from":"o2","to":"o2","data":{"w":2.5}}
+{"edge":"Near","from":"o3","to":"o0","data":{"w":2.5}}
+{"edge":"Near","from":"o3","to":"o0","data":{"w":0.0}}
+{"edge":"Near","from":"o3","to":"o3"}
+{"edge":"Near","from":"o0","to":"o2","data":{"w":7.0}}
+{"edge":"Near","from":"o4","to":"o4"}
+{"edge":"Near","from":"o0","to":"o1","data":{"w":10000000000.0}}
+{"edge":"Near","from":"o1","to":"o0","data":{"w":7.0}}
+
+--- query
+query q12() {
+  match { $o1: Org }
+  return { $o1.body }
+  order { $o1.body }
+}
+
+--- expect ordered
+{"o1.body": 0.0}
+{"o1.body": 1.5}
+{"o1.body": 1.5}
+{"o1.body": 2.5}
+{"o1.body": 7.0}
+
+--- expect shape
+o1.body: F32

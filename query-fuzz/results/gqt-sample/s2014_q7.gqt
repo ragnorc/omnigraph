@@ -1,0 +1,57 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2014, case 7; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  nums: String
+  flag: I32? @index
+  text: String? @index
+  emb: Vector(3)
+  @range(flag, -10..1000)
+}
+node Item {
+  born: enum(red, green, blue, x-1)? @index
+  seen: String @index
+  content: I32 @index
+  code: Date?
+  level: I32?
+  @key(seen, content)
+  @range(level, -10..1000)
+}
+
+--- seed
+{"type":"Org","id":"o0","data":{"nums":"x","flag":null,"text":null,"emb":[-0.99,-0.14,-0.58]}}
+{"type":"Org","id":"o1","data":{"nums":"Dogs","flag":1,"text":"the Dogs","emb":[1.0,1.0,1.0]}}
+{"type":"Org","id":"o2","data":{"nums":"ab","flag":-5,"text":"Dogs an the fox","emb":[-1.9,1.77,0.95]}}
+{"type":"Org","id":"o3","data":{"nums":"RUN","text":"","emb":[1.0,1.0,1.0]}}
+{"type":"Org","id":"o4","data":{"nums":"x y z","text":"data run","emb":[0.0,0.0,0.0]}}
+{"type":"Org","id":"o5","data":{"nums":"café","flag":7,"text":"dog","emb":[-0.91,-1.43,1.51]}}
+{"type":"Item","data":{"born":"blue","seen":"and the","content":-1,"code":"2020-01-01","level":7}}
+{"type":"Item","data":{"born":"x-1","seen":"x","content":-5,"level":1}}
+{"type":"Item","data":{"born":"blue","seen":"Dogs","content":7,"code":"2024-02-29","level":-5}}
+
+--- query
+query q8($arg1: I32) {
+  match {
+    $o1: Org
+    $o1.text starts_with "dog"
+    count { $o1.flag != $arg1 } >= 2
+  }
+  return { $o1.emb  $o1 }
+}
+
+--- params
+{"arg1": -1}
+
+--- expect unordered
+
+
+--- expect shape
+o1.emb: Vector(3)
+o1: Org

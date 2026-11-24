@@ -1,0 +1,86 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2443, case 4; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  count: Blob?
+  slug: Vector(2)
+  rank: [I32]
+  note: String @key
+  name: [F64]?
+}
+node Person {
+  content: [F64]
+  title: Vector(3)
+}
+node Tag {
+  name: DateTime
+  age: I64? @index
+  flag: I32
+  count: enum(a, b)? @index
+  @range(age, -10..1000)
+}
+edge Knows: Person -> Person
+edge Likes: Org -> Person {
+  w: String?
+}
+edge Owns: Org -> Tag {
+  @key(@src, @dst)
+}
+
+--- seed
+{"type":"Org","data":{"count":null,"slug":[-0.24,1.05],"rank":[],"note":"Run","name":[1.5,1.5]}}
+{"type":"Org","data":{"count":"base64:SGVsbG8=","slug":[0.02,-1.2],"rank":[-5],"note":"of the and","name":[2.5,7.0]}}
+{"type":"Org","data":{"count":"base64:","slug":[1.09,-0.66],"rank":[42],"note":"x y z","name":[]}}
+{"type":"Org","data":{"count":"base64:","slug":[0.98,0.23],"rank":[0],"note":"abc","name":null}}
+{"type":"Person","id":"p0","data":{"content":[],"title":[1.52,0.59,0.06]}}
+{"type":"Person","id":"p1","data":{"content":[0.1,3.0,-2.25],"title":[1.8,1.66,0.96]}}
+{"type":"Person","id":"p2","data":{"content":[7.0,2.5,7.0],"title":[-1.0,-1.0,-1.0]}}
+{"type":"Person","id":"p3","data":{"content":[-2.25,0.0,7.0],"title":[0.33,1.34,-0.14]}}
+{"type":"Person","id":"p4","data":{"content":[-2.25],"title":[-1.0,-1.0,-1.0]}}
+{"type":"Tag","id":"t0","data":{"name":"2020-01-01T00:00:00.123Z","age":null,"flag":2147483647,"count":"a"}}
+{"type":"Tag","id":"t1","data":{"name":"2024-02-29T12:00:00Z","age":1,"flag":0,"count":"b"}}
+{"edge":"Knows","from":"p2","to":"p2"}
+{"edge":"Knows","from":"p4","to":"p4"}
+{"edge":"Knows","from":"p3","to":"p1"}
+{"edge":"Knows","from":"p4","to":"p4"}
+{"edge":"Knows","from":"p0","to":"p2"}
+{"edge":"Knows","from":"p1","to":"p2"}
+{"edge":"Knows","from":"p1","to":"p1"}
+{"edge":"Knows","from":"p0","to":"p2"}
+{"edge":"Likes","from":"abc","to":"p1"}
+{"edge":"Likes","from":"Run","to":"p3","data":{"w":"it's"}}
+{"edge":"Likes","from":"of the and","to":"p0","data":{"w":"RUN"}}
+{"edge":"Likes","from":"of the and","to":"p3"}
+{"edge":"Likes","from":"Run","to":"p3","data":{"w":"café"}}
+{"edge":"Likes","from":"Run","to":"p3","data":{"w":"abc"}}
+{"edge":"Owns","from":"of the and","to":"t1"}
+{"edge":"Owns","from":"abc","to":"t1"}
+{"edge":"Owns","from":"x y z","to":"t1"}
+
+--- query
+query q5($arg1: Vector(3)) {
+  match {
+    $o1: Org
+    $o1 likes $p2
+    $p3: Person
+    $p2 knows $p3
+    count { $p4: Person  $o1 likes $p4 } > 0
+    match_text($o1.note, "dgo")
+  }
+  return { $p2.title  $o1.note as c1  $p3.@id }
+  order { rrf(nearest($p2.title, $arg1), bm25($o1.note, "dog")) desc }
+  limit 1
+}
+
+--- params
+{"arg1": [0.4, 0.4, 0.4]}
+
+--- expect error: T59

@@ -1,0 +1,40 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5869, case 15; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag {
+  vec: [F64]?
+  nums: I64 @key
+  tags: [String]
+}
+node Person {
+  rank: I32 @unique
+  weight: [String]?
+  score: String?
+}
+
+--- seed
+{"type":"Tag","data":{"vec":[],"nums":7,"tags":["hello world"]}}
+{"type":"Tag","data":{"vec":[1.5],"nums":3,"tags":["dog"]}}
+{"type":"Person","id":"p0","data":{"rank":2,"weight":[],"score":"x"}}
+{"type":"Person","id":"p1","data":{"rank":-2147483648,"weight":["running","ab"],"score":""}}
+{"type":"Person","id":"p2","data":{"rank":-5,"score":"naïve"}}
+{"type":"Person","id":"p3","data":{"rank":7,"weight":["the dog","café","running"],"score":"and the"}}
+
+--- query
+query q16() {
+  match { $t1: Tag } where "x y z" in $t1.tags
+  return { $t1 as c0 }
+}
+
+--- expect unordered
+
+
+--- expect shape

@@ -1,0 +1,53 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3527, case 17; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  nums: Blob?
+  note: I64 @index
+  size: String @key
+}
+edge Tagged: Item -> Item {
+  since: DateTime
+  @unique(@src, @dst)
+}
+edge Knows: Item -> Item {
+  weight: String?
+  since: I32?
+}
+
+--- seed
+{"type":"Item","data":{"nums":"base64:AAEC","note":7,"size":"x y z"}}
+{"edge":"Tagged","from":"x y z","to":"x y z","data":{"since":"2020-01-01T00:00:00.123Z"}}
+{"edge":"Knows","from":"x y z","to":"x y z","data":{"weight":"café","since":100}}
+{"edge":"Knows","from":"x y z","to":"x y z","data":{"since":-5}}
+{"edge":"Knows","from":"x y z","to":"x y z","data":{"weight":"the","since":-2147483648}}
+{"edge":"Knows","from":"x y z","to":"x y z","data":{"since":2}}
+{"edge":"Knows","from":"x y z","to":"x y z","data":{"weight":"database"}}
+{"edge":"Knows","from":"x y z","to":"x y z","data":{"since":7}}
+{"edge":"Knows","from":"x y z","to":"x y z","data":{"weight":"runs","since":42}}
+{"edge":"Knows","from":"x y z","to":"x y z","data":{"weight":"it's","since":0}}
+
+--- query
+query q18($arg1: I64) {
+  match {
+    $i1: Item  $i2 tagged $i1  $i3 tagged{1,1} $i1  $i4: Item  $i1 $e5:tagged $i4  $i3.note = $arg1  match_text($i4.size, "hello world") = true
+  }
+  return { $i1.size, $i3.size, avg($i4.note) as a0 }
+  order { bm25($i2.size, "rnu") desc }
+  limit 3
+}
+
+--- params
+{"arg1": 7}
+
+--- expect ordered
+
+
+--- expect shape

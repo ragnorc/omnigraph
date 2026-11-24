@@ -1,0 +1,580 @@
+{
+ "cases": 18,
+ "counts": {
+  "current panic": 1,
+  "fixed affected": 2,
+  "unchanged error": 17
+ },
+ "results": [
+  {
+   "case": "count_block_filter_only_hand.gqt",
+   "current_status": "failed",
+   "edition_2_status": "passed",
+   "unchanged": [
+    {
+     "aspect": "error",
+     "current": {
+      "error": "does not parse: parse error: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces; rewrite the `--- query` body so it parses; the message names where the grammar stopped"
+     },
+     "detail": "edition 2 succeeded; current refused the case: does not parse: parse error: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces; rewrite the `--- query` body so it parses; the message names where the grammar stopped",
+     "edition_2": {
+      "affected": null,
+      "columns": [
+       "t.@id"
+      ],
+      "error": null,
+      "ordered": false,
+      "rows": [
+       {
+        "t.@id": "t1"
+       }
+      ],
+      "types": [
+       "Utf8 not null"
+      ]
+     },
+     "step": 1
+    }
+   ]
+  },
+  {
+   "case": "dnc_filter_only_block.gqt",
+   "current_status": "failed",
+   "edition_2_status": "passed",
+   "unchanged": [
+    {
+     "aspect": "error",
+     "current": {
+      "error": "does not parse: parse error: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces; rewrite the `--- query` body so it parses; the message names where the grammar stopped"
+     },
+     "detail": "edition 2 succeeded; current refused the case: does not parse: parse error: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces; rewrite the `--- query` body so it parses; the message names where the grammar stopped",
+     "edition_2": {
+      "affected": null,
+      "columns": [
+       "a0"
+      ],
+      "error": null,
+      "ordered": false,
+      "rows": [
+       {}
+      ],
+      "types": [
+       "Int32"
+      ]
+     },
+     "step": 1
+    }
+   ]
+  },
+  {
+   "case": "empty_list_assignment_accepted.gqt",
+   "current_status": "failed",
+   "edition_2_status": "passed",
+   "unchanged": [
+    {
+     "aspect": "error",
+     "current": {
+      "affected": [
+       1,
+       0
+      ],
+      "columns": null,
+      "error": null,
+      "ordered": false,
+      "rows": null,
+      "types": null
+     },
+     "detail": "edition 2 failed: type error: T3: property `vec` has type [I64] but got [String]; current succeeded",
+     "edition_2": {
+      "affected": null,
+      "columns": null,
+      "error": "type error: T3: property `vec` has type [I64] but got [String]",
+      "ordered": false,
+      "rows": null,
+      "types": null
+     },
+     "step": 1
+    }
+   ]
+  },
+  {
+   "case": "fix_insert_joins_update_group.gqt",
+   "current_status": "failed",
+   "edition_2_status": "passed",
+   "fixed": [
+    {
+     "aspect": "affected",
+     "current": {
+      "affected": [
+       0,
+       0
+      ],
+      "columns": null,
+      "error": null,
+      "ordered": false,
+      "rows": null,
+      "types": null
+     },
+     "detail": "(1, 0) became (0, 0)",
+     "edition_2": {
+      "affected": [
+       1,
+       0
+      ],
+      "columns": null,
+      "error": null,
+      "ordered": false,
+      "rows": null,
+      "types": null
+     },
+     "step": 1
+    }
+   ],
+   "unchanged": [
+    {
+     "aspect": "error",
+     "current": {
+      "error": "does not parse: parse error: `update Doc \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows; rewrite the `--- mutate` body so it parses; the message names where the grammar stopped"
+     },
+     "detail": "edition 2 succeeded; current refused the case: does not parse: parse error: `update Doc \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows; rewrite the `--- mutate` body so it parses; the message names where the grammar stopped",
+     "edition_2": {
+      "affected": [
+       1,
+       0
+      ],
+      "columns": null,
+      "error": null,
+      "ordered": false,
+      "rows": null,
+      "types": null
+     },
+     "step": 1
+    }
+   ]
+  },
+  {
+   "case": "fix_insert_joins_update_group_hand.gqt",
+   "current_status": "failed",
+   "edition_2_status": "passed",
+   "fixed": [
+    {
+     "aspect": "affected",
+     "current": {
+      "affected": [
+       4,
+       0
+      ],
+      "columns": null,
+      "error": null,
+      "ordered": false,
+      "rows": null,
+      "types": null
+     },
+     "detail": "(3, 0) became (4, 0)",
+     "edition_2": {
+      "affected": [
+       3,
+       0
+      ],
+      "columns": null,
+      "error": null,
+      "ordered": false,
+      "rows": null,
+      "types": null
+     },
+     "step": 1
+    }
+   ],
+   "unchanged": [
+    {
+     "aspect": "error",
+     "current": {
+      "error": "does not parse: parse error: `update Doc \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows; rewrite the `--- mutate` body so it parses; the message names where the grammar stopped"
+     },
+     "detail": "edition 2 succeeded; current refused the case: does not parse: parse error: `update Doc \u2026 where \u2026` is not a statement: a statement names a bound variable, and the group's `match` and `where` select its rows; rewrite the `--- mutate` body so it parses; the message names where the grammar stopped",
+     "edition_2": {
+      "affected": [
+       3,
+       0
+      ],
+      "columns": null,
+      "error": null,
+      "ordered": false,
+      "rows": null,
+      "types": null
+     },
+     "step": 1
+    }
+   ]
+  },
+  {
+   "case": "fuzzy_max_edits_3_no_edit_hand.gqt",
+   "current_status": "failed",
+   "edition_2_status": "passed",
+   "unchanged": [
+    {
+     "aspect": "error",
+     "current": {
+      "error": "does not parse: parse error: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces; rewrite the `--- query` body so it parses; the message names where the grammar stopped"
+     },
+     "detail": "edition 2 succeeded; current refused the case: does not parse: parse error: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces; rewrite the `--- query` body so it parses; the message names where the grammar stopped",
+     "edition_2": {
+      "affected": null,
+      "columns": [
+       "d.title"
+      ],
+      "error": null,
+      "ordered": false,
+      "rows": [
+       {
+        "d.title": "running dogs"
+       }
+      ],
+      "types": [
+       "Utf8 not null"
+      ]
+     },
+     "step": 1
+    }
+   ]
+  },
+  {
+   "case": "fuzzy_max_edits_3_shrunk.gqt",
+   "current_status": "failed",
+   "edition_2_status": "passed",
+   "unchanged": [
+    {
+     "aspect": "error",
+     "current": {
+      "error": "does not parse: parse error: elements are separated by commas; a space or a newline is not a separator; rewrite the `--- query` body so it parses; the message names where the grammar stopped"
+     },
+     "detail": "edition 2 succeeded; current refused the case: does not parse: parse error: elements are separated by commas; a space or a newline is not a separator; rewrite the `--- query` body so it parses; the message names where the grammar stopped",
+     "edition_2": {
+      "affected": null,
+      "columns": [
+       "o2.title"
+      ],
+      "error": null,
+      "ordered": false,
+      "rows": [],
+      "types": [
+       "List(Float64)"
+      ]
+     },
+     "step": 1
+    }
+   ]
+  },
+  {
+   "case": "keyed_insert_repeated_in_one_write.gqt",
+   "current_status": "failed",
+   "edition_2_status": "passed",
+   "unchanged": [
+    {
+     "aspect": "error",
+     "current": {
+      "affected": null,
+      "columns": null,
+      "error": "node type 'T' already has this id; `upsert` sets the named properties of an existing entity and `replace` writes its whole row",
+      "ordered": false,
+      "rows": null,
+      "types": null
+     },
+     "detail": "edition 2 succeeded; current failed: node type 'T' already has this id; `upsert` sets the named properties of an existing entity and `replace` writes its whole row",
+     "edition_2": {
+      "affected": [
+       2,
+       0
+      ],
+      "columns": null,
+      "error": null,
+      "ordered": false,
+      "rows": null,
+      "types": null
+     },
+     "step": 1
+    }
+   ]
+  },
+  {
+   "case": "later_outer_name_in_block.gqt",
+   "current_status": "failed",
+   "edition_2_status": "passed",
+   "unchanged": [
+    {
+     "aspect": "error",
+     "current": {
+      "error": "does not parse: parse error: a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`; rewrite the `--- query` body so it parses; the message names where the grammar stopped"
+     },
+     "detail": "edition 2 succeeded; current refused the case: does not parse: parse error: a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`; rewrite the `--- query` body so it parses; the message names where the grammar stopped",
+     "edition_2": {
+      "affected": null,
+      "columns": [
+       "p.name",
+       "x.name"
+      ],
+      "error": null,
+      "ordered": false,
+      "rows": [
+       {
+        "p.name": "p",
+        "x.name": "idle"
+       }
+      ],
+      "types": [
+       "Utf8 not null",
+       "Utf8 not null"
+      ]
+     },
+     "step": 1
+    }
+   ]
+  },
+  {
+   "case": "panic_grouped_order_key.gqt",
+   "current_panic": "panicked: index out of bounds: the len is 1 but the index is 1; environment={\"target\":\"omnigraph-engine-dst\",\"storage\":\"in-memory-object-store\",\"seeds\":[0]} seed=Some(0) replay=0 worker_failed: case panicked: index out of bounds: the len is 1 but the index is 1; environment={\"target\":\"omnigraph-engi",
+   "current_status": "failed",
+   "edition_2_status": "passed",
+   "unchanged": [
+    {
+     "aspect": "error",
+     "current": {
+      "affected": null,
+      "columns": null,
+      "error": null,
+      "ordered": false,
+      "rows": null,
+      "types": null
+     },
+     "detail": "edition 2 failed: type error: T6: variable `$o3` is not bound; current succeeded",
+     "edition_2": {
+      "affected": null,
+      "columns": null,
+      "error": "type error: T6: variable `$o3` is not bound",
+      "ordered": false,
+      "rows": null,
+      "types": null
+     },
+     "step": 1
+    }
+   ]
+  },
+  {
+   "case": "panic_grouped_order_key_edition_2_text.gqt",
+   "current_status": "failed",
+   "edition_2_status": "failed",
+   "unchanged": []
+  },
+  {
+   "case": "read_named_after_function_no_edit.gqt",
+   "current_status": "failed",
+   "edition_2_status": "passed",
+   "unchanged": [
+    {
+     "aspect": "error",
+     "current": {
+      "affected": null,
+      "columns": null,
+      "error": "type error: T74: a declared read may not be named `count`, which is a registry row or an element keyword",
+      "ordered": false,
+      "rows": null,
+      "types": null
+     },
+     "detail": "edition 2 succeeded; current failed: type error: T74: a declared read may not be named `count`, which is a registry row or an element keyword",
+     "edition_2": {
+      "affected": null,
+      "columns": [
+       "d.title"
+      ],
+      "error": null,
+      "ordered": false,
+      "rows": [
+       {
+        "d.title": "dog"
+       }
+      ],
+      "types": [
+       "Utf8 not null"
+      ]
+     },
+     "step": 1
+    }
+   ]
+  },
+  {
+   "case": "read_named_search_calls_itself.gqt",
+   "current_status": "failed",
+   "edition_2_status": "passed",
+   "unchanged": [
+    {
+     "aspect": "error",
+     "current": {
+      "error": "does not parse: parse error: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces; rewrite the `--- query` body so it parses; the message names where the grammar stopped"
+     },
+     "detail": "edition 2 succeeded; current refused the case: does not parse: parse error: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces; rewrite the `--- query` body so it parses; the message names where the grammar stopped",
+     "edition_2": {
+      "affected": null,
+      "columns": [
+       "d.title"
+      ],
+      "error": null,
+      "ordered": false,
+      "rows": [
+       {
+        "d.title": "dog"
+       }
+      ],
+      "types": [
+       "Utf8 not null"
+      ]
+     },
+     "step": 1
+    }
+   ]
+  },
+  {
+   "case": "read_named_search_shrunk.gqt",
+   "current_status": "failed",
+   "edition_2_status": "passed",
+   "unchanged": [
+    {
+     "aspect": "error",
+     "current": {
+      "error": "does not parse: parse error: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces; rewrite the `--- query` body so it parses; the message names where the grammar stopped"
+     },
+     "detail": "edition 2 succeeded; current refused the case: does not parse: parse error: a filter is not an element of `match { \u2026 }`: a predicate belongs in the `where` after the braces; rewrite the `--- query` body so it parses; the message names where the grammar stopped",
+     "edition_2": {
+      "affected": null,
+      "columns": [
+       "o1.@id"
+      ],
+      "error": null,
+      "ordered": false,
+      "rows": [],
+      "types": [
+       "Utf8 not null"
+      ]
+     },
+     "step": 1
+    }
+   ]
+  },
+  {
+   "case": "rrf_explicit_k_and_triple_bound_shrunk.gqt",
+   "current_status": "failed",
+   "edition_2_status": "passed",
+   "unchanged": [
+    {
+     "aspect": "error",
+     "current": {
+      "error": "does not parse: parse error: elements are separated by commas; a space or a newline is not a separator; rewrite the `--- query` body so it parses; the message names where the grammar stopped"
+     },
+     "detail": "edition 2 succeeded; current refused the case: does not parse: parse error: elements are separated by commas; a space or a newline is not a separator; rewrite the `--- query` body so it parses; the message names where the grammar stopped",
+     "edition_2": {
+      "affected": null,
+      "columns": [
+       "p2.rank"
+      ],
+      "error": null,
+      "ordered": true,
+      "rows": [],
+      "types": [
+       "FixedSizeList(2 x Float32) not null"
+      ]
+     },
+     "step": 1
+    }
+   ]
+  },
+  {
+   "case": "rrf_explicit_k_no_edit.gqt",
+   "current_status": "failed",
+   "edition_2_status": "passed",
+   "unchanged": [
+    {
+     "aspect": "error",
+     "current": {
+      "affected": null,
+      "columns": null,
+      "error": "type error: T65: `rrf` is a relation function; a ranking is drawn with `from`, and its score is a column",
+      "ordered": false,
+      "rows": null,
+      "types": null
+     },
+     "detail": "edition 2 succeeded; current failed: type error: T65: `rrf` is a relation function; a ranking is drawn with `from`, and its score is a column",
+     "edition_2": {
+      "affected": null,
+      "columns": [
+       "d.slug"
+      ],
+      "error": null,
+      "ordered": true,
+      "rows": [],
+      "types": [
+       "Utf8 not null"
+      ]
+     },
+     "step": 1
+    }
+   ]
+  },
+  {
+   "case": "rrf_triple_bound_binding_no_edit.gqt",
+   "current_status": "failed",
+   "edition_2_status": "passed",
+   "unchanged": [
+    {
+     "aspect": "error",
+     "current": {
+      "error": "does not parse: parse error: elements are separated by commas; a space or a newline is not a separator; rewrite the `--- query` body so it parses; the message names where the grammar stopped"
+     },
+     "detail": "edition 2 succeeded; current refused the case: does not parse: parse error: elements are separated by commas; a space or a newline is not a separator; rewrite the `--- query` body so it parses; the message names where the grammar stopped",
+     "edition_2": {
+      "affected": null,
+      "columns": [
+       "d.slug"
+      ],
+      "error": null,
+      "ordered": true,
+      "rows": [],
+      "types": [
+       "Utf8 not null"
+      ]
+     },
+     "step": 1
+    }
+   ]
+  },
+  {
+   "case": "whole_float_into_integer.gqt",
+   "current_status": "failed",
+   "edition_2_status": "passed",
+   "unchanged": [
+    {
+     "aspect": "error",
+     "current": {
+      "affected": [
+       1,
+       0
+      ],
+      "columns": null,
+      "error": null,
+      "ordered": false,
+      "rows": null,
+      "types": null
+     },
+     "detail": "edition 2 failed: cannot convert Float(100.0) to Int32; current succeeded",
+     "edition_2": {
+      "affected": null,
+      "columns": null,
+      "error": "cannot convert Float(100.0) to Int32",
+      "ordered": false,
+      "rows": null,
+      "types": null
+     },
+     "step": 1
+    }
+   ]
+  }
+ ]
+}

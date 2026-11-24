@@ -1,0 +1,59 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500437, case 5; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  level: enum(a, b)?
+  note: F32 @index
+  count: U32? @index
+}
+node Item {
+  note: I64? @unique @index
+  tags: I64
+  content: I32
+  rank: I32
+  text: String? @index
+  emb: Vector(3)
+}
+node Person {
+  count: String @key
+}
+edge Cites: Org -> Org {
+  @key(@src, @dst)
+}
+edge Links: Org -> Org
+
+--- seed
+{"type":"Org","id":"o0","data":{"level":"b","note":2.5,"count":4294967295}}
+{"type":"Org","id":"o1","data":{"level":"b","note":3.0,"count":0}}
+{"type":"Org","id":"o2","data":{"level":null,"note":2.5,"count":4294967295}}
+{"type":"Org","id":"o3","data":{"level":"b","note":0.5,"count":null}}
+{"type":"Org","id":"o4","data":{"level":"b","note":0.0,"count":2}}
+{"type":"Item","id":"i0","data":{"note":-1,"tags":-1,"content":-1,"rank":42,"text":"runs Dogs dog running","emb":[1.91,0.64,-0.25]}}
+{"type":"Item","id":"i1","data":{"tags":9007199254740993,"content":100,"rank":-5,"text":null,"emb":[0.5,0.5,0.5]}}
+{"edge":"Cites","from":"o0","to":"o4"}
+{"edge":"Cites","from":"o3","to":"o4"}
+{"edge":"Cites","from":"o1","to":"o1"}
+{"edge":"Cites","from":"o2","to":"o0"}
+{"edge":"Links","from":"o2","to":"o3"}
+{"edge":"Links","from":"o3","to":"o0"}
+{"edge":"Links","from":"o4","to":"o0"}
+{"edge":"Links","from":"o1","to":"o1"}
+{"edge":"Links","from":"o3","to":"o3"}
+{"edge":"Links","from":"o0","to":"o0"}
+{"edge":"Links","from":"o0","to":"o1"}
+{"edge":"Links","from":"o1","to":"o0"}
+
+--- mutate
+query q6() {
+  insert Person { count: "abc" }
+}
+
+--- expect affected: nodes=1 edges=0

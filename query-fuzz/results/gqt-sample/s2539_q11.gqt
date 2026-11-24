@@ -1,0 +1,86 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2539, case 11; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  title: I64
+  text: String? @index
+  emb: Vector(3)?
+  @range(title, -10..1000)
+}
+node Org {
+  body: U64?
+  name: U64
+  size: Date
+}
+node Person {
+  title: DateTime
+  note: String @key
+}
+node Place {
+  slug: I32?
+  born: Bool
+  title: Date?
+  level: F64?
+  flag: [I32]?
+}
+node Doc {
+  nums: String @key
+  tags: U32?
+  rank: I32? @index
+  slug: F32
+}
+edge Likes: Doc -> Item
+edge Cites: Doc -> Item
+edge Links: Org -> Org {
+  w: F32
+}
+
+--- seed
+{"type":"Item","id":"i0","data":{"title":1,"text":"run a","emb":[-1.27,0.27,1.76]}}
+{"type":"Item","id":"i1","data":{"title":-5,"text":"","emb":null}}
+{"type":"Org","id":"o0","data":{"body":0,"name":2147483647,"size":"1970-01-01"}}
+{"type":"Org","id":"o1","data":{"body":3,"name":4611686018427387904,"size":"2020-01-01"}}
+{"type":"Org","id":"o2","data":{"name":4611686018427387904,"size":"1999-12-31"}}
+{"type":"Org","id":"o3","data":{"body":0,"name":42,"size":"2024-02-29"}}
+{"type":"Org","id":"o4","data":{"body":null,"name":0,"size":"2020-01-01"}}
+{"type":"Org","id":"o5","data":{"body":9007199254740992,"name":100,"size":"2024-02-29"}}
+{"type":"Org","id":"o6","data":{"body":2147483647,"name":2,"size":"2020-01-01"}}
+{"type":"Org","id":"o7","data":{"body":4611686018427387904,"name":42,"size":"1999-12-31"}}
+{"type":"Person","data":{"title":"2020-01-01T00:00:00.123Z","note":"naïve"}}
+{"type":"Person","data":{"title":"1999-12-31T23:59:59Z","note":"ab"}}
+{"type":"Person","data":{"title":"2020-01-01T00:00:00.123Z","note":"runs"}}
+{"type":"Place","id":"p0","data":{"slug":0,"born":true,"title":"2020-01-01","level":10000000000.0,"flag":[3,-1]}}
+{"type":"Doc","data":{"nums":"fox","tags":4294967295,"rank":42,"slug":0.0}}
+{"edge":"Likes","from":"fox","to":"i0"}
+{"edge":"Likes","from":"fox","to":"i0"}
+{"edge":"Likes","from":"fox","to":"i1"}
+{"edge":"Cites","from":"fox","to":"i0"}
+{"edge":"Cites","from":"fox","to":"i1"}
+{"edge":"Cites","from":"fox","to":"i0"}
+{"edge":"Cites","from":"fox","to":"i1"}
+{"edge":"Cites","from":"fox","to":"i0"}
+{"edge":"Cites","from":"fox","to":"i0"}
+{"edge":"Links","from":"o3","to":"o2","data":{"w":-2.25}}
+{"edge":"Links","from":"o7","to":"o7","data":{"w":1.5}}
+{"edge":"Links","from":"o6","to":"o1","data":{"w":-2.25}}
+{"edge":"Links","from":"o4","to":"o7","data":{"w":0.5}}
+{"edge":"Links","from":"o0","to":"o1","data":{"w":-2.25}}
+{"edge":"Links","from":"o1","to":"o0","data":{"w":3.0}}
+
+--- mutate
+mutation q12($arg1: Date) {
+  insert Org { name: 100 size: $arg1 }
+  insert Place { slug: 2147483647, born: true }
+}
+
+--- params
+{"arg1": "2020-01-01"}
+
+--- expect error: Q001

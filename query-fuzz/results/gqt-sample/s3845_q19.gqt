@@ -1,0 +1,60 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3845, case 19; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag {
+  age: Vector(3)
+}
+node Doc {
+  code: Bool?
+  count: F64?
+  seen: String @key
+  title: Blob?
+}
+node Person {
+  content: enum(a, b)
+  level: [I32]
+  body: [I64]?
+  @index(body)
+}
+edge Near: Doc -> Doc
+edge Wrote: Doc -> Doc
+
+--- seed
+{"type":"Tag","id":"t0","data":{"age":[0.5,0.5,0.5]}}
+{"type":"Tag","id":"t1","data":{"age":[0.5,0.5,0.5]}}
+{"type":"Tag","id":"t2","data":{"age":[-1.39,-1.98,-0.6]}}
+{"type":"Tag","id":"t3","data":{"age":[1.0,0.0,0.0]}}
+{"type":"Tag","id":"t4","data":{"age":[-1.11,0.69,0.67]}}
+{"type":"Tag","id":"t5","data":{"age":[1.0,1.0,1.0]}}
+{"type":"Tag","id":"t6","data":{"age":[-0.43,-1.82,-0.36]}}
+{"type":"Tag","id":"t7","data":{"age":[-0.39,1.05,-0.22]}}
+{"type":"Doc","data":{"code":true,"count":0.1,"seen":"ab","title":"base64:SGVsbG8="}}
+{"type":"Person","id":"p0","data":{"content":"a","level":[],"body":[9007199254740993]}}
+{"type":"Person","id":"p1","data":{"content":"a","level":[-1,2],"body":[9007199254740992,9007199254740993]}}
+{"type":"Person","id":"p2","data":{"content":"b","level":[],"body":[3]}}
+{"type":"Person","id":"p3","data":{"content":"b","level":[-1],"body":null}}
+{"type":"Person","id":"p4","data":{"content":"a","level":[100],"body":[42]}}
+{"type":"Person","id":"p5","data":{"content":"a","level":[0,-5],"body":[-9007199254740993,9007199254740993]}}
+{"edge":"Near","from":"ab","to":"ab"}
+{"edge":"Near","from":"ab","to":"ab"}
+{"edge":"Near","from":"ab","to":"ab"}
+{"edge":"Wrote","from":"ab","to":"ab"}
+{"edge":"Wrote","from":"ab","to":"ab"}
+{"edge":"Wrote","from":"ab","to":"ab"}
+{"edge":"Wrote","from":"ab","to":"ab"}
+
+--- mutate
+query q20() {
+  delete Doc where @id = "ab"
+  delete Doc where count = 0.1
+  delete Wrote where @id = "x"
+}
+
+--- expect affected: nodes=1 edges=7

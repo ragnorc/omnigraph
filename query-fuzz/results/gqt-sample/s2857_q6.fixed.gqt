@@ -1,0 +1,66 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2857, case 6; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  age: U64? @index
+}
+node Tag {
+  weight: F32
+  rank: String @key
+}
+node Org {
+  age: [F64]
+  nums: F64
+  content: I32 @key
+  @index(age)
+}
+node Place {
+  title: F64?
+  weight: enum(low, mid, high)? @index
+  @range(title, -10..1000)
+}
+edge Likes: Org -> Place
+
+--- seed
+{"type":"Person","id":"p0","data":{"age":9007199254740993}}
+{"type":"Person","id":"p1","data":{}}
+{"type":"Person","id":"p2","data":{"age":2}}
+{"type":"Person","id":"p3","data":{"age":1}}
+{"type":"Person","id":"p4","data":{"age":2147483647}}
+{"type":"Tag","data":{"weight":3.0,"rank":"hello world"}}
+{"type":"Tag","data":{"weight":7.0,"rank":"database"}}
+{"type":"Org","data":{"age":[0.0,2.5],"nums":0.1,"content":42}}
+{"type":"Org","data":{"age":[3.0],"nums":7.0,"content":-2147483648}}
+{"type":"Org","data":{"age":[7.0],"nums":0.1,"content":3}}
+{"type":"Org","data":{"age":[],"nums":2.5,"content":1}}
+{"type":"Place","id":"p0","data":{"title":2.5,"weight":"mid"}}
+{"type":"Place","id":"p1","data":{"title":0.1,"weight":"low"}}
+{"edge":"Likes","from":"1","to":"p1"}
+{"edge":"Likes","from":"42","to":"p1"}
+{"edge":"Likes","from":"-2147483648","to":"p0"}
+
+--- query
+query q7() {
+  match {
+    $p1: Person
+  }
+  return { $p1.@id as c0 }
+  order { c0 }
+}
+
+--- expect ordered
+{"c0": "p0"}
+{"c0": "p1"}
+{"c0": "p2"}
+{"c0": "p3"}
+{"c0": "p4"}
+
+--- expect shape

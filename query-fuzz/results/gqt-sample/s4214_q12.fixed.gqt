@@ -1,0 +1,65 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 4214, case 12; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  note: Date
+  vec: U32 @index
+  code: String @key
+  body: DateTime? @index
+}
+node Person {
+  nums: I64 @unique
+  flag: F64? @index
+  level: String? @unique
+  seen: Blob?
+}
+node Org {
+  nums: [I64]?
+}
+node Item {
+  weight: F64? @index
+  count: enum(low, mid, high)?
+  text: String? @index
+  emb: Vector(3)
+  @range(weight, -10..1000)
+}
+
+--- seed
+{"type":"Place","data":{"note":"1999-12-31","vec":3,"code":"data base","body":"2020-01-01T00:00:00Z"}}
+{"type":"Place","data":{"note":"2024-02-29","vec":2,"code":"a","body":"2020-01-01T00:00:00Z"}}
+{"type":"Place","data":{"note":"1970-01-01","vec":42,"code":"the dog","body":"1999-12-31T23:59:59Z"}}
+{"type":"Place","data":{"note":"1999-12-31","vec":100,"code":"fox","body":"1999-12-31T23:59:59Z"}}
+{"type":"Place","data":{"note":"1970-01-01","vec":0,"code":"abc"}}
+{"type":"Org","id":"o0","data":{"nums":[]}}
+{"type":"Org","id":"o1","data":{"nums":[9007199254740993]}}
+{"type":"Org","id":"o2","data":{"nums":[3,9007199254740993]}}
+{"type":"Org","id":"o3","data":{"nums":null}}
+{"type":"Org","id":"o4","data":{"nums":null}}
+{"type":"Org","id":"o5","data":{}}
+{"type":"Item","id":"i0","data":{"count":null,"text":"the Dogs fox dog","emb":[1.0,0.0,0.0]}}
+{"type":"Item","id":"i1","data":{"weight":null,"count":"mid","emb":[0.58,-1.33,-0.27]}}
+{"type":"Item","id":"i2","data":{"weight":0.1,"count":"low","text":"Dogs","emb":[-1.62,1.17,1.17]}}
+{"type":"Item","id":"i3","data":{"weight":0.1,"count":"high","text":"Dogs Dogs data running","emb":[-1.0,-1.0,-1.0]}}
+{"type":"Item","id":"i4","data":{"weight":7.0,"count":null,"text":"base","emb":[1.5,-1.56,0.33]}}
+
+--- query
+query q13($arg1: F64) {
+  match { $p1: Person } where $p1.flag >= 7.0 and $p1.flag < $arg1
+  return { $p1.nums as c0,  $p1.flag }
+}
+
+--- params
+{"arg1": -2.25}
+
+--- expect unordered
+
+
+--- expect shape

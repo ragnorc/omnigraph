@@ -1,0 +1,49 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3911, case 5; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  weight: String @key
+  flag: [I32]
+  size: DateTime? @index
+  slug: [Date]?
+  vec: F32? @index
+}
+node Tag {
+  size: I64 @key
+  vec: enum(low, mid, high) @index
+}
+edge Knows: Tag -> Tag {
+  w: Date
+  @key(@src, @dst)
+}
+
+--- seed
+{"type":"Org","data":{"weight":"x y z","flag":[],"size":"2020-01-01T00:00:00Z","slug":["2020-01-01"],"vec":0.0}}
+{"type":"Org","data":{"weight":"dog","flag":[-1,42,-5],"size":null,"slug":["1999-12-31"],"vec":3.0}}
+{"type":"Org","data":{"weight":"naïve","flag":[1,2147483647],"size":"2020-01-01T00:00:00Z","slug":[],"vec":7.0}}
+{"type":"Org","data":{"weight":"Run","flag":[2147483647,3],"size":"2020-01-01T00:00:00.123Z","slug":["1970-01-01"],"vec":0.0}}
+{"type":"Org","data":{"weight":"the dog","flag":[-5,7,100],"slug":["1970-01-01"],"vec":7.0}}
+{"type":"Tag","data":{"size":2,"vec":"high"}}
+{"type":"Tag","data":{"size":-2147483648,"vec":"high"}}
+{"type":"Tag","data":{"size":0,"vec":"low"}}
+{"type":"Tag","data":{"size":3,"vec":"mid"}}
+{"edge":"Knows","from":"2","to":"0","data":{"w":"2020-01-01"}}
+{"edge":"Knows","from":"0","to":"0","data":{"w":"2020-01-01"}}
+
+--- mutate
+query q6($arg1: [Date]) {
+  insert Org { weight: "dog", flag: [], slug: $arg1 }
+}
+
+--- params
+{"arg1": ["1999-12-31", "2020-01-01"]}
+
+--- expect error: T3

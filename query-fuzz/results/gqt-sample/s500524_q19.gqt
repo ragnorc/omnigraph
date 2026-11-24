@@ -1,0 +1,79 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500524, case 19; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  code: DateTime?
+  note: U64
+  content: F64
+  score: F32? @index
+}
+node Org {
+  level: F64? @index
+  count: enum(red, green, blue, x-1)?
+  title: Blob?
+  note: Date @unique
+  size: Bool @index
+  text: String? @index
+  emb: Vector(3)
+}
+node Place {
+  flag: F64
+}
+node Doc {
+  born: I64 @key
+  level: Vector(3)?
+  content: F32? @index
+  @range(born, -10..1000)
+}
+node Item {
+  code: I32 @index
+  born: String @key
+  level: I64? @index
+}
+edge Knows: Org -> Place {
+  @unique(@src, @dst)
+}
+edge Likes: Doc -> Org
+
+--- seed
+{"type":"Person","id":"p0","data":{"code":"1999-12-31T23:59:59Z","note":4611686018427387904,"content":0.0,"score":3.0}}
+{"type":"Person","id":"p1","data":{"code":"2024-02-29T12:00:00Z","note":100,"content":3.0,"score":null}}
+{"type":"Person","id":"p2","data":{"code":"2020-01-01T00:00:00Z","note":100,"content":-2.25,"score":null}}
+{"type":"Place","id":"p0","data":{"flag":10000000000.0}}
+{"type":"Place","id":"p1","data":{"flag":0.1}}
+{"type":"Place","id":"p2","data":{"flag":2.5}}
+{"type":"Place","id":"p3","data":{"flag":10000000000.0}}
+{"type":"Doc","data":{"born":42,"level":[0.5,0.5,0.5],"content":0.5}}
+{"type":"Doc","data":{"born":-5,"content":null}}
+{"type":"Doc","data":{"born":3,"level":[0.17,1.11,1.07]}}
+{"type":"Doc","data":{"born":0,"level":[1.0,0.0,0.0],"content":0.0}}
+{"type":"Doc","data":{"born":2,"content":7.0}}
+{"type":"Doc","data":{"born":1,"level":[1.99,-0.92,-0.02],"content":2.5}}
+{"type":"Item","data":{"code":3,"born":"database"}}
+{"type":"Item","data":{"code":-5,"born":"run","level":3}}
+{"type":"Item","data":{"code":2147483647,"born":"x y z","level":-2147483648}}
+{"type":"Item","data":{"code":42,"born":"dog","level":2}}
+
+--- query
+query q20() {
+  match { $d1: Doc }
+  return { $d1.content as c0, avg($d1.born) as a0 }
+  order { a0 }
+}
+
+--- expect ordered
+{"a0": -1.0}
+{"c0": 0.0, "a0": 0.0}
+{"c0": 2.5, "a0": 1.0}
+{"c0": 7.0, "a0": 2.0}
+{"c0": 0.5, "a0": 42.0}
+
+--- expect shape

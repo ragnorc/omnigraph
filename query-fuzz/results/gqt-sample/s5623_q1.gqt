@@ -1,0 +1,74 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5623, case 1; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  body: [Date]
+  size: Vector(2)?
+  @index(body)
+}
+node Org {
+  note: F64?
+  count: I64? @index
+  nums: U32? @index
+}
+node Item {
+  tags: Blob?
+  slug: Blob?
+  level: Date
+}
+edge Wrote: Doc -> Doc {
+  weight: F64?
+  since: String?
+}
+edge Likes: Org -> Org
+
+--- seed
+{"type":"Doc","id":"d0","data":{"body":["1970-01-01","2024-02-29"],"size":[0.0,0.0]}}
+{"type":"Doc","id":"d1","data":{"body":["1999-12-31"]}}
+{"type":"Doc","id":"d2","data":{"body":[],"size":[0.5,0.5]}}
+{"type":"Doc","id":"d3","data":{"body":["2024-02-29","1970-01-01"]}}
+{"type":"Doc","id":"d4","data":{"body":["2020-01-01"],"size":[-1.84,0.81]}}
+{"type":"Doc","id":"d5","data":{"body":["1999-12-31","2024-02-29","1970-01-01"],"size":[1.35,1.61]}}
+{"type":"Org","id":"o0","data":{"count":-2147483648,"nums":1}}
+{"type":"Org","id":"o1","data":{"note":2.5,"count":null,"nums":7}}
+{"type":"Org","id":"o2","data":{"note":-2.25,"count":9007199254740992,"nums":7}}
+{"type":"Org","id":"o3","data":{"note":-2.25,"count":9007199254740993,"nums":3}}
+{"type":"Org","id":"o4","data":{"nums":0}}
+{"type":"Org","id":"o5","data":{"note":3.0,"count":0,"nums":0}}
+{"type":"Org","id":"o6","data":{"note":null,"count":2147483647,"nums":100}}
+{"type":"Org","id":"o7","data":{"note":1.5,"count":9007199254740992,"nums":42}}
+{"type":"Item","id":"i0","data":{"tags":"base64:","slug":"base64:AAEC","level":"1999-12-31"}}
+{"type":"Item","id":"i1","data":{"tags":"base64:AAEC","slug":"base64:","level":"2024-02-29"}}
+{"type":"Item","id":"i2","data":{"tags":null,"level":"2020-01-01"}}
+{"type":"Item","id":"i3","data":{"slug":null,"level":"2024-02-29"}}
+{"type":"Item","id":"i4","data":{"tags":"base64:","slug":null,"level":"1999-12-31"}}
+{"type":"Item","id":"i5","data":{"tags":"base64:","slug":null,"level":"1970-01-01"}}
+{"edge":"Wrote","from":"d0","to":"d5","data":{"weight":7.0}}
+{"edge":"Wrote","from":"d0","to":"d1","data":{"weight":10000000000.0,"since":"Ünïcode"}}
+{"edge":"Likes","from":"o1","to":"o6"}
+{"edge":"Likes","from":"o2","to":"o5"}
+{"edge":"Likes","from":"o1","to":"o6"}
+{"edge":"Likes","from":"o3","to":"o1"}
+{"edge":"Likes","from":"o0","to":"o1"}
+{"edge":"Likes","from":"o2","to":"o5"}
+{"edge":"Likes","from":"o0","to":"o1"}
+{"edge":"Likes","from":"o3","to":"o7"}
+
+--- mutate
+query q2($arg1: F64) {
+  delete Doc where body contains date("2020-01-01")
+  delete Org where count = 9007199254740992
+  delete Org where note = $arg1
+}
+
+--- params
+{"arg1": 7.0}
+
+--- expect affected: nodes=3 edges=3

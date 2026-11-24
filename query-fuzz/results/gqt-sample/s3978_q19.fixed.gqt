@@ -1,0 +1,45 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3978, case 19; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  flag: String? @index
+  note: U64? @index
+  score: enum(a, b) @index
+}
+node Item {
+  rank: I64
+  note: String @index
+  content: Date @unique @index
+  count: [Bool]
+  name: [I32]?
+  @index(count)
+}
+
+--- seed
+{"type":"Doc","id":"d0","data":{"flag":null,"note":4611686018427387904,"score":"b"}}
+{"type":"Doc","id":"d1","data":{"flag":"fox","note":null,"score":"a"}}
+{"type":"Doc","id":"d2","data":{"flag":"café","note":9007199254740992,"score":"b"}}
+{"type":"Item","id":"i0","data":{"rank":9007199254740993,"note":"the","content":"1970-01-01","count":[]}}
+{"type":"Item","id":"i1","data":{"rank":2147483647,"note":"data base","content":"2024-02-29","count":[],"name":[-2147483648]}}
+{"type":"Item","id":"i2","data":{"rank":9007199254740993,"note":"café","content":"2020-01-01","count":[],"name":[-5]}}
+
+--- query
+query q20() {
+  match { let $pop = { match { $i1: Item } where match_terms($i1.note, terms("Running", mode: any, max_edits: 1)) return { $i1 } }, from bm25($pop, $i1.note, "cafe") as $score }
+  return { $i1.name as c0, $i1.content }
+  order { $score desc, c0 }
+  limit 1
+}
+
+--- expect ordered
+
+
+--- expect shape

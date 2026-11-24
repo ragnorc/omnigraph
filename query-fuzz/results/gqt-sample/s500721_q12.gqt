@@ -1,0 +1,53 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500721, case 12; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag {
+  count: U64?
+  vec: [Bool]
+}
+node Place {
+  nums: Blob?
+  count: [I32]?
+  slug: F64?
+  @index(count)
+}
+edge Cites: Place -> Place
+
+--- seed
+{"type":"Tag","id":"t0","data":{"count":null,"vec":[false]}}
+{"type":"Place","id":"p0","data":{"count":[],"slug":1.5}}
+{"type":"Place","id":"p1","data":{"nums":"base64:","count":[1,100,3],"slug":7.0}}
+{"type":"Place","id":"p2","data":{"nums":"base64:","slug":-2.25}}
+{"type":"Place","id":"p3","data":{"nums":"base64:","count":[],"slug":2.5}}
+{"type":"Place","id":"p4","data":{"nums":"base64:SGVsbG8=","count":[42]}}
+{"edge":"Cites","from":"p4","to":"p4"}
+{"edge":"Cites","from":"p2","to":"p4"}
+{"edge":"Cites","from":"p0","to":"p4"}
+{"edge":"Cites","from":"p1","to":"p1"}
+{"edge":"Cites","from":"p0","to":"p1"}
+{"edge":"Cites","from":"p1","to":"p0"}
+
+--- query
+query q13() {
+  match { $p1: Place }
+  return { $p1.count, $p1.slug }
+}
+
+--- expect unordered
+{"p1.count": [], "p1.slug": 1.5}
+{"p1.count": [1, 100, 3], "p1.slug": 7.0}
+{"p1.slug": -2.25}
+{"p1.count": [], "p1.slug": 2.5}
+{"p1.count": [42]}
+
+--- expect shape
+p1.count: [I32]?
+p1.slug: F64?

@@ -1,0 +1,56 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3554, case 2; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  born: I32 @key
+}
+node Tag {
+  count: [Bool]
+  code: I32
+  nums: I64
+  @key(code, nums)
+  @range(nums, -10..1000)
+}
+edge Cites: Tag -> Tag {
+  w: Date
+}
+edge Knows: Tag -> Tag
+edge Wrote: Person -> Tag
+
+--- seed
+{"type":"Person","data":{"born":2}}
+{"type":"Person","data":{"born":100}}
+{"type":"Person","data":{"born":-5}}
+{"type":"Tag","data":{"count":[false,true,true],"code":1,"nums":2}}
+{"type":"Tag","data":{"count":[],"code":2,"nums":1}}
+{"type":"Tag","data":{"count":[false],"code":0,"nums":1}}
+{"edge":"Cites","from":"[\"1\",\"2\"]","to":"[\"2\",\"1\"]","data":{"w":"1970-01-01"}}
+{"edge":"Cites","from":"[\"2\",\"1\"]","to":"[\"1\",\"2\"]","data":{"w":"2020-01-01"}}
+{"edge":"Knows","from":"[\"0\",\"1\"]","to":"[\"0\",\"1\"]"}
+{"edge":"Knows","from":"[\"2\",\"1\"]","to":"[\"2\",\"1\"]"}
+{"edge":"Wrote","from":"2","to":"[\"0\",\"1\"]"}
+{"edge":"Wrote","from":"100","to":"[\"0\",\"1\"]"}
+
+--- query
+query q3($arg1: I32) {
+  match { $p1: Person, $t2: Tag, $p1 wrote $t2 } where count { $t3: Tag, $t2 cites $t3 } >= 1 and $p1.born = $arg1
+  return { $t2.count, $t2.code }
+  order { $t2.code, $t2.count desc }
+}
+
+--- params
+{"arg1": -2147483648}
+
+--- expect ordered
+
+
+--- expect shape

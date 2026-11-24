@@ -1,0 +1,53 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 4935, case 15; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  count: String?
+  size: Blob?
+}
+node Doc {
+  slug: Vector(3)?
+}
+edge Links: Doc -> Place @card(0..1)
+
+--- seed
+{"type":"Place","id":"p0","data":{"size":"base64:SGVsbG8="}}
+{"type":"Place","id":"p1","data":{"count":"fox"}}
+{"type":"Place","id":"p2","data":{"count":"fox","size":"base64:AAEC"}}
+{"type":"Place","id":"p3","data":{"count":"ab","size":"base64:AAEC"}}
+{"type":"Place","id":"p4","data":{"size":"base64:"}}
+{"type":"Place","id":"p5","data":{"count":"ran","size":"base64:"}}
+{"type":"Place","id":"p6","data":{"size":"base64:SGVsbG8="}}
+{"type":"Place","id":"p7","data":{"count":"café","size":"base64:SGVsbG8="}}
+{"type":"Doc","id":"d0","data":{"slug":[1.04,-1.45,-0.34]}}
+
+--- query
+query q16($arg1: Vector(3), $arg2: Bool) {
+  match {
+    $p1: Place
+    $d2: Doc
+    $p1 links $d2
+    $p1.count < "ab" or $p1.count in ["fox", "a"]
+    not { $d2.@id = "x" }
+  }
+  return { $d2.slug, $p1.count }
+  order { nearest($d2.slug, $arg1), $p1.count }
+  limit 3
+}
+
+--- params
+{"arg1": [0.8, -1.0, 0.3], "arg2": true}
+
+--- expect ordered
+
+
+--- expect shape
+d2.slug: Vector(3)
+p1.count: String

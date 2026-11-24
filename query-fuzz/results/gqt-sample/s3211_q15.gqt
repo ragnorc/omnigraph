@@ -1,0 +1,64 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3211, case 15; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  score: I64 @key
+}
+edge Near: Person -> Person {
+  since: I32?
+  role: [I64]?
+}
+edge Tagged: Person -> Person
+edge Owns: Person -> Person {
+  w: I32?
+  since: I64?
+}
+edge Likes: Person -> Person
+
+--- seed
+{"type":"Person","data":{"score":2147483647}}
+{"type":"Person","data":{"score":9007199254740993}}
+{"type":"Person","data":{"score":9007199254740992}}
+{"type":"Person","data":{"score":1}}
+{"type":"Person","data":{"score":0}}
+{"edge":"Near","from":"2147483647","to":"9007199254740993","data":{"since":7,"role":[0,9007199254740992,2]}}
+{"edge":"Near","from":"9007199254740993","to":"2147483647","data":{"since":2147483647,"role":[]}}
+{"edge":"Tagged","from":"9007199254740992","to":"0"}
+{"edge":"Tagged","from":"9007199254740992","to":"1"}
+{"edge":"Tagged","from":"2147483647","to":"9007199254740993"}
+{"edge":"Tagged","from":"9007199254740993","to":"2147483647"}
+{"edge":"Owns","from":"1","to":"9007199254740993","data":{"w":100,"since":3}}
+{"edge":"Owns","from":"9007199254740992","to":"0","data":{"w":2147483647}}
+{"edge":"Owns","from":"2147483647","to":"2147483647","data":{"since":42}}
+{"edge":"Owns","from":"9007199254740993","to":"1","data":{"w":-1,"since":9007199254740993}}
+{"edge":"Likes","from":"9007199254740993","to":"9007199254740993"}
+{"edge":"Likes","from":"1","to":"0"}
+{"edge":"Likes","from":"2147483647","to":"9007199254740992"}
+{"edge":"Likes","from":"9007199254740993","to":"1"}
+{"edge":"Likes","from":"2147483647","to":"1"}
+{"edge":"Likes","from":"9007199254740993","to":"2147483647"}
+{"edge":"Likes","from":"1","to":"9007199254740993"}
+{"edge":"Likes","from":"9007199254740992","to":"0"}
+
+--- query
+query q16() {
+  match {
+    $p1: Person  $p2: Person  $p1 tagged{2,3} $p2  $p3 <likes> $p2  $p3.score > 0  count { $p4: Person  $p2 owns $p4  $p4.score in [9007199254740992] } > 0
+  }
+  return { $p1.score as c0 }
+  order { c0 desc }
+  limit 10
+}
+
+--- expect ordered
+
+
+--- expect shape
+c0: I64

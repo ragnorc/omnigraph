@@ -1,0 +1,65 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1184, case 14; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  seen: String? @index
+}
+node Tag {
+  level: enum(a, b)? @index
+  content: String @index
+}
+node Person {
+  score: U32?
+  code: enum(red, green, blue, x-1)?
+}
+edge Wrote: Doc -> Doc {
+  @key(@src, @dst)
+}
+edge Owns: Doc -> Person {
+  role: enum(low, mid, high)
+}
+
+--- seed
+{"type":"Doc","id":"d0","data":{"seen":"the"}}
+{"type":"Doc","id":"d1","data":{"seen":"of the and"}}
+{"type":"Doc","id":"d2","data":{"seen":"Ünïcode"}}
+{"type":"Tag","id":"t0","data":{"level":null,"content":"data base"}}
+{"type":"Tag","id":"t1","data":{"level":"a","content":"abc"}}
+{"type":"Tag","id":"t2","data":{"level":"b","content":"the dog"}}
+{"type":"Tag","id":"t3","data":{"level":"b","content":"run"}}
+{"type":"Tag","id":"t4","data":{"level":"b","content":"Hello World"}}
+{"type":"Tag","id":"t5","data":{"level":null,"content":"database"}}
+{"type":"Tag","id":"t6","data":{"level":null,"content":"Hello World"}}
+{"type":"Tag","id":"t7","data":{"level":"b","content":"database"}}
+{"type":"Person","id":"p0","data":{"score":null,"code":null}}
+{"type":"Person","id":"p1","data":{"score":0,"code":"red"}}
+{"type":"Person","id":"p2","data":{"score":42,"code":"x-1"}}
+{"type":"Person","id":"p3","data":{"score":null,"code":"blue"}}
+{"edge":"Wrote","from":"d0","to":"d0"}
+{"edge":"Wrote","from":"d2","to":"d1"}
+{"edge":"Wrote","from":"d1","to":"d1"}
+{"edge":"Wrote","from":"d1","to":"d2"}
+{"edge":"Owns","from":"d2","to":"p1","data":{"role":"low"}}
+
+--- query
+query q15() {
+  match {
+    $p1: Person { code: "red" }
+    $p1 $e3:owns $d2
+    $d2 wrote $d4
+    $d2 wrote $d5
+    $d4.seen contains "Ün" and $d4.seen in ["Ünïcode", "of the and", "the"]
+  }
+  return { "x" || "y" as cc, $p1, $d2.seen }
+  order { $d2.seen }
+}
+
+--- expect error: Q001

@@ -1,0 +1,55 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5796, case 14; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  title: [String]?
+  @index(title)
+}
+node Tag {
+  born: I64?
+  rank: Date
+  score: I32 @key
+  title: DateTime?
+  age: U64? @index
+}
+node Item {
+  seen: enum(red, green, blue, x-1)
+  born: Vector(3)
+  score: Vector(2)
+}
+
+--- seed
+{"type":"Person","id":"p0","data":{}}
+{"type":"Tag","data":{"born":9007199254740992,"rank":"2020-01-01","score":0,"title":"2020-01-01T00:00:00.123Z","age":0}}
+{"type":"Tag","data":{"born":2147483647,"rank":"1970-01-01","score":7,"title":"2020-01-01T00:00:00Z","age":9007199254740992}}
+{"type":"Tag","data":{"born":-2147483648,"rank":"1970-01-01","score":42,"title":"2020-01-01T00:00:00.123Z","age":0}}
+{"type":"Tag","data":{"rank":"1999-12-31","score":1,"title":"2020-01-01T00:00:00.123Z","age":0}}
+{"type":"Tag","data":{"born":-2147483648,"rank":"2024-02-29","score":-5,"title":"1999-12-31T23:59:59Z","age":42}}
+{"type":"Item","id":"i0","data":{"seen":"green","born":[1.0,1.0,1.0],"score":[0.0,0.0]}}
+{"type":"Item","id":"i1","data":{"seen":"red","born":[0.0,0.0,0.0],"score":[1.99,0.86]}}
+{"type":"Item","id":"i2","data":{"seen":"green","born":[0.67,0.38,-0.72],"score":[0.5,0.5]}}
+{"type":"Item","id":"i3","data":{"seen":"x-1","born":[-0.41,0.35,-0.51],"score":[0.5,0.5]}}
+
+--- query
+query q15() {
+  match {
+    $t1: Tag  count { $t1.born is not null } >= 2
+  }
+  return { $t1  $t1.born  $t1.score }
+  limit 10
+}
+
+--- expect unordered
+
+
+--- expect shape
+t1: Tag
+t1.born: I64
+t1.score: I32

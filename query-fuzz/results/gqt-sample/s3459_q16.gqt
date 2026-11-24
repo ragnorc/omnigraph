@@ -1,0 +1,49 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3459, case 16; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  slug: String?
+  flag: enum(red, green, blue, x-1)?
+  note: I32 @key
+  body: Blob?
+  count: I32 @index
+}
+node Place {
+  age: Vector(3)
+  slug: Vector(2)?
+  born: I64 @index
+  flag: I64 @key
+  @range(born, -10..1000)
+}
+
+--- seed
+{"type":"Item","data":{"slug":"the","flag":"blue","note":7,"body":"base64:SGVsbG8=","count":-2147483648}}
+{"type":"Item","data":{"slug":"café","flag":null,"note":42,"body":"base64:AAEC","count":2}}
+{"type":"Place","data":{"age":[1.0,1.0,1.0],"slug":[0.36,-1.53],"born":0,"flag":0}}
+{"type":"Place","data":{"age":[-1.35,1.21,-1.08],"slug":[-1.87,0.28],"born":3,"flag":2}}
+
+--- query
+query q17() {
+  match {
+    $p1: Place
+    $p2: Place
+    $p2.flag in [0, 9007199254740993] and $p2.flag in [1]
+  }
+  return { $p1.slug }
+  order { $p1.slug asc }
+  limit 5
+}
+
+--- expect ordered
+
+
+--- expect shape
+p1.slug: Vector(2)

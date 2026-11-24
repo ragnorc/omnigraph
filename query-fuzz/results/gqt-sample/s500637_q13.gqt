@@ -1,0 +1,57 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500637, case 13; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  born: [I32]?
+  flag: String? @index
+  tags: String @key
+  @index(born)
+}
+node Person {
+  note: F64 @index
+}
+node Doc {
+  age: I64?
+  @range(age, -10..1000)
+}
+node Tag {
+  born: F64? @index
+  age: Vector(3)
+  content: I32 @key
+}
+
+--- seed
+{"type":"Item","data":{"born":null,"flag":"dog","tags":"Dogs"}}
+{"type":"Item","data":{"born":null,"flag":"RUN","tags":"data base"}}
+{"type":"Item","data":{"born":[100,-2147483648],"flag":"café","tags":"k"}}
+{"type":"Item","data":{"born":[-2147483648,1,42],"flag":"data base","tags":"dog house"}}
+{"type":"Item","data":{"born":null,"flag":"RUN","tags":"dog"}}
+{"type":"Item","data":{"flag":"the dog","tags":"running"}}
+{"type":"Item","data":{"born":null,"flag":null,"tags":"run"}}
+{"type":"Item","data":{"born":[],"flag":"running","tags":"hello world"}}
+{"type":"Person","id":"p0","data":{"note":-2.25}}
+{"type":"Person","id":"p1","data":{"note":10000000000.0}}
+{"type":"Person","id":"p2","data":{"note":0.0}}
+{"type":"Person","id":"p3","data":{"note":7.0}}
+{"type":"Doc","id":"d0","data":{"age":1}}
+
+--- query
+query q14() {
+  match { $d1: Doc }
+  return distinct { $d1.@id, $d1.age }
+}
+
+--- expect unordered
+{"d1.@id": "d0", "d1.age": 1}
+
+--- expect shape
+d1.@id: String
+d1.age: I64

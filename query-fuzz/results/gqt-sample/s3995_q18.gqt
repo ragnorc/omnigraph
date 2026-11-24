@@ -1,0 +1,38 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3995, case 18; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  nums: enum(a, b)?
+  score: [String]?
+  name: Date?
+  flag: U32
+  age: I64 @key
+}
+edge Near: Place -> Place @card(0..1) {
+  w: F32
+}
+edge Cites: Place -> Place
+
+--- seed
+
+--- query
+query q19() {
+  match {
+    $p1: Place
+  }
+  return { $p1.name }
+  order { $p1.name }
+}
+
+--- expect ordered
+
+
+--- expect shape
+p1.name: Date

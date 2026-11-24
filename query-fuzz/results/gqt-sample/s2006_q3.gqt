@@ -1,0 +1,51 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2006, case 3; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  code: I64? @index
+  body: I64 @key
+  born: [I32]?
+  @index(born)
+}
+node Person {
+  content: enum(low, mid, high)
+  count: Vector(3)
+}
+node Org {
+  slug: enum(red, green, blue, x-1)?
+  title: Blob?
+  code: String
+  note: Date @index
+  weight: String
+  @key(code, weight)
+}
+
+--- seed
+{"type":"Person","id":"p0","data":{"content":"low","count":[-1.0,-1.0,-1.0]}}
+{"type":"Org","data":{"slug":"red","title":"base64:AAEC","code":"x","note":"2020-01-01","weight":"running dogs"}}
+{"type":"Org","data":{"slug":"x-1","title":"base64:AAEC","code":"x y z","note":"1970-01-01","weight":"Dogs"}}
+{"type":"Org","data":{"slug":"blue","title":"base64:AAEC","code":"RUN","note":"1970-01-01","weight":"RUN"}}
+{"type":"Org","data":{"slug":null,"title":null,"code":"runs","note":"1970-01-01","weight":"dog"}}
+{"type":"Org","data":{"slug":"red","title":"base64:SGVsbG8=","code":"dog","note":"1970-01-01","weight":"the dog"}}
+
+--- query
+query q4() {
+  match {
+    $i1: Item
+  }
+  return { $i1.code }
+  order { $i1.code desc }
+}
+
+--- expect ordered
+
+
+--- expect shape
+i1.code: I64

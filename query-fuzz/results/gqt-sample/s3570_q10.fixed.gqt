@@ -1,0 +1,52 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3570, case 10; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag {
+  vec: enum(a, b)?
+  age: F64
+  level: Blob?
+  nums: [I32]?
+  score: String @key
+  text: String? @index
+  emb: Vector(3)
+  @range(age, -10..1000)
+}
+edge Owns: Tag -> Tag {
+  weight: I64
+}
+
+--- seed
+{"type":"Tag","data":{"vec":null,"age":3.0,"level":"base64:AAEC","nums":[-2147483648],"score":"café","text":"run data an the","emb":[-1.0,-1.0,-1.0]}}
+{"type":"Tag","data":{"vec":"b","age":1.5,"level":"base64:AAEC","nums":[-5,3],"score":"Hello World","text":"fox dog","emb":[-1.29,-0.24,-1.01]}}
+{"type":"Tag","data":{"vec":"a","age":2.5,"level":"base64:","nums":[42,0],"score":"run","text":"and the café","emb":[1.0,0.0,0.0]}}
+{"type":"Tag","data":{"vec":"a","age":1.5,"level":"base64:","nums":null,"score":"of the and","text":"an","emb":[0.0,0.0,0.0]}}
+{"type":"Tag","data":{"vec":"a","age":0.0,"level":"base64:","nums":[],"score":"running dogs","text":null,"emb":[0.06,-0.72,-1.93]}}
+{"edge":"Owns","from":"running dogs","to":"Hello World","data":{"weight":2}}
+{"edge":"Owns","from":"Hello World","to":"running dogs","data":{"weight":9007199254740993}}
+{"edge":"Owns","from":"Hello World","to":"running dogs","data":{"weight":42}}
+{"edge":"Owns","from":"Hello World","to":"café","data":{"weight":-9007199254740993}}
+{"edge":"Owns","from":"run","to":"café","data":{"weight":7}}
+{"edge":"Owns","from":"running dogs","to":"running dogs","data":{"weight":9007199254740993}}
+{"edge":"Owns","from":"café","to":"Hello World","data":{"weight":1}}
+{"edge":"Owns","from":"Hello World","to":"café","data":{"weight":7}}
+
+--- query
+query q11() {
+  match { $t1: Tag, $t1 <owns> $t2 } where count { $t3: Tag, $t3 owns $t1 where contains($t3.text, "and ") } = 1
+  return { $t2 as c0,  $t1.vec }
+  order { $t1.vec desc }
+}
+
+--- expect ordered
+{"c0": {"@id": "Hello World", "age": 1.5, "nums": [-5, 3], "score": "Hello World", "text": "fox dog", "vec": "b"}}
+{"c0": {"@id": "run", "age": 2.5, "nums": [42, 0], "score": "run", "text": "and the café", "vec": "a"}}
+
+--- expect shape

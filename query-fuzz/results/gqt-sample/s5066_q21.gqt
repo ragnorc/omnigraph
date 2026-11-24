@@ -1,0 +1,64 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5066, case 21; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  count: [F64]?
+  rank: [String]?
+  text: String? @index
+  emb: Vector(3)?
+  @index(count)
+}
+edge Near: Org -> Org
+edge Likes: Org -> Org
+edge Tagged: Org -> Org {
+  weight: [I64]
+  role: DateTime?
+}
+edge Knows: Org -> Org
+
+--- seed
+{"type":"Org","id":"o0","data":{"rank":[],"text":"","emb":[1.82,1.39,1.84]}}
+{"type":"Org","id":"o1","data":{"count":null,"rank":[]}}
+{"type":"Org","id":"o2","data":{"count":[-2.25,2.5],"rank":[""],"text":"RUN running hello café","emb":[1.9,-0.34,-1.62]}}
+{"type":"Org","id":"o3","data":{"count":[],"rank":["abc"],"text":"RUN the","emb":null}}
+{"type":"Org","id":"o4","data":{"rank":["dog","ran"],"text":"café a","emb":[-0.7,-1.69,0.57]}}
+{"edge":"Near","from":"o0","to":"o1"}
+{"edge":"Near","from":"o0","to":"o1"}
+{"edge":"Near","from":"o1","to":"o0"}
+{"edge":"Likes","from":"o2","to":"o0"}
+{"edge":"Tagged","from":"o2","to":"o2","data":{"weight":[4611686018427387904],"role":"1999-12-31T23:59:59Z"}}
+{"edge":"Tagged","from":"o4","to":"o0","data":{"weight":[7],"role":"2020-01-01T00:00:00Z"}}
+{"edge":"Tagged","from":"o2","to":"o3","data":{"weight":[100],"role":"2020-01-01T00:00:00.123Z"}}
+{"edge":"Tagged","from":"o0","to":"o1","data":{"weight":[4611686018427387904],"role":"2020-01-01T00:00:00.123Z"}}
+{"edge":"Tagged","from":"o1","to":"o0","data":{"weight":[2147483647],"role":"1999-12-31T23:59:59Z"}}
+{"edge":"Knows","from":"o3","to":"o3"}
+{"edge":"Knows","from":"o0","to":"o0"}
+
+--- query
+query q22($arg1: String, $arg2: Bool) {
+  match {
+    $o1: Org { text: "" }
+    $o2 near $o1
+    $o1.text in ["RUN the", "hello world", "café a"] or $arg1 in $o1.rank
+  }
+  return { $o1, count($o2) as a0, count($o2) as a1 }
+}
+
+--- params
+{"arg1": "abc", "arg2": true}
+
+--- expect unordered
+
+
+--- expect shape
+o1: Org
+a0: I64
+a1: I64

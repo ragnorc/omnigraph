@@ -1,0 +1,70 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3309, case 0; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  tags: I32
+}
+node Person {
+  body: String @index
+  size: Blob?
+  content: enum(a, b)
+}
+node Tag {
+  code: I32 @key
+}
+edge Likes: Org -> Org
+edge Knows: Org -> Tag
+edge Cites: Org -> Person @card(0..1) {
+  w: String?
+}
+
+--- seed
+{"type":"Org","id":"o0","data":{"tags":100}}
+{"type":"Org","id":"o1","data":{"tags":-1}}
+{"type":"Org","id":"o2","data":{"tags":-1}}
+{"type":"Org","id":"o3","data":{"tags":-1}}
+{"type":"Person","id":"p0","data":{"body":"the dog","size":"base64:AAEC","content":"b"}}
+{"type":"Person","id":"p1","data":{"body":"Dogs","size":"base64:","content":"a"}}
+{"type":"Person","id":"p2","data":{"body":"running","size":"base64:AAEC","content":"b"}}
+{"type":"Person","id":"p3","data":{"body":"and the","content":"a"}}
+{"type":"Person","id":"p4","data":{"body":"running","size":null,"content":"b"}}
+{"type":"Person","id":"p5","data":{"body":"the","size":"base64:SGVsbG8=","content":"a"}}
+{"type":"Person","id":"p6","data":{"body":"dog","size":"base64:SGVsbG8=","content":"b"}}
+{"type":"Person","id":"p7","data":{"body":"ab","size":null,"content":"b"}}
+{"type":"Tag","data":{"code":0}}
+{"edge":"Likes","from":"o1","to":"o3"}
+{"edge":"Likes","from":"o0","to":"o2"}
+{"edge":"Likes","from":"o0","to":"o1"}
+{"edge":"Likes","from":"o1","to":"o0"}
+{"edge":"Knows","from":"o2","to":"0"}
+{"edge":"Knows","from":"o2","to":"0"}
+{"edge":"Knows","from":"o2","to":"0"}
+{"edge":"Knows","from":"o1","to":"0"}
+{"edge":"Cites","from":"o0","to":"p1","data":{"w":"running"}}
+{"edge":"Cites","from":"o1","to":"p0","data":{"w":"dog"}}
+{"edge":"Cites","from":"o2","to":"p7","data":{"w":"x y z"}}
+{"edge":"Cites","from":"o3","to":"p2","data":{"w":"database"}}
+
+--- query
+query q1($arg1: [I32], $arg2: [I32], $arg3: String, $arg4: String, $arg5: [I32], $arg6: String) {
+  match { $p1: Person, $o2: Org, $o2 $e3:cites $p1 } where $p1.content = "a" and $o2.tags in $arg1 and $o2.tags in $arg2 and $e3.w <= $arg3 and starts_with($e3.w, "a") and match_terms($p1.body, terms($arg4, mode: any))
+  return { $p1.content, $o2.tags in $arg5 as b1 }
+  order { $p1.content }
+}
+
+--- params
+{"arg1": [-1], "arg2": [-1], "arg3": "Run", "arg4": "the and", "arg5": [1, -1, -1], "arg6": "x y z"}
+
+--- expect ordered
+
+
+--- expect shape

@@ -1,0 +1,86 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500017, case 20; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  nums: U64? @index
+  vec: String?
+  flag: I64
+  age: enum(a, b)
+}
+node Doc {
+  slug: Blob?
+  note: String
+  weight: String @key
+  body: I64?
+  age: [I32]?
+}
+node Place {
+  weight: String @unique
+  text: String? @index
+  emb: Vector(3)
+}
+edge Near: Doc -> Place @card(0..1)
+edge Tagged: Doc -> Doc
+edge Knows: Doc -> Doc
+edge Links: Place -> Doc {
+  @unique(@src, @dst)
+}
+
+--- seed
+{"type":"Org","id":"o0","data":{"nums":0,"flag":3,"age":"a"}}
+{"type":"Org","id":"o1","data":{"nums":3,"flag":4611686018427387904,"age":"a"}}
+{"type":"Org","id":"o2","data":{"nums":0,"vec":"abc","flag":2,"age":"b"}}
+{"type":"Org","id":"o3","data":{"nums":0,"vec":"Hello World","flag":9007199254740993,"age":"b"}}
+{"type":"Doc","data":{"slug":"base64:SGVsbG8=","note":"of the and","weight":"ran","body":2147483647,"age":[2,3,-5]}}
+{"type":"Doc","data":{"slug":"base64:AAEC","note":"runs","weight":"café","body":2,"age":[]}}
+{"type":"Doc","data":{"slug":null,"note":"running","weight":"k","body":2,"age":null}}
+{"type":"Doc","data":{"slug":"base64:AAEC","note":"ran","weight":"of the and","body":-9007199254740993,"age":[3,-1]}}
+{"type":"Doc","data":{"slug":"base64:SGVsbG8=","note":"of the and","weight":"run","body":-9007199254740993,"age":[0,2147483647,42]}}
+{"type":"Doc","data":{"slug":null,"note":"and the","weight":"and the","body":-2147483648,"age":[3,100,-1]}}
+{"type":"Place","id":"p0","data":{"weight":"dog house","text":"runs","emb":[-0.89,-1.02,0.95]}}
+{"type":"Place","id":"p1","data":{"weight":"fox","text":"hello","emb":[0.0,0.0,0.0]}}
+{"type":"Place","id":"p2","data":{"weight":"hello world","text":"","emb":[0.5,0.5,0.5]}}
+{"type":"Place","id":"p3","data":{"weight":"running dogs","text":"run run","emb":[-0.96,-1.43,-0.05]}}
+{"type":"Place","id":"p4","data":{"weight":"the","text":"Run  an Dogs","emb":[-0.6,1.79,-0.03]}}
+{"type":"Place","id":"p5","data":{"weight":"and the","text":"hello","emb":[1.78,0.76,-0.73]}}
+{"edge":"Near","from":"ran","to":"p3"}
+{"edge":"Near","from":"and the","to":"p4"}
+{"edge":"Near","from":"of the and","to":"p1"}
+{"edge":"Near","from":"run","to":"p3"}
+{"edge":"Knows","from":"run","to":"run"}
+{"edge":"Knows","from":"and the","to":"ran"}
+{"edge":"Knows","from":"and the","to":"of the and"}
+{"edge":"Knows","from":"and the","to":"and the"}
+{"edge":"Knows","from":"run","to":"ran"}
+{"edge":"Knows","from":"and the","to":"café"}
+{"edge":"Knows","from":"ran","to":"café"}
+{"edge":"Knows","from":"ran","to":"ran"}
+{"edge":"Knows","from":"ran","to":"café"}
+{"edge":"Knows","from":"café","to":"ran"}
+{"edge":"Links","from":"p3","to":"of the and"}
+
+--- query
+query q21() {
+  match { $d1: Doc }
+  return { $d1.body as c0, $d1.@id as c1 }
+  order { c1 }
+}
+
+--- expect ordered
+{"c0": -2147483648, "c1": "and the"}
+{"c0": 2, "c1": "café"}
+{"c0": 2, "c1": "k"}
+{"c0": -9007199254740993, "c1": "of the and"}
+{"c0": 2147483647, "c1": "ran"}
+{"c0": -9007199254740993, "c1": "run"}
+
+--- expect shape

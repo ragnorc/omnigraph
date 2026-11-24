@@ -1,0 +1,58 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1189, case 6; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  size: F32? @index
+  slug: Blob?
+  nums: I64 @index
+}
+node Org {
+  slug: F64
+  seen: enum(red, green, blue, x-1)
+  note: U64? @unique
+  title: U32? @index
+}
+node Tag {
+  name: U64?
+  score: U32?
+  flag: Blob?
+  rank: [F64]?
+  size: DateTime
+}
+edge Owns: Place -> Org {
+  since: enum(a, b)?
+  role: I64
+  @unique(@src, @dst)
+}
+edge Likes: Tag -> Tag {
+  @unique(@src, @dst)
+}
+edge Links: Place -> Org {
+  @key(@src, @dst)
+}
+
+--- seed
+{"type":"Place","id":"p0","data":{"size":null,"slug":"base64:SGVsbG8=","nums":0}}
+{"type":"Org","id":"o0","data":{"slug":10000000000.0,"seen":"red","title":7}}
+{"type":"Org","id":"o1","data":{"slug":3.0,"seen":"green","note":9007199254740992,"title":4294967295}}
+{"edge":"Owns","from":"p0","to":"o1","data":{"since":"b","role":100}}
+{"edge":"Owns","from":"p0","to":"o0","data":{"since":"a","role":9007199254740992}}
+
+--- mutate
+query q7($arg1: I64, $arg2: F32) {
+  update Place set { nums: $arg1, size: $arg2 } where size < 2.5
+  insert Links { from: "p0", to: "o0" }
+  insert Links { from: "p0", to: "o0" }
+}
+
+--- params
+{"arg1": 9007199254740993, "arg2": 7.0}
+
+--- expect affected: nodes=0 edges=2

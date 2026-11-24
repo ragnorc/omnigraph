@@ -1,0 +1,61 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1900, case 10; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag {
+  flag: [Date]?
+  count: Bool
+  text: String? @index
+  emb: Vector(3)
+  @index(flag)
+}
+edge Links: Tag -> Tag {
+  @unique(@src, @dst)
+}
+edge Tagged: Tag -> Tag
+edge Knows: Tag -> Tag
+edge Owns: Tag -> Tag {
+  weight: I32?
+}
+
+--- seed
+{"type":"Tag","id":"t0","data":{"flag":["2020-01-01","2024-02-29","2024-02-29"],"count":true,"text":"","emb":[1.76,1.33,-0.75]}}
+{"type":"Tag","id":"t1","data":{"flag":["2020-01-01","1970-01-01"],"count":false,"text":"the the","emb":[0.5,0.5,0.5]}}
+{"edge":"Links","from":"t1","to":"t0"}
+{"edge":"Links","from":"t0","to":"t0"}
+{"edge":"Tagged","from":"t1","to":"t0"}
+{"edge":"Knows","from":"t0","to":"t1"}
+{"edge":"Knows","from":"t1","to":"t0"}
+{"edge":"Owns","from":"t0","to":"t1","data":{"weight":7}}
+{"edge":"Owns","from":"t0","to":"t1","data":{"weight":2147483647}}
+{"edge":"Owns","from":"t1","to":"t0"}
+
+--- query
+query q11($arg1: String, $arg2: Vector(3)) {
+  match {
+    $t1: Tag
+    $t2: Tag
+    $t1 <tagged> $t2
+    $t3: Tag
+    $t2 links $t3
+    $t4 $e5:owns $t1
+    $t3.nosuch = "abc"
+    count { $t3 tagged $t6
+      $t6.text contains "" } = 1
+  }
+  return { $t3.@id as c0, $t2.@id, $e5.weight }
+  order { rrf(nearest($t4.emb, $arg2), bm25($t3.text, $arg1), 60) desc, $t2.@id }
+  limit 10
+}
+
+--- params
+{"arg1": "café", "arg2": [0.2, 1.0, 0.7]}
+
+--- expect error: T6

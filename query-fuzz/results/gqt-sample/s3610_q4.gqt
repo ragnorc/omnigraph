@@ -1,0 +1,60 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3610, case 4; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  weight: U64? @index
+  code: U32?
+}
+node Org {
+  body: U64? @index
+  note: Blob?
+  rank: I32
+}
+edge Wrote: Org -> Doc
+edge Knows: Doc -> Doc
+edge Tagged: Org -> Doc {
+  w: U32?
+  since: I64
+}
+
+--- seed
+{"type":"Doc","id":"d0","data":{"weight":2147483647,"code":null}}
+{"type":"Doc","id":"d1","data":{"weight":0,"code":null}}
+{"type":"Org","id":"o0","data":{"body":0,"note":"base64:AAEC","rank":100}}
+{"edge":"Wrote","from":"o0","to":"d1"}
+{"edge":"Wrote","from":"o0","to":"d1"}
+{"edge":"Wrote","from":"o0","to":"d0"}
+{"edge":"Wrote","from":"o0","to":"d1"}
+{"edge":"Wrote","from":"o0","to":"d1"}
+{"edge":"Wrote","from":"o0","to":"d1"}
+{"edge":"Knows","from":"d0","to":"d1"}
+{"edge":"Knows","from":"d0","to":"d0"}
+{"edge":"Knows","from":"d0","to":"d1"}
+{"edge":"Knows","from":"d1","to":"d1"}
+{"edge":"Knows","from":"d1","to":"d1"}
+{"edge":"Knows","from":"d0","to":"d0"}
+
+--- query
+query q5() {
+  match {
+    $o1: Org  $o1 wrote $d2
+  }
+  return { $o1.body }
+  order { $o1.body asc }
+  limit 2
+}
+
+--- expect ordered
+{"o1.body": 0}
+{"o1.body": 0}
+
+--- expect shape
+o1.body: U64

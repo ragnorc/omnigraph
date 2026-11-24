@@ -1,0 +1,77 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1532, case 1; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  level: F64? @index
+  content: U64 @index
+  count: [I32]?
+  age: [Date]?
+  vec: [I64]?
+}
+node Tag {
+  weight: Bool?
+  flag: String @key
+  vec: F64? @index
+  nums: Date?
+}
+node Org {
+  age: enum(low, mid, high)?
+  vec: Vector(3)
+}
+node Item {
+  flag: [String]
+  score: enum(a, b) @index
+  weight: Vector(3)?
+  size: Vector(3)
+  content: Bool
+}
+node Person {
+  body: I64
+  name: String @key
+  age: F64 @index
+  @range(body, -10..1000)
+}
+edge Near: Org -> Person {
+  since: enum(red, green, blue, x-1)?
+  @unique(@src, @dst)
+}
+edge Owns: Tag -> Org {
+  w: U32
+}
+
+--- seed
+{"type":"Tag","data":{"weight":false,"flag":"Hello World","vec":2.5,"nums":"2020-01-01"}}
+{"type":"Tag","data":{"weight":false,"flag":"running","vec":null,"nums":"2024-02-29"}}
+{"type":"Tag","data":{"weight":true,"flag":"Ünïcode","nums":"2024-02-29"}}
+{"type":"Tag","data":{"weight":true,"flag":"a","vec":0.1}}
+{"type":"Tag","data":{"weight":null,"flag":"RUN","vec":3.0,"nums":"2020-01-01"}}
+{"type":"Tag","data":{"weight":false,"flag":"café","vec":1.5,"nums":"1970-01-01"}}
+{"type":"Org","id":"o0","data":{"vec":[1.0,1.0,1.0]}}
+{"edge":"Owns","from":"Hello World","to":"o0","data":{"w":2}}
+{"edge":"Owns","from":"Ünïcode","to":"o0","data":{"w":0}}
+{"edge":"Owns","from":"running","to":"o0","data":{"w":2}}
+{"edge":"Owns","from":"running","to":"o0","data":{"w":0}}
+{"edge":"Owns","from":"a","to":"o0","data":{"w":42}}
+{"edge":"Owns","from":"café","to":"o0","data":{"w":100}}
+{"edge":"Owns","from":"a","to":"o0","data":{"w":3}}
+{"edge":"Owns","from":"café","to":"o0","data":{"w":100}}
+
+--- mutate
+query q2($arg1: Vector(3), $arg2: Bool) {
+  insert Org { age: "mid", vec: $arg1 }
+  insert Tag { weight: $arg2, flag: "running", nums: date("1970-01-01") }
+}
+
+--- params
+{"arg1": [0.2, -0.7, 0.8], "arg2": false}
+
+--- expect affected: nodes=2 edges=0

@@ -1,0 +1,65 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5921, case 1; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  code: DateTime @index
+  size: String? @index
+  slug: I32?
+}
+node Org {
+  body: String @unique
+  flag: enum(red, green, blue, x-1)?
+  name: I32 @key
+}
+node Person {
+  name: I64?
+  slug: DateTime?
+  level: I64 @key
+  age: U64? @index
+}
+edge Knows: Person -> Item {
+  weight: [Date]?
+  role: [I32]
+}
+edge Likes: Org -> Org
+edge Tagged: Item -> Item {
+  @key(@src, @dst)
+}
+
+--- seed
+{"type":"Org","data":{"body":"ran","flag":"red","name":-1}}
+{"type":"Org","data":{"body":"x","name":100}}
+{"type":"Person","data":{"slug":"2020-01-01T00:00:00Z","level":-1}}
+{"type":"Person","data":{"name":-5,"slug":"2020-01-01T00:00:00.123Z","level":42,"age":null}}
+{"type":"Person","data":{"name":1,"slug":"2020-01-01T00:00:00.123Z","level":2,"age":9007199254740993}}
+{"edge":"Likes","from":"100","to":"100"}
+{"edge":"Likes","from":"-1","to":"100"}
+
+--- query
+query q2($arg1: DateTime, $arg2: String) {
+  match {
+    $p1: Person { slug: $arg1 }
+    $i2: Item
+    $p1 knows $i2
+    $p1 knows $i3
+    $i3.size is not null or $i3.size starts_with $arg2
+  }
+  return { $i3.code as c0 }
+}
+
+--- params
+{"arg1": "2020-01-01T00:00:00.123Z", "arg2": "the"}
+
+--- expect unordered
+
+
+--- expect shape
+c0: DateTime

@@ -1,0 +1,89 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1964, case 18; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  name: String @unique
+  note: Blob?
+  age: DateTime? @index
+  score: I64 @key
+  title: [F64]?
+  @index(title)
+}
+node Org {
+  level: Blob?
+  size: [F64]?
+  @index(size)
+}
+node Place {
+  tags: F64 @index
+  rank: F32?
+}
+node Person {
+  size: U64 @index
+  born: String @key
+  note: enum(red, green, blue, x-1)?
+  age: [Bool]?
+  vec: [F64]?
+  @index(age)
+}
+edge Likes: Doc -> Doc
+
+--- seed
+{"type":"Doc","data":{"name":"running dogs","note":"base64:AAEC","age":"2024-02-29T12:00:00Z","score":4611686018427387904,"title":[3.0]}}
+{"type":"Doc","data":{"name":"of the and","note":"base64:SGVsbG8=","age":"2020-01-01T00:00:00.123Z","score":3}}
+{"type":"Doc","data":{"name":"fox","note":"base64:","score":7,"title":[10000000000.0]}}
+{"type":"Doc","data":{"name":"ab","note":"base64:","age":"1999-12-31T23:59:59Z","score":2,"title":[7.0]}}
+{"type":"Org","id":"o0","data":{"level":"base64:SGVsbG8=","size":null}}
+{"type":"Org","id":"o1","data":{"level":"base64:"}}
+{"type":"Org","id":"o2","data":{"level":"base64:AAEC","size":[]}}
+{"type":"Org","id":"o3","data":{"level":"base64:SGVsbG8=","size":[7.0,3.0,0.0]}}
+{"type":"Place","id":"p0","data":{"tags":3.0,"rank":7.0}}
+{"type":"Place","id":"p1","data":{"tags":3.0,"rank":1.5}}
+{"type":"Place","id":"p2","data":{"tags":3.0,"rank":7.0}}
+{"type":"Place","id":"p3","data":{"tags":3.0,"rank":3.0}}
+{"type":"Person","data":{"size":0,"born":"run","note":"x-1","age":[false,true,false]}}
+{"type":"Person","data":{"size":0,"born":"it's","note":"blue","age":[true,true],"vec":[2.5]}}
+{"type":"Person","data":{"size":2,"born":"Dogs","age":[],"vec":[10000000000.0]}}
+{"type":"Person","data":{"size":100,"born":"RUN","note":"x-1","age":[],"vec":[7.0]}}
+{"type":"Person","data":{"size":0,"born":"x","note":"red","age":[true],"vec":[1.5]}}
+{"edge":"Likes","from":"4611686018427387904","to":"4611686018427387904"}
+{"edge":"Likes","from":"7","to":"2"}
+{"edge":"Likes","from":"3","to":"3"}
+{"edge":"Likes","from":"4611686018427387904","to":"4611686018427387904"}
+{"edge":"Likes","from":"3","to":"3"}
+{"edge":"Likes","from":"7","to":"7"}
+{"edge":"Likes","from":"3","to":"2"}
+{"edge":"Likes","from":"7","to":"7"}
+{"edge":"Likes","from":"4611686018427387904","to":"3"}
+{"edge":"Likes","from":"3","to":"4611686018427387904"}
+
+--- query
+query q19($arg1: F64) {
+  match {
+    $o1: Org
+    $d2: Doc
+    $arg1 in $o1.size
+    $d2.name <= "ab" or $d2.title contains 3.0
+  }
+  return { $o1.size  $d2.title as c1 }
+  order { c1 asc }
+  limit 10
+}
+
+--- params
+{"arg1": 0.0}
+
+--- expect ordered
+{"o1.size": [7.0, 3.0, 0.0], "c1": [3.0]}
+{"o1.size": [7.0, 3.0, 0.0], "c1": [7.0]}
+
+--- expect shape
+o1.size: [F64]
+c1: [F64]

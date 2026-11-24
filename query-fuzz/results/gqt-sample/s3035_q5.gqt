@@ -1,0 +1,64 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3035, case 5; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag {
+  content: I32 @key
+  name: Blob?
+  rank: Vector(2)
+}
+node Place {
+  count: [String]?
+  born: Vector(2)?
+  seen: Vector(2)
+  text: String? @index
+  @index(count)
+}
+node Person {
+  body: String?
+  born: [String]
+  size: I64 @key
+  @index(born)
+}
+
+--- seed
+{"type":"Tag","data":{"content":2147483647,"name":"base64:AAEC","rank":[1.0,0.0]}}
+{"type":"Tag","data":{"content":1,"name":"base64:AAEC","rank":[0.02,-1.69]}}
+{"type":"Tag","data":{"content":100,"name":"base64:","rank":[-1.0,-1.0]}}
+{"type":"Tag","data":{"content":42,"rank":[1.0,1.0]}}
+{"type":"Tag","data":{"content":0,"name":"base64:AAEC","rank":[1.44,-1.6]}}
+{"type":"Tag","data":{"content":-1,"name":"base64:SGVsbG8=","rank":[1.0,0.0]}}
+{"type":"Tag","data":{"content":7,"name":"base64:","rank":[0.0,0.0]}}
+{"type":"Tag","data":{"content":3,"name":null,"rank":[0.0,0.0]}}
+{"type":"Place","id":"p0","data":{"count":["fox","fox"],"born":[-0.29,1.08],"seen":[0.5,0.5],"text":"dog café run"}}
+{"type":"Place","id":"p1","data":{"count":["abc"],"seen":[0.0,0.0],"text":null}}
+{"type":"Place","id":"p2","data":{"count":[],"born":[0.0,0.0],"seen":[-1.6,-1.3],"text":"Run fox"}}
+{"type":"Person","data":{"body":"it's","born":["dog","ran","a"],"size":7}}
+{"type":"Person","data":{"body":"running","born":[],"size":-9007199254740993}}
+{"type":"Person","data":{"body":"café","born":["Dogs"],"size":4611686018427387904}}
+{"type":"Person","data":{"body":"runs","born":[],"size":9007199254740993}}
+
+--- query
+query q6() {
+  match {
+    $p1: Place
+    count { $p1.text is null } = 0
+  }
+  return { $p1.count, $p1.born as c1 }
+  limit 10
+}
+
+--- expect unordered
+{"p1.count": ["fox", "fox"], "c1": [-0.29, 1.08]}
+{"p1.count": [], "c1": [0.0, 0.0]}
+
+--- expect shape
+p1.count: [String]
+c1: Vector(2)

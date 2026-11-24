@@ -1,0 +1,57 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500684, case 2; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  rank: I64? @index
+  born: F64
+  age: Date? @unique
+}
+node Person {
+  flag: Date? @unique
+  born: Bool?
+  slug: I32 @key
+  @range(slug, -10..1000)
+}
+node Tag {
+  weight: I32?
+}
+edge Tagged: Item -> Person
+edge Links: Item -> Person
+
+--- seed
+{"type":"Person","data":{"flag":"1970-01-01","born":true,"slug":-1}}
+{"type":"Person","data":{"flag":"2020-01-01","born":true,"slug":1}}
+{"type":"Person","data":{"flag":"2024-02-29","born":null,"slug":-5}}
+{"type":"Person","data":{"flag":"1999-12-31","born":true,"slug":2}}
+{"type":"Person","data":{"flag":null,"slug":0}}
+{"type":"Tag","id":"t0","data":{"weight":-5}}
+{"type":"Tag","id":"t1","data":{"weight":null}}
+{"type":"Tag","id":"t2","data":{"weight":-1}}
+{"type":"Tag","id":"t3","data":{"weight":100}}
+{"type":"Tag","id":"t4","data":{"weight":-2147483648}}
+{"type":"Tag","id":"t5","data":{"weight":-5}}
+
+--- query
+query q3() {
+  match { $t1: Tag }
+  return { $t1.weight }
+}
+
+--- expect unordered
+{"t1.weight": -5}
+{}
+{"t1.weight": -1}
+{"t1.weight": 100}
+{"t1.weight": -2147483648}
+{"t1.weight": -5}
+
+--- expect shape
+t1.weight: I32?

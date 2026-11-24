@@ -1,0 +1,60 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 6070, case 6; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  nums: Blob?
+}
+node Doc {
+  weight: enum(a, b) @index
+  tags: Date?
+  text: String? @index
+  emb: Vector(3)?
+}
+edge Wrote: Person -> Person @card(0..1)
+edge Knows: Doc -> Doc {
+  role: [Bool]
+}
+
+--- seed
+{"type":"Person","id":"p0","data":{"nums":"base64:SGVsbG8="}}
+{"type":"Person","id":"p1","data":{"nums":"base64:SGVsbG8="}}
+{"type":"Person","id":"p2","data":{"nums":"base64:"}}
+{"type":"Person","id":"p3","data":{"nums":null}}
+{"type":"Person","id":"p4","data":{"nums":null}}
+{"type":"Doc","id":"d0","data":{"weight":"a","text":null,"emb":[1.0,0.0,0.0]}}
+{"type":"Doc","id":"d1","data":{"weight":"b","tags":"1999-12-31","text":"running data run","emb":[1.0,1.0,1.0]}}
+{"type":"Doc","id":"d2","data":{"weight":"b","tags":"2020-01-01","text":"","emb":[0.5,0.5,0.5]}}
+{"type":"Doc","id":"d3","data":{"weight":"b","tags":"2020-01-01","text":"hello","emb":[1.0,0.0,0.0]}}
+{"type":"Doc","id":"d4","data":{"weight":"a","tags":"2024-02-29","text":"x fox","emb":[-1.74,1.98,-0.75]}}
+{"type":"Doc","id":"d5","data":{"weight":"b","tags":"2020-01-01","text":null,"emb":[-1.0,-1.0,-1.0]}}
+{"type":"Doc","id":"d6","data":{"weight":"b","tags":"1970-01-01","emb":[-1.0,-1.0,-1.0]}}
+{"type":"Doc","id":"d7","data":{"weight":"a","tags":"1970-01-01","text":"","emb":[0.5,0.5,0.5]}}
+{"edge":"Wrote","from":"p2","to":"p0"}
+{"edge":"Wrote","from":"p0","to":"p1"}
+{"edge":"Wrote","from":"p4","to":"p2"}
+{"edge":"Knows","from":"d3","to":"d4","data":{"role":[true,false,true]}}
+{"edge":"Knows","from":"d0","to":"d6","data":{"role":[true,false,false]}}
+{"edge":"Knows","from":"d7","to":"d7","data":{"role":[true]}}
+{"edge":"Knows","from":"d1","to":"d1","data":{"role":[false,false]}}
+{"edge":"Knows","from":"d5","to":"d0","data":{"role":[true,false]}}
+{"edge":"Knows","from":"d3","to":"d5","data":{"role":[]}}
+{"edge":"Knows","from":"d0","to":"d1","data":{"role":[true,false,true]}}
+{"edge":"Knows","from":"d1","to":"d0","data":{"role":[false,true,true]}}
+
+--- mutate
+query q7($arg1: Date, $arg2: Vector(3)) {
+  insert Doc { weight: "b", tags: $arg1, emb: $arg2 }
+}
+
+--- params
+{"arg1": "2024-02-29", "arg2": [0.7, 1.0, 1.0]}
+
+--- expect affected: nodes=1 edges=0

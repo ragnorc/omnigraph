@@ -1,0 +1,94 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 4679, case 12; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag {
+  vec: enum(red, green, blue, x-1)? @unique @index
+  level: [F64]
+  rank: Vector(2)?
+  code: Date? @index
+  @index(level)
+}
+node Doc {
+  level: String @key
+  seen: F64?
+  born: I64? @index
+}
+node Item {
+  rank: DateTime? @index
+  born: [Bool]
+  note: F32?
+}
+node Org {
+  flag: Date?
+}
+node Place {
+  body: U64
+  level: U32? @unique @index
+}
+edge Links: Tag -> Tag {
+  weight: enum(a, b)
+  role: I32?
+  @unique(@src, @dst)
+}
+edge Likes: Tag -> Tag
+edge Wrote: Tag -> Tag @card(0..2) {
+  role: U64?
+}
+edge Knows: Tag -> Tag
+
+--- seed
+{"type":"Tag","id":"t0","data":{"vec":null,"level":[0.0,1.5,10000000000.0],"rank":[0.0,0.0],"code":"2020-01-01"}}
+{"type":"Tag","id":"t1","data":{"vec":null,"level":[1.5,10000000000.0,7.0],"rank":[0.82,-1.8],"code":"1999-12-31"}}
+{"type":"Tag","id":"t2","data":{"vec":"x-1","level":[2.5],"rank":[0.68,0.12],"code":null}}
+{"type":"Tag","id":"t3","data":{"vec":"green","level":[7.0,3.0,10000000000.0],"code":"2020-01-01"}}
+{"type":"Tag","id":"t4","data":{"vec":null,"level":[2.5,0.1],"rank":[1.0,1.0],"code":"1999-12-31"}}
+{"type":"Tag","id":"t5","data":{"level":[0.0,7.0,0.0],"rank":[0.0,0.0],"code":"1970-01-01"}}
+{"type":"Item","id":"i0","data":{"rank":"2020-01-01T00:00:00Z","born":[true,false,false],"note":0.0}}
+{"type":"Org","id":"o0","data":{"flag":"1999-12-31"}}
+{"type":"Org","id":"o1","data":{"flag":"2020-01-01"}}
+{"type":"Place","id":"p0","data":{"body":0}}
+{"type":"Place","id":"p1","data":{"body":0,"level":1}}
+{"type":"Place","id":"p2","data":{"body":0,"level":0}}
+{"type":"Place","id":"p4","data":{"body":0,"level":2}}
+{"edge":"Links","from":"t2","to":"t3","data":{"weight":"b","role":42}}
+{"edge":"Links","from":"t5","to":"t2","data":{"weight":"a","role":1}}
+{"edge":"Links","from":"t2","to":"t2","data":{"weight":"b","role":0}}
+{"edge":"Likes","from":"t5","to":"t5"}
+{"edge":"Likes","from":"t1","to":"t3"}
+{"edge":"Likes","from":"t0","to":"t5"}
+{"edge":"Likes","from":"t3","to":"t2"}
+{"edge":"Likes","from":"t1","to":"t0"}
+{"edge":"Likes","from":"t3","to":"t2"}
+{"edge":"Wrote","from":"t2","to":"t1","data":{"role":9007199254740993}}
+{"edge":"Wrote","from":"t5","to":"t5","data":{"role":0}}
+{"edge":"Wrote","from":"t3","to":"t2","data":{"role":0}}
+{"edge":"Wrote","from":"t0","to":"t1"}
+{"edge":"Wrote","from":"t3","to":"t3"}
+{"edge":"Wrote","from":"t5","to":"t3","data":{"role":4611686018427387904}}
+{"edge":"Knows","from":"t1","to":"t3"}
+{"edge":"Knows","from":"t4","to":"t2"}
+{"edge":"Knows","from":"t2","to":"t2"}
+
+--- query
+query q13() {
+  match {
+    $p1: Place
+  }
+  return { $p1.level }
+}
+
+--- expect unordered
+{}
+{"p1.level": 1}
+{"p1.level": 0}
+{"p1.level": 2}
+
+--- expect shape
+p1.level: U32?

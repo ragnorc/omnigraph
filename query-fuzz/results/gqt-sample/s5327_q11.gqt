@@ -1,0 +1,63 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5327, case 11; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  name: U64 @index
+  score: Vector(3)?
+  vec: [F64]
+  slug: String @key
+  title: enum(red, green, blue, x-1) @index
+}
+node Item {
+  size: F32?
+  weight: String @key
+  rank: U64 @index
+  body: enum(red, green, blue, x-1)
+  text: String? @index
+  emb: Vector(3)
+}
+edge Knows: Item -> Org
+edge Likes: Item -> Org {
+  since: enum(a, b)?
+}
+edge Cites: Item -> Org {
+  w: I32?
+  @key(@src, @dst)
+}
+edge Wrote: Org -> Org {
+  @unique(@src, @dst)
+}
+
+--- seed
+{"type":"Org","data":{"name":100,"score":[-0.46,-0.65,0.6],"vec":[3.0,-2.25,0.1],"slug":"ab","title":"x-1"}}
+{"type":"Org","data":{"name":9007199254740992,"score":[0.07,-1.75,-0.52],"vec":[2.5,7.0],"slug":"running","title":"blue"}}
+{"type":"Org","data":{"name":3,"score":[0.69,-1.17,-0.1],"vec":[1.5],"slug":"x","title":"x-1"}}
+
+--- query
+query bm25($arg1: String, $arg2: String) {
+  match {
+    $i1: Item
+    $i1.text contains $arg1 or $i1.weight starts_with $arg2
+    not { $o2: Org $i1 cites $o2 $o2.slug <= "" }
+  }
+  return { $i1, $i1.text }
+  order { $i1.text desc }
+  limit 1
+}
+
+--- params
+{"arg1": "the", "arg2": "run"}
+
+--- expect ordered
+
+
+--- expect shape
+i1: Item
+i1.text: String

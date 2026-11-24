@@ -1,0 +1,80 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1844, case 18; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  code: I64
+  note: [Date]?
+  rank: String
+  text: String @index
+  emb: Vector(3)
+}
+node Item {
+  name: U64 @index
+  content: F64? @index
+  seen: I64 @key
+}
+node Org {
+  code: Bool?
+}
+edge Near: Person -> Org {
+  role: I32?
+}
+edge Cites: Item -> Org {
+  weight: [Bool]?
+  role: I32?
+  @unique(@src, @dst)
+}
+edge Links: Item -> Item {
+  since: Bool?
+}
+edge Likes: Person -> Org @card(0..2) {
+  role: String?
+}
+
+--- seed
+{"type":"Person","id":"p0","data":{"code":-9007199254740993,"note":["2024-02-29","1970-01-01","1999-12-31"],"rank":"ran","text":"running the","emb":[0.0,0.0,0.0]}}
+{"type":"Person","id":"p1","data":{"code":3,"note":["1970-01-01","2020-01-01","2020-01-01"],"rank":"data base","text":"the","emb":[0.5,0.5,0.5]}}
+{"type":"Person","id":"p2","data":{"code":7,"note":["1999-12-31"],"rank":"x","text":"running the Run RUN","emb":[0.0,0.0,0.0]}}
+{"type":"Person","id":"p3","data":{"code":-2147483648,"note":["2020-01-01"],"rank":"running","text":"RUN a","emb":[-1.0,-1.0,-1.0]}}
+{"type":"Person","id":"p4","data":{"code":1,"note":null,"rank":"x y z","text":"Dogs","emb":[1.18,-1.41,0.25]}}
+{"type":"Item","data":{"name":9007199254740993,"content":7.0,"seen":2}}
+{"type":"Item","data":{"name":9007199254740993,"content":-2.25,"seen":3}}
+{"type":"Item","data":{"name":0,"seen":-1}}
+{"type":"Item","data":{"name":9007199254740992,"content":0.0,"seen":2147483647}}
+{"type":"Item","data":{"name":1,"content":10000000000.0,"seen":1}}
+{"type":"Item","data":{"name":9007199254740992,"content":1.5,"seen":4611686018427387904}}
+{"type":"Item","data":{"name":2147483647,"content":0.1,"seen":9007199254740993}}
+{"type":"Item","data":{"name":100,"content":7.0,"seen":9007199254740992}}
+{"type":"Org","id":"o0","data":{"code":false}}
+{"type":"Org","id":"o1","data":{"code":false}}
+{"edge":"Near","from":"p1","to":"o1","data":{"role":2147483647}}
+{"edge":"Near","from":"p1","to":"o1","data":{"role":-2147483648}}
+{"edge":"Near","from":"p0","to":"o0","data":{"role":3}}
+{"edge":"Near","from":"p3","to":"o0"}
+{"edge":"Near","from":"p0","to":"o1","data":{"role":7}}
+{"edge":"Near","from":"p3","to":"o0","data":{"role":42}}
+{"edge":"Cites","from":"1","to":"o0","data":{"weight":[false],"role":-2147483648}}
+{"edge":"Cites","from":"-1","to":"o0","data":{"weight":[false,false,false],"role":7}}
+{"edge":"Links","from":"9007199254740993","to":"4611686018427387904","data":{"since":false}}
+{"edge":"Likes","from":"p4","to":"o1"}
+
+--- query
+query q19() {
+  match { $o1: Org, $p2 likes $o1 }
+  return { $o1.code }
+  limit 2
+}
+
+--- expect unordered
+{"o1.code": false}
+
+--- expect shape

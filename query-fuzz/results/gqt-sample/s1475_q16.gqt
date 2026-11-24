@@ -1,0 +1,46 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1475, case 16; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  level: String @key
+  count: I32
+}
+edge Links: Org -> Org {
+  since: U64
+}
+
+--- seed
+{"type":"Org","data":{"level":"hello world","count":100}}
+{"type":"Org","data":{"level":"and the","count":2147483647}}
+{"edge":"Links","from":"hello world","to":"hello world","data":{"since":4611686018427387904}}
+{"edge":"Links","from":"hello world","to":"hello world","data":{"since":0}}
+{"edge":"Links","from":"hello world","to":"and the","data":{"since":2}}
+{"edge":"Links","from":"and the","to":"and the","data":{"since":9007199254740993}}
+
+--- query
+query q17() {
+  match {
+    $o1: Org
+    $o2: Org
+    $o2 links{2,2} $o1
+    $o1 links{1,3} $o3
+    $o4 links $o3
+    $o4.count in [100, 42]
+    count { $o5 links $o1 } < 2
+  }
+  return { $o1.level, count($o4) as a0, count($o2) as a1 }
+  order { a0, a1 }
+}
+
+--- expect ordered
+
+
+--- expect shape

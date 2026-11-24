@@ -1,0 +1,57 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2827, case 19; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  score: I64 @key
+  born: Bool? @index
+  age: [F64]?
+  @index(age)
+}
+edge Cites: Place -> Place @card(0..1) {
+  weight: String
+  w: F64?
+}
+edge Likes: Place -> Place {
+  w: String?
+}
+edge Wrote: Place -> Place {
+  w: I32?
+}
+edge Tagged: Place -> Place {
+  @unique(@src, @dst)
+}
+
+--- seed
+{"type":"Place","data":{"score":-1,"born":true}}
+{"edge":"Cites","from":"-1","to":"-1","data":{"weight":"fox","w":1.5}}
+{"edge":"Likes","from":"-1","to":"-1","data":{"w":"the dog"}}
+{"edge":"Likes","from":"-1","to":"-1","data":{"w":"Run"}}
+{"edge":"Likes","from":"-1","to":"-1","data":{"w":"abc"}}
+{"edge":"Likes","from":"-1","to":"-1","data":{"w":"and the"}}
+{"edge":"Wrote","from":"-1","to":"-1","data":{"w":2}}
+{"edge":"Wrote","from":"-1","to":"-1"}
+{"edge":"Wrote","from":"-1","to":"-1","data":{"w":-1}}
+{"edge":"Wrote","from":"-1","to":"-1","data":{"w":100}}
+{"edge":"Wrote","from":"-1","to":"-1","data":{"w":7}}
+{"edge":"Wrote","from":"-1","to":"-1","data":{"w":-2147483648}}
+{"edge":"Wrote","from":"-1","to":"-1"}
+{"edge":"Wrote","from":"-1","to":"-1","data":{"w":1}}
+{"edge":"Tagged","from":"-1","to":"-1"}
+
+--- mutate
+query q20($arg1: I64, $arg2: [F64]) {
+  insert Place { score: $arg1, age: $arg2 }
+}
+
+--- params
+{"arg1": -1, "arg2": [1.5, -2.25]}
+
+--- expect affected: nodes=1 edges=0

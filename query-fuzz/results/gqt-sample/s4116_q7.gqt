@@ -1,0 +1,57 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 4116, case 7; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  vec: Blob?
+}
+node Person {
+  weight: enum(a, b)? @index
+  content: DateTime? @index
+  name: enum(a, b)? @index
+  size: F64? @index
+}
+edge Wrote: Person -> Person {
+  w: enum(a, b)
+  role: Date?
+}
+edge Owns: Person -> Person
+
+--- seed
+{"type":"Doc","id":"d0","data":{"vec":"base64:AAEC"}}
+{"type":"Doc","id":"d1","data":{"vec":"base64:SGVsbG8="}}
+{"type":"Doc","id":"d2","data":{"vec":null}}
+{"type":"Doc","id":"d3","data":{"vec":"base64:SGVsbG8="}}
+{"type":"Doc","id":"d4","data":{"vec":"base64:SGVsbG8="}}
+{"type":"Doc","id":"d5","data":{"vec":null}}
+{"type":"Doc","id":"d6","data":{"vec":null}}
+{"type":"Doc","id":"d7","data":{"vec":"base64:AAEC"}}
+{"type":"Person","id":"p0","data":{"weight":"a","content":"2024-02-29T12:00:00Z","name":"a","size":10000000000.0}}
+{"type":"Person","id":"p1","data":{"weight":null,"content":"2024-02-29T12:00:00Z","size":7.0}}
+{"type":"Person","id":"p2","data":{"weight":"a","content":"2024-02-29T12:00:00Z","size":-2.25}}
+{"edge":"Wrote","from":"p0","to":"p1","data":{"w":"b","role":"1999-12-31"}}
+{"edge":"Wrote","from":"p1","to":"p0","data":{"w":"b","role":"2020-01-01"}}
+
+--- query
+query q8() {
+  match {
+    $d1: Doc
+    count { $d1.@id = "x" } = 2
+  }
+  return { $d1.@id }
+  order { $d1.@id desc }
+  limit 1
+}
+
+--- expect ordered
+
+
+--- expect shape
+d1.@id: String

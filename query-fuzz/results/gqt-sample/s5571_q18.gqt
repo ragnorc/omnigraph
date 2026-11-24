@@ -1,0 +1,57 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5571, case 18; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  body: [Date]
+  @index(body)
+}
+node Place {
+  level: I64
+  size: I32 @index
+  born: String? @index
+  score: U32?
+}
+node Person {
+  size: String?
+}
+edge Tagged: Item -> Person {
+  role: enum(low, mid, high)
+  weight: [String]?
+}
+
+--- seed
+{"type":"Item","id":"i0","data":{"body":["2020-01-01","2020-01-01","2020-01-01"]}}
+{"type":"Item","id":"i1","data":{"body":["1999-12-31"]}}
+{"type":"Item","id":"i2","data":{"body":["2020-01-01","1999-12-31"]}}
+{"type":"Item","id":"i3","data":{"body":["1970-01-01","1970-01-01","1999-12-31"]}}
+{"type":"Item","id":"i4","data":{"body":["1970-01-01","2020-01-01","1999-12-31"]}}
+{"type":"Item","id":"i5","data":{"body":[]}}
+{"type":"Item","id":"i6","data":{"body":["1999-12-31","2020-01-01","2024-02-29"]}}
+{"type":"Item","id":"i7","data":{"body":["1970-01-01"]}}
+{"type":"Place","id":"p0","data":{"level":-2147483648,"size":0,"born":"the dog","score":0}}
+{"type":"Person","id":"p0","data":{}}
+{"type":"Person","id":"p1","data":{"size":null}}
+{"type":"Person","id":"p2","data":{"size":"fox"}}
+{"type":"Person","id":"p3","data":{"size":null}}
+{"type":"Person","id":"p4","data":{}}
+{"type":"Person","id":"p5","data":{"size":"of the and"}}
+{"type":"Person","id":"p6","data":{"size":"x"}}
+{"type":"Person","id":"p7","data":{"size":"x"}}
+{"edge":"Tagged","from":"i5","to":"p4","data":{"role":"high"}}
+{"edge":"Tagged","from":"i4","to":"p4","data":{"role":"high"}}
+{"edge":"Tagged","from":"i4","to":"p7","data":{"role":"mid"}}
+
+--- mutate
+query q19() {
+  insert Item { body: [date("1999-12-31"), date("2020-01-01")] }
+  insert Item { body: [date("2020-01-01")] }
+}
+
+--- expect affected: nodes=2 edges=0

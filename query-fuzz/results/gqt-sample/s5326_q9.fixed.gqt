@@ -1,0 +1,54 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5326, case 9; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  body: [String]
+  tags: F32? @index
+  code: Vector(3)?
+  @index(body)
+}
+node Place {
+  nums: F32? @index
+  code: Bool @index
+  age: String? @unique @index
+  note: F64?
+}
+edge Wrote: Place -> Place
+edge Near: Place -> Item
+
+--- seed
+{"type":"Item","id":"i0","data":{"body":["the"],"tags":0.5,"code":[0.0,0.0,0.0]}}
+{"type":"Item","id":"i1","data":{"body":["the",""],"tags":3.0}}
+{"type":"Item","id":"i2","data":{"body":[""],"tags":3.0,"code":[0.5,0.5,0.5]}}
+{"type":"Item","id":"i3","data":{"body":["the dog","run","RUN"],"code":[0.5,0.5,0.5]}}
+{"type":"Item","id":"i4","data":{"body":[],"tags":1.5,"code":[-1.09,1.54,-0.09]}}
+{"type":"Place","id":"p0","data":{"code":true,"age":null,"note":0.1}}
+{"type":"Place","id":"p1","data":{"nums":2.5,"code":false,"age":"running dogs","note":10000000000.0}}
+{"type":"Place","id":"p2","data":{"code":true,"note":-2.25}}
+{"type":"Place","id":"p3","data":{"nums":3.0,"code":true,"age":"Dogs","note":3.0}}
+{"edge":"Wrote","from":"p0","to":"p1"}
+{"edge":"Wrote","from":"p1","to":"p0"}
+{"edge":"Near","from":"p0","to":"i2"}
+{"edge":"Near","from":"p3","to":"i3"}
+{"edge":"Near","from":"p2","to":"i3"}
+
+--- mutate
+query q10($arg1: Vector(3), $arg2: F64) {
+  insert Item { body: ["runs", "x y z"], tags: 3.0, code: $arg1 }
+  insert Near { @src: "p0", @dst: "i0" }
+  insert Place { nums: 3.0, code: true, note: $arg2 }
+}
+
+--- params
+{"arg1": [0.7, 0.3, -0.2], "arg2": -2.25}
+
+--- expect affected: nodes=2 edges=1

@@ -1,0 +1,81 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500546, case 11; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  code: I32
+  nums: I32
+  level: I32 @index
+  body: U32 @index
+  count: Bool?
+}
+node Place {
+  note: U64? @index
+  code: String @key
+  level: enum(a, b) @index
+}
+node Doc {
+  weight: U32?
+  rank: U64?
+  level: String?
+  title: Blob?
+  score: I64 @key
+}
+node Person {
+  weight: [String]
+  age: String? @index
+  code: I32 @index
+  @index(weight)
+  @range(code, -10..1000)
+}
+node Tag {
+  score: String @index
+  seen: I32 @key
+  flag: Bool @index
+}
+edge Likes: Org -> Place @card(0..1)
+
+--- seed
+{"type":"Org","id":"o0","data":{"code":2,"nums":-5,"level":0,"body":0,"count":false}}
+{"type":"Place","data":{"note":2,"code":"naïve","level":"b"}}
+{"type":"Place","data":{"note":4611686018427387904,"code":"Run","level":"a"}}
+{"type":"Place","data":{"note":0,"code":"runs","level":"b"}}
+{"type":"Place","data":{"note":42,"code":"it's","level":"a"}}
+{"type":"Place","data":{"note":4611686018427387904,"code":"ran","level":"b"}}
+{"type":"Place","data":{"note":0,"code":"ab","level":"a"}}
+{"type":"Doc","data":{"weight":0,"rank":2147483647,"score":100}}
+{"type":"Doc","data":{"weight":null,"rank":null,"level":"Run","title":"base64:SGVsbG8=","score":9007199254740993}}
+{"type":"Doc","data":{"weight":1,"rank":0,"level":"","title":"base64:SGVsbG8=","score":0}}
+{"type":"Doc","data":{"weight":null,"rank":null,"level":"data base","title":"base64:AAEC","score":1}}
+{"type":"Doc","data":{"weight":1,"rank":null,"level":"data base","score":-2147483648}}
+{"type":"Doc","data":{"rank":100,"level":"naïve","score":42}}
+{"type":"Person","id":"p0","data":{"weight":["Run","of the and"],"age":"hello world","code":1}}
+{"type":"Person","id":"p1","data":{"weight":["running dogs","it's","Run"],"age":"dog","code":-1}}
+{"type":"Person","id":"p2","data":{"weight":["running dogs","it's","run"],"code":-5}}
+{"type":"Tag","data":{"score":"run","seen":42,"flag":true}}
+{"type":"Tag","data":{"score":"running","seen":7,"flag":true}}
+{"type":"Tag","data":{"score":"runs","seen":-5,"flag":true}}
+{"edge":"Likes","from":"o0","to":"runs"}
+
+--- query
+query q12() {
+  match { $p1: Person }
+  return { $p1.age }
+  order { $p1.age desc }
+  limit 10
+}
+
+--- expect ordered
+{"p1.age": "hello world"}
+{"p1.age": "dog"}
+{}
+
+--- expect shape
+p1.age: String?

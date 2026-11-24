@@ -1,0 +1,54 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500507, case 16; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  weight: I64 @key
+  size: [Date]?
+  text: String? @index
+  emb: Vector(3)
+  @index(size)
+}
+node Item {
+  age: String @key
+}
+node Place {
+  age: enum(low, mid, high)
+}
+edge Tagged: Item -> Item
+edge Near: Person -> Item
+
+--- seed
+{"type":"Person","data":{"weight":42,"size":["1970-01-01","2020-01-01"],"text":"Dogs","emb":[1.0,0.0,0.0]}}
+{"type":"Person","data":{"weight":-9007199254740993,"size":["2020-01-01"],"text":"hello the","emb":[-0.25,-0.97,1.44]}}
+{"type":"Person","data":{"weight":9007199254740993,"size":["1970-01-01","1970-01-01"],"text":"hello","emb":[-0.51,-1.08,-1.5]}}
+{"type":"Person","data":{"weight":100,"size":["2020-01-01","2020-01-01","2024-02-29"],"text":null,"emb":[0.0,0.0,0.0]}}
+{"type":"Place","id":"p0","data":{"age":"mid"}}
+{"type":"Place","id":"p1","data":{"age":"low"}}
+{"type":"Place","id":"p2","data":{"age":"low"}}
+{"type":"Place","id":"p3","data":{"age":"high"}}
+{"type":"Place","id":"p4","data":{"age":"high"}}
+{"type":"Place","id":"p5","data":{"age":"high"}}
+
+--- query
+query q17() {
+  match { $p1: Person }
+  return { $p1.weight, $p1.text in ["café"] as b1 }
+  order { $p1.weight asc }
+}
+
+--- expect ordered
+{"p1.weight": -9007199254740993, "b1": false}
+{"p1.weight": 42, "b1": false}
+{"p1.weight": 100}
+{"p1.weight": 9007199254740993, "b1": false}
+
+--- expect shape
+p1.weight: I64
+b1: Bool?

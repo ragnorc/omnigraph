@@ -1,0 +1,63 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5355, case 13; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  slug: enum(low, mid, high)
+  title: I64?
+  score: DateTime
+  code: I32 @index
+  @range(code, -10..1000)
+}
+node Tag {
+  slug: I32 @index
+  body: Date @index
+  size: U64 @index
+}
+node Org {
+  code: DateTime
+}
+edge Cites: Place -> Place {
+  @unique(@src, @dst)
+}
+
+--- seed
+{"type":"Place","id":"p0","data":{"slug":"high","title":null,"score":"2024-02-29T12:00:00Z","code":2}}
+{"type":"Place","id":"p1","data":{"slug":"low","title":9007199254740993,"score":"2020-01-01T00:00:00Z","code":1}}
+{"type":"Place","id":"p2","data":{"slug":"low","title":1,"score":"1999-12-31T23:59:59Z","code":0}}
+{"type":"Place","id":"p3","data":{"slug":"mid","score":"2024-02-29T12:00:00Z","code":0}}
+{"type":"Place","id":"p4","data":{"slug":"mid","title":9007199254740993,"score":"2020-01-01T00:00:00Z","code":2}}
+{"type":"Tag","id":"t0","data":{"slug":2147483647,"body":"2024-02-29","size":0}}
+{"type":"Tag","id":"t1","data":{"slug":2147483647,"body":"2020-01-01","size":0}}
+{"type":"Tag","id":"t2","data":{"slug":0,"body":"2020-01-01","size":9007199254740992}}
+{"type":"Tag","id":"t3","data":{"slug":100,"body":"1999-12-31","size":0}}
+{"type":"Tag","id":"t4","data":{"slug":3,"body":"1970-01-01","size":3}}
+{"type":"Tag","id":"t5","data":{"slug":1,"body":"2020-01-01","size":9007199254740993}}
+{"type":"Org","id":"o0","data":{"code":"1999-12-31T23:59:59Z"}}
+{"edge":"Cites","from":"p2","to":"p1"}
+{"edge":"Cites","from":"p3","to":"p3"}
+{"edge":"Cites","from":"p1","to":"p0"}
+
+--- query
+query q14() {
+  match { $p1: Place, $p2: Place, $p1 <cites> $p2 }
+  return distinct { $p2.title,  $p1.score }
+  order { $p1.score }
+}
+
+--- expect ordered
+{"p2.title": 9007199254740993, "p1.score": "1999-12-31T23:59:59"}
+{"p1.score": "2020-01-01T00:00:00"}
+{"p2.title": 1, "p1.score": "2020-01-01T00:00:00"}
+{"p1.score": "2024-02-29T12:00:00"}
+{"p2.title": 9007199254740993, "p1.score": "2024-02-29T12:00:00"}
+
+--- expect shape

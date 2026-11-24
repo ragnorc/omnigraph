@@ -1,0 +1,69 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2971, case 2; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  content: Date?
+}
+node Place {
+  note: U32 @index
+  tags: I32
+  content: I64
+  @key(tags, content)
+  @range(content, -10..1000)
+}
+node Org {
+  age: [String]
+  text: String @index
+  emb: Vector(3)?
+  @index(age)
+}
+edge Likes: Person -> Person
+edge Near: Person -> Person
+edge Owns: Person -> Place
+
+--- seed
+{"type":"Person","id":"p0","data":{"content":"2024-02-29"}}
+{"type":"Person","id":"p1","data":{"content":null}}
+{"type":"Person","id":"p2","data":{"content":"1970-01-01"}}
+{"type":"Person","id":"p3","data":{"content":"2024-02-29"}}
+{"type":"Person","id":"p4","data":{"content":"2020-01-01"}}
+{"type":"Person","id":"p5","data":{}}
+{"type":"Person","id":"p6","data":{"content":null}}
+{"type":"Person","id":"p7","data":{"content":"1970-01-01"}}
+{"type":"Place","data":{"note":1,"tags":100,"content":2}}
+{"type":"Place","data":{"note":2,"tags":-1,"content":100}}
+{"type":"Place","data":{"note":4294967295,"tags":3,"content":1}}
+{"type":"Place","data":{"note":1,"tags":2,"content":0}}
+{"type":"Place","data":{"note":7,"tags":0,"content":42}}
+{"type":"Place","data":{"note":0,"tags":2147483647,"content":2}}
+{"edge":"Likes","from":"p2","to":"p5"}
+{"edge":"Near","from":"p0","to":"p1"}
+{"edge":"Near","from":"p1","to":"p0"}
+{"edge":"Owns","from":"p4","to":"[\"2\",\"100\"]"}
+{"edge":"Owns","from":"p3","to":"[\"2\",\"2147483647\"]"}
+
+--- query
+query q3() {
+  match {
+    $p1: Person
+    $p2: Person
+    $p1 near $p2
+    $p1 owns $p3
+    $p2.content in [date("1970-01-01")] or $p2.content > date("2024-02-29")
+    $p3.tags in [2, 42] or $p3.note in [4294967295]
+    not { $p4: Place
+      $p1 owns $p4
+      $p4.note <= 42.0 }
+  }
+  return { $p3.tags, sum($p3.note) as a0 }
+  order { $p3.tags desc, $p1.@id desc }
+}
+
+--- expect error: T42

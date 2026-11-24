@@ -1,0 +1,67 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5389, case 3; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  seen: enum(low, mid, high)? @index
+  content: U32
+  level: I32? @index
+}
+node Item {
+  size: [Date]
+  note: U32?
+  level: F32? @index
+  rank: U64? @index
+  tags: I32
+  text: String @index
+  emb: Vector(3)
+  @index(size)
+}
+node Org {
+  seen: DateTime? @index
+}
+
+--- seed
+{"type":"Place","id":"p0","data":{"seen":"high","content":100,"level":42}}
+{"type":"Place","id":"p1","data":{"seen":"mid","content":4294967295,"level":100}}
+{"type":"Place","id":"p2","data":{"seen":"high","content":0,"level":3}}
+{"type":"Place","id":"p3","data":{"seen":"low","content":3,"level":null}}
+{"type":"Item","id":"i0","data":{"size":["1999-12-31"],"note":null,"level":-2.25,"rank":2,"tags":3,"text":"","emb":[1.0,1.0,1.0]}}
+{"type":"Item","id":"i1","data":{"size":["2020-01-01","1999-12-31"],"note":0,"level":7.0,"rank":null,"tags":3,"text":"RUN","emb":[0.5,0.5,0.5]}}
+{"type":"Item","id":"i2","data":{"size":["2020-01-01","2024-02-29"],"note":0,"level":-2.25,"rank":0,"tags":-5,"text":"Run run Dogs ran","emb":[0.07,0.45,-0.33]}}
+{"type":"Item","id":"i3","data":{"size":["1999-12-31","2020-01-01","1970-01-01"],"note":100,"level":null,"rank":0,"tags":-2147483648,"text":"an run","emb":[1.0,1.0,1.0]}}
+{"type":"Org","id":"o0","data":{"seen":"2020-01-01T00:00:00Z"}}
+{"type":"Org","id":"o1","data":{"seen":"2020-01-01T00:00:00Z"}}
+{"type":"Org","id":"o2","data":{"seen":"2024-02-29T12:00:00Z"}}
+{"type":"Org","id":"o3","data":{"seen":"2024-02-29T12:00:00Z"}}
+{"type":"Org","id":"o4","data":{"seen":"2020-01-01T00:00:00Z"}}
+{"type":"Org","id":"o5","data":{"seen":"2020-01-01T00:00:00Z"}}
+{"type":"Org","id":"o6","data":{"seen":"1999-12-31T23:59:59Z"}}
+{"type":"Org","id":"o7","data":{"seen":"1999-12-31T23:59:59Z"}}
+
+--- query
+query q4($arg1: Vector(3)) {
+  match { let $pop = { match {
+    $i1: Item
+  } return { $i1 } }, from nearest($pop, $i1.emb, $arg1, k: 3) as $distance }
+  return { $i1.emb, $i1.rank as c1 }
+  order { $distance }
+  limit 3
+}
+
+--- params
+{"arg1": [0.6, 0.3, -0.9]}
+
+--- expect ordered
+{"i1.emb": [0.07, 0.45, -0.33], "c1": 0}
+{"i1.emb": [0.5, 0.5, 0.5]}
+{"i1.emb": [1.0, 1.0, 1.0], "c1": 2}
+
+--- expect shape

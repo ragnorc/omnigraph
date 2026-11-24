@@ -1,0 +1,68 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2900, case 21; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag {
+  vec: String?
+  rank: enum(red, green, blue, x-1)?
+  tags: DateTime? @index
+}
+node Person {
+  slug: enum(low, mid, high)
+}
+node Item {
+  count: I32?
+  born: I32? @index
+  level: I32
+  code: F64
+  name: [I64]
+  @index(name)
+}
+node Doc {
+  level: enum(red, green, blue, x-1)?
+  vec: Vector(3)
+}
+node Org {
+  score: I32 @key
+  size: enum(low, mid, high)?
+}
+edge Links: Doc -> Item
+
+--- seed
+{"type":"Tag","id":"t0","data":{"vec":"it's","rank":"x-1","tags":"2024-02-29T12:00:00Z"}}
+{"type":"Tag","id":"t1","data":{"rank":"x-1","tags":"1999-12-31T23:59:59Z"}}
+{"type":"Tag","id":"t2","data":{"vec":"the","rank":"blue"}}
+{"type":"Tag","id":"t3","data":{"vec":"it's","rank":"x-1","tags":"2020-01-01T00:00:00Z"}}
+{"type":"Tag","id":"t4","data":{"vec":"ran","rank":null,"tags":"2020-01-01T00:00:00.123Z"}}
+{"type":"Person","id":"p0","data":{"slug":"high"}}
+{"type":"Person","id":"p1","data":{"slug":"low"}}
+{"type":"Item","id":"i0","data":{"count":null,"born":42,"level":2147483647,"code":2.5,"name":[9007199254740993,42,4611686018427387904]}}
+{"type":"Item","id":"i1","data":{"count":-1,"born":-1,"level":3,"code":2.5,"name":[4611686018427387904]}}
+{"type":"Item","id":"i2","data":{"count":42,"born":-5,"level":-1,"code":10000000000.0,"name":[9007199254740992,-5,42]}}
+{"type":"Item","id":"i3","data":{"count":-5,"born":2147483647,"level":-5,"code":3.0,"name":[2147483647]}}
+{"type":"Item","id":"i4","data":{"count":null,"born":42,"level":7,"code":7.0,"name":[2147483647,2,-5]}}
+{"type":"Item","id":"i5","data":{"count":3,"level":-1,"code":0.0,"name":[-1]}}
+{"type":"Item","id":"i6","data":{"count":0,"born":2,"level":7,"code":7.0,"name":[2147483647]}}
+{"type":"Item","id":"i7","data":{"count":null,"level":7,"code":10000000000.0,"name":[]}}
+{"type":"Doc","id":"d0","data":{"level":null,"vec":[1.0,1.0,1.0]}}
+{"type":"Org","data":{"score":7,"size":"low"}}
+{"type":"Org","data":{"score":3,"size":"high"}}
+{"type":"Org","data":{"score":-5,"size":"mid"}}
+{"type":"Org","data":{"score":-1,"size":"low"}}
+{"type":"Org","data":{"score":1,"size":"low"}}
+{"edge":"Links","from":"d0","to":"i3"}
+{"edge":"Links","from":"d0","to":"i4"}
+
+--- mutate
+query q22() {
+  match { $x: Org } where $x.@id = "3"  update $x set { size: "high" }
+}
+
+--- expect affected: nodes=1 edges=0

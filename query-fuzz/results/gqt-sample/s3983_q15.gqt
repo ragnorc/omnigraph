@@ -1,0 +1,68 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3983, case 15; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  flag: I64 @key
+  born: Date? @unique
+  name: enum(a, b)? @index
+  text: String @index
+  emb: Vector(3)?
+}
+node Org {
+  size: String @key
+  seen: U32
+  flag: Vector(2)
+}
+edge Owns: Person -> Person
+edge Near: Org -> Org {
+  role: String?
+}
+edge Cites: Person -> Person @card(0..1)
+edge Likes: Org -> Org {
+  weight: [F64]?
+  @key(@src, @dst)
+}
+
+--- seed
+{"type":"Person","data":{"flag":2,"born":"2024-02-29","name":"a","text":"","emb":[-0.19,-0.97,1.28]}}
+{"type":"Person","data":{"flag":42,"born":"1999-12-31","name":null,"text":"Dogs x dog Dogs","emb":[0.0,0.0,0.0]}}
+{"type":"Person","data":{"flag":2147483647,"born":"2020-01-01","name":null,"text":"data running running Run","emb":null}}
+{"type":"Org","data":{"size":"Run","seen":1,"flag":[1.0,1.0]}}
+{"type":"Org","data":{"size":"café","seen":4294967295,"flag":[-0.81,-0.18]}}
+{"type":"Org","data":{"size":"it's","seen":3,"flag":[0.95,-1.52]}}
+{"type":"Org","data":{"size":"Dogs","seen":100,"flag":[1.0,1.0]}}
+{"edge":"Owns","from":"42","to":"2"}
+{"edge":"Owns","from":"2","to":"2"}
+{"edge":"Owns","from":"2147483647","to":"42"}
+{"edge":"Owns","from":"2","to":"42"}
+{"edge":"Owns","from":"42","to":"2"}
+{"edge":"Near","from":"it's","to":"it's","data":{"role":"the dog"}}
+{"edge":"Near","from":"Run","to":"Run","data":{"role":"naïve"}}
+{"edge":"Near","from":"Run","to":"café","data":{"role":"a"}}
+{"edge":"Near","from":"café","to":"Run","data":{"role":"Hello World"}}
+{"edge":"Cites","from":"42","to":"42"}
+{"edge":"Cites","from":"2","to":"42"}
+{"edge":"Cites","from":"2147483647","to":"2147483647"}
+{"edge":"Likes","from":"Run","to":"it's"}
+{"edge":"Likes","from":"Dogs","to":"Dogs"}
+{"edge":"Likes","from":"café","to":"Dogs","data":{"weight":[1.5,10000000000.0]}}
+{"edge":"Likes","from":"it's","to":"it's","data":{"weight":[3.0,10000000000.0,7.0]}}
+{"edge":"Likes","from":"Run","to":"Run","data":{"weight":[0.1]}}
+{"edge":"Likes","from":"it's","to":"café","data":{"weight":[10000000000.0]}}
+
+--- mutate
+query q16() {
+  delete Org where seen > 100
+  delete Person where text = "Dogs x dog Dogs"
+  delete Cites where @id = "x"
+}
+
+--- expect affected: nodes=2 edges=10

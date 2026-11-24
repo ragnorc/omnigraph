@@ -1,0 +1,70 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1670, case 18; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  tags: String @key
+  weight: Blob?
+}
+node Place {
+  vec: enum(a, b)? @index
+  weight: I64 @index
+  seen: [String]?
+  note: F64
+  size: DateTime @index
+  @range(weight, -10..1000)
+}
+node Org {
+  score: I64
+  age: I32
+  note: [Date]
+  @key(score, age)
+  @index(note)
+}
+node Person {
+  content: String @key
+  size: enum(a, b)? @index
+  name: U64? @unique
+}
+node Tag {
+  content: enum(red, green, blue, x-1)
+}
+edge Links: Place -> Tag @card(0..1)
+
+--- seed
+{"type":"Item","data":{"tags":"of the and","weight":"base64:SGVsbG8="}}
+{"type":"Item","data":{"tags":"database","weight":"base64:SGVsbG8="}}
+{"type":"Item","data":{"tags":"Ünïcode"}}
+{"type":"Item","data":{"tags":"café","weight":"base64:AAEC"}}
+{"type":"Item","data":{"tags":"dog","weight":"base64:SGVsbG8="}}
+{"type":"Place","id":"p0","data":{"vec":null,"weight":100,"seen":["naïve"],"note":0.0,"size":"2020-01-01T00:00:00.123Z"}}
+{"type":"Place","id":"p1","data":{"vec":"b","weight":-5,"seen":["café","of the and","x y z"],"note":-2.25,"size":"2024-02-29T12:00:00Z"}}
+{"type":"Place","id":"p2","data":{"vec":"a","weight":0,"seen":[],"note":2.5,"size":"2020-01-01T00:00:00Z"}}
+{"type":"Place","id":"p3","data":{"vec":"b","weight":0,"seen":[],"note":1.5,"size":"1999-12-31T23:59:59Z"}}
+{"type":"Place","id":"p4","data":{"weight":0,"seen":["data base","naïve","dog house"],"note":10000000000.0,"size":"2024-02-29T12:00:00Z"}}
+{"type":"Org","data":{"score":9007199254740992,"age":3,"note":["2024-02-29","2024-02-29"]}}
+{"type":"Org","data":{"score":1,"age":3,"note":["2020-01-01"]}}
+{"type":"Tag","id":"t0","data":{"content":"x-1"}}
+{"type":"Tag","id":"t1","data":{"content":"red"}}
+{"type":"Tag","id":"t2","data":{"content":"green"}}
+{"type":"Tag","id":"t3","data":{"content":"red"}}
+{"edge":"Links","from":"p4","to":"t1"}
+
+--- query
+query q19() {
+  match { $p1: Place, $t2: Tag, $p1 links $t2 } where "dog house" in $p1.seen
+  return { $p1.vec,  $t2.content }
+  limit 5
+}
+
+--- expect unordered
+{"t2.content": "red"}
+
+--- expect shape

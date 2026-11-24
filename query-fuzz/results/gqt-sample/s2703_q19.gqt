@@ -1,0 +1,58 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2703, case 19; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  weight: I32 @unique
+}
+node Place {
+  level: enum(a, b)? @unique @index
+}
+node Doc {
+  born: F32? @index
+  code: Bool?
+  score: Bool? @index
+  slug: I32 @key
+  text: String @index
+  emb: Vector(3)
+}
+edge Near: Doc -> Doc {
+  weight: I32?
+  since: String?
+}
+edge Cites: Doc -> Item {
+  weight: Date?
+  since: [I32]?
+  @key(@src, @dst)
+}
+
+--- seed
+{"type":"Place","id":"p0","data":{"level":"b"}}
+{"type":"Place","id":"p1","data":{"level":null}}
+{"type":"Place","id":"p2","data":{"level":null}}
+{"type":"Place","id":"p3","data":{}}
+{"type":"Doc","data":{"code":true,"score":false,"slug":-5,"text":"run dog ran the","emb":[0.5,0.5,0.5]}}
+{"type":"Doc","data":{"born":-2.25,"code":true,"score":false,"slug":-1,"text":"running hello","emb":[-1.5,1.43,1.51]}}
+{"edge":"Near","from":"-5","to":"-1","data":{"weight":2,"since":"ran"}}
+
+--- query
+query q20() {
+  match {
+    $d1: Doc
+  }
+  return { $d1.@id as c0, max($d1.slug) as a0 }
+  order { c0 }
+}
+
+--- expect ordered
+{"c0": "-1", "a0": -1}
+{"c0": "-5", "a0": -5}
+
+--- expect shape

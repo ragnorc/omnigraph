@@ -1,0 +1,50 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3652, case 4; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  vec: String?
+  age: enum(a, b)?
+  slug: String?
+  code: Date?
+}
+node Place {
+  seen: String? @unique @index
+  tags: Vector(2)?
+  code: I64?
+  @range(code, -10..1000)
+}
+node Tag {
+  slug: Vector(3)?
+  weight: String @index
+  note: U32
+}
+edge Near: Place -> Place @card(0..1) {
+  weight: String?
+  role: Bool?
+  @unique(@src, @dst)
+}
+
+--- seed
+{"type":"Person","id":"p0","data":{"vec":"x y z","age":"b","slug":"of the and","code":"2020-01-01"}}
+{"type":"Place","id":"p0","data":{"tags":[0.78,1.05],"code":-1}}
+{"type":"Place","id":"p1","data":{"tags":[0.29,0.12],"code":7}}
+{"type":"Tag","id":"t0","data":{"slug":[0.44,0.88,-0.17],"weight":"database","note":7}}
+{"type":"Tag","id":"t1","data":{"weight":"ran","note":7}}
+{"edge":"Near","from":"p1","to":"p0","data":{"weight":"and the","role":true}}
+{"edge":"Near","from":"p0","to":"p1","data":{"weight":"","role":true}}
+
+--- mutate
+query q5() {
+  delete Person where slug > "of the and"
+  delete Person where age is null
+  delete Person where code > date("2024-02-29")
+}
+
+--- expect affected: nodes=0 edges=0

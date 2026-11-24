@@ -1,0 +1,86 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5560, case 4; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  level: F32?
+  rank: String @key
+}
+node Item {
+  seen: [F64]
+  born: String? @index
+  note: Vector(3)?
+  flag: Blob?
+  level: Vector(3)
+}
+node Tag {
+  flag: [Bool]
+  count: Bool?
+  note: String @key
+}
+node Person {
+  size: Vector(2)?
+  name: [F64]
+  code: [String]?
+  @index(name)
+}
+node Place {
+  seen: [I32]?
+  age: Date
+  name: String
+  note: F64 @index
+  body: String @key
+}
+edge Knows: Tag -> Tag {
+  @unique(@src, @dst)
+}
+edge Owns: Doc -> Tag {
+  since: DateTime?
+  role: Bool?
+  @unique(@src, @dst)
+}
+edge Likes: Doc -> Doc
+
+--- seed
+{"type":"Item","id":"i0","data":{"seen":[],"born":"Hello World","note":[1.0,1.0,1.0],"flag":"base64:AAEC","level":[0.54,-1.05,-1.0]}}
+{"type":"Item","id":"i1","data":{"seen":[0.1],"born":"café","note":[-0.76,-0.44,-0.41],"flag":"base64:AAEC","level":[0.12,-0.67,-0.48]}}
+{"type":"Item","id":"i2","data":{"seen":[10000000000.0],"flag":"base64:AAEC","level":[1.0,0.0,0.0]}}
+{"type":"Item","id":"i3","data":{"seen":[1.5,0.0,1.5],"born":"it's","note":[-1.0,-1.0,-1.0],"flag":"base64:SGVsbG8=","level":[-1.71,1.06,0.06]}}
+{"type":"Item","id":"i4","data":{"seen":[0.0,2.5],"born":"fox","note":[1.57,0.18,-0.5],"flag":"base64:AAEC","level":[-0.13,-0.38,1.26]}}
+{"type":"Tag","data":{"flag":[],"count":true,"note":"the"}}
+{"type":"Tag","data":{"flag":[false],"note":"a"}}
+{"type":"Tag","data":{"flag":[false,false,true],"count":true,"note":"dog"}}
+{"type":"Tag","data":{"flag":[true],"count":null,"note":"k"}}
+{"type":"Tag","data":{"flag":[false],"count":true,"note":"dog house"}}
+{"type":"Person","id":"p0","data":{"size":[0.5,0.5],"name":[],"code":["ran","ran"]}}
+{"type":"Person","id":"p1","data":{"size":null,"name":[],"code":["ab"]}}
+{"type":"Person","id":"p2","data":{"size":null,"name":[7.0],"code":["database","abc"]}}
+{"type":"Person","id":"p3","data":{"size":[0.5,0.5],"name":[7.0],"code":null}}
+{"type":"Person","id":"p4","data":{"size":[0.5,0.5],"name":[0.1,1.5,3.0],"code":["database"]}}
+{"type":"Place","data":{"seen":[2147483647],"age":"1970-01-01","name":"and the","note":0.0,"body":"k"}}
+{"edge":"Knows","from":"dog house","to":"the"}
+
+--- query
+query q5($arg1: Bool) {
+  match {
+    $p1: Place { note: 0.0 }
+    $p1.body starts_with "the" and $p1.seen contains 3
+    count { $p1.body contains "the" } >= 0
+  }
+  return { $p1.name as c0, $p1.seen, max($p1.note) as a0, max($p1.note) as a1 }
+  order { c0 desc }
+}
+
+--- params
+{"arg1": true}
+
+--- expect ordered
+
+
+--- expect shape

@@ -1,0 +1,66 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5643, case 4; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  flag: String @key
+  vec: I32? @index
+  name: [F64]
+  @range(vec, -10..1000)
+}
+node Item {
+  rank: I32? @index
+  tags: F64
+  seen: U32?
+}
+edge Links: Item -> Org {
+  weight: enum(a, b)
+  w: I32?
+}
+edge Likes: Item -> Org {
+  role: DateTime?
+}
+edge Cites: Org -> Org
+
+--- seed
+{"type":"Org","data":{"flag":"Run","vec":-5,"name":[2.5,3.0,1.5]}}
+{"type":"Org","data":{"flag":"café","vec":100,"name":[-2.25,3.0,0.0]}}
+{"type":"Org","data":{"flag":"dog house","vec":-5,"name":[-2.25]}}
+{"type":"Org","data":{"flag":"ab","name":[0.0]}}
+{"type":"Item","id":"i0","data":{"rank":null,"tags":7.0,"seen":2}}
+{"type":"Item","id":"i1","data":{"rank":2,"tags":0.1,"seen":null}}
+{"type":"Item","id":"i2","data":{"tags":3.0}}
+{"type":"Item","id":"i3","data":{"rank":null,"tags":7.0,"seen":null}}
+{"type":"Item","id":"i4","data":{"rank":null,"tags":7.0,"seen":0}}
+{"edge":"Links","from":"i4","to":"café","data":{"weight":"b"}}
+{"edge":"Likes","from":"i3","to":"dog house","data":{"role":"2020-01-01T00:00:00Z"}}
+{"edge":"Likes","from":"i4","to":"dog house"}
+{"edge":"Likes","from":"i4","to":"café","data":{"role":"2024-02-29T12:00:00Z"}}
+{"edge":"Likes","from":"i0","to":"dog house"}
+{"edge":"Likes","from":"i4","to":"ab","data":{"role":"2020-01-01T00:00:00.123Z"}}
+{"edge":"Likes","from":"i1","to":"Run","data":{"role":"2020-01-01T00:00:00Z"}}
+{"edge":"Likes","from":"i2","to":"café","data":{"role":"2024-02-29T12:00:00Z"}}
+{"edge":"Likes","from":"i0","to":"dog house","data":{"role":"2024-02-29T12:00:00Z"}}
+{"edge":"Cites","from":"café","to":"dog house"}
+{"edge":"Cites","from":"dog house","to":"Run"}
+
+--- query
+query q5() {
+  match { let $pop = { match { $i1: Item, $o2: Org, $i1 $e3:links $o2, $o4: Org, $i1 likes $o4 } where match_terms($o2.flag, terms("rnu", mode: any)) return { $i1, $e3, $o2, $o4 } }, from bm25($pop, $o4.flag, "cafe") as $score }
+  return { $o2.name as c0,  $o2.flag }
+  order { $score desc, c0 }
+  limit 3
+}
+
+--- expect ordered
+
+
+--- expect shape

@@ -1,0 +1,58 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2493, case 8; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  rank: [I32]
+  slug: F32? @index
+  size: String @key
+  @index(rank)
+}
+node Person {
+  nums: F32? @index
+  slug: String @key
+  weight: [String]
+  body: String
+  text: String @index
+  emb: Vector(3)?
+}
+edge Likes: Person -> Person @card(0..1)
+
+--- seed
+{"type":"Org","data":{"rank":[-2147483648,-1],"slug":7.0,"size":"data base"}}
+{"type":"Person","data":{"nums":0.0,"slug":"and the","weight":["Run"],"body":"run","text":"hello running x"}}
+{"type":"Person","data":{"nums":null,"slug":"x","weight":[""],"body":"café","text":"Run","emb":[1.81,0.97,-0.11]}}
+{"type":"Person","data":{"nums":-2.25,"slug":"ab","weight":["and the"],"body":"naïve","text":"Dogs  the Dogs","emb":[-1.26,1.06,-0.97]}}
+{"type":"Person","data":{"nums":2.5,"slug":"x y z","weight":[],"body":"x y z","text":"run the","emb":[1.0,1.0,1.0]}}
+{"type":"Person","data":{"nums":2.5,"slug":"hello world","weight":["fox","café","and the"],"body":"fox","text":"Dogs","emb":[1.44,-0.13,1.61]}}
+{"edge":"Likes","from":"x y z","to":"x"}
+{"edge":"Likes","from":"x","to":"and the"}
+
+--- query
+query q9($arg1: String, $arg2: I64) {
+  match {
+    $o1: Org
+    $o2: Org
+    $o1.slug > 1.5 or $o1.slug >= 2.5
+    count { $o2.slug >= 7.0 } != 1
+    search($o1.size, $arg1)
+  }
+  return { $o2.size }
+  order { bm25($o2.size, "cafe") }
+  limit 10
+}
+
+--- params
+{"arg1": "the", "arg2": 0}
+
+--- expect ordered
+
+
+--- expect shape
+o2.size: String

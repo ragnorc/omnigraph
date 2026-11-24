@@ -1,0 +1,72 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1551, case 6; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  level: Vector(3)?
+  size: I64 @key
+}
+node Doc {
+  born: [I32]
+  body: F32?
+  rank: Bool
+  size: Vector(3)?
+  level: I64 @key
+}
+node Item {
+  title: DateTime
+  level: Vector(3)
+  weight: Blob?
+  content: I32 @key
+  tags: Date @index
+  text: String @index
+  @range(content, -10..1000)
+}
+node Person {
+  count: U32 @unique @index
+  rank: I64? @unique @index
+  content: String?
+  weight: I32 @index
+}
+node Tag {
+  code: U32? @index
+  rank: Vector(2)
+  note: I64 @key
+}
+edge Near: Doc -> Doc
+edge Owns: Person -> Item {
+  role: U64
+}
+edge Cites: Item -> Item
+
+--- seed
+{"type":"Doc","data":{"born":[7,-2147483648],"body":3.0,"rank":false,"size":[1.0,0.0,0.0],"level":42}}
+{"type":"Doc","data":{"born":[2],"body":-2.25,"rank":false,"size":[0.5,0.5,0.5],"level":9007199254740993}}
+{"type":"Doc","data":{"born":[2,2,2],"rank":true,"size":[0.09,1.11,0.87],"level":9007199254740992}}
+{"type":"Item","data":{"title":"2020-01-01T00:00:00.123Z","level":[0.0,0.0,0.0],"weight":"base64:AAEC","content":0,"tags":"1970-01-01","text":"a hello"}}
+{"type":"Person","id":"p0","data":{"count":2,"rank":-5,"content":"running","weight":0}}
+{"type":"Person","id":"p1","data":{"count":7,"rank":9007199254740993,"content":"run","weight":7}}
+{"edge":"Near","from":"9007199254740992","to":"9007199254740992"}
+{"edge":"Near","from":"9007199254740992","to":"9007199254740992"}
+{"edge":"Near","from":"9007199254740993","to":"42"}
+{"edge":"Near","from":"9007199254740993","to":"9007199254740992"}
+{"edge":"Owns","from":"p0","to":"0","data":{"role":100}}
+{"edge":"Owns","from":"p1","to":"0","data":{"role":0}}
+{"edge":"Owns","from":"p1","to":"0","data":{"role":0}}
+{"edge":"Cites","from":"0","to":"0"}
+{"edge":"Cites","from":"0","to":"0"}
+{"edge":"Cites","from":"0","to":"0"}
+
+--- mutate
+query q7() {
+  insert Org { size: 100 }
+}
+
+--- expect affected: nodes=1 edges=0

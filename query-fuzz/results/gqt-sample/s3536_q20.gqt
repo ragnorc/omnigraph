@@ -1,0 +1,49 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3536, case 20; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  count: Bool? @index
+  size: I64 @unique
+  code: U32? @unique
+  born: I64?
+  text: String? @index
+  emb: Vector(3)?
+}
+node Person {
+  code: String @key
+  content: F32?
+  level: Vector(2)?
+}
+
+--- seed
+{"type":"Item","id":"i0","data":{"count":null,"size":-5,"code":null,"born":0,"text":null}}
+{"type":"Item","id":"i1","data":{"count":true,"size":9007199254740993,"code":null,"born":null,"text":"running Dogs base","emb":[0.5,0.5,0.5]}}
+{"type":"Item","id":"i2","data":{"count":true,"size":4611686018427387904,"code":null,"born":7,"text":""}}
+{"type":"Item","id":"i3","data":{"count":false,"size":42,"code":null,"born":3,"text":"runs run","emb":[1.39,1.93,-0.98]}}
+{"type":"Item","id":"i6","data":{"count":false,"size":9007199254740992,"code":0,"born":7,"emb":[0.72,-0.13,-1.48]}}
+{"type":"Person","data":{"code":"ran","level":[1.0,0.0]}}
+{"type":"Person","data":{"code":"ab","content":7.0,"level":[0.87,1.46]}}
+
+--- query
+query q21($arg1: String, $arg2: Vector(2)) {
+  match {
+    $p1: Person { content: 0.0 }
+    not { $p1.code starts_with $arg1 }
+    fuzzy($p1.code, "the")
+  }
+  return { $p1.content  $p1.code  sum($p1.content) as a0  min($p1.content) as a1  nearest($p1.level, $arg2) as r }
+  order { nearest($p1.level, $arg2) }
+  limit 3
+}
+
+--- params
+{"arg1": "run", "arg2": [0.0, -0.9]}
+
+--- expect error: T9

@@ -1,0 +1,92 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 4202, case 15; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  code: Blob?
+  tags: enum(low, mid, high)?
+  nums: Date @index
+  count: enum(low, mid, high)?
+}
+node Item {
+  title: enum(red, green, blue, x-1)?
+  vec: [F64]?
+  content: enum(red, green, blue, x-1)? @index
+}
+node Tag {
+  title: DateTime? @index
+  nums: DateTime? @index
+  code: I64 @unique
+  flag: I64
+  age: Bool?
+}
+node Org {
+  weight: enum(red, green, blue, x-1)? @index
+  body: I64 @key
+  seen: Date? @index
+}
+edge Likes: Org -> Tag
+edge Near: Org -> Org
+edge Wrote: Doc -> Doc
+edge Cites: Org -> Tag
+
+--- seed
+{"type":"Doc","id":"d0","data":{"code":"base64:AAEC","tags":"low","nums":"1999-12-31","count":null}}
+{"type":"Doc","id":"d1","data":{"code":"base64:","tags":"high","nums":"2024-02-29","count":"low"}}
+{"type":"Doc","id":"d2","data":{"code":"base64:AAEC","tags":null,"nums":"2020-01-01"}}
+{"type":"Doc","id":"d3","data":{"code":"base64:AAEC","tags":"mid","nums":"2020-01-01","count":"low"}}
+{"type":"Doc","id":"d4","data":{"tags":"mid","nums":"2020-01-01","count":"low"}}
+{"type":"Doc","id":"d5","data":{"code":"base64:SGVsbG8=","nums":"1970-01-01"}}
+{"type":"Doc","id":"d6","data":{"code":"base64:","tags":"low","nums":"2020-01-01"}}
+{"type":"Doc","id":"d7","data":{"code":"base64:SGVsbG8=","tags":"mid","nums":"2020-01-01","count":"mid"}}
+{"type":"Tag","id":"t0","data":{"title":"2024-02-29T12:00:00Z","nums":"1999-12-31T23:59:59Z","code":3,"flag":3,"age":null}}
+{"type":"Tag","id":"t1","data":{"title":null,"nums":"2024-02-29T12:00:00Z","code":0,"flag":-1}}
+{"type":"Tag","id":"t2","data":{"title":"2020-01-01T00:00:00Z","nums":"2024-02-29T12:00:00Z","code":2,"flag":-9007199254740993,"age":null}}
+{"type":"Tag","id":"t3","data":{"title":"2024-02-29T12:00:00Z","nums":"2020-01-01T00:00:00Z","code":-9007199254740993,"flag":100,"age":true}}
+{"type":"Tag","id":"t7","data":{"title":"2020-01-01T00:00:00Z","nums":null,"code":9007199254740993,"flag":9007199254740993,"age":false}}
+{"type":"Tag","id":"t8","data":{"nums":"2020-01-01T00:00:00.123Z","code":7,"flag":9007199254740993}}
+{"type":"Tag","id":"t10","data":{"title":"2020-01-01T00:00:00Z","nums":null,"code":1,"flag":100}}
+{"type":"Tag","id":"t12","data":{"title":"2020-01-01T00:00:00.123Z","nums":"2020-01-01T00:00:00Z","code":-5,"flag":100}}
+{"type":"Org","data":{"body":1,"seen":"1999-12-31"}}
+{"type":"Org","data":{"weight":null,"body":4611686018427387904,"seen":"2024-02-29"}}
+{"edge":"Likes","from":"1","to":"t8"}
+{"edge":"Likes","from":"4611686018427387904","to":"t10"}
+{"edge":"Likes","from":"4611686018427387904","to":"t1"}
+{"edge":"Near","from":"4611686018427387904","to":"1"}
+{"edge":"Near","from":"1","to":"1"}
+{"edge":"Near","from":"1","to":"4611686018427387904"}
+{"edge":"Near","from":"4611686018427387904","to":"1"}
+{"edge":"Near","from":"4611686018427387904","to":"4611686018427387904"}
+{"edge":"Near","from":"1","to":"1"}
+{"edge":"Near","from":"1","to":"4611686018427387904"}
+{"edge":"Near","from":"4611686018427387904","to":"4611686018427387904"}
+{"edge":"Near","from":"1","to":"4611686018427387904"}
+{"edge":"Near","from":"4611686018427387904","to":"1"}
+{"edge":"Wrote","from":"d0","to":"d3"}
+{"edge":"Wrote","from":"d7","to":"d0"}
+{"edge":"Wrote","from":"d2","to":"d0"}
+{"edge":"Wrote","from":"d0","to":"d0"}
+
+--- query
+query q16() {
+  match {
+    $d1: Doc
+    $d1 wrote $d2
+    $d2.nums in [date("2020-01-01"), date("1970-01-01")] and $d2.tags is not null
+  }
+  return { $d1.tags }
+  order { $d1.tags }
+}
+
+--- expect ordered
+{"d1.tags": "low"}
+
+--- expect shape
+d1.tags: String

@@ -1,0 +1,64 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1599, case 3; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  count: U64 @index
+  level: I32 @key
+  flag: String @index
+  slug: F64
+  @range(level, -10..1000)
+}
+node Person {
+  size: Bool @index
+  code: F32? @index
+}
+node Doc {
+  born: DateTime
+  body: I32
+  age: I32
+  slug: I64?
+  text: String @index
+  emb: Vector(3)?
+  @range(body, -10..1000)
+}
+edge Knows: Item -> Item
+edge Cites: Doc -> Person {
+  role: I32?
+}
+
+--- seed
+{"type":"Item","data":{"count":9007199254740992,"level":-5,"flag":"data base","slug":3.0}}
+{"type":"Item","data":{"count":2147483647,"level":1,"flag":"run","slug":0.1}}
+{"type":"Item","data":{"count":2,"level":-1,"flag":"a","slug":0.0}}
+{"type":"Item","data":{"count":9007199254740993,"level":3,"flag":"runs","slug":0.0}}
+{"type":"Person","id":"p0","data":{"size":false}}
+{"type":"Person","id":"p1","data":{"size":false,"code":null}}
+{"type":"Doc","id":"d0","data":{"born":"2020-01-01T00:00:00.123Z","body":42,"age":100,"slug":-1,"text":"","emb":[-1.0,-1.0,-1.0]}}
+{"type":"Doc","id":"d1","data":{"born":"1999-12-31T23:59:59Z","body":42,"age":-5,"slug":0,"text":"Dogs run data","emb":[-0.67,-0.2,-1.97]}}
+{"type":"Doc","id":"d2","data":{"born":"1999-12-31T23:59:59Z","body":1,"age":2147483647,"slug":-1,"text":"the and the","emb":null}}
+{"type":"Doc","id":"d3","data":{"born":"1999-12-31T23:59:59Z","body":1,"age":100,"slug":4611686018427387904,"text":"Run a fox base","emb":null}}
+{"type":"Doc","id":"d4","data":{"born":"2024-02-29T12:00:00Z","body":7,"age":0,"slug":-1,"text":"Dogs a","emb":[-1.0,-1.0,-1.0]}}
+{"edge":"Knows","from":"-1","to":"1"}
+
+--- query
+query q4($arg1: I32) {
+  match { $p1: Person, $d2: Doc, $d2 $e3:cites $p1, $d4: Doc, $d4 $e5:cites $p1, $d4 cites $p6 } where ($d2.age <= $arg1 or $d2.body in [1])
+  return { $d4,  $p6,  $p1.size as c2,  avg($p6.code) as a0 }
+}
+
+--- params
+{"arg1": 2147483647}
+
+--- expect unordered
+
+
+--- expect shape

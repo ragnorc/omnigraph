@@ -1,0 +1,57 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500047, case 12; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  tags: U32?
+  age: [I64]
+  code: U32?
+  @index(age)
+}
+node Person {
+  weight: [Date]
+  tags: I64? @index
+  rank: U64? @unique
+}
+edge Wrote: Person -> Place {
+  role: [String]?
+  weight: DateTime
+}
+
+--- seed
+{"type":"Place","id":"p0","data":{"tags":0,"age":[100],"code":4294967295}}
+{"type":"Place","id":"p1","data":{"tags":3,"age":[7,9007199254740993,-5],"code":null}}
+{"type":"Place","id":"p2","data":{"tags":100,"age":[100],"code":0}}
+{"type":"Person","id":"p0","data":{"weight":["2024-02-29"],"tags":null}}
+{"type":"Person","id":"p1","data":{"weight":["2024-02-29"],"tags":-1,"rank":9007199254740993}}
+{"type":"Person","id":"p2","data":{"weight":["2020-01-01"],"tags":2147483647,"rank":100}}
+{"type":"Person","id":"p3","data":{"weight":["2024-02-29","2020-01-01","1999-12-31"],"tags":7,"rank":0}}
+{"type":"Person","id":"p4","data":{"weight":["2020-01-01","2020-01-01"],"tags":100,"rank":null}}
+{"type":"Person","id":"p5","data":{"weight":["1999-12-31"],"tags":0}}
+{"edge":"Wrote","from":"p3","to":"p0","data":{"role":["hello world","data base","a"],"weight":"2024-02-29T12:00:00Z"}}
+{"edge":"Wrote","from":"p4","to":"p1","data":{"role":["run"],"weight":"2024-02-29T12:00:00Z"}}
+{"edge":"Wrote","from":"p5","to":"p1","data":{"role":["Ünïcode"],"weight":"2024-02-29T12:00:00Z"}}
+{"edge":"Wrote","from":"p3","to":"p0","data":{"role":["abc"],"weight":"2024-02-29T12:00:00Z"}}
+
+--- query
+query q13() {
+  match { $p1: Person }
+  return { $p1.weight, $p1.rank as c1, avg($p1.rank) as a0, avg($p1.rank) as a1 }
+  limit 2
+}
+
+--- expect unordered
+{"p1.weight": ["2024-02-29"]}
+{"p1.weight": ["2024-02-29"], "c1": 9007199254740993, "a0": 9007199254740992.0, "a1": 9007199254740992.0}
+
+--- expect shape
+p1.weight: [Date]
+c1: U64?
+a0: F64?
+a1: F64?

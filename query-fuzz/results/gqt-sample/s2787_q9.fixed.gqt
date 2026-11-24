@@ -1,0 +1,74 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2787, case 9; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag {
+  slug: F64? @index
+  name: enum(low, mid, high)?
+  body: enum(a, b)? @unique @index
+  rank: I32 @index
+  seen: Blob?
+  text: String? @index
+  emb: Vector(3)?
+}
+node Org {
+  body: I32? @index
+}
+node Doc {
+  body: Bool @index
+  flag: [Bool]?
+  weight: Date
+  @index(flag)
+}
+node Item {
+  body: Blob?
+  age: F32? @index
+  code: [String]?
+  seen: [F64]
+  @index(seen)
+}
+edge Tagged: Doc -> Org
+
+--- seed
+{"type":"Tag","id":"t0","data":{"slug":-2.25,"body":"a","rank":-2147483648,"text":"dog","emb":null}}
+{"type":"Tag","id":"t1","data":{"slug":1.5,"rank":2,"seen":"base64:","text":"run","emb":null}}
+{"type":"Tag","id":"t2","data":{"slug":7.0,"name":"mid","body":null,"rank":-1,"text":"Run running","emb":[-1.0,-1.0,-1.0]}}
+{"type":"Org","id":"o0","data":{"body":-1}}
+{"type":"Org","id":"o1","data":{"body":3}}
+{"type":"Org","id":"o2","data":{"body":42}}
+{"type":"Org","id":"o3","data":{"body":-5}}
+{"type":"Org","id":"o4","data":{"body":0}}
+{"type":"Doc","id":"d0","data":{"body":true,"flag":[],"weight":"1999-12-31"}}
+{"type":"Doc","id":"d1","data":{"body":true,"flag":[false,true,true],"weight":"2020-01-01"}}
+{"type":"Doc","id":"d2","data":{"body":false,"flag":[true,false,false],"weight":"2020-01-01"}}
+{"type":"Doc","id":"d3","data":{"body":false,"weight":"2024-02-29"}}
+{"type":"Doc","id":"d4","data":{"body":true,"flag":[],"weight":"1970-01-01"}}
+{"type":"Doc","id":"d5","data":{"body":true,"flag":[],"weight":"1999-12-31"}}
+{"type":"Item","id":"i0","data":{"body":"base64:SGVsbG8=","age":0.5,"code":["runs"],"seen":[10000000000.0]}}
+{"type":"Item","id":"i1","data":{"age":null,"code":[],"seen":[0.1,-2.25,1.5]}}
+{"type":"Item","id":"i2","data":{"body":"base64:","age":7.0,"code":["café","dog house","the"],"seen":[10000000000.0]}}
+{"type":"Item","id":"i3","data":{"body":"base64:","age":7.0,"seen":[]}}
+{"edge":"Tagged","from":"d0","to":"o4"}
+{"edge":"Tagged","from":"d5","to":"o4"}
+
+--- query
+query q10($arg1: I32, $arg2: [I32], $arg3: [I32]) {
+  match { $o1: Org, $d2 tagged $o1, $o3: Org, $d2 tagged $o3 } where $o1.body = $arg1 and $o1.body in $arg2 and $o1.body in $arg3
+  return { $o1.@id,  $o1.body as c1 }
+}
+
+--- params
+{"arg1": 3, "arg2": [-5, 7, 2147483647], "arg3": [-2147483648, 42]}
+
+--- expect unordered
+
+
+--- expect shape

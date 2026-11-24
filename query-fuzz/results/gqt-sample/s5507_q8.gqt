@@ -1,0 +1,106 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5507, case 8; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  level: [F64]
+  title: [Date]?
+  rank: I32 @key
+  @index(level)
+}
+node Tag {
+  born: enum(low, mid, high)? @index
+}
+node Place {
+  count: Bool? @index
+  name: [Bool]?
+  flag: F32?
+  nums: I64
+  rank: Vector(3)
+}
+node Org {
+  vec: [F64]
+  body: Vector(2)?
+  born: I64 @key
+  text: String @index
+  @index(vec)
+}
+node Item {
+  slug: String? @index
+  size: I64 @key
+}
+edge Tagged: Org -> Tag @card(0..2) {
+  weight: Bool?
+}
+edge Links: Org -> Org {
+  since: I64?
+}
+edge Owns: Place -> Place @card(0..2) {
+  since: I32?
+  @unique(@src, @dst)
+}
+
+--- seed
+{"type":"Person","data":{"level":[1.5],"title":["2024-02-29"],"rank":-5}}
+{"type":"Person","data":{"level":[0.0],"title":["2020-01-01"],"rank":100}}
+{"type":"Person","data":{"level":[7.0,-2.25,1.5],"title":[],"rank":42}}
+{"type":"Person","data":{"level":[3.0],"title":["1999-12-31"],"rank":2147483647}}
+{"type":"Person","data":{"level":[7.0],"title":["2020-01-01"],"rank":2}}
+{"type":"Tag","id":"t0","data":{"born":"mid"}}
+{"type":"Tag","id":"t1","data":{"born":"high"}}
+{"type":"Tag","id":"t2","data":{}}
+{"type":"Tag","id":"t3","data":{"born":"high"}}
+{"type":"Place","id":"p0","data":{"name":[false,true,true],"flag":2.5,"nums":100,"rank":[-0.67,-0.92,0.14]}}
+{"type":"Place","id":"p1","data":{"count":true,"name":[],"flag":7.0,"nums":0,"rank":[-1.0,-1.0,-1.0]}}
+{"type":"Place","id":"p2","data":{"count":null,"name":null,"flag":null,"nums":9007199254740993,"rank":[1.0,1.0,1.0]}}
+{"type":"Place","id":"p3","data":{"count":false,"name":[],"flag":3.0,"nums":-1,"rank":[1.64,1.67,-0.6]}}
+{"type":"Place","id":"p4","data":{"name":null,"flag":null,"nums":3,"rank":[0.25,0.56,-0.58]}}
+{"type":"Place","id":"p5","data":{"count":false,"name":[false,true,true],"flag":-2.25,"nums":42,"rank":[1.88,-1.26,1.26]}}
+{"type":"Place","id":"p6","data":{"count":true,"name":[false,true],"nums":42,"rank":[-1.15,-1.75,1.78]}}
+{"type":"Place","id":"p7","data":{"count":true,"name":[],"flag":7.0,"nums":1,"rank":[0.5,0.5,0.5]}}
+{"type":"Org","data":{"vec":[1.5],"body":[0.72,0.53],"born":-1,"text":"and the"}}
+{"type":"Org","data":{"vec":[3.0,1.5,7.0],"body":[-1.16,0.26],"born":42,"text":"hello x Run"}}
+{"type":"Item","data":{"slug":null,"size":42}}
+{"type":"Item","data":{"slug":"dog house","size":4611686018427387904}}
+{"type":"Item","data":{"size":2}}
+{"type":"Item","data":{"size":2147483647}}
+{"type":"Item","data":{"slug":"runs","size":9007199254740992}}
+{"type":"Item","data":{"slug":"ab","size":100}}
+{"edge":"Tagged","from":"42","to":"t1","data":{"weight":true}}
+{"edge":"Tagged","from":"42","to":"t3"}
+{"edge":"Owns","from":"p2","to":"p0","data":{"since":-1}}
+{"edge":"Owns","from":"p3","to":"p5"}
+{"edge":"Owns","from":"p6","to":"p3","data":{"since":7}}
+{"edge":"Owns","from":"p5","to":"p5","data":{"since":-5}}
+{"edge":"Owns","from":"p3","to":"p4"}
+{"edge":"Owns","from":"p1","to":"p1","data":{"since":7}}
+{"edge":"Owns","from":"p6","to":"p2","data":{"since":-1}}
+
+--- query
+query q9($arg1: [I64], $arg2: Bool) {
+  match {
+    $t1: Tag { born: "mid" }
+    $o2: Org
+    $o2 tagged $t1
+    $o2.born in $arg1 or $o2.vec contains 1.5
+    match_text($o2.text, "a")
+  }
+  return { $o2.body, count(distinct $o2.born) as a0, max($o2.born) as a1 }
+}
+
+--- params
+{"arg1": [42, -1, 4611686018427387904], "arg2": true}
+
+--- expect unordered
+
+
+--- expect shape
+o2.body: Vector(2)
+a0: I64
+a1: I64

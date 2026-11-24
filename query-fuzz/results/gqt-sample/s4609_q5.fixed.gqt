@@ -1,0 +1,31 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 4609, case 5; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag {
+  rank: Vector(2)?
+  age: U32 @index
+  size: [F64]
+  @index(size)
+}
+edge Cites: Tag -> Tag
+
+--- seed
+
+--- query
+query q6() {
+  match { $t1: Tag, $t2: Tag, $t1 cites $t2 } where exists { $t3: Tag, $t1 cites $t3 } and $t2.age in [1, 0] and $t2.age = 2
+  return { $t1.rank, $t1.size, $t2.@id as c2 }
+}
+
+--- expect unordered
+
+
+--- expect shape

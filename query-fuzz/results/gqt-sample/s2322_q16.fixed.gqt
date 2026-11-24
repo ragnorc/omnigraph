@@ -1,0 +1,67 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2322, case 16; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  body: U64 @index
+  name: U64? @index
+  born: U64
+  title: String?
+  level: Date? @index
+}
+node Item {
+  code: [String]
+  body: I64 @key
+  score: Bool? @index
+  flag: DateTime? @index
+  text: String @index
+  emb: Vector(3)
+}
+node Org {
+  nums: Vector(2)?
+  tags: String
+  seen: String
+  @key(tags, seen)
+}
+node Doc {
+  title: I32 @index
+  tags: Vector(2)
+  nums: DateTime
+  @range(title, -10..1000)
+}
+edge Cites: Doc -> Org {
+  role: [String]?
+  @key(@src, @dst)
+}
+
+--- seed
+{"type":"Item","data":{"code":["database","Dogs","Ünïcode"],"body":1,"flag":"1999-12-31T23:59:59Z","text":"","emb":[1.0,0.0,0.0]}}
+{"type":"Item","data":{"code":["RUN"],"body":4611686018427387904,"text":"run Run running running","emb":[1.0,1.0,1.0]}}
+{"type":"Item","data":{"code":["","x","of the and"],"body":2147483647,"score":false,"flag":"2024-02-29T12:00:00Z","text":"Dogs Run Dogs","emb":[-0.95,1.78,0.68]}}
+{"type":"Item","data":{"code":["run"],"body":-1,"score":false,"flag":"2024-02-29T12:00:00Z","text":"","emb":[-0.92,-1.0,-1.77]}}
+{"type":"Item","data":{"code":[],"body":2,"score":false,"flag":"2020-01-01T00:00:00.123Z","text":"RUN a","emb":[-1.0,-1.0,-1.0]}}
+{"type":"Item","data":{"code":["running dogs"],"body":-5,"score":false,"flag":"2020-01-01T00:00:00.123Z","text":"and the ran a","emb":[1.43,-0.26,1.61]}}
+{"type":"Item","data":{"code":["Hello World"],"body":0,"score":true,"flag":null,"text":"fox run","emb":[-1.45,1.97,-0.07]}}
+{"type":"Item","data":{"code":["the"],"body":9007199254740992,"score":true,"flag":"1999-12-31T23:59:59Z","text":"data fox running running","emb":[-1.0,-1.0,-1.0]}}
+{"type":"Org","data":{"nums":[0.58,0.12],"tags":"the dog","seen":"running"}}
+{"type":"Doc","id":"d0","data":{"title":100,"tags":[0.93,-0.28],"nums":"2020-01-01T00:00:00Z"}}
+{"edge":"Cites","from":"d0","to":"[\"running\",\"the dog\"]","data":{"role":["dog"]}}
+
+--- query
+query q17() {
+  match { $o1: Org, $d2: Doc, $d2 $e3:cites $o1, $o4: Org, $d2 $e5:cites $o4, $o6: Org, $d2 cites $o6 } where not ($e3.role is not null)
+  return { $d2.@id, $e5.role }
+  limit 3
+}
+
+--- expect unordered
+
+
+--- expect shape

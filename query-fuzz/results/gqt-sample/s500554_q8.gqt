@@ -1,0 +1,64 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500554, case 8; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  code: enum(a, b)?
+  score: String?
+  nums: Vector(3)?
+  tags: String? @unique @index
+}
+edge Tagged: Org -> Org {
+  weight: I64
+}
+edge Wrote: Org -> Org {
+  weight: String?
+  since: [Date]
+}
+edge Likes: Org -> Org {
+  weight: F32?
+  role: I32?
+}
+edge Cites: Org -> Org
+
+--- seed
+{"type":"Org","id":"o0","data":{"code":"b","score":"running","nums":null,"tags":"naïve"}}
+{"type":"Org","id":"o1","data":{"code":null,"score":"RUN","nums":[1.77,-0.22,-0.47],"tags":"run"}}
+{"type":"Org","id":"o2","data":{"score":"naïve","nums":[0.5,0.5,0.5],"tags":"a"}}
+{"type":"Org","id":"o3","data":{"code":"b","score":"runs","tags":"dog"}}
+{"type":"Org","id":"o4","data":{"code":"a","score":null,"nums":[1.0,0.0,0.0],"tags":"Run"}}
+{"type":"Org","id":"o6","data":{"code":"b","score":"Dogs","nums":[-1.32,-1.21,-0.94],"tags":"Hello World"}}
+{"edge":"Tagged","from":"o1","to":"o2","data":{"weight":2147483647}}
+{"edge":"Tagged","from":"o3","to":"o1","data":{"weight":4611686018427387904}}
+{"edge":"Tagged","from":"o6","to":"o1","data":{"weight":-2147483648}}
+{"edge":"Tagged","from":"o3","to":"o4","data":{"weight":9007199254740993}}
+{"edge":"Wrote","from":"o0","to":"o6","data":{"since":["1970-01-01"]}}
+{"edge":"Wrote","from":"o3","to":"o6","data":{"weight":"ran","since":["1999-12-31"]}}
+{"edge":"Wrote","from":"o1","to":"o6","data":{"since":[]}}
+{"edge":"Wrote","from":"o2","to":"o3","data":{"weight":"café","since":["2020-01-01"]}}
+{"edge":"Wrote","from":"o1","to":"o2","data":{"weight":"fox","since":[]}}
+{"edge":"Wrote","from":"o2","to":"o2","data":{"since":["2024-02-29"]}}
+{"edge":"Wrote","from":"o3","to":"o2","data":{"weight":"ab","since":["2024-02-29"]}}
+{"edge":"Wrote","from":"o3","to":"o3","data":{"weight":"abc","since":["2020-01-01"]}}
+{"edge":"Likes","from":"o3","to":"o0","data":{"weight":-2.25,"role":2}}
+{"edge":"Likes","from":"o2","to":"o0","data":{"role":-1}}
+{"edge":"Likes","from":"o4","to":"o4"}
+{"edge":"Likes","from":"o3","to":"o3","data":{"role":2}}
+{"edge":"Likes","from":"o4","to":"o3","data":{"weight":1.5,"role":0}}
+{"edge":"Likes","from":"o2","to":"o2","data":{"weight":0.5,"role":42}}
+{"edge":"Cites","from":"o2","to":"o2"}
+{"edge":"Cites","from":"o6","to":"o6"}
+{"edge":"Cites","from":"o3","to":"o4"}
+
+--- mutate
+query q9() {
+  insert Org { tags: "Hello World" }
+}
+
+--- expect error: value 'Hello World' held by 'o6' and '01

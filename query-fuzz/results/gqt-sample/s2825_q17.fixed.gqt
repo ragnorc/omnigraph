@@ -1,0 +1,60 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2825, case 17; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  score: U64 @unique @index
+  level: F64? @index
+  slug: F64
+  text: String @index
+  emb: Vector(3)?
+}
+node Tag {
+  size: enum(a, b)?
+  rank: I32 @key
+  vec: String
+  slug: enum(low, mid, high)
+  @range(rank, -10..1000)
+}
+edge Cites: Tag -> Tag {
+  w: I32?
+  role: Bool?
+}
+
+--- seed
+{"type":"Doc","id":"d0","data":{"score":0,"level":0.1,"slug":0.0,"text":"","emb":null}}
+{"type":"Doc","id":"d2","data":{"score":42,"level":2.5,"slug":10000000000.0,"text":"hello run data"}}
+{"type":"Doc","id":"d3","data":{"score":9007199254740992,"level":0.0,"slug":7.0,"text":"running dog","emb":[-0.74,0.15,0.51]}}
+{"type":"Doc","id":"d7","data":{"score":100,"level":1.5,"slug":2.5,"text":"fox","emb":[-1.74,-0.84,-1.52]}}
+{"type":"Tag","data":{"size":"a","rank":-1,"vec":"run","slug":"low"}}
+{"type":"Tag","data":{"size":"a","rank":7,"vec":"of the and","slug":"low"}}
+{"type":"Tag","data":{"rank":100,"vec":"ran","slug":"high"}}
+{"type":"Tag","data":{"size":"b","rank":0,"vec":"and the","slug":"high"}}
+{"type":"Tag","data":{"rank":2,"vec":"Run","slug":"high"}}
+{"edge":"Cites","from":"-1","to":"100","data":{"w":1,"role":false}}
+{"edge":"Cites","from":"7","to":"0"}
+{"edge":"Cites","from":"100","to":"100","data":{"w":1}}
+{"edge":"Cites","from":"7","to":"7","data":{"w":3}}
+{"edge":"Cites","from":"0","to":"0","data":{"w":7,"role":true}}
+{"edge":"Cites","from":"2","to":"-1","data":{"w":0,"role":false}}
+{"edge":"Cites","from":"-1","to":"7","data":{"w":7}}
+{"edge":"Cites","from":"7","to":"-1","data":{"role":true}}
+
+--- mutate
+query q18($arg1: U64, $arg2: String, $arg3: Vector(3)) {
+  match { $x: Tag } where $x.rank < 7  update $x set { vec: "of the and" }
+  insert Doc { score: $arg1, slug: 3.0, text: $arg2, emb: $arg3 }
+}
+
+--- params
+{"arg1": 42, "arg2": "hello run data", "arg3": [0.8, -1.0, 0.2]}
+
+--- expect error: value '42' held by 'd2' and '01M85R7XG9A

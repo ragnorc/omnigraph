@@ -1,0 +1,85 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2598, case 7; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  seen: I32?
+  rank: String
+  score: String @index
+  @key(rank, score)
+}
+node Item {
+  flag: enum(a, b)?
+  title: Blob?
+  name: enum(low, mid, high)?
+  score: F64?
+}
+node Tag {
+  tags: U32? @index
+  age: enum(red, green, blue, x-1)?
+  flag: String @key
+  score: F32? @index
+}
+node Org {
+  weight: Vector(3)?
+  size: [Date]?
+  nums: F64?
+  vec: F64?
+  level: String @key
+  @range(vec, -10..1000)
+}
+edge Links: Tag -> Item
+edge Knows: Tag -> Tag {
+  w: enum(low, mid, high)
+}
+
+--- seed
+{"type":"Place","data":{"rank":"runs","score":"Run"}}
+{"type":"Place","data":{"seen":0,"rank":"data base","score":"dog house"}}
+{"type":"Place","data":{"seen":2147483647,"rank":"café","score":"naïve"}}
+{"type":"Place","data":{"seen":1,"rank":"data base","score":"x y z"}}
+{"type":"Place","data":{"rank":"Ünïcode","score":"database"}}
+{"type":"Place","data":{"rank":"running dogs","score":"dog"}}
+{"type":"Place","data":{"seen":7,"rank":"and the","score":"Run"}}
+{"type":"Place","data":{"seen":-5,"rank":"ran","score":"data base"}}
+{"type":"Item","id":"i0","data":{"flag":"b","name":"mid","score":7.0}}
+{"type":"Item","id":"i1","data":{"name":"high","score":10000000000.0}}
+{"type":"Item","id":"i2","data":{"flag":"b","title":"base64:","name":"high","score":7.0}}
+{"type":"Tag","data":{"tags":0,"age":"red","flag":"café","score":1.5}}
+{"type":"Org","data":{"weight":[0.62,-1.93,-1.94],"size":["2020-01-01"],"nums":-2.25,"vec":3.0,"level":"run"}}
+{"type":"Org","data":{"weight":[-0.32,0.06,0.02],"size":["1999-12-31","2020-01-01","2024-02-29"],"nums":null,"vec":null,"level":"running dogs"}}
+{"type":"Org","data":{"weight":null,"size":["1970-01-01","2020-01-01"],"nums":-2.25,"vec":7,"level":"fox"}}
+{"type":"Org","data":{"weight":[0.05,1.42,-0.33],"nums":10000000000.0,"vec":0.0,"level":"running"}}
+{"type":"Org","data":{"weight":[0.64,1.44,-1.68],"size":null,"nums":3.0,"vec":null,"level":"café"}}
+{"type":"Org","data":{"weight":[0.0,0.0,0.0],"size":["1970-01-01"],"nums":10000000000.0,"vec":0.1,"level":"k"}}
+{"type":"Org","data":{"weight":[-0.63,1.04,-0.81],"size":["2020-01-01","1970-01-01","2024-02-29"],"nums":1.5,"vec":3.0,"level":"and the"}}
+{"type":"Org","data":{"weight":[0.25,1.71,0.89],"size":["1999-12-31"],"nums":-2.25,"vec":0.1,"level":"ab"}}
+{"edge":"Links","from":"café","to":"i2"}
+{"edge":"Links","from":"café","to":"i2"}
+{"edge":"Links","from":"café","to":"i0"}
+{"edge":"Links","from":"café","to":"i1"}
+{"edge":"Knows","from":"café","to":"café","data":{"w":"high"}}
+{"edge":"Knows","from":"café","to":"café","data":{"w":"high"}}
+
+--- query
+query q8($arg1: F64) {
+  match {
+    $o1: Org { vec: $arg1 }
+    $o1.nums != 1.5 or $o1.nums <= 10000000000.0
+    $o1.vec is not null
+  }
+  return { $o1.size, $o1.weight, max($o1.vec) as a0 }
+  order { a0 desc, $o1.@id }
+}
+
+--- params
+{"arg1": 0.0}
+
+--- expect error: T42

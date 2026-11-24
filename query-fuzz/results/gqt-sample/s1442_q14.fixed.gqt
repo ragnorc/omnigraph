@@ -1,0 +1,61 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1442, case 14; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  born: String @key
+  content: DateTime? @index
+}
+node Org {
+  tags: [I32]?
+  born: [Date]?
+  flag: I64 @key
+}
+node Tag {
+  count: I64 @key
+}
+node Place {
+  nums: enum(low, mid, high)
+}
+edge Near: Place -> Place
+edge Links: Place -> Place
+
+--- seed
+{"type":"Person","data":{"born":"RUN","content":"2020-01-01T00:00:00.123Z"}}
+{"type":"Person","data":{"born":"data base","content":null}}
+{"type":"Person","data":{"born":"café","content":null}}
+{"type":"Person","data":{"born":"runs","content":"2020-01-01T00:00:00.123Z"}}
+{"type":"Tag","data":{"count":-2147483648}}
+{"type":"Tag","data":{"count":3}}
+{"type":"Tag","data":{"count":9007199254740993}}
+{"type":"Tag","data":{"count":2}}
+{"type":"Tag","data":{"count":0}}
+{"type":"Place","id":"p0","data":{"nums":"low"}}
+{"type":"Place","id":"p1","data":{"nums":"low"}}
+{"type":"Place","id":"p2","data":{"nums":"mid"}}
+{"type":"Place","id":"p3","data":{"nums":"low"}}
+{"type":"Place","id":"p4","data":{"nums":"low"}}
+{"type":"Place","id":"p5","data":{"nums":"high"}}
+{"edge":"Links","from":"p4","to":"p0"}
+{"edge":"Links","from":"p3","to":"p3"}
+{"edge":"Links","from":"p1","to":"p2"}
+{"edge":"Links","from":"p5","to":"p3"}
+
+--- query
+query q15() {
+  match { $p1: Place } where $p1.nums = "high" and $p1.nums = "low" and not exists { $p2: Place, $p1 links $p2 where $p2.nums != "mid" }
+  return distinct { $p1.nums }
+  limit 2
+}
+
+--- expect unordered
+
+
+--- expect shape

@@ -1,0 +1,55 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3372, case 13; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  count: [String]?
+  size: I64?
+  content: Blob?
+  flag: String
+  code: DateTime @index
+  @index(count)
+}
+node Person {
+  body: I32? @index
+  count: DateTime
+  size: String @key
+  code: String? @unique
+  text: String? @index
+  emb: Vector(3)
+  @range(body, -10..1000)
+}
+node Item {
+  score: enum(low, mid, high)?
+  tags: enum(red, green, blue, x-1) @index
+  body: F64?
+}
+edge Owns: Item -> Item {
+  weight: U64?
+  w: F64
+  @unique(@src, @dst)
+}
+edge Tagged: Item -> Item
+
+--- seed
+{"type":"Place","id":"p0","data":{"count":["ab"],"size":null,"content":"base64:","flag":"running dogs","code":"1999-12-31T23:59:59Z"}}
+{"type":"Place","id":"p1","data":{"count":["Run","and the","dog house"],"size":-2147483648,"content":"base64:SGVsbG8=","flag":"running","code":"2020-01-01T00:00:00Z"}}
+{"type":"Place","id":"p2","data":{"size":2147483647,"flag":"runs","code":"2020-01-01T00:00:00Z"}}
+{"type":"Person","data":{"body":2,"count":"2020-01-01T00:00:00Z","size":"run","code":null,"text":"","emb":[-0.3,-0.09,1.53]}}
+{"type":"Person","data":{"body":-1,"count":"2020-01-01T00:00:00Z","size":"the","text":"","emb":[-0.28,1.05,-0.42]}}
+{"type":"Person","data":{"body":-5,"count":"2020-01-01T00:00:00Z","size":"hello world","code":"data base","text":"running data","emb":[1.41,0.18,0.38]}}
+{"type":"Person","data":{"body":2,"count":"2020-01-01T00:00:00Z","size":"runs","code":"Dogs","text":"Dogs runs Run a","emb":[0.41,0.68,1.48]}}
+
+--- mutate
+query q14() {
+  insert Place { count: ["naïve"], flag: "run", code: datetime("2020-01-01T00:00:00Z") }
+}
+
+--- expect affected: nodes=1 edges=0

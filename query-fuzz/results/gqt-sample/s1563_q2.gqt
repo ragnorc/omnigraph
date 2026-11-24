@@ -1,0 +1,72 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1563, case 2; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag {
+  nums: [String]
+  name: F32
+  content: [String]?
+  text: String? @index
+  emb: Vector(3)?
+}
+node Org {
+  score: [String]?
+  born: enum(a, b) @index
+  flag: I32 @key
+  slug: [I32]?
+}
+node Place {
+  seen: Date? @index
+  rank: String
+  note: [Bool]?
+  level: Date?
+}
+edge Tagged: Place -> Tag
+edge Links: Place -> Tag @card(0..2)
+edge Near: Org -> Org {
+  since: I32?
+  role: U32?
+}
+edge Wrote: Tag -> Place
+
+--- seed
+{"type":"Org","data":{"score":[],"born":"a","flag":42,"slug":[3,2147483647]}}
+{"type":"Org","data":{"score":["dog house","ab","dog house"],"born":"a","flag":2,"slug":null}}
+{"type":"Org","data":{"score":["of the and","the dog"],"born":"a","flag":-2147483648}}
+{"type":"Org","data":{"born":"b","flag":7,"slug":[3,3]}}
+{"type":"Org","data":{"score":[],"born":"b","flag":0,"slug":[7,42]}}
+{"type":"Org","data":{"score":null,"born":"a","flag":3,"slug":[-2147483648,100]}}
+{"type":"Place","id":"p0","data":{"seen":"1970-01-01","rank":"of the and","note":[false,false],"level":"2020-01-01"}}
+{"type":"Place","id":"p1","data":{"seen":"1970-01-01","rank":"","note":null}}
+{"type":"Place","id":"p2","data":{"rank":"café","note":[false],"level":"2024-02-29"}}
+{"type":"Place","id":"p3","data":{"seen":"1999-12-31","rank":"a","note":[true],"level":null}}
+{"type":"Place","id":"p4","data":{"seen":"2020-01-01","rank":"ab","note":[],"level":null}}
+{"type":"Place","id":"p5","data":{"seen":"1970-01-01","rank":"database","level":"1999-12-31"}}
+{"type":"Place","id":"p6","data":{"seen":"1970-01-01","rank":"a","note":[],"level":"2020-01-01"}}
+{"type":"Place","id":"p7","data":{"seen":"1999-12-31","rank":"it's","note":[false,false,false],"level":"2020-01-01"}}
+{"edge":"Near","from":"-2147483648","to":"3","data":{"since":-1,"role":7}}
+{"edge":"Near","from":"0","to":"42","data":{"since":1,"role":42}}
+{"edge":"Near","from":"2","to":"3","data":{"since":0,"role":42}}
+{"edge":"Near","from":"0","to":"42","data":{"since":3,"role":100}}
+
+--- query
+query q3($arg1: I32, $arg2: Vector(3)) {
+  match {
+    $p1: Place  $p1 links $t2  $t2 wrote $p3  $p3 tagged $t4  $o5: Org  $o5.born in ["a", "a", "a"] or $o5.flag <= $arg1  $t2.nums contains "dog" and $t2.name > 7.0  fuzzy($t4.text, "cafe", 0)
+  }
+  return { $t4.name as c0, $p1.seen, $t2.text is not null as b2, count($p3) as a0 }
+  order { nearest($t2.emb, $arg2) }
+  limit 1
+}
+
+--- params
+{"arg1": 2147483647, "arg2": [0.4, 0.5, -0.5]}
+
+--- expect error: T9

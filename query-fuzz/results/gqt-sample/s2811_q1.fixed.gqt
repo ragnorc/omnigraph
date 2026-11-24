@@ -1,0 +1,33 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2811, case 1; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag {
+  flag: Bool @index
+  title: I32 @key
+}
+edge Knows: Tag -> Tag {
+  w: enum(a, b)?
+  weight: I32?
+}
+edge Wrote: Tag -> Tag
+
+--- seed
+
+--- mutate
+query q2($arg1: Bool) {
+  insert Tag { flag: $arg1, title: 3 }
+  insert Tag { flag: true, title: 0.0 }
+}
+
+--- params
+{"arg1": false}
+
+--- expect error: cannot convert Float(0.0) to Int32

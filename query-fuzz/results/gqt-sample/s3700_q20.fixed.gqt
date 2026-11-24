@@ -1,0 +1,71 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3700, case 20; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  vec: String @key
+  title: I64?
+  slug: String?
+  @range(title, -10..1000)
+}
+node Tag {
+  weight: String?
+  title: enum(a, b) @index
+  age: [String]
+  level: String @key
+}
+node Item {
+  age: String @key
+  weight: Vector(3)?
+  body: Blob?
+}
+node Place {
+  flag: Vector(3)?
+  weight: String @index
+  body: I64?
+}
+node Doc {
+  note: I32?
+  flag: [I32]
+  tags: enum(low, mid, high)? @index
+  nums: String @key
+  score: F64? @index
+  @index(flag)
+}
+edge Likes: Person -> Person {
+  @key(@src, @dst)
+}
+edge Links: Person -> Place {
+  weight: I64?
+  role: Date
+}
+
+--- seed
+{"type":"Tag","data":{"weight":"fox","title":"b","age":[],"level":"café"}}
+{"type":"Tag","data":{"weight":"the dog","title":"b","age":["running dogs","","and the"],"level":"run"}}
+{"type":"Tag","data":{"weight":"café","title":"b","age":["runs","ab"],"level":"Ünïcode"}}
+{"type":"Tag","data":{"weight":"Run","title":"b","age":["the"],"level":"of the and"}}
+{"type":"Tag","data":{"weight":"a","title":"b","age":["x","ab","x y z"],"level":"naïve"}}
+{"type":"Item","data":{"age":"a","weight":[1.66,-0.72,-0.18]}}
+{"type":"Item","data":{"age":"running dogs","weight":[-0.24,-0.57,-0.98],"body":null}}
+{"type":"Item","data":{"age":"dog house","body":"base64:"}}
+{"type":"Item","data":{"age":"k","weight":[-0.66,-1.72,0.06],"body":"base64:SGVsbG8="}}
+{"type":"Place","id":"p0","data":{"weight":"café","body":-2147483648}}
+{"type":"Place","id":"p1","data":{"flag":[0.57,0.33,0.45],"weight":"data base","body":4611686018427387904}}
+
+--- mutate
+query q22($arg1: I64, $arg2: I64) {
+  match { $x: Place } where $x.body = 10000000000.0 or $x.body < $arg2  update $x set { body: $arg1 }
+}
+
+--- params
+{"arg1": -1, "arg2": -1}
+
+--- expect affected: nodes=1 edges=0

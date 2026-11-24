@@ -1,0 +1,57 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500577, case 7; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  note: [String]
+  born: Bool @index
+  body: F64?
+  @index(note)
+}
+node Org {
+  name: I64?
+  code: String @key
+  born: Date
+  note: I32?
+  title: Blob?
+}
+node Tag {
+  flag: U32? @unique @index
+  text: String? @index
+  emb: Vector(3)
+}
+
+--- seed
+{"type":"Doc","id":"d0","data":{"note":[],"born":true,"body":null}}
+{"type":"Doc","id":"d1","data":{"note":["database","runs"],"born":true,"body":0.0}}
+{"type":"Org","data":{"name":9007199254740993,"code":"x","born":"2020-01-01","note":42,"title":"base64:"}}
+{"type":"Org","data":{"name":4611686018427387904,"code":"ab","born":"2020-01-01","note":null,"title":"base64:SGVsbG8="}}
+{"type":"Org","data":{"name":0,"code":"Dogs","born":"2024-02-29","note":7,"title":null}}
+{"type":"Org","data":{"name":-9007199254740993,"code":"Hello World","born":"1999-12-31","title":null}}
+{"type":"Tag","id":"t0","data":{"flag":2,"text":"a an  RUN","emb":[-1.0,-1.0,-1.0]}}
+{"type":"Tag","id":"t2","data":{"flag":null,"text":null,"emb":[0.5,0.5,0.5]}}
+{"type":"Tag","id":"t3","data":{"text":"run Dogs a","emb":[-0.64,0.6,0.41]}}
+{"type":"Tag","id":"t4","data":{"flag":null,"text":"the run x","emb":[1.02,1.87,-1.21]}}
+
+--- query
+query q8() {
+  match { $o1: Org }
+  return { $o1, $o1.code as c1, $o1.code >= "Hello World" as b2 }
+}
+
+--- expect unordered
+{"o1": {"@id": "x", "born": "2020-01-01", "code": "x", "name": 9007199254740993, "note": 42}, "c1": "x", "b2": true}
+{"o1": {"@id": "ab", "born": "2020-01-01", "code": "ab", "name": 4611686018427387904}, "c1": "ab", "b2": true}
+{"o1": {"@id": "Dogs", "born": "2024-02-29", "code": "Dogs", "name": 0, "note": 7}, "c1": "Dogs", "b2": false}
+{"o1": {"@id": "Hello World", "born": "1999-12-31", "code": "Hello World", "name": -9007199254740993}, "c1": "Hello World", "b2": true}
+
+--- expect shape
+o1: Org
+c1: String
+b2: Bool

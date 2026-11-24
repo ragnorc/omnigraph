@@ -1,0 +1,46 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5055, case 10; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  weight: [String]
+  content: [Date]?
+  title: enum(red, green, blue, x-1)?
+  tags: Bool
+  @index(content)
+}
+node Org {
+  score: Vector(2)
+  slug: [String]
+  name: Bool @index
+}
+
+--- seed
+{"type":"Person","id":"p0","data":{"weight":["the","ab","fox"],"content":["2024-02-29","2020-01-01","1970-01-01"],"title":"red","tags":false}}
+{"type":"Person","id":"p1","data":{"weight":["running dogs"],"content":null,"title":null,"tags":true}}
+{"type":"Org","id":"o0","data":{"score":[0.5,0.5],"slug":["hello world"],"name":true}}
+{"type":"Org","id":"o1","data":{"score":[1.0,1.0],"slug":[],"name":true}}
+{"type":"Org","id":"o2","data":{"score":[1.0,0.0],"slug":[],"name":true}}
+{"type":"Org","id":"o3","data":{"score":[-1.09,-1.45],"slug":["ran","and the"],"name":false}}
+
+--- query
+query q11($arg1: Bool, $arg2: Date) {
+  match { $p1: Person } where coalesce($arg2 in $p1.content, false) and $p1.tags = $arg1 and not ($p1.tags)
+  return { $p1.content as c0 }
+  limit 5
+}
+
+--- params
+{"arg1": true, "arg2": "2024-02-29"}
+
+--- expect unordered
+
+
+--- expect shape

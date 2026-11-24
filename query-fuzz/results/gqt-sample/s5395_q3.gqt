@@ -1,0 +1,48 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5395, case 3; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  body: F32
+  born: DateTime? @index
+  weight: I64
+  slug: Vector(2)?
+  nums: [Date]
+  @index(nums)
+}
+edge Cites: Doc -> Doc {
+  role: enum(red, green, blue, x-1)
+  w: enum(red, green, blue, x-1)?
+  @key(@src, @dst)
+}
+edge Wrote: Doc -> Doc
+
+--- seed
+{"type":"Doc","id":"d0","data":{"body":-2.25,"born":"2020-01-01T00:00:00.123Z","weight":42,"nums":[]}}
+{"edge":"Cites","from":"d0","to":"d0","data":{"role":"red","w":"red"}}
+
+--- query
+query q4($arg1: Date, $arg2: Vector(2)) {
+  match {
+    $d1: Doc
+  }
+  return { $d1.nums as c0, $arg1 in $d1.nums as b1 }
+  order { nearest($d1.slug, $arg2), c0 }
+  limit 3
+}
+
+--- params
+{"arg1": "2024-02-29", "arg2": [0.0, -0.0]}
+
+--- expect ordered
+
+
+--- expect shape
+c0: [Date]
+b1: Bool

@@ -1,0 +1,65 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2245, case 15; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  name: Blob?
+  title: I32 @index
+  score: String? @index
+  born: Blob?
+  seen: I32 @key
+}
+node Doc {
+  rank: U32?
+  seen: Vector(3)?
+  count: enum(low, mid, high)
+  note: String
+}
+edge Near: Item -> Item {
+  @key(@src, @dst)
+}
+
+--- seed
+{"type":"Item","data":{"title":0,"score":null,"born":"base64:AAEC","seen":3}}
+{"type":"Item","data":{"name":"base64:SGVsbG8=","title":2147483647,"score":"ab","born":"base64:","seen":-2147483648}}
+{"type":"Item","data":{"title":1,"score":null,"born":"base64:AAEC","seen":42}}
+{"type":"Item","data":{"name":"base64:","title":2,"score":"naïve","born":"base64:AAEC","seen":1}}
+{"type":"Item","data":{"name":"base64:","title":-5,"score":"of the and","born":"base64:AAEC","seen":0}}
+{"type":"Doc","id":"d0","data":{"rank":null,"seen":[0.57,-0.6,-1.82],"count":"low","note":"Ünïcode"}}
+{"type":"Doc","id":"d1","data":{"rank":2,"seen":[-1.85,-1.38,-0.09],"count":"mid","note":"runs"}}
+{"type":"Doc","id":"d2","data":{"rank":null,"seen":[0.29,0.84,-1.57],"count":"low","note":"Run"}}
+{"type":"Doc","id":"d3","data":{"rank":0,"seen":[0.95,-0.65,1.33],"count":"high","note":"running dogs"}}
+{"type":"Doc","id":"d4","data":{"rank":4294967295,"seen":[1.14,-1.12,-0.6],"count":"high","note":"x y z"}}
+{"type":"Doc","id":"d5","data":{"rank":100,"seen":null,"count":"high","note":"and the"}}
+{"type":"Doc","id":"d6","data":{"rank":0,"count":"high","note":"Dogs"}}
+{"type":"Doc","id":"d7","data":{"rank":2,"seen":[0.31,0.22,1.58],"count":"low","note":"café"}}
+{"edge":"Near","from":"1","to":"1"}
+{"edge":"Near","from":"-2147483648","to":"1"}
+{"edge":"Near","from":"-2147483648","to":"-2147483648"}
+
+--- query
+query q16() {
+  match {
+    $i1: Item
+    $i1.title in [1, 2, 2147483647]
+  }
+  return { $i1 as c0  $i1.seen as c1  $i1.score  bm25($i1.score, "fox") as r }
+  order { bm25($i1.score, "fox"), c0 }
+  limit 10
+}
+
+--- expect ordered
+
+
+--- expect shape
+c0: Item
+c1: I32
+i1.score: String
+r: F32

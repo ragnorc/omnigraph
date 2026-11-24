@@ -1,0 +1,46 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2351, case 10; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  body: String? @index
+  score: [I64]?
+  age: F32 @index
+  @index(score)
+}
+node Item {
+  code: enum(low, mid, high)?
+  count: F32 @index
+  slug: I32 @key
+}
+node Place {
+  vec: F32? @index
+  tags: Bool @index
+  name: String @key
+  text: String @index
+  emb: Vector(3)?
+}
+edge Wrote: Doc -> Doc @card(0..1)
+
+--- seed
+{"type":"Doc","id":"d0","data":{"age":3.0}}
+{"edge":"Wrote","from":"d0","to":"d0"}
+
+--- mutate
+query q11($arg1: String) {
+  match { $x: Item } where $x.code != "low"  delete $x
+  match { $p: Place } where $p.text = $arg1  delete $p
+}
+
+--- params
+{"arg1": "runs"}
+
+--- expect affected: nodes=0 edges=0

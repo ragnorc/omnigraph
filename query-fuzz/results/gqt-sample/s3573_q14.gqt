@@ -1,0 +1,72 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3573, case 14; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  size: String @key
+  level: String?
+  note: U32 @index
+}
+node Person {
+  content: [String]?
+  name: Date?
+  weight: enum(low, mid, high)?
+}
+node Place {
+  rank: F64 @index
+  flag: F64
+}
+edge Links: Place -> Place
+edge Near: Place -> Place {
+  weight: I64?
+}
+edge Wrote: Place -> Place
+edge Owns: Org -> Place @card(0..1) {
+  since: F32
+}
+
+--- seed
+{"type":"Org","data":{"size":"dog","level":"RUN","note":1}}
+{"type":"Person","id":"p0","data":{"content":null,"name":"1999-12-31","weight":"mid"}}
+{"type":"Person","id":"p1","data":{"content":null,"name":"2024-02-29","weight":"high"}}
+{"type":"Place","id":"p0","data":{"rank":0.1,"flag":-2.25}}
+{"edge":"Links","from":"p0","to":"p0"}
+{"edge":"Links","from":"p0","to":"p0"}
+{"edge":"Wrote","from":"p0","to":"p0"}
+{"edge":"Wrote","from":"p0","to":"p0"}
+{"edge":"Wrote","from":"p0","to":"p0"}
+{"edge":"Wrote","from":"p0","to":"p0"}
+{"edge":"Wrote","from":"p0","to":"p0"}
+{"edge":"Wrote","from":"p0","to":"p0"}
+{"edge":"Wrote","from":"p0","to":"p0"}
+{"edge":"Wrote","from":"p0","to":"p0"}
+{"edge":"Owns","from":"dog","to":"p0","data":{"since":2.5}}
+
+--- query
+query q15($arg1: F64) {
+  match {
+    $o1: Org
+    $o1.size contains "R"
+    $o1.size <= "dog" and $o1.note in [1, 1]
+    not { $o1 owns $p2  $p2.flag != $arg1 }
+  }
+  return { $o1.level  max($o1.note) as a0  max($o1.note) as a1 }
+}
+
+--- params
+{"arg1": -2.25}
+
+--- expect unordered
+
+
+--- expect shape
+o1.level: String
+a0: U32
+a1: U32

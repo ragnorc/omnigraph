@@ -1,0 +1,66 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3028, case 12; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  nums: [F64]?
+  size: [Date]?
+  count: String? @index
+}
+node Doc {
+  born: [I32]
+  @index(born)
+}
+node Org {
+  level: Bool
+  count: U32 @index
+  note: [I32]?
+}
+node Item {
+  count: U32
+  nums: String @key
+}
+edge Links: Item -> Org {
+  since: I32
+}
+
+--- seed
+{"type":"Place","id":"p0","data":{"nums":[0.1],"size":["2020-01-01"],"count":"x"}}
+{"type":"Place","id":"p1","data":{"size":null,"count":"x y z"}}
+{"type":"Place","id":"p2","data":{"size":["2020-01-01"],"count":"x"}}
+{"type":"Doc","id":"d0","data":{"born":[42]}}
+{"type":"Doc","id":"d1","data":{"born":[0,-2147483648,0]}}
+{"type":"Doc","id":"d2","data":{"born":[0,100,0]}}
+{"type":"Doc","id":"d3","data":{"born":[0]}}
+{"type":"Org","id":"o0","data":{"level":true,"count":3,"note":null}}
+{"type":"Org","id":"o1","data":{"level":true,"count":2,"note":null}}
+{"type":"Org","id":"o2","data":{"level":false,"count":0,"note":[-5,42,2147483647]}}
+{"type":"Item","data":{"count":42,"nums":"fox"}}
+{"type":"Item","data":{"count":0,"nums":"Ünïcode"}}
+{"type":"Item","data":{"count":2,"nums":"run"}}
+{"type":"Item","data":{"count":42,"nums":"running"}}
+{"edge":"Links","from":"running","to":"o2","data":{"since":3}}
+{"edge":"Links","from":"fox","to":"o1","data":{"since":42}}
+
+--- query
+query q13($arg1: U32) {
+  match { let $pop = { match { $i1: Item, $o2: Org, $i1 $e3:links $o2 } where $i1.count = $arg1 and $o2.count in [3, 7, 3] return { $i1, $o2, $e3 } }, from bm25($pop, $i1.nums, "dog") as $score }
+  return { $o2.level, $o2, $score as _score }
+  order { $score desc }
+  limit 10
+}
+
+--- params
+{"arg1": 0}
+
+--- expect ordered
+
+
+--- expect shape

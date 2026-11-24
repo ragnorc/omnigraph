@@ -1,0 +1,59 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500325, case 2; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  rank: U32 @index
+  age: Vector(3)?
+  text: String @index
+}
+node Org {
+  score: Vector(3)?
+  weight: F64
+  slug: String @key
+}
+node Doc {
+  vec: String @key
+  name: F32 @index
+  level: [I32]
+  nums: Bool?
+}
+node Person {
+  note: [I64]
+  rank: enum(a, b)
+  level: F64
+}
+
+--- seed
+{"type":"Place","id":"p0","data":{"rank":1,"age":[0.68,1.04,-1.4],"text":"base dog"}}
+{"type":"Place","id":"p1","data":{"rank":42,"age":null,"text":"fox dog runs"}}
+{"type":"Place","id":"p2","data":{"rank":3,"age":[-0.32,-1.75,1.57],"text":""}}
+{"type":"Place","id":"p3","data":{"rank":4294967295,"age":null,"text":"hello Run Dogs"}}
+{"type":"Org","data":{"score":[0.48,0.99,-1.96],"weight":2.5,"slug":"database"}}
+{"type":"Org","data":{"score":[1.0,1.0,1.0],"weight":7.0,"slug":"it's"}}
+{"type":"Org","data":{"weight":10000000000.0,"slug":"dog house"}}
+{"type":"Org","data":{"score":[-1.0,-1.0,-1.0],"weight":2.5,"slug":"ran"}}
+{"type":"Org","data":{"score":[0.3,-1.74,-0.34],"weight":1.5,"slug":"hello world"}}
+{"type":"Org","data":{"score":null,"weight":7.0,"slug":"abc"}}
+{"type":"Person","id":"p0","data":{"note":[],"rank":"a","level":3.0}}
+{"type":"Person","id":"p1","data":{"note":[3],"rank":"a","level":-2.25}}
+
+--- query
+query q3() {
+  match { $d1: Doc }
+  return { $d1.level }
+  order { $d1.level }
+}
+
+--- expect ordered
+
+
+--- expect shape

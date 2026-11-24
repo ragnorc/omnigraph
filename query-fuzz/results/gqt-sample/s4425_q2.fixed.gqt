@@ -1,0 +1,60 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 4425, case 2; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  vec: Bool?
+  body: [I64]?
+  rank: Bool @index
+  code: U64? @unique
+  flag: String?
+  @index(body)
+}
+node Person {
+  name: I64
+  code: String @key
+  born: [I64]?
+  weight: I64 @index
+  flag: Blob?
+  text: String @index
+  emb: Vector(3)?
+  @range(weight, -10..1000)
+}
+edge Wrote: Person -> Item {
+  role: [I64]?
+  since: F64?
+}
+edge Near: Person -> Person {
+  role: I32?
+}
+edge Knows: Person -> Item
+
+--- seed
+{"type":"Person","data":{"name":0,"code":"a","born":[2147483647,9007199254740992],"weight":1,"text":"","emb":[1.0,0.0,0.0]}}
+{"type":"Person","data":{"name":42,"code":"café","born":[],"weight":1,"flag":"base64:","text":"running","emb":[0.5,0.5,0.5]}}
+{"type":"Person","data":{"name":9007199254740992,"code":"it's","born":[100,9007199254740993,9007199254740992],"weight":0,"text":"running run","emb":[-1.23,-0.94,0.39]}}
+{"type":"Person","data":{"name":9007199254740993,"code":"RUN","born":[4611686018427387904,-2147483648],"weight":-5,"flag":"base64:SGVsbG8=","text":"the","emb":[0.5,0.5,0.5]}}
+{"type":"Person","data":{"name":0,"code":"naïve","born":[2],"weight":42,"flag":"base64:AAEC","text":"","emb":[0.99,1.49,0.5]}}
+{"type":"Person","data":{"name":3,"code":"run","born":[0,-9007199254740993],"weight":1,"flag":null,"text":"the a","emb":[0.5,0.5,0.5]}}
+{"type":"Person","data":{"name":100,"code":"dog","born":[1],"weight":7,"flag":"base64:","text":"Dogs data","emb":[1.0,1.0,1.0]}}
+{"type":"Person","data":{"name":-2147483648,"code":"Dogs","born":[],"weight":1,"flag":"base64:AAEC","text":"dog the x"}}
+{"edge":"Near","from":"run","to":"dog","data":{"role":-2147483648}}
+{"edge":"Near","from":"dog","to":"café","data":{"role":3}}
+
+--- mutate
+query q3($arg1: [I64], $arg2: U64) {
+  insert Item { vec: true, body: $arg1, rank: false }
+  insert Item { rank: false, code: $arg2 }
+}
+
+--- params
+{"arg1": [-1], "arg2": 7}
+
+--- expect affected: nodes=2 edges=0

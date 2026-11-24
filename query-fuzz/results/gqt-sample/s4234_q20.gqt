@@ -1,0 +1,81 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 4234, case 20; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  born: String @key
+  body: F64?
+  count: enum(red, green, blue, x-1)
+  code: [String]?
+  content: Blob?
+  @index(code)
+}
+node Item {
+  born: Vector(2)?
+}
+edge Owns: Org -> Item
+edge Knows: Item -> Item
+edge Near: Item -> Org {
+  @unique(@src, @dst)
+}
+edge Likes: Item -> Item {
+  @unique(@src, @dst)
+}
+
+--- seed
+{"type":"Org","data":{"born":"Dogs","body":3.0,"count":"red","code":null}}
+{"type":"Org","data":{"born":"the","body":2.5,"count":"blue","code":["Hello World","RUN","naïve"],"content":null}}
+{"type":"Org","data":{"born":"and the","body":-2.25,"count":"blue","code":null,"content":"base64:SGVsbG8="}}
+{"type":"Org","data":{"born":"x y z","body":2.5,"count":"green","code":["ab"],"content":"base64:SGVsbG8="}}
+{"type":"Org","data":{"born":"data base","body":1.5,"count":"red","code":["the dog","Ünïcode","ran"],"content":"base64:SGVsbG8="}}
+{"type":"Org","data":{"born":"ran","body":7.0,"count":"green","code":null,"content":null}}
+{"type":"Org","data":{"born":"of the and","body":1.5,"count":"green","code":["Hello World","data base","it's"],"content":"base64:AAEC"}}
+{"type":"Org","data":{"born":"naïve","body":10000000000.0,"count":"green","code":["the dog","run"],"content":"base64:AAEC"}}
+{"type":"Item","id":"i0","data":{"born":[1.0,0.0]}}
+{"type":"Item","id":"i1","data":{"born":[1.0,0.0]}}
+{"type":"Item","id":"i2","data":{"born":null}}
+{"type":"Item","id":"i3","data":{"born":[1.0,1.0]}}
+{"type":"Item","id":"i4","data":{"born":[-0.14,1.71]}}
+{"type":"Item","id":"i5","data":{"born":[-1.44,-1.47]}}
+{"edge":"Owns","from":"data base","to":"i0"}
+{"edge":"Knows","from":"i0","to":"i1"}
+{"edge":"Knows","from":"i1","to":"i0"}
+{"edge":"Near","from":"i3","to":"the"}
+{"edge":"Near","from":"i3","to":"x y z"}
+{"edge":"Near","from":"i5","to":"ran"}
+{"edge":"Near","from":"i5","to":"Dogs"}
+{"edge":"Near","from":"i2","to":"ran"}
+{"edge":"Near","from":"i1","to":"ran"}
+{"edge":"Near","from":"i2","to":"the"}
+{"edge":"Near","from":"i4","to":"Dogs"}
+{"edge":"Likes","from":"i3","to":"i5"}
+{"edge":"Likes","from":"i0","to":"i0"}
+{"edge":"Likes","from":"i5","to":"i4"}
+
+--- query
+query q21($arg1: Date) {
+  match {
+    $i1: Item
+    $i1 near $o2
+  }
+  return distinct { $o2.@id as c0 }
+  order { c0 }
+}
+
+--- params
+{"arg1": "1970-01-01"}
+
+--- expect ordered
+{"c0": "Dogs"}
+{"c0": "ran"}
+{"c0": "the"}
+{"c0": "x y z"}
+
+--- expect shape
+c0: String

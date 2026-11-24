@@ -1,0 +1,71 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5727, case 18; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  code: Date?
+  body: Date?
+  content: [String]?
+  flag: String @key
+}
+node Person {
+  nums: Date?
+  body: F32
+  rank: String @key
+  size: [String]
+}
+node Place {
+  level: I32? @index
+  count: I32?
+  size: I32
+  @range(level, -10..1000)
+}
+edge Likes: Person -> Item {
+  weight: I32?
+  role: enum(low, mid, high)
+}
+edge Wrote: Place -> Place
+
+--- seed
+{"type":"Item","data":{"code":"1970-01-01","body":"1999-12-31","content":["x y z","run",""],"flag":"dog"}}
+{"type":"Item","data":{"code":"1999-12-31","body":"2020-01-01","content":["runs"],"flag":"hello world"}}
+{"type":"Item","data":{"code":"1970-01-01","content":[""],"flag":"café"}}
+{"type":"Person","data":{"nums":null,"body":-2.25,"rank":"ran","size":["runs"]}}
+{"type":"Place","id":"p0","data":{"level":1,"count":3,"size":2147483647}}
+{"type":"Place","id":"p1","data":{"level":-1,"count":1,"size":1}}
+{"type":"Place","id":"p2","data":{"level":42,"count":-1,"size":-1}}
+{"type":"Place","id":"p3","data":{"count":2,"size":0}}
+{"type":"Place","id":"p4","data":{"level":42,"size":7}}
+{"type":"Place","id":"p5","data":{"level":-5,"count":0,"size":42}}
+{"edge":"Likes","from":"ran","to":"hello world","data":{"role":"high"}}
+{"edge":"Wrote","from":"p2","to":"p3"}
+{"edge":"Wrote","from":"p4","to":"p5"}
+{"edge":"Wrote","from":"p1","to":"p4"}
+{"edge":"Wrote","from":"p1","to":"p3"}
+{"edge":"Wrote","from":"p0","to":"p0"}
+{"edge":"Wrote","from":"p2","to":"p1"}
+{"edge":"Wrote","from":"p0","to":"p1"}
+{"edge":"Wrote","from":"p1","to":"p0"}
+
+--- query
+query q19($arg1: F32) {
+  match { $p1: Person } where $p1.body != $arg1
+  return { $p1.size as c0, $p1.rank as c1, avg($p1.body) as a0 }
+  order { c1 }
+}
+
+--- params
+{"arg1": -2.25}
+
+--- expect ordered
+
+
+--- expect shape

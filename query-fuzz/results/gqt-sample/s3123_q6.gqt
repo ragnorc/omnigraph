@@ -1,0 +1,68 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3123, case 6; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  note: I32? @index
+  @range(note, -10..1000)
+}
+node Place {
+  nums: String?
+  rank: I32? @index
+  body: [Bool]?
+  @index(body)
+}
+node Doc {
+  count: U32? @index
+  text: String? @index
+  emb: Vector(3)?
+}
+node Org {
+  vec: I32?
+  score: enum(red, green, blue, x-1)?
+}
+
+--- seed
+{"type":"Item","id":"i0","data":{"note":0}}
+{"type":"Item","id":"i1","data":{"note":-5}}
+{"type":"Item","id":"i2","data":{"note":0}}
+{"type":"Place","id":"p0","data":{"nums":"café","rank":100,"body":[false]}}
+{"type":"Place","id":"p1","data":{"nums":"naïve","rank":100,"body":[false,false,false]}}
+{"type":"Place","id":"p2","data":{"nums":"dog house","rank":2147483647,"body":[]}}
+{"type":"Place","id":"p3","data":{"nums":"dog house","body":null}}
+{"type":"Place","id":"p4","data":{"nums":"a","rank":2147483647,"body":[]}}
+{"type":"Place","id":"p5","data":{"nums":null,"rank":2,"body":[false,false]}}
+{"type":"Place","id":"p6","data":{"nums":"ran","rank":42,"body":[true]}}
+{"type":"Place","id":"p7","data":{"nums":"running dogs","rank":2,"body":[]}}
+{"type":"Doc","id":"d0","data":{"text":"an running","emb":[1.0,0.0,0.0]}}
+{"type":"Doc","id":"d1","data":{"count":4294967295,"text":"","emb":[-1.81,0.84,-0.35]}}
+{"type":"Doc","id":"d2","data":{"count":1,"text":"","emb":[0.5,0.5,0.5]}}
+{"type":"Org","id":"o0","data":{"vec":2147483647,"score":"green"}}
+{"type":"Org","id":"o1","data":{"vec":-1,"score":null}}
+{"type":"Org","id":"o2","data":{"vec":3,"score":"green"}}
+{"type":"Org","id":"o3","data":{"vec":100,"score":null}}
+{"type":"Org","id":"o4","data":{"vec":null}}
+{"type":"Org","id":"o5","data":{"vec":100,"score":"red"}}
+
+--- query
+query q7($arg1: Vector(3)) {
+  match {
+    $d1: Doc
+    $d1.nosuch is null or $d1.count in [0, 1]
+    count { $d1.count in [1, 4294967295, 4294967295] } < 2
+  }
+  return { $d1.text, nearest($d1.emb, $arg1) as r }
+  order { nearest($d1.emb, $arg1) }
+  limit 5
+}
+
+--- params
+{"arg1": [-0.4, 0.4, 0.7]}
+
+--- expect error: T6

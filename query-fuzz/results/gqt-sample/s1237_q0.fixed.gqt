@@ -1,0 +1,57 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1237, case 0; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  born: F32?
+  vec: I32 @index
+}
+node Tag {
+  score: String
+  weight: Date
+  size: enum(low, mid, high)? @unique
+}
+edge Links: Tag -> Tag {
+  role: I32
+}
+edge Tagged: Tag -> Tag {
+  since: U32?
+  role: I32?
+  @key(@src, @dst)
+}
+
+--- seed
+{"type":"Item","id":"i0","data":{"born":0.0,"vec":2147483647}}
+{"type":"Item","id":"i1","data":{"born":1.5,"vec":42}}
+{"type":"Item","id":"i2","data":{"vec":3}}
+{"type":"Item","id":"i3","data":{"born":3.0,"vec":100}}
+{"type":"Item","id":"i4","data":{"born":0.5,"vec":100}}
+{"type":"Tag","id":"t0","data":{"score":"a","weight":"2024-02-29","size":"mid"}}
+{"type":"Tag","id":"t1","data":{"score":"café","weight":"2024-02-29","size":"low"}}
+{"type":"Tag","id":"t3","data":{"score":"runs","weight":"1970-01-01","size":null}}
+{"edge":"Links","from":"t0","to":"t0","data":{"role":3}}
+{"edge":"Links","from":"t0","to":"t0","data":{"role":-1}}
+{"edge":"Links","from":"t0","to":"t3","data":{"role":0}}
+{"edge":"Links","from":"t0","to":"t1","data":{"role":0}}
+{"edge":"Links","from":"t1","to":"t0","data":{"role":1}}
+{"edge":"Tagged","from":"t1","to":"t3","data":{"since":0}}
+{"edge":"Tagged","from":"t3","to":"t1","data":{"since":100}}
+
+--- query
+query q1() {
+  match { $i1: Item } where $i1.vec != 0.0 and $i1.born is null
+  return { $i1.born as c0, $i1.vec }
+  order { c0 }
+}
+
+--- expect ordered
+{"i1.vec": 3}
+
+--- expect shape

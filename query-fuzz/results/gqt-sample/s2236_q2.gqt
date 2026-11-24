@@ -1,0 +1,88 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2236, case 2; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  count: I64 @unique @index
+  tags: Bool? @index
+  code: [F64]?
+  score: [String]?
+  body: enum(a, b) @index
+}
+node Org {
+  code: Blob?
+  born: String? @index
+  name: String
+}
+node Place {
+  level: [I32]?
+  content: DateTime?
+  tags: [Date]?
+  @index(tags)
+}
+edge Links: Doc -> Org {
+  @key(@src, @dst)
+}
+edge Cites: Org -> Doc {
+  w: String?
+}
+edge Knows: Place -> Place {
+  w: F64?
+}
+
+--- seed
+{"type":"Doc","id":"d0","data":{"count":2147483647,"tags":false,"code":[],"score":["hello world","it's"],"body":"b"}}
+{"type":"Doc","id":"d1","data":{"count":4611686018427387904,"tags":false,"code":[],"score":null,"body":"a"}}
+{"type":"Doc","id":"d2","data":{"count":2,"tags":false,"code":[],"score":["the","x y z","RUN"],"body":"b"}}
+{"type":"Doc","id":"d3","data":{"count":3,"tags":false,"body":"a"}}
+{"type":"Doc","id":"d4","data":{"count":100,"tags":true,"code":[10000000000.0],"score":null,"body":"b"}}
+{"type":"Doc","id":"d7","data":{"count":9007199254740993,"tags":false,"code":null,"score":["dog house","and the"],"body":"a"}}
+{"type":"Doc","id":"d9","data":{"count":-9007199254740993,"tags":false,"code":[0.0,0.0],"score":[],"body":"a"}}
+{"type":"Doc","id":"d12","data":{"count":7,"tags":true,"code":null,"score":null,"body":"b"}}
+{"type":"Org","id":"o0","data":{"code":"base64:AAEC","born":"x","name":"x"}}
+{"type":"Org","id":"o1","data":{"code":"base64:AAEC","name":"café"}}
+{"type":"Org","id":"o2","data":{"code":"base64:AAEC","born":"data base","name":"café"}}
+{"type":"Org","id":"o3","data":{"code":"base64:","born":"café","name":"Hello World"}}
+{"type":"Org","id":"o4","data":{"code":"base64:AAEC","born":"x","name":"RUN"}}
+{"type":"Place","id":"p0","data":{"content":"1999-12-31T23:59:59Z","tags":["2020-01-01"]}}
+{"type":"Place","id":"p1","data":{"level":[100],"tags":[]}}
+{"type":"Place","id":"p2","data":{"level":[7],"content":null,"tags":[]}}
+{"type":"Place","id":"p3","data":{"level":[-2147483648],"content":null,"tags":["2024-02-29"]}}
+{"type":"Place","id":"p4","data":{"level":[],"content":"2024-02-29T12:00:00Z","tags":["2020-01-01"]}}
+{"type":"Place","id":"p5","data":{"level":[-5],"content":"1999-12-31T23:59:59Z","tags":[]}}
+{"edge":"Links","from":"d1","to":"o0"}
+{"edge":"Links","from":"d12","to":"o2"}
+{"edge":"Links","from":"d3","to":"o2"}
+{"edge":"Links","from":"d0","to":"o0"}
+{"edge":"Cites","from":"o2","to":"d9"}
+{"edge":"Cites","from":"o3","to":"d1"}
+{"edge":"Cites","from":"o3","to":"d3"}
+{"edge":"Cites","from":"o3","to":"d1","data":{"w":"hello world"}}
+{"edge":"Cites","from":"o1","to":"d9","data":{"w":"it's"}}
+{"edge":"Cites","from":"o1","to":"d3","data":{"w":"hello world"}}
+{"edge":"Cites","from":"o4","to":"d12"}
+{"edge":"Cites","from":"o3","to":"d0","data":{"w":"ab"}}
+{"edge":"Knows","from":"p4","to":"p0","data":{"w":3.0}}
+{"edge":"Knows","from":"p2","to":"p2"}
+{"edge":"Knows","from":"p3","to":"p3","data":{"w":2.5}}
+
+--- query
+query q3() {
+  match {
+    $p1: Place  $p1.tags contains date("2020-01-01")
+  }
+  return { $p1.content as c0 }
+}
+
+--- expect unordered
+{"c0": "1999-12-31T23:59:59"}
+{"c0": "2024-02-29T12:00:00"}
+
+--- expect shape
+c0: DateTime

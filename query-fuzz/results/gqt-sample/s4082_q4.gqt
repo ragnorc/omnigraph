@@ -1,0 +1,82 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 4082, case 4; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  slug: Vector(3)?
+  count: Blob?
+  flag: Bool
+}
+node Person {
+  code: String?
+  score: I64 @index
+}
+node Tag {
+  content: F64
+  code: Blob?
+}
+node Org {
+  tags: Vector(2)
+}
+node Item {
+  nums: [String]?
+  content: Bool
+  seen: Vector(3)?
+  tags: I64 @key
+  @index(nums)
+}
+edge Wrote: Org -> Org {
+  since: enum(red, green, blue, x-1)?
+  weight: F64?
+}
+
+--- seed
+{"type":"Doc","id":"d0","data":{"slug":[1.74,0.8,0.57],"count":"base64:","flag":false}}
+{"type":"Doc","id":"d1","data":{"count":"base64:AAEC","flag":false}}
+{"type":"Doc","id":"d2","data":{"slug":[0.31,-1.31,0.59],"count":"base64:AAEC","flag":true}}
+{"type":"Doc","id":"d3","data":{"slug":null,"count":"base64:AAEC","flag":true}}
+{"type":"Doc","id":"d4","data":{"slug":[1.0,0.0,0.0],"count":"base64:AAEC","flag":true}}
+{"type":"Doc","id":"d5","data":{"slug":null,"count":"base64:","flag":false}}
+{"type":"Person","id":"p0","data":{"code":null,"score":-5}}
+{"type":"Person","id":"p1","data":{"code":"it's","score":3}}
+{"type":"Person","id":"p2","data":{"score":2147483647}}
+{"type":"Person","id":"p3","data":{"code":"","score":9007199254740993}}
+{"type":"Person","id":"p4","data":{"code":null,"score":7}}
+{"type":"Person","id":"p5","data":{"code":null,"score":2147483647}}
+{"type":"Person","id":"p6","data":{"score":9007199254740992}}
+{"type":"Person","id":"p7","data":{"code":"Ünïcode","score":9007199254740993}}
+{"type":"Tag","id":"t0","data":{"content":1.5}}
+{"type":"Tag","id":"t1","data":{"content":10000000000.0,"code":"base64:SGVsbG8="}}
+{"type":"Tag","id":"t2","data":{"content":3.0,"code":"base64:"}}
+{"type":"Org","id":"o0","data":{"tags":[1.0,1.0]}}
+{"type":"Org","id":"o1","data":{"tags":[0.5,0.5]}}
+{"type":"Org","id":"o2","data":{"tags":[0.0,0.0]}}
+{"type":"Org","id":"o3","data":{"tags":[-1.0,-1.0]}}
+{"type":"Org","id":"o4","data":{"tags":[0.5,0.5]}}
+{"type":"Org","id":"o5","data":{"tags":[0.93,1.12]}}
+{"type":"Org","id":"o6","data":{"tags":[-1.0,-1.0]}}
+{"type":"Org","id":"o7","data":{"tags":[-0.89,0.14]}}
+{"type":"Item","data":{"nums":["data base","the","hello world"],"content":false,"seen":[1.0,1.0,1.0],"tags":0}}
+{"type":"Item","data":{"nums":[],"content":true,"seen":[0.5,0.5,0.5],"tags":9007199254740993}}
+{"type":"Item","data":{"content":true,"seen":[0.0,0.0,0.0],"tags":-5}}
+{"type":"Item","data":{"nums":["ran","Dogs","run"],"content":true,"tags":7}}
+{"type":"Item","data":{"nums":[],"content":false,"seen":[0.5,0.5,0.5],"tags":9007199254740992}}
+{"type":"Item","data":{"content":false,"seen":null,"tags":4611686018427387904}}
+{"edge":"Wrote","from":"o5","to":"o2","data":{"since":"blue","weight":1.5}}
+{"edge":"Wrote","from":"o4","to":"o7","data":{"since":"x-1","weight":3.0}}
+
+--- mutate
+query q5($arg1: Bool, $arg2: Vector(3)) {
+  insert Item { nums: ["x"], content: $arg1, seen: $arg2, tags: 0 }
+}
+
+--- params
+{"arg1": false, "arg2": [-0.0, -0.6, 0.4]}
+
+--- expect affected: nodes=1 edges=0

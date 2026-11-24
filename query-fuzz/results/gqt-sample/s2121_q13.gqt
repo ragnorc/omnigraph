@@ -1,0 +1,73 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2121, case 13; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  name: String @key
+  vec: Blob?
+  born: enum(a, b)?
+}
+node Tag {
+  slug: Blob?
+  seen: enum(a, b)? @index
+  nums: Date
+  born: U32?
+  text: String? @index
+  emb: Vector(3)
+}
+edge Owns: Tag -> Person {
+  weight: Bool
+}
+edge Tagged: Tag -> Person @card(0..1)
+edge Cites: Tag -> Tag {
+  w: [String]
+}
+edge Wrote: Tag -> Tag @card(0..1) {
+  role: String?
+  weight: F32?
+}
+
+--- seed
+{"type":"Person","data":{"name":"x","vec":"base64:AAEC","born":"b"}}
+{"type":"Person","data":{"name":"dog house","vec":"base64:"}}
+{"type":"Person","data":{"name":"dog","vec":null,"born":"b"}}
+{"type":"Person","data":{"name":"and the","vec":null,"born":"a"}}
+{"type":"Person","data":{"name":"ran","vec":"base64:SGVsbG8=","born":"b"}}
+{"type":"Person","data":{"name":"ab","vec":"base64:SGVsbG8=","born":"a"}}
+{"type":"Tag","id":"t0","data":{"slug":null,"seen":"a","nums":"2020-01-01","born":42,"text":null,"emb":[0.5,0.5,0.5]}}
+{"type":"Tag","id":"t1","data":{"slug":null,"seen":"b","nums":"2020-01-01","born":100,"text":"","emb":[-1.0,-1.0,-1.0]}}
+{"edge":"Owns","from":"t0","to":"and the","data":{"weight":false}}
+{"edge":"Owns","from":"t0","to":"ab","data":{"weight":false}}
+{"edge":"Owns","from":"t0","to":"x","data":{"weight":false}}
+{"edge":"Owns","from":"t1","to":"ran","data":{"weight":true}}
+{"edge":"Tagged","from":"t0","to":"x"}
+{"edge":"Tagged","from":"t1","to":"x"}
+{"edge":"Cites","from":"t0","to":"t0","data":{"w":["Run"]}}
+{"edge":"Cites","from":"t0","to":"t0","data":{"w":[]}}
+{"edge":"Cites","from":"t0","to":"t1","data":{"w":["it's","the"]}}
+{"edge":"Cites","from":"t1","to":"t0","data":{"w":[]}}
+{"edge":"Wrote","from":"t0","to":"t0","data":{"role":"x","weight":1.5}}
+{"edge":"Wrote","from":"t1","to":"t1"}
+
+--- query
+query q14($arg1: String) {
+  match {
+    $p1: Person { born: "b" }
+    $p1.born = $arg1 and $p1.name < "and the"
+    not (fuzzy($p1.name, "a"))
+  }
+  return distinct { $p1.born, $p1.@id }
+  order { bm25($p1.name, "run") desc }
+}
+
+--- params
+{"arg1": "a"}
+
+--- expect error: T38

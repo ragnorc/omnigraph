@@ -1,0 +1,64 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5193, case 13; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag {
+  vec: F32
+  name: Date? @index
+  count: Vector(2)
+}
+node Item {
+  content: Bool
+  weight: Date?
+  name: Date @index
+  age: U64
+  nums: I64
+}
+node Org {
+  seen: enum(low, mid, high) @index
+  slug: String
+  title: enum(low, mid, high) @index
+}
+edge Owns: Tag -> Item {
+  role: String?
+  since: [Date]
+}
+edge Likes: Item -> Org
+edge Near: Tag -> Item
+edge Wrote: Tag -> Item
+
+--- seed
+{"type":"Item","id":"i0","data":{"content":false,"name":"1970-01-01","age":42,"nums":3}}
+{"type":"Item","id":"i1","data":{"content":false,"weight":"1970-01-01","name":"1970-01-01","age":0,"nums":2}}
+{"type":"Item","id":"i2","data":{"content":false,"weight":"1999-12-31","name":"2020-01-01","age":2147483647,"nums":7}}
+{"type":"Item","id":"i3","data":{"content":false,"weight":"2020-01-01","name":"2024-02-29","age":0,"nums":100}}
+{"type":"Item","id":"i4","data":{"content":false,"weight":"2024-02-29","name":"1999-12-31","age":100,"nums":100}}
+{"type":"Org","id":"o0","data":{"seen":"mid","slug":"Dogs","title":"mid"}}
+{"type":"Org","id":"o1","data":{"seen":"low","slug":"of the and","title":"high"}}
+{"type":"Org","id":"o2","data":{"seen":"low","slug":"café","title":"high"}}
+{"type":"Org","id":"o3","data":{"seen":"low","slug":"database","title":"low"}}
+{"type":"Org","id":"o4","data":{"seen":"mid","slug":"of the and","title":"low"}}
+{"type":"Org","id":"o5","data":{"seen":"high","slug":"fox","title":"low"}}
+{"edge":"Likes","from":"i3","to":"o4"}
+{"edge":"Likes","from":"i2","to":"o4"}
+{"edge":"Likes","from":"i0","to":"o1"}
+{"edge":"Likes","from":"i2","to":"o4"}
+
+--- mutate
+query q14($arg1: Vector(2)) {
+  insert Tag { vec: 0.0, count: $arg1 }
+  insert Org { seen: "low", slug: "it's", title: "high" }
+}
+
+--- params
+{"arg1": [0.1, 1.0]}
+
+--- expect affected: nodes=2 edges=0

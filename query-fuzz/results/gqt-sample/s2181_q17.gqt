@@ -1,0 +1,59 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2181, case 17; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  name: Date
+  body: F32 @index
+  vec: I32 @key
+  score: U32?
+  @range(vec, -10..1000)
+}
+node Item {
+  code: I64 @index
+  nums: I32
+  age: Bool? @index
+  size: I64? @index
+  flag: DateTime?
+  @key(code, nums)
+}
+edge Cites: Org -> Item
+
+--- seed
+{"type":"Org","data":{"name":"2020-01-01","body":2.5,"vec":42,"score":1}}
+{"type":"Org","data":{"name":"2024-02-29","body":0.5,"vec":-1,"score":100}}
+{"type":"Org","data":{"name":"2020-01-01","body":-2.25,"vec":0,"score":null}}
+{"type":"Org","data":{"name":"2024-02-29","body":0.5,"vec":1,"score":null}}
+{"type":"Org","data":{"name":"2020-01-01","body":7.0,"vec":7,"score":4294967295}}
+{"type":"Org","data":{"name":"2024-02-29","body":7.0,"vec":2,"score":null}}
+{"type":"Org","data":{"name":"2020-01-01","body":0.0,"vec":100,"score":0}}
+{"type":"Org","data":{"name":"1970-01-01","body":0.0,"vec":3,"score":1}}
+{"type":"Item","data":{"code":2147483647,"nums":100,"age":false,"size":1,"flag":"2020-01-01T00:00:00Z"}}
+{"type":"Item","data":{"code":-5,"nums":-2147483648,"age":false,"size":2147483647,"flag":null}}
+{"type":"Item","data":{"code":9007199254740993,"nums":1,"age":true,"size":2,"flag":"2020-01-01T00:00:00.123Z"}}
+{"edge":"Cites","from":"1","to":"[\"2147483647\",\"100\"]"}
+{"edge":"Cites","from":"100","to":"[\"9007199254740993\",\"1\"]"}
+{"edge":"Cites","from":"42","to":"[\"9007199254740993\",\"1\"]"}
+{"edge":"Cites","from":"42","to":"[\"9007199254740993\",\"1\"]"}
+{"edge":"Cites","from":"42","to":"[\"9007199254740993\",\"1\"]"}
+{"edge":"Cites","from":"3","to":"[\"2147483647\",\"100\"]"}
+{"edge":"Cites","from":"2","to":"[\"-5\",\"-2147483648\"]"}
+{"edge":"Cites","from":"1","to":"[\"-5\",\"-2147483648\"]"}
+
+--- mutate
+query q18($arg1: I32) {
+  insert Org { name: date("2020-01-01") body: 7.0 vec: $arg1 score: 4294967295 }
+  insert Item { code: 2147483647, nums: 100, age: true, flag: datetime("2020-01-01T00:00:00Z") }
+}
+
+--- params
+{"arg1": 42}
+
+--- expect affected: nodes=2 edges=0

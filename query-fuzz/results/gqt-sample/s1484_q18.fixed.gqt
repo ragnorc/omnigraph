@@ -1,0 +1,49 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1484, case 18; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  name: enum(low, mid, high)
+  title: Vector(3)?
+  count: [Bool]
+  weight: Date
+  code: F32?
+}
+node Tag {
+  age: I64? @unique @index
+  size: enum(a, b)
+  rank: U64?
+  text: String @index
+  emb: Vector(3)
+}
+
+--- seed
+{"type":"Org","id":"o0","data":{"name":"mid","title":[-1.58,0.12,-1.53],"count":[false,true],"weight":"2024-02-29","code":0.0}}
+{"type":"Org","id":"o1","data":{"name":"low","title":[0.69,-1.84,-1.29],"count":[true,true,true],"weight":"1999-12-31","code":0.5}}
+{"type":"Tag","id":"t0","data":{"age":7,"size":"a","rank":42,"text":"the a","emb":[0.67,1.91,0.22]}}
+{"type":"Tag","id":"t1","data":{"age":2147483647,"size":"b","text":"data a","emb":[1.0,1.0,1.0]}}
+{"type":"Tag","id":"t3","data":{"age":42,"size":"b","rank":null,"text":"","emb":[1.47,1.32,-0.07]}}
+{"type":"Tag","id":"t4","data":{"age":9007199254740992,"size":"b","rank":0,"text":"","emb":[-1.0,-1.0,-1.0]}}
+{"type":"Tag","id":"t5","data":{"age":null,"size":"a","rank":0,"text":"x","emb":[0.76,1.79,-1.68]}}
+{"type":"Tag","id":"t6","data":{"age":9007199254740993,"size":"a","rank":null,"text":"","emb":[-1.4,-1.48,1.64]}}
+{"type":"Tag","id":"t7","data":{"age":4611686018427387904,"size":"b","text":"fox a","emb":[-1.0,-1.0,-1.0]}}
+{"type":"Tag","id":"t9","data":{"age":-1,"size":"a","rank":null,"text":"dog","emb":[0.0,0.0,0.0]}}
+
+--- mutate
+query q19($arg1: Vector(3), $arg2: Vector(3)) {
+  insert Tag { size: "b", rank: 42.0, text: "", emb: $arg1 }
+  insert Tag { age: 2147483647, size: "a", rank: 42, text: "café", emb: $arg2 }
+}
+
+--- params
+{"arg1": [0.2, 0.6, -0.5], "arg2": [0.1, -0.9, -0.3]}
+
+--- expect error: cannot convert Float(42.0) to UInt64

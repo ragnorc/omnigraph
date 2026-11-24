@@ -1,0 +1,65 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1704, case 13; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  content: DateTime @index
+  score: Vector(2)?
+  rank: String?
+  born: F32
+}
+node Doc {
+  slug: [I32]
+  count: F32
+  note: I32? @unique
+  born: String @index
+  @index(slug)
+}
+node Person {
+  note: I32 @key
+  size: [Bool]?
+  slug: U32 @index
+}
+edge Wrote: Person -> Person
+edge Links: Doc -> Doc
+edge Cites: Person -> Person {
+  weight: [Date]
+}
+
+--- seed
+{"type":"Place","id":"p0","data":{"content":"2020-01-01T00:00:00Z","score":[1.03,0.03],"rank":"of the and","born":0.5}}
+{"type":"Place","id":"p1","data":{"content":"2020-01-01T00:00:00Z","score":[-1.0,-1.0],"rank":"dog","born":-2.25}}
+{"type":"Place","id":"p2","data":{"content":"2024-02-29T12:00:00Z","score":[1.66,0.3],"rank":"café","born":-2.25}}
+{"type":"Doc","id":"d0","data":{"slug":[2147483647],"count":1.5,"note":-5,"born":"dog house"}}
+{"type":"Doc","id":"d1","data":{"slug":[7,-1],"count":3.0,"note":-1,"born":"data base"}}
+{"type":"Doc","id":"d2","data":{"slug":[-5],"count":1.5,"born":"fox"}}
+{"type":"Person","data":{"note":2147483647,"size":[],"slug":7}}
+{"edge":"Wrote","from":"2147483647","to":"2147483647"}
+{"edge":"Wrote","from":"2147483647","to":"2147483647"}
+{"edge":"Wrote","from":"2147483647","to":"2147483647"}
+{"edge":"Links","from":"d0","to":"d0"}
+{"edge":"Links","from":"d0","to":"d2"}
+{"edge":"Links","from":"d0","to":"d0"}
+{"edge":"Cites","from":"2147483647","to":"2147483647","data":{"weight":[]}}
+{"edge":"Cites","from":"2147483647","to":"2147483647","data":{"weight":["1999-12-31"]}}
+{"edge":"Cites","from":"2147483647","to":"2147483647","data":{"weight":["2024-02-29","2020-01-01"]}}
+{"edge":"Cites","from":"2147483647","to":"2147483647","data":{"weight":["2020-01-01","2024-02-29"]}}
+
+--- mutate
+query q14($arg1: DateTime, $arg2: Vector(2), $arg3: F32) {
+  match { $x: Doc } where $x.born < "data base"  update $x set { count: 7.0 }
+  insert Place { content: $arg1, score: $arg2, born: $arg3 }
+}
+
+--- params
+{"arg1": "2024-02-29T12:00:00Z", "arg2": [0.1, 0.8], "arg3": 1.5}
+
+--- expect affected: nodes=1 edges=0

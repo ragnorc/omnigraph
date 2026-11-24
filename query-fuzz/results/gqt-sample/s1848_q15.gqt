@@ -1,0 +1,106 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1848, case 15; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  age: I32?
+}
+node Person {
+  title: enum(a, b)?
+  size: Bool?
+  born: F64? @index
+  code: U64
+  slug: I32? @index
+  @range(slug, -10..1000)
+}
+node Place {
+  name: I64 @key
+  level: Vector(3)?
+}
+node Doc {
+  vec: String? @unique @index
+}
+node Tag {
+  seen: Bool
+  nums: String?
+  note: enum(a, b)?
+}
+edge Near: Tag -> Person {
+  since: [String]
+  role: U32
+}
+edge Links: Doc -> Doc {
+  weight: I64
+  w: Date?
+}
+edge Knows: Person -> Person {
+  @key(@src, @dst)
+}
+edge Owns: Place -> Person {
+  since: I64
+  role: I32
+}
+
+--- seed
+{"type":"Item","id":"i0","data":{"age":7}}
+{"type":"Item","id":"i1","data":{"age":2147483647}}
+{"type":"Person","id":"p0","data":{"title":"a","born":0.0,"code":3}}
+{"type":"Person","id":"p1","data":{"title":null,"size":true,"born":7.0,"code":42,"slug":0}}
+{"type":"Place","data":{"name":7,"level":null}}
+{"type":"Place","data":{"name":42,"level":[-0.89,-0.68,1.56]}}
+{"type":"Place","data":{"name":-1,"level":[-1.6,0.41,1.65]}}
+{"type":"Place","data":{"name":9007199254740992}}
+{"type":"Place","data":{"name":4611686018427387904,"level":null}}
+{"type":"Doc","id":"d0","data":{"vec":null}}
+{"type":"Doc","id":"d1","data":{}}
+{"type":"Doc","id":"d2","data":{"vec":"running dogs"}}
+{"type":"Doc","id":"d3","data":{"vec":"x y z"}}
+{"type":"Doc","id":"d4","data":{"vec":"café"}}
+{"type":"Doc","id":"d6","data":{"vec":"of the and"}}
+{"type":"Tag","id":"t0","data":{"seen":true,"nums":"the dog","note":"a"}}
+{"type":"Tag","id":"t1","data":{"seen":false,"nums":null,"note":"a"}}
+{"type":"Tag","id":"t2","data":{"seen":true,"nums":"café","note":null}}
+{"type":"Tag","id":"t3","data":{"seen":false,"note":"b"}}
+{"type":"Tag","id":"t4","data":{"seen":false,"nums":null}}
+{"type":"Tag","id":"t5","data":{"seen":true,"nums":"it's","note":null}}
+{"edge":"Near","from":"t5","to":"p0","data":{"since":["it's"],"role":0}}
+{"edge":"Near","from":"t5","to":"p1","data":{"since":["data base","the dog"],"role":3}}
+{"edge":"Near","from":"t1","to":"p1","data":{"since":["ran"],"role":100}}
+{"edge":"Near","from":"t5","to":"p1","data":{"since":["ab","x y z","ran"],"role":2}}
+{"edge":"Near","from":"t5","to":"p1","data":{"since":["Run","database","Run"],"role":4294967295}}
+{"edge":"Near","from":"t1","to":"p1","data":{"since":["naïve","naïve"],"role":100}}
+{"edge":"Links","from":"d0","to":"d6","data":{"weight":100,"w":"1970-01-01"}}
+{"edge":"Links","from":"d2","to":"d3","data":{"weight":-9007199254740993}}
+{"edge":"Links","from":"d0","to":"d6","data":{"weight":9007199254740993}}
+{"edge":"Links","from":"d1","to":"d4","data":{"weight":-1,"w":"2024-02-29"}}
+{"edge":"Links","from":"d2","to":"d2","data":{"weight":2,"w":"2024-02-29"}}
+{"edge":"Links","from":"d0","to":"d4","data":{"weight":-5,"w":"2024-02-29"}}
+{"edge":"Links","from":"d0","to":"d1","data":{"weight":-2147483648,"w":"1970-01-01"}}
+{"edge":"Links","from":"d1","to":"d0","data":{"weight":9007199254740992}}
+
+--- query
+query terms($arg1: String) {
+  match {
+    $d1: Doc
+    $d1 links $d2
+    $d1.vec < "café" or $d1.vec >= $arg1
+  }
+  return { $d1.vec }
+  order { $d1.vec }
+}
+
+--- params
+{"arg1": "and the"}
+
+--- expect ordered
+{"d1.vec": "running dogs"}
+{"d1.vec": "running dogs"}
+
+--- expect shape
+d1.vec: String

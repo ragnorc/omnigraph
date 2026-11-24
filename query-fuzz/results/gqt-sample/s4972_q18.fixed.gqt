@@ -1,0 +1,115 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 4972, case 18; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  seen: String?
+  slug: [Date]?
+  size: U64? @unique
+  rank: enum(red, green, blue, x-1)? @index
+  text: String? @index
+  emb: Vector(3)?
+}
+node Item {
+  age: enum(red, green, blue, x-1)?
+  rank: DateTime?
+  content: String
+}
+node Tag {
+  code: U32?
+  content: I64 @key
+  level: Blob?
+  slug: U32 @unique @index
+}
+node Org {
+  rank: Blob?
+  weight: I64 @index
+  score: Bool
+  @range(weight, -10..1000)
+}
+node Place {
+  flag: enum(a, b)? @index
+  name: String @key
+  content: [Date]
+  code: enum(red, green, blue, x-1)?
+}
+edge Likes: Doc -> Doc {
+  w: I32?
+  @key(@src, @dst)
+}
+edge Near: Doc -> Doc {
+  since: U32
+}
+edge Cites: Org -> Item {
+  @unique(@src, @dst)
+}
+edge Wrote: Org -> Place @card(0..2) {
+  w: enum(a, b)
+}
+
+--- seed
+{"type":"Doc","id":"d0","data":{"seen":"RUN","slug":["1970-01-01","2020-01-01","2020-01-01"],"size":100,"rank":"x-1","text":"dog running","emb":[1.0,0.0,0.0]}}
+{"type":"Doc","id":"d1","data":{"seen":null,"slug":[],"size":4611686018427387904,"rank":"blue","text":"","emb":null}}
+{"type":"Doc","id":"d3","data":{"seen":"the","slug":["2024-02-29","1970-01-01","2024-02-29"],"rank":"x-1","text":"a","emb":null}}
+{"type":"Doc","id":"d4","data":{"seen":"naïve","slug":["2020-01-01","1999-12-31"],"size":9007199254740993,"rank":"blue","text":null,"emb":[0.5,0.5,0.5]}}
+{"type":"Item","id":"i0","data":{"age":null,"rank":"2020-01-01T00:00:00.123Z","content":"café"}}
+{"type":"Item","id":"i1","data":{"age":null,"content":"x y z"}}
+{"type":"Item","id":"i2","data":{"age":"red","rank":null,"content":"Ünïcode"}}
+{"type":"Item","id":"i3","data":{"content":"it's"}}
+{"type":"Item","id":"i4","data":{"age":"red","content":"x"}}
+{"type":"Item","id":"i5","data":{"age":"green","rank":"2024-02-29T12:00:00Z","content":"the"}}
+{"type":"Item","id":"i6","data":{"age":"red","content":"running dogs"}}
+{"type":"Item","id":"i7","data":{"age":null,"content":"database"}}
+{"type":"Tag","data":{"code":null,"content":3,"level":"base64:AAEC","slug":0}}
+{"type":"Tag","data":{"code":0,"content":-5,"level":"base64:SGVsbG8=","slug":4294967295}}
+{"type":"Tag","data":{"code":4294967295,"content":-2147483648,"level":"base64:","slug":7}}
+{"type":"Tag","data":{"code":100,"content":4611686018427387904,"level":"base64:SGVsbG8=","slug":100}}
+{"type":"Tag","data":{"code":1,"content":-1,"level":"base64:AAEC","slug":3}}
+{"type":"Org","id":"o0","data":{"rank":null,"weight":-5,"score":false}}
+{"type":"Org","id":"o1","data":{"rank":"base64:AAEC","weight":2,"score":true}}
+{"type":"Org","id":"o2","data":{"rank":"base64:","weight":1,"score":true}}
+{"type":"Org","id":"o3","data":{"rank":"base64:SGVsbG8=","weight":42,"score":true}}
+{"type":"Org","id":"o4","data":{"rank":"base64:SGVsbG8=","weight":42,"score":false}}
+{"type":"Org","id":"o5","data":{"rank":"base64:SGVsbG8=","weight":42,"score":true}}
+{"type":"Org","id":"o6","data":{"rank":"base64:AAEC","weight":42,"score":true}}
+{"type":"Org","id":"o7","data":{"rank":"base64:SGVsbG8=","weight":100,"score":false}}
+{"type":"Place","data":{"flag":null,"name":"running","content":["2020-01-01"],"code":"green"}}
+{"type":"Place","data":{"flag":"b","name":"abc","content":["2020-01-01","1970-01-01","1970-01-01"],"code":"blue"}}
+{"edge":"Likes","from":"d4","to":"d1"}
+{"edge":"Near","from":"d1","to":"d1","data":{"since":42}}
+{"edge":"Near","from":"d3","to":"d3","data":{"since":7}}
+{"edge":"Near","from":"d1","to":"d0","data":{"since":2}}
+{"edge":"Near","from":"d0","to":"d0","data":{"since":7}}
+{"edge":"Near","from":"d0","to":"d1","data":{"since":4294967295}}
+{"edge":"Near","from":"d1","to":"d0","data":{"since":0}}
+{"edge":"Cites","from":"o7","to":"i7"}
+{"edge":"Cites","from":"o3","to":"i1"}
+{"edge":"Cites","from":"o4","to":"i3"}
+{"edge":"Cites","from":"o7","to":"i3"}
+{"edge":"Cites","from":"o2","to":"i6"}
+{"edge":"Wrote","from":"o0","to":"running","data":{"w":"a"}}
+{"edge":"Wrote","from":"o5","to":"running","data":{"w":"b"}}
+{"edge":"Wrote","from":"o1","to":"abc","data":{"w":"b"}}
+
+--- query
+query q19($arg1: String, $arg2: String, $arg3: String) {
+  match { let $pop = { match { $p1: Place, $o2: Org, $o2 wrote $p1, $o3: Org, $o3 wrote $p1, $p4: Place, $o2 wrote $p4 } where $p1.code = $arg1 and match_terms($p4.name, terms($arg2, mode: any)) return { $p1, $o2, $o3, $p4 } }, from bm25($pop, $p1.name, $arg3) as $score }
+  return { $p1.code,  $o3.weight }
+  order { $score desc }
+  limit 1
+}
+
+--- params
+{"arg1": "blue", "arg2": "the", "arg3": "the"}
+
+--- expect ordered
+
+
+--- expect shape

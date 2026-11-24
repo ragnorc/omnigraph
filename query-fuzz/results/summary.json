@@ -1,0 +1,57 @@
+{
+ "worlds": 6371,
+ "worlds_not_set_up": 0,
+ "seed_range": [
+  1000,
+  501221
+ ],
+ "seed_ranges": [
+  "1000..=6148",
+  "500000..=501221"
+ ],
+ "cases": 152904,
+ "edition_2_accepted": 123560,
+ "by_intent": {
+  "accept": 137891,
+  "refuse": 15013
+ },
+ "edition_2_accepted_by_intent": {
+  "accept": 123234,
+  "refuse": 326
+ },
+ "kinds": {
+  "read": 119433,
+  "write": 33471
+ },
+ "new_compiles_unchanged_and_runs": {
+  "read": 24480,
+  "write": 7088
+ },
+ "gen_versions": {
+  "1": 5149,
+  "2": 1222
+ },
+ "pairs_never_drawn": 58,
+ "corpus": {
+  "steps": 1767,
+  "edition_2_accepts": 1664,
+  "new_compiles_unchanged": 799,
+  "fix:fixed": 839,
+  "closure_unchanged": 844,
+  "fix:unchanged": 783,
+  "fix:unfixed": 42,
+  "unfixed_codes": {
+   "T91": 15,
+   "T65": 5,
+   "T81 (fixed with --review-fixes)": 5,
+   "T5": 3,
+   "T68": 3,
+   "T75": 4,
+   "T42": 3,
+   "T7": 1,
+   "T81": 1,
+   "T74": 2
+  }
+ },
+ "active_hours": 4.63
+}

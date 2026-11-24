@@ -1,0 +1,58 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3939, case 21; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  tags: I32 @key
+}
+node Place {
+  flag: F32 @index
+  age: String
+  seen: F32?
+  size: String @key
+  text: String @index
+  emb: Vector(3)
+}
+edge Near: Place -> Place {
+  weight: U32
+  @unique(@src, @dst)
+}
+edge Knows: Place -> Item
+edge Likes: Item -> Item {
+  since: I32?
+  role: U64?
+}
+edge Wrote: Place -> Place {
+  @unique(@src, @dst)
+}
+
+--- seed
+{"type":"Item","data":{"tags":-2147483648}}
+{"type":"Item","data":{"tags":2147483647}}
+
+--- query
+query q22($arg1: I32, $arg2: String) {
+  match {
+    $i1: Item { tags: $arg1 }
+    $p2: Place
+    $p2 knows $i1
+    $p3 wrote $p2
+    $p2.age < "Ünïcode" or $p2.age <= "ab"
+    $p3.age != $arg2 and $p3.age >= "Ünïcode"
+    optional { $p4 near $p3 }
+  }
+  return { $p2.@id, $p3.seen }
+  limit 3
+}
+
+--- params
+{"arg1": -2147483648, "arg2": "database"}
+
+--- expect error: Q001

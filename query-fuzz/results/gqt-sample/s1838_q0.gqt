@@ -1,0 +1,63 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 1838, case 0; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  age: Vector(2)?
+  name: I64? @index
+  count: String @key
+  @range(name, -10..1000)
+}
+node Person {
+  size: [F64]?
+  level: Vector(2)
+  @index(size)
+}
+edge Links: Item -> Item {
+  role: I32?
+  w: enum(a, b)
+}
+edge Cites: Item -> Item
+
+--- seed
+{"type":"Item","data":{"name":null,"count":"RUN"}}
+{"type":"Item","data":{"age":[-1.21,-1.08],"name":42,"count":"run"}}
+{"type":"Item","data":{"age":[0.5,0.5],"name":100,"count":"data base"}}
+{"type":"Item","data":{"age":null,"name":-5,"count":"fox"}}
+{"type":"Person","id":"p0","data":{"size":[7.0],"level":[-0.05,0.36]}}
+{"edge":"Links","from":"run","to":"data base","data":{"role":42,"w":"a"}}
+{"edge":"Links","from":"RUN","to":"RUN","data":{"role":2,"w":"b"}}
+{"edge":"Links","from":"run","to":"run","data":{"role":7,"w":"b"}}
+{"edge":"Links","from":"data base","to":"run","data":{"role":100,"w":"a"}}
+{"edge":"Links","from":"data base","to":"data base","data":{"w":"a"}}
+{"edge":"Links","from":"run","to":"run","data":{"role":7,"w":"b"}}
+{"edge":"Links","from":"fox","to":"fox","data":{"role":-1,"w":"b"}}
+{"edge":"Links","from":"data base","to":"fox","data":{"w":"b"}}
+{"edge":"Cites","from":"fox","to":"fox"}
+{"edge":"Cites","from":"RUN","to":"data base"}
+{"edge":"Cites","from":"data base","to":"data base"}
+{"edge":"Cites","from":"fox","to":"fox"}
+{"edge":"Cites","from":"run","to":"data base"}
+{"edge":"Cites","from":"data base","to":"run"}
+
+--- query
+query q1() {
+  match {
+    $p1: Person  1.5 in $p1.size
+  }
+  return { $p1.@id  $p1.level }
+  limit 1
+}
+
+--- expect unordered
+
+
+--- expect shape
+p1.@id: String
+p1.level: Vector(2)

@@ -1,0 +1,80 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5379, case 11; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  level: Vector(3)?
+  nums: F32?
+  seen: U64? @unique @index
+}
+node Item {
+  name: [I64]
+  age: Vector(2)?
+  text: String? @index
+}
+node Person {
+  rank: F64 @index
+  score: U32 @index
+  nums: U64?
+}
+node Org {
+  score: [I64]?
+}
+edge Owns: Place -> Place
+edge Cites: Person -> Item
+edge Wrote: Person -> Person {
+  role: [F64]
+  @unique(@src, @dst)
+}
+
+--- seed
+{"type":"Place","id":"p0","data":{"level":[-1.51,0.76,1.29],"nums":0.0,"seen":0}}
+{"type":"Place","id":"p3","data":{"nums":-2.25,"seen":null}}
+{"type":"Place","id":"p4","data":{"level":[-1.0,-1.0,-1.0],"nums":2.5,"seen":null}}
+{"type":"Item","id":"i0","data":{"name":[-5,2,9007199254740993],"age":[1.0,1.0],"text":"run x"}}
+{"type":"Person","id":"p0","data":{"rank":1.5,"score":3,"nums":3}}
+{"type":"Person","id":"p1","data":{"rank":2.5,"score":3,"nums":9007199254740992}}
+{"type":"Person","id":"p2","data":{"rank":1.5,"score":42,"nums":9007199254740993}}
+{"type":"Person","id":"p3","data":{"rank":-2.25,"score":7}}
+{"type":"Person","id":"p4","data":{"rank":0.0,"score":42}}
+{"type":"Org","id":"o0","data":{}}
+{"type":"Org","id":"o1","data":{"score":[-9007199254740993]}}
+{"type":"Org","id":"o2","data":{"score":null}}
+{"type":"Org","id":"o3","data":{"score":[2,-1,-2147483648]}}
+{"edge":"Cites","from":"p1","to":"i0"}
+{"edge":"Cites","from":"p1","to":"i0"}
+{"edge":"Cites","from":"p1","to":"i0"}
+{"edge":"Cites","from":"p0","to":"i0"}
+{"edge":"Wrote","from":"p2","to":"p2","data":{"role":[2.5]}}
+{"edge":"Wrote","from":"p1","to":"p4","data":{"role":[0.0,0.0]}}
+{"edge":"Wrote","from":"p0","to":"p4","data":{"role":[-2.25,1.5]}}
+{"edge":"Wrote","from":"p0","to":"p3","data":{"role":[1.5,-2.25]}}
+{"edge":"Wrote","from":"p2","to":"p4","data":{"role":[3.0]}}
+{"edge":"Wrote","from":"p2","to":"p3","data":{"role":[1.5]}}
+
+--- query
+query q12($arg1: String) {
+  match {
+    $i1: Item { text: "run x" }  $i1.text <= "database" and $i1.text >= $arg1
+  }
+  return { $i1.age as c0  $i1.@id as c1 }
+  order { bm25($i1.text, "xyz") desc, c0 }
+  limit 2
+}
+
+--- params
+{"arg1": "run x"}
+
+--- expect ordered
+
+
+--- expect shape
+c0: Vector(2)
+c1: String

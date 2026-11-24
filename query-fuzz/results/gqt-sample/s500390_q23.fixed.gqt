@@ -1,0 +1,72 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500390, case 23; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  body: I64?
+  rank: String @key
+}
+node Person {
+  content: I32?
+  text: String? @index
+  emb: Vector(3)
+  @range(content, -10..1000)
+}
+node Doc {
+  size: enum(low, mid, high)?
+  weight: I64? @index
+  age: [F64]
+  note: Blob?
+  body: String?
+}
+edge Likes: Doc -> Doc {
+  weight: enum(a, b)?
+  w: I32?
+}
+edge Wrote: Doc -> Doc {
+  role: [I64]?
+}
+
+--- seed
+{"type":"Item","data":{"rank":"naïve"}}
+{"type":"Person","id":"p0","data":{"content":null,"text":"the running a","emb":[0.0,0.0,0.0]}}
+{"type":"Person","id":"p1","data":{"content":42,"text":"base Dogs base","emb":[1.0,0.0,0.0]}}
+{"type":"Person","id":"p2","data":{"content":3,"text":"an","emb":[1.0,0.0,0.0]}}
+{"type":"Person","id":"p3","data":{"content":null,"text":"an the","emb":[-1.0,-1.0,-1.0]}}
+{"type":"Person","id":"p4","data":{"content":-5,"emb":[0.86,-0.2,1.72]}}
+{"type":"Person","id":"p5","data":{"text":"an the","emb":[0.0,0.0,0.0]}}
+{"type":"Doc","id":"d0","data":{"weight":2147483647,"age":[-2.25,2.5,2.5],"note":"base64:","body":null}}
+{"type":"Doc","id":"d1","data":{"size":null,"weight":1,"age":[0.1,0.0,0.0],"note":null,"body":"x y z"}}
+{"edge":"Likes","from":"d1","to":"d1","data":{"weight":"b","w":-1}}
+{"edge":"Likes","from":"d1","to":"d0","data":{"weight":"a","w":2147483647}}
+{"edge":"Likes","from":"d0","to":"d0","data":{"w":3}}
+{"edge":"Wrote","from":"d0","to":"d0"}
+{"edge":"Wrote","from":"d0","to":"d0"}
+{"edge":"Wrote","from":"d0","to":"d1","data":{"role":[3]}}
+{"edge":"Wrote","from":"d1","to":"d0","data":{"role":[]}}
+{"edge":"Wrote","from":"d0","to":"d0","data":{"role":[9007199254740993,3]}}
+{"edge":"Wrote","from":"d1","to":"d0","data":{"role":[42]}}
+{"edge":"Wrote","from":"d0","to":"d1","data":{"role":[4611686018427387904,-9007199254740993]}}
+{"edge":"Wrote","from":"d1","to":"d0","data":{"role":[-2147483648]}}
+
+--- query
+query q24() {
+  match { $p1: Person }
+  return { $p1.emb }
+  order { $p1.emb }
+  limit 2
+}
+
+--- expect ordered
+{"p1.emb": [-1.0, -1.0, -1.0]}
+{"p1.emb": [0.0, 0.0, 0.0]}
+
+--- expect shape

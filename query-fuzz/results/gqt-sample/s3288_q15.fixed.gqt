@@ -1,0 +1,64 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3288, case 15; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  code: F64 @index
+  vec: enum(a, b)?
+  count: String @key
+}
+node Item {
+  tags: F32?
+  flag: Vector(3)?
+  slug: I32 @unique
+  level: String? @index
+  vec: I32? @unique
+}
+node Tag {
+  flag: DateTime @index
+  title: [Bool]?
+  seen: Bool? @index
+  code: Vector(3)
+  rank: Vector(3)
+}
+node Person {
+  title: U64
+  weight: U64 @index
+  seen: Vector(3)?
+}
+
+--- seed
+{"type":"Place","data":{"code":0.1,"vec":"a","count":"Run"}}
+{"type":"Place","data":{"code":0.1,"vec":"b","count":"of the and"}}
+{"type":"Place","data":{"code":-2.25,"count":"k"}}
+{"type":"Item","id":"i0","data":{"tags":-2.25,"flag":[0.5,0.5,0.5],"slug":1,"level":null,"vec":-1}}
+{"type":"Item","id":"i1","data":{"tags":-2.25,"slug":0,"level":"x"}}
+{"type":"Item","id":"i2","data":{"flag":[1.0,0.0,0.0],"slug":2,"level":"Ünïcode","vec":null}}
+{"type":"Item","id":"i3","data":{"tags":null,"flag":[1.0,0.0,0.0],"slug":-1,"level":"Ünïcode","vec":3}}
+{"type":"Item","id":"i4","data":{"flag":[-1.0,-1.0,-1.0],"slug":3,"level":"dog","vec":1}}
+{"type":"Item","id":"i6","data":{"tags":7.0,"flag":[-0.32,-0.05,-1.23],"slug":100,"level":"hello world","vec":100}}
+{"type":"Item","id":"i10","data":{"tags":2.5,"flag":[-0.33,0.82,0.12],"slug":42,"vec":42}}
+{"type":"Item","id":"i14","data":{"flag":null,"slug":2147483647,"level":"the"}}
+{"type":"Tag","id":"t0","data":{"flag":"2024-02-29T12:00:00Z","seen":false,"code":[-0.36,1.12,0.1],"rank":[-1.83,1.4,-1.47]}}
+{"type":"Tag","id":"t1","data":{"flag":"2024-02-29T12:00:00Z","seen":true,"code":[-1.46,-1.58,-1.4],"rank":[-1.0,-1.0,-1.0]}}
+{"type":"Tag","id":"t2","data":{"flag":"2020-01-01T00:00:00Z","title":null,"code":[-1.0,-1.0,-1.0],"rank":[0.78,-0.93,-0.39]}}
+{"type":"Tag","id":"t3","data":{"flag":"2020-01-01T00:00:00.123Z","title":[true,true],"code":[0.5,0.5,0.5],"rank":[1.0,1.0,1.0]}}
+{"type":"Tag","id":"t4","data":{"flag":"2024-02-29T12:00:00Z","title":[true],"seen":true,"code":[1.5,1.64,-1.34],"rank":[0.5,0.5,0.5]}}
+{"type":"Person","id":"p0","data":{"title":100,"weight":1,"seen":[-1.0,-1.0,-1.0]}}
+{"type":"Person","id":"p1","data":{"title":0,"weight":0,"seen":[-0.05,1.2,-0.29]}}
+
+--- query
+query q16() {
+  match { $t1: Tag } where $t1.seen = true
+  return { $t1.code, $t1.rank, $t1.title, count($t1) as a0 }
+  limit 1
+}
+
+--- expect error: Q001

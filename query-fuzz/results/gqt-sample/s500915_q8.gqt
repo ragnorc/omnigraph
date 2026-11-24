@@ -1,0 +1,73 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500915, case 8; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  age: enum(low, mid, high)
+  rank: F32 @index
+  score: String
+}
+node Item {
+  count: F32
+  seen: String @index
+  text: String? @index
+  emb: Vector(3)?
+}
+node Org {
+  body: Vector(3)?
+  tags: Bool? @index
+  slug: [Date]
+}
+edge Links: Item -> Place
+edge Owns: Item -> Place {
+  role: String
+  since: Date?
+}
+edge Tagged: Item -> Place {
+  @key(@src, @dst)
+}
+
+--- seed
+{"type":"Place","id":"p0","data":{"age":"low","rank":-2.25,"score":"café"}}
+{"type":"Place","id":"p1","data":{"age":"mid","rank":1.5,"score":"RUN"}}
+{"type":"Place","id":"p2","data":{"age":"low","rank":3.0,"score":"café"}}
+{"type":"Place","id":"p3","data":{"age":"low","rank":-2.25,"score":"of the and"}}
+{"type":"Item","id":"i0","data":{"count":3.0,"seen":"Run","text":"a an","emb":[-0.92,-0.44,-1.62]}}
+{"type":"Item","id":"i1","data":{"count":7.0,"seen":"Run","text":"base","emb":null}}
+{"type":"Item","id":"i2","data":{"count":-2.25,"seen":"the dog","text":"a","emb":[1.0,1.0,1.0]}}
+{"type":"Item","id":"i3","data":{"count":2.5,"seen":"café","text":"data the fox","emb":[0.79,1.67,-0.88]}}
+{"type":"Item","id":"i4","data":{"count":-2.25,"seen":"café","text":"fox dog  dog","emb":[1.0,0.0,0.0]}}
+{"type":"Org","id":"o0","data":{"tags":null,"slug":["2020-01-01","2020-01-01"]}}
+{"type":"Org","id":"o1","data":{"tags":true,"slug":["2020-01-01"]}}
+{"type":"Org","id":"o2","data":{"body":[-0.19,-0.6,-0.12],"tags":false,"slug":["2020-01-01"]}}
+{"type":"Org","id":"o3","data":{"body":null,"tags":true,"slug":["1970-01-01","1999-12-31","2020-01-01"]}}
+{"type":"Org","id":"o4","data":{"body":[-0.92,0.12,-0.66],"tags":true,"slug":["2020-01-01"]}}
+{"type":"Org","id":"o5","data":{"body":[0.36,0.35,0.88],"tags":true,"slug":["2020-01-01","2020-01-01","2020-01-01"]}}
+{"edge":"Links","from":"i4","to":"p1"}
+{"edge":"Links","from":"i1","to":"p1"}
+{"edge":"Tagged","from":"i4","to":"p2"}
+{"edge":"Tagged","from":"i4","to":"p3"}
+
+--- query
+query q9() {
+  match { $p1: Place }
+  return { $p1.rank as c0, $p1.score }
+  order { $p1.score desc }
+  limit 10
+}
+
+--- expect ordered
+{"c0": -2.25, "p1.score": "of the and"}
+{"c0": -2.25, "p1.score": "café"}
+{"c0": 3.0, "p1.score": "café"}
+{"c0": 1.5, "p1.score": "RUN"}
+
+--- expect shape
+c0: F32
+p1.score: String

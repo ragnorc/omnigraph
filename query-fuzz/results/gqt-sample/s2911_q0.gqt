@@ -1,0 +1,64 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2911, case 0; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  body: U64? @index
+}
+node Item {
+  name: I32
+  code: I64
+  @key(name, code)
+}
+node Tag {
+  count: I32 @key
+  content: Vector(2)
+  weight: [Bool]
+  rank: [I32]
+  body: I64? @index
+  text: String @index
+}
+edge Cites: Item -> Place
+edge Links: Item -> Place
+
+--- seed
+{"type":"Place","id":"p0","data":{"body":9007199254740992}}
+{"type":"Place","id":"p1","data":{"body":0}}
+{"type":"Place","id":"p2","data":{"body":7}}
+{"type":"Place","id":"p3","data":{"body":0}}
+{"type":"Place","id":"p4","data":{"body":7}}
+{"type":"Place","id":"p5","data":{"body":9007199254740992}}
+{"type":"Place","id":"p6","data":{"body":9007199254740993}}
+{"type":"Place","id":"p7","data":{}}
+{"type":"Item","data":{"name":3,"code":7}}
+{"type":"Item","data":{"name":42,"code":-1}}
+{"type":"Item","data":{"name":1,"code":1}}
+{"type":"Item","data":{"name":2147483647,"code":7}}
+{"type":"Item","data":{"name":100,"code":1}}
+{"type":"Item","data":{"name":7,"code":-1}}
+{"type":"Item","data":{"name":42,"code":0}}
+{"type":"Item","data":{"name":0,"code":-1}}
+{"type":"Tag","data":{"count":1,"content":[-0.25,0.34],"weight":[false],"rank":[1,-2147483648],"body":null,"text":"run fox"}}
+{"edge":"Cites","from":"[\"0\",\"42\"]","to":"p4"}
+{"edge":"Cites","from":"[\"-1\",\"42\"]","to":"p1"}
+{"edge":"Cites","from":"[\"7\",\"2147483647\"]","to":"p1"}
+{"edge":"Cites","from":"[\"-1\",\"0\"]","to":"p7"}
+{"edge":"Cites","from":"[\"-1\",\"0\"]","to":"p2"}
+{"edge":"Cites","from":"[\"7\",\"3\"]","to":"p1"}
+
+--- mutate
+query q1($arg1: I32) {
+  insert Item { name: $arg1 code: 1 }
+}
+
+--- params
+{"arg1": 1}
+
+--- expect affected: nodes=1 edges=0

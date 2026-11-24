@@ -1,0 +1,56 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500992, case 10; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  title: U32
+  born: String @index
+  note: I64
+  level: F64?
+  text: String? @index
+  emb: Vector(3)
+  @key(born, note)
+}
+node Person {
+  count: I64? @index
+  content: F64
+  flag: I32 @key
+}
+edge Links: Org -> Person {
+  w: String?
+}
+edge Near: Person -> Org {
+  @key(@src, @dst)
+}
+
+--- seed
+{"type":"Org","data":{"title":0,"born":"a","note":42,"level":2.5,"text":"runs ran dog","emb":[-1.27,1.21,-0.02]}}
+{"type":"Org","data":{"title":4294967295,"born":"fox","note":9007199254740992,"level":-2.25,"text":"Run base a hello","emb":[0.25,0.15,0.77]}}
+{"type":"Org","data":{"title":0,"born":"data base","note":4611686018427387904,"level":0.1,"text":null,"emb":[-1.0,-1.0,-1.0]}}
+{"type":"Org","data":{"title":42,"born":"Ünïcode","note":0,"level":null,"text":"data the hello","emb":[1.0,0.0,0.0]}}
+{"type":"Org","data":{"title":0,"born":"Hello World","note":42,"level":7.0,"text":"run data data dog","emb":[1.8,-1.78,-1.26]}}
+{"type":"Org","data":{"title":0,"born":"run","note":-5,"level":1.5,"text":"a Run run","emb":[1.0,0.0,0.0]}}
+{"type":"Org","data":{"title":42,"born":"and the","note":-9007199254740993,"level":2.5,"text":"","emb":[0.5,0.5,0.5]}}
+{"type":"Org","data":{"title":100,"born":"hello world","note":-9007199254740993,"level":10000000000.0,"text":"","emb":[1.0,1.0,1.0]}}
+{"type":"Person","data":{"count":9007199254740993,"content":0.1,"flag":-2147483648}}
+{"edge":"Links","from":"[\"Hello World\",\"42\"]","to":"-2147483648"}
+{"edge":"Near","from":"-2147483648","to":"[\"hello world\",\"-9007199254740993\"]"}
+
+--- query
+query q11() {
+  match { $p1: Person }
+  return { $p1.content as c0, $p1.flag }
+}
+
+--- expect unordered
+{"c0": 0.1, "p1.flag": -2147483648}
+
+--- expect shape
+c0: F64
+p1.flag: I32

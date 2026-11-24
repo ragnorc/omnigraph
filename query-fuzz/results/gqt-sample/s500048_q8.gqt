@@ -1,0 +1,35 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500048, case 8; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag {
+  vec: Vector(3)?
+  slug: DateTime? @index
+  nums: I64 @key
+  code: String?
+  text: String? @index
+}
+
+--- seed
+{"type":"Tag","data":{"vec":null,"slug":"2020-01-01T00:00:00Z","nums":42,"code":"RUN","text":"runs dog"}}
+{"type":"Tag","data":{"vec":[-0.73,0.07,1.91],"slug":null,"nums":7,"code":"the dog","text":"dog"}}
+{"type":"Tag","data":{"vec":null,"slug":null,"nums":-5,"code":null,"text":"data dog hello"}}
+{"type":"Tag","data":{"vec":[-0.08,-1.86,-0.21],"slug":"1999-12-31T23:59:59Z","nums":-9007199254740993,"code":"abc","text":"x RUN a RUN"}}
+
+--- mutate
+query q9($arg1: String, $arg2: I64, $arg3: I64, $arg4: String) {
+  insert Tag { slug: datetime("2020-01-01T00:00:00.123Z"), nums: 2.0, code: $arg1 }
+  insert Tag { nums: $arg2 }
+  insert Tag { slug: datetime("2020-01-01T00:00:00Z"), nums: $arg3, code: "abc", text: $arg4 }
+}
+
+--- params
+{"arg1": "abc", "arg2": 3, "arg3": -5, "arg4": "dog"}
+
+--- expect error: cannot convert Float(2.0) to Int64

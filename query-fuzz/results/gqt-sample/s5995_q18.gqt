@@ -1,0 +1,89 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5995, case 18; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  code: U64? @index
+  seen: String @key
+  score: enum(low, mid, high)? @index
+}
+node Org {
+  title: [Bool]
+  text: String @index
+  emb: Vector(3)?
+  @index(title)
+}
+node Person {
+  tags: String @key
+}
+node Place {
+  age: I64 @unique
+  code: F64
+}
+node Tag {
+  seen: DateTime?
+  body: F64? @index
+  count: I64
+}
+edge Likes: Doc -> Doc @card(0..1) {
+  role: [String]?
+}
+edge Owns: Org -> Org
+
+--- seed
+{"type":"Doc","data":{"seen":"of the and","score":"low"}}
+{"type":"Org","id":"o0","data":{"title":[true,true],"text":"Dogs the dog x","emb":[0.0,0.0,0.0]}}
+{"type":"Org","id":"o1","data":{"title":[false],"text":"","emb":[1.86,-0.42,-0.53]}}
+{"type":"Person","data":{"tags":"hello world"}}
+{"type":"Person","data":{"tags":"ran"}}
+{"type":"Place","id":"p0","data":{"age":42,"code":0.1}}
+{"type":"Place","id":"p1","data":{"age":2,"code":-2.25}}
+{"type":"Place","id":"p2","data":{"age":-2147483648,"code":-2.25}}
+{"type":"Place","id":"p3","data":{"age":9007199254740993,"code":3.0}}
+{"type":"Tag","id":"t0","data":{"seen":"2020-01-01T00:00:00.123Z","count":100}}
+{"type":"Tag","id":"t1","data":{"seen":"2024-02-29T12:00:00Z","body":2.5,"count":1}}
+{"type":"Tag","id":"t2","data":{"seen":null,"body":7.0,"count":1}}
+{"type":"Tag","id":"t3","data":{"seen":"2020-01-01T00:00:00.123Z","body":null,"count":7}}
+{"type":"Tag","id":"t4","data":{"body":2.5,"count":7}}
+{"type":"Tag","id":"t5","data":{"count":9007199254740993}}
+{"type":"Tag","id":"t6","data":{"seen":null,"body":0.1,"count":2}}
+{"type":"Tag","id":"t7","data":{"seen":"2024-02-29T12:00:00Z","body":0.1,"count":-1}}
+{"edge":"Likes","from":"of the and","to":"of the and","data":{"role":["naïve"]}}
+{"edge":"Owns","from":"o0","to":"o1"}
+{"edge":"Owns","from":"o0","to":"o0"}
+{"edge":"Owns","from":"o1","to":"o0"}
+{"edge":"Owns","from":"o0","to":"o0"}
+{"edge":"Owns","from":"o0","to":"o0"}
+{"edge":"Owns","from":"o1","to":"o0"}
+{"edge":"Owns","from":"o1","to":"o0"}
+{"edge":"Owns","from":"o1","to":"o1"}
+
+--- query
+query q19($arg1: DateTime) {
+  match {
+    $t1: Tag { seen: datetime("2020-01-01T00:00:00.123Z") }
+    $p2: Person
+    $t1.count in [7, 7] and $t1.seen >= $arg1
+  }
+  return { $t1.@id, $t1.count as c1, $p2 }
+  order { c1 asc }
+}
+
+--- params
+{"arg1": "2020-01-01T00:00:00.123Z"}
+
+--- expect ordered
+{"t1.@id": "t3", "c1": 7, "p2": {"@id": "hello world", "tags": "hello world"}}
+{"t1.@id": "t3", "c1": 7, "p2": {"@id": "ran", "tags": "ran"}}
+
+--- expect shape
+t1.@id: String
+c1: I64
+p2: Person

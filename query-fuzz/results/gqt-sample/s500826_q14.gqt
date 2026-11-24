@@ -1,0 +1,91 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 500826, case 14; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Doc {
+  slug: [Bool]?
+  weight: I64 @key
+  nums: [I64]
+  body: Blob?
+  @range(weight, -10..1000)
+}
+node Item {
+  content: [I64]?
+  weight: String @key
+}
+node Person {
+  level: String @index
+  code: String @key
+  vec: String
+  note: Blob?
+}
+node Place {
+  content: [Date]
+  count: Blob?
+  size: DateTime
+  text: String @index
+  emb: Vector(3)
+}
+edge Owns: Item -> Item
+edge Cites: Person -> Person
+edge Links: Doc -> Item
+
+--- seed
+{"type":"Doc","data":{"slug":[true],"weight":7,"nums":[],"body":"base64:AAEC"}}
+{"type":"Doc","data":{"slug":[true,false],"weight":0,"nums":[9007199254740993],"body":null}}
+{"type":"Item","data":{"content":[4611686018427387904],"weight":"it's"}}
+{"type":"Item","data":{"content":[7,4611686018427387904],"weight":"a"}}
+{"type":"Item","data":{"content":[1],"weight":"run"}}
+{"type":"Item","data":{"content":null,"weight":"data base"}}
+{"type":"Item","data":{"content":[-1,4611686018427387904],"weight":"the dog"}}
+{"type":"Item","data":{"content":[],"weight":"café"}}
+{"type":"Item","data":{"weight":"ab"}}
+{"type":"Item","data":{"content":[-2147483648,2,2],"weight":"running"}}
+{"type":"Person","data":{"level":"it's","code":"fox","vec":"hello world","note":null}}
+{"type":"Person","data":{"level":"and the","code":"café","vec":"database","note":"base64:SGVsbG8="}}
+{"type":"Person","data":{"level":"Dogs","code":"abc","vec":"run","note":"base64:AAEC"}}
+{"type":"Person","data":{"level":"Dogs","code":"naïve","vec":"database","note":"base64:AAEC"}}
+{"type":"Person","data":{"level":"café","code":"ran","vec":"RUN"}}
+{"type":"Person","data":{"level":"dog","code":"Ünïcode","vec":"runs","note":"base64:AAEC"}}
+{"type":"Person","data":{"level":"it's","code":"and the","vec":"naïve","note":"base64:AAEC"}}
+{"type":"Person","data":{"level":"a","code":"dog house","vec":"fox","note":null}}
+{"type":"Place","id":"p0","data":{"content":["2020-01-01"],"count":"base64:","size":"2024-02-29T12:00:00Z","text":"dog an","emb":[1.0,0.0,0.0]}}
+{"type":"Place","id":"p1","data":{"content":["1970-01-01"],"count":"base64:SGVsbG8=","size":"1999-12-31T23:59:59Z","text":"RUN","emb":[1.05,-1.01,1.11]}}
+{"edge":"Owns","from":"run","to":"run"}
+{"edge":"Owns","from":"café","to":"the dog"}
+{"edge":"Owns","from":"it's","to":"running"}
+{"edge":"Owns","from":"café","to":"café"}
+{"edge":"Owns","from":"it's","to":"a"}
+{"edge":"Owns","from":"a","to":"it's"}
+{"edge":"Cites","from":"fox","to":"fox"}
+{"edge":"Cites","from":"ran","to":"naïve"}
+{"edge":"Cites","from":"Ünïcode","to":"naïve"}
+{"edge":"Cites","from":"fox","to":"café"}
+{"edge":"Cites","from":"and the","to":"fox"}
+{"edge":"Cites","from":"café","to":"Ünïcode"}
+{"edge":"Links","from":"7","to":"it's"}
+{"edge":"Links","from":"0","to":"ab"}
+{"edge":"Links","from":"7","to":"data base"}
+{"edge":"Links","from":"0","to":"run"}
+{"edge":"Links","from":"0","to":"it's"}
+{"edge":"Links","from":"7","to":"the dog"}
+{"edge":"Links","from":"7","to":"ab"}
+{"edge":"Links","from":"7","to":"the dog"}
+
+--- mutate
+query q15($arg1: [I64], $arg2: String) {
+  insert Item { content: $arg1, weight: "a" }
+  insert Person { level: "and the", code: $arg2, vec: "runs" }
+  insert Doc { weight: 9007199254740992, nums: [] }
+}
+
+--- params
+{"arg1": [4611686018427387904, 9007199254740993], "arg2": "hello world"}
+
+--- expect error: T3

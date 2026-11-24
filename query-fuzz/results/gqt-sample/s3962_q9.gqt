@@ -1,0 +1,87 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 3962, case 9; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  seen: [I64]?
+  rank: [F64]
+  nums: [String]
+  flag: enum(red, green, blue, x-1)?
+  code: Bool?
+  @index(nums)
+}
+node Item {
+  body: F32
+  title: String @key
+  name: I64? @index
+  @range(name, -10..1000)
+}
+edge Cites: Place -> Place {
+  since: [String]?
+  weight: Date?
+}
+edge Near: Place -> Place {
+  since: [I64]?
+  role: I32?
+}
+edge Wrote: Place -> Place {
+  weight: I64?
+  since: I32
+}
+edge Knows: Place -> Place @card(0..2) {
+  role: I32?
+}
+
+--- seed
+{"type":"Place","id":"p0","data":{"seen":[3],"rank":[],"nums":["Ünïcode"],"flag":"blue","code":true}}
+{"type":"Place","id":"p1","data":{"seen":[-5,9007199254740993,7],"rank":[0.0],"nums":[],"flag":"red","code":null}}
+{"type":"Place","id":"p2","data":{"seen":null,"rank":[],"nums":["it's"],"flag":"x-1","code":true}}
+{"type":"Place","id":"p3","data":{"rank":[10000000000.0,7.0,7.0],"nums":["fox"],"flag":"red","code":false}}
+{"type":"Place","id":"p4","data":{"seen":null,"rank":[7.0],"nums":[],"flag":"x-1","code":true}}
+{"type":"Place","id":"p5","data":{"seen":null,"rank":[-2.25,2.5],"nums":["the"],"flag":"blue","code":null}}
+{"type":"Item","data":{"body":-2.25,"title":"a","name":42}}
+{"edge":"Cites","from":"p0","to":"p5","data":{"since":[],"weight":"2020-01-01"}}
+{"edge":"Cites","from":"p1","to":"p1","data":{"since":["Dogs","and the","dog house"],"weight":"1970-01-01"}}
+{"edge":"Cites","from":"p4","to":"p0","data":{"since":[],"weight":"2024-02-29"}}
+{"edge":"Cites","from":"p4","to":"p4","data":{"since":["runs","ab"]}}
+{"edge":"Cites","from":"p4","to":"p1","data":{"since":["fox","RUN","running"],"weight":"2024-02-29"}}
+{"edge":"Cites","from":"p5","to":"p2","data":{"since":["database"],"weight":"1999-12-31"}}
+{"edge":"Near","from":"p5","to":"p0","data":{"since":[42,0,9007199254740993],"role":0}}
+{"edge":"Wrote","from":"p4","to":"p2","data":{"weight":42,"since":2147483647}}
+{"edge":"Wrote","from":"p1","to":"p4","data":{"weight":3,"since":-5}}
+{"edge":"Wrote","from":"p5","to":"p3","data":{"since":-5}}
+{"edge":"Knows","from":"p1","to":"p1"}
+{"edge":"Knows","from":"p5","to":"p0","data":{"role":-1}}
+{"edge":"Knows","from":"p5","to":"p4","data":{"role":-5}}
+{"edge":"Knows","from":"p1","to":"p4","data":{"role":7}}
+{"edge":"Knows","from":"p0","to":"p1","data":{"role":2}}
+{"edge":"Knows","from":"p0","to":"p1","data":{"role":42}}
+
+--- query
+query q10($arg1: Bool) {
+  match {
+    $p1: Place
+  }
+  return { $p1.rank, $p1.nums, count($p1) as a0 }
+  order { a0 desc, $p1.rank desc }
+}
+
+--- params
+{"arg1": true}
+
+--- expect ordered
+{"p1.rank": [10000000000.0, 7.0, 7.0], "p1.nums": ["fox"], "a0": 1}
+{"p1.rank": [7.0], "p1.nums": [], "a0": 1}
+{"p1.rank": [0.0], "p1.nums": [], "a0": 1}
+{"p1.rank": [-2.25, 2.5], "p1.nums": ["the"], "a0": 1}
+{"p1.rank": [], "p1.nums": ["Ünïcode"], "a0": 1}
+{"p1.rank": [], "p1.nums": ["it's"], "a0": 1}
+
+--- expect shape

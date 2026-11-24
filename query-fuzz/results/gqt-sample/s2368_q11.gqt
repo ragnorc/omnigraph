@@ -1,0 +1,51 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2368, case 11; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Tag {
+  vec: F64? @index
+  name: I64 @key
+  note: String @index
+}
+node Place {
+  note: [String]?
+  vec: F64? @index
+  size: I64? @index
+  body: I64? @unique
+  nums: DateTime
+}
+edge Links: Tag -> Tag {
+  since: I64?
+  @key(@src, @dst)
+}
+
+--- seed
+{"type":"Tag","data":{"name":2,"note":"running dogs"}}
+{"type":"Tag","data":{"vec":2.5,"name":9007199254740993,"note":"ab"}}
+{"type":"Tag","data":{"vec":10000000000.0,"name":4611686018427387904,"note":"dog house"}}
+{"type":"Place","id":"p0","data":{"vec":0.1,"size":0,"nums":"2020-01-01T00:00:00Z"}}
+{"edge":"Links","from":"4611686018427387904","to":"2","data":{"since":42}}
+
+--- query
+query q12() {
+  match {
+    $p1: Place
+    "the" in $p1.note
+    $p1.size in [9007199254740992, 0, 9007199254740993] and $p1.nums < datetime("2020-01-01T00:00:00Z")
+    count { $p1.nums <= datetime("2020-01-01T00:00:00Z") } < 2
+  }
+  return { $p1.vec }
+}
+
+--- expect unordered
+
+
+--- expect shape
+p1.vec: F64

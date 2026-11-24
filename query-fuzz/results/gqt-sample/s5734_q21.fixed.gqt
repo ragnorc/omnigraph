@@ -1,0 +1,93 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5734, case 21; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  slug: Vector(2)
+  flag: enum(low, mid, high)? @index
+  vec: F64 @index
+}
+node Place {
+  weight: enum(a, b) @index
+  content: DateTime? @index
+  slug: Date?
+  age: U32?
+}
+node Tag {
+  level: Bool
+  seen: Vector(3)?
+  size: I32?
+  content: [Date]
+  text: String? @index
+}
+node Doc {
+  seen: enum(a, b)? @index
+}
+node Item {
+  vec: U64
+  nums: I32? @index
+  size: U64? @unique
+}
+edge Cites: Doc -> Item {
+  role: [String]?
+}
+edge Knows: Doc -> Place {
+  since: F64?
+  @key(@src, @dst)
+}
+edge Likes: Place -> Place {
+  since: [String]?
+}
+edge Owns: Doc -> Place
+
+--- seed
+{"type":"Org","id":"o0","data":{"slug":[1.0,1.0],"flag":null,"vec":0.0}}
+{"type":"Place","id":"p0","data":{"weight":"b","content":"2024-02-29T12:00:00Z","slug":"2020-01-01","age":1}}
+{"type":"Place","id":"p1","data":{"weight":"b","slug":"1970-01-01","age":null}}
+{"type":"Place","id":"p2","data":{"weight":"a","content":"2024-02-29T12:00:00Z","age":0}}
+{"type":"Place","id":"p3","data":{"weight":"b","slug":"1970-01-01","age":0}}
+{"type":"Place","id":"p4","data":{"weight":"b","content":"1999-12-31T23:59:59Z","slug":"2020-01-01","age":42}}
+{"type":"Tag","id":"t0","data":{"level":false,"seen":[0.5,0.5,0.5],"size":null,"content":["1970-01-01"],"text":"Dogs data x"}}
+{"type":"Tag","id":"t1","data":{"level":true,"seen":[1.0,0.0,0.0],"size":3,"content":["2024-02-29"],"text":"a run the"}}
+{"type":"Doc","id":"d0","data":{"seen":"b"}}
+{"type":"Doc","id":"d1","data":{"seen":"b"}}
+{"type":"Doc","id":"d2","data":{"seen":"b"}}
+{"type":"Doc","id":"d3","data":{"seen":"b"}}
+{"type":"Doc","id":"d4","data":{"seen":"b"}}
+{"type":"Doc","id":"d5","data":{"seen":"b"}}
+{"type":"Doc","id":"d6","data":{"seen":null}}
+{"type":"Doc","id":"d7","data":{"seen":"b"}}
+{"type":"Item","id":"i0","data":{"vec":42,"nums":42,"size":42}}
+{"type":"Item","id":"i1","data":{"vec":2,"nums":2,"size":7}}
+{"type":"Item","id":"i2","data":{"vec":4611686018427387904}}
+{"type":"Item","id":"i3","data":{"vec":7,"nums":0,"size":100}}
+{"edge":"Cites","from":"d5","to":"i1"}
+{"edge":"Cites","from":"d0","to":"i0","data":{"role":["hello world","data base","dog"]}}
+{"edge":"Cites","from":"d5","to":"i3","data":{"role":[]}}
+{"edge":"Cites","from":"d1","to":"i2"}
+{"edge":"Knows","from":"d2","to":"p0","data":{"since":7.0}}
+{"edge":"Knows","from":"d7","to":"p4","data":{"since":10000000000.0}}
+{"edge":"Knows","from":"d3","to":"p0","data":{"since":7.0}}
+{"edge":"Likes","from":"p1","to":"p3","data":{"since":["ab"]}}
+{"edge":"Owns","from":"d6","to":"p3"}
+{"edge":"Owns","from":"d2","to":"p3"}
+{"edge":"Owns","from":"d1","to":"p0"}
+{"edge":"Owns","from":"d7","to":"p1"}
+
+--- mutate
+query q22($arg1: Vector(2), $arg2: U32) {
+  match { $x: Org } where $x.flag = "mid"  update $x set { slug: $arg1, flag: "high" }
+  match { $p: Place } where $p.slug = date("2020-01-01") and $p.age > $arg2  update $p set { slug: date("1970-01-01"), weight: "b" }
+}
+
+--- params
+{"arg1": [-0.0, 0.2], "arg2": 1}
+
+--- expect affected: nodes=1 edges=0

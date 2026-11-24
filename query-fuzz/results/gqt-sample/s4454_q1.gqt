@@ -1,0 +1,77 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 4454, case 1; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  size: Vector(2)?
+  code: enum(low, mid, high)? @index
+  vec: String
+  name: String @key
+  age: U64
+}
+node Person {
+  note: enum(red, green, blue, x-1)?
+  title: enum(low, mid, high) @index
+}
+node Doc {
+  score: F32?
+  slug: String? @unique
+  code: enum(red, green, blue, x-1)?
+  rank: DateTime?
+  count: Date
+}
+node Place {
+  flag: Bool?
+  code: U32
+  age: DateTime
+  score: enum(a, b)
+  text: String? @index
+  emb: Vector(3)
+}
+edge Likes: Org -> Org {
+  weight: Bool
+}
+edge Wrote: Org -> Person {
+  weight: Date?
+}
+edge Cites: Org -> Org
+
+--- seed
+{"type":"Person","id":"p0","data":{"title":"high"}}
+{"type":"Person","id":"p1","data":{"note":"green","title":"high"}}
+{"type":"Person","id":"p2","data":{"note":"blue","title":"high"}}
+{"type":"Person","id":"p3","data":{"note":"blue","title":"mid"}}
+{"type":"Person","id":"p4","data":{"note":"green","title":"low"}}
+{"type":"Person","id":"p5","data":{"note":"green","title":"mid"}}
+{"type":"Person","id":"p6","data":{"note":"red","title":"mid"}}
+{"type":"Person","id":"p7","data":{"note":"red","title":"high"}}
+{"type":"Doc","id":"d0","data":{"score":3.0,"slug":"Dogs","code":"x-1","rank":"2020-01-01T00:00:00.123Z","count":"1999-12-31"}}
+{"type":"Doc","id":"d1","data":{"score":0.5,"slug":"","code":"green","rank":"2024-02-29T12:00:00Z","count":"2020-01-01"}}
+{"type":"Place","id":"p0","data":{"flag":null,"code":0,"age":"2024-02-29T12:00:00Z","score":"b","text":"running run base","emb":[0.5,0.5,0.5]}}
+{"type":"Place","id":"p1","data":{"code":1,"age":"2020-01-01T00:00:00Z","score":"b","text":"dog running Dogs","emb":[1.0,1.0,1.0]}}
+
+--- query
+query q2() {
+  match {
+    $p1: Place
+    $p1.score in ["a", "b"]
+    $p1.code in [100] or $p1.flag = true
+    exists { $p1.flag }
+  }
+  return { $p1  $p1.text as c1 }
+  order { c1 desc }
+  limit 5
+}
+
+--- expect ordered
+
+
+--- expect shape
+p1: Place
+c1: String

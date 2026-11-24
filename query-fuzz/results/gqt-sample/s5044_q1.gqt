@@ -1,0 +1,63 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5044, case 1; the edition-2 text, expectations blessed from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  flag: Blob?
+  code: String
+  score: Vector(2)
+  text: String @index
+}
+node Item {
+  slug: enum(red, green, blue, x-1)? @unique
+  name: Vector(2)?
+  rank: I64 @key
+  code: I32 @index
+  title: I64
+  @range(title, -10..1000)
+}
+edge Knows: Item -> Item @card(0..1) {
+  since: I32?
+  w: [String]?
+}
+
+--- seed
+{"type":"Place","id":"p0","data":{"flag":"base64:","code":"Hello World","score":[1.19,0.46],"text":""}}
+{"type":"Item","data":{"slug":"red","name":[-1.0,-1.0],"rank":3,"code":-2147483648,"title":100}}
+{"type":"Item","data":{"slug":"x-1","name":[1.0,1.0],"rank":100,"code":-1,"title":1}}
+{"type":"Item","data":{"slug":"green","name":[0.06,-0.11],"rank":7,"code":3,"title":3}}
+{"type":"Item","data":{"slug":"blue","name":[0.5,0.5],"rank":2,"code":-5,"title":42}}
+{"type":"Item","data":{"name":[0.0,0.0],"rank":42,"code":-5,"title":7}}
+{"edge":"Knows","from":"2","to":"100","data":{"since":100,"w":["the"]}}
+{"edge":"Knows","from":"100","to":"100","data":{"since":-2147483648,"w":["Hello World"]}}
+{"edge":"Knows","from":"3","to":"3","data":{"since":3,"w":["dog house","Run","runs"]}}
+
+--- query
+query q2($arg1: [I32], $arg2: Vector(2)) {
+  match {
+    $i1: Item
+    $i1 $e3:knows $i2
+    $i2 knows $i4
+    $i4.code in $arg1
+    $i4.rank <= 9007199254740992.0
+    avg($i5.title) { $i5: Item $i1 knows $i5 } < 1
+  }
+  return { $i2.slug }
+  order { nearest($i1.name, $arg2) }
+  limit 1
+}
+
+--- params
+{"arg1": [-5, 3], "arg2": [0.8, 0.6]}
+
+--- expect ordered
+
+
+--- expect shape
+i2.slug: String

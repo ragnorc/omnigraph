@@ -1,0 +1,57 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2200, case 22; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Person {
+  slug: U32? @index
+  weight: [Bool]?
+  born: [Date]
+  code: DateTime? @index
+  @index(weight)
+}
+node Item {
+  count: enum(low, mid, high) @index
+  slug: String? @index
+  seen: Date @index
+}
+edge Near: Person -> Person
+
+--- seed
+{"type":"Person","id":"p0","data":{"slug":3,"born":["1970-01-01","2024-02-29","1970-01-01"],"code":"1999-12-31T23:59:59Z"}}
+{"type":"Item","id":"i0","data":{"count":"high","slug":"fox","seen":"2020-01-01"}}
+{"type":"Item","id":"i1","data":{"count":"high","slug":"dog","seen":"2020-01-01"}}
+{"type":"Item","id":"i2","data":{"count":"high","slug":"abc","seen":"2024-02-29"}}
+{"type":"Item","id":"i3","data":{"count":"low","slug":"dog","seen":"2020-01-01"}}
+{"type":"Item","id":"i4","data":{"count":"high","slug":"Hello World","seen":"2020-01-01"}}
+{"edge":"Near","from":"p0","to":"p0"}
+{"edge":"Near","from":"p0","to":"p0"}
+
+--- query
+query q23() {
+  match {
+    $p1: Person
+    $p2: Person
+    $p2 near $p1
+    $p2.code is null
+    true in $p2.weight
+    not { $p3: Person
+      $p3 near $p1
+      date("2020-01-01") in $p3.born }
+  }
+  return { $p1.slug, $p2.weight contains false as b1 }
+  limit 1
+}
+
+--- expect unordered
+
+
+--- expect shape
+p1.slug: U32
+b1: Bool

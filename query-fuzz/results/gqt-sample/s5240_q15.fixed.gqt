@@ -1,0 +1,52 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5240, case 15; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  rank: F32?
+  code: DateTime @index
+  score: String @key
+}
+edge Near: Place -> Place @card(0..2)
+edge Owns: Place -> Place {
+  @key(@src, @dst)
+}
+
+--- seed
+{"type":"Place","data":{"rank":7.0,"code":"2020-01-01T00:00:00Z","score":"naïve"}}
+{"type":"Place","data":{"rank":3.0,"code":"2024-02-29T12:00:00Z","score":"dog"}}
+{"type":"Place","data":{"rank":1.5,"code":"2020-01-01T00:00:00Z","score":"run"}}
+{"type":"Place","data":{"rank":1.5,"code":"1999-12-31T23:59:59Z","score":"Hello World"}}
+{"type":"Place","data":{"rank":3.0,"code":"2020-01-01T00:00:00.123Z","score":"fox"}}
+{"type":"Place","data":{"rank":7.0,"code":"2024-02-29T12:00:00Z","score":"k"}}
+{"edge":"Near","from":"dog","to":"naïve"}
+{"edge":"Near","from":"run","to":"k"}
+{"edge":"Near","from":"run","to":"Hello World"}
+{"edge":"Owns","from":"k","to":"k"}
+{"edge":"Owns","from":"run","to":"k"}
+{"edge":"Owns","from":"dog","to":"naïve"}
+{"edge":"Owns","from":"dog","to":"k"}
+{"edge":"Owns","from":"Hello World","to":"run"}
+
+--- query
+query q16($arg1: String) {
+  match { let $pop = { match { $p1: Place, $p2: Place, $p1 (near | owns) $p2 } return { $p1, $p2 } }, from bm25($pop, $p1.score, $arg1) as $score }
+  return { $p2 as c0, $p1.code, $p1.rank as c2 }
+  order { $score desc }
+  limit 2
+}
+
+--- params
+{"arg1": "cafe"}
+
+--- expect ordered
+
+
+--- expect shape

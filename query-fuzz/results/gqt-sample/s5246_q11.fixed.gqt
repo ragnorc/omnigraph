@@ -1,0 +1,70 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5246, case 11; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Item {
+  seen: I64?
+}
+node Tag {
+  level: I32? @index
+  content: DateTime?
+  born: String @index
+  slug: Blob?
+  @range(level, -10..1000)
+}
+node Person {
+  flag: Bool
+  rank: [Bool]
+  age: String @index
+}
+node Doc {
+  title: Vector(2)?
+  note: String? @index
+}
+node Org {
+  tags: Blob?
+  slug: U32 @index
+  code: Bool
+  name: U32?
+  age: String? @index
+}
+edge Near: Person -> Tag {
+  since: [I64]
+}
+
+--- seed
+{"type":"Item","id":"i0","data":{"seen":3}}
+{"type":"Item","id":"i1","data":{"seen":2}}
+{"type":"Person","id":"p0","data":{"flag":true,"rank":[true,true],"age":"RUN"}}
+{"type":"Person","id":"p1","data":{"flag":false,"rank":[],"age":"Ünïcode"}}
+{"type":"Person","id":"p2","data":{"flag":false,"rank":[false,false],"age":"of the and"}}
+{"type":"Person","id":"p3","data":{"flag":true,"rank":[false],"age":"RUN"}}
+{"type":"Person","id":"p4","data":{"flag":true,"rank":[false,false,true],"age":"hello world"}}
+{"type":"Doc","id":"d0","data":{"title":[0.48,1.61],"note":"runs"}}
+{"type":"Doc","id":"d1","data":{"title":[1.0,0.0],"note":null}}
+{"type":"Doc","id":"d2","data":{"title":[-1.89,-0.15],"note":null}}
+{"type":"Org","id":"o0","data":{"tags":"base64:AAEC","slug":2,"code":false,"name":0,"age":null}}
+{"type":"Org","id":"o1","data":{"slug":4294967295,"code":true,"name":7,"age":"database"}}
+{"type":"Org","id":"o2","data":{"tags":"base64:SGVsbG8=","slug":0,"code":true,"name":42,"age":"dog house"}}
+{"type":"Org","id":"o3","data":{"tags":"base64:AAEC","slug":1,"code":false,"age":null}}
+{"type":"Org","id":"o4","data":{"slug":1,"code":true,"name":7}}
+{"type":"Org","id":"o5","data":{"tags":null,"slug":3,"code":false,"name":0}}
+{"type":"Org","id":"o6","data":{"tags":null,"slug":7,"code":false,"name":100,"age":"Hello World"}}
+{"type":"Org","id":"o7","data":{"tags":"base64:SGVsbG8=","slug":0,"code":true,"name":100}}
+
+--- mutate
+query lower($arg1: String, $arg2: Vector(2), $arg3: String) {
+  match { $x: Doc } where $x.note < $arg3  update $x set { note: $arg1, title: $arg2 }
+}
+
+--- params
+{"arg1": "runs", "arg2": [0.0, -0.5], "arg3": "runs"}
+
+--- expect affected: nodes=0 edges=0

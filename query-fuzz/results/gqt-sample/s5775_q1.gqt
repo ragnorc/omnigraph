@@ -1,0 +1,82 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5775, case 1; the edition-2 text, expectations blessed from EDITION-2
+# notes: the generated world ran `omnigraph index build` after its load; this case does not
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Org {
+  rank: enum(red, green, blue, x-1)
+  weight: Blob?
+  title: [String]?
+  vec: String @key
+  name: Date @index
+  @index(title)
+}
+node Doc {
+  level: Vector(3)
+  name: I32? @index
+  body: [Date]
+}
+node Item {
+  note: F64
+}
+node Tag {
+  title: String?
+  count: String?
+  born: I32 @key
+  code: I32 @index
+}
+node Person {
+  content: F64 @index
+  nums: Date
+  @range(content, -10..1000)
+}
+edge Wrote: Item -> Item
+edge Likes: Person -> Person
+
+--- seed
+{"type":"Org","data":{"rank":"red","weight":"base64:SGVsbG8=","title":null,"vec":"x y z","name":"1970-01-01"}}
+{"type":"Org","data":{"rank":"red","title":["running dogs","café"],"vec":"RUN","name":"1999-12-31"}}
+{"type":"Doc","id":"d0","data":{"level":[-1.59,0.51,-1.74],"body":["2020-01-01","1970-01-01","2020-01-01"]}}
+{"type":"Doc","id":"d1","data":{"level":[1.0,1.0,1.0],"name":0,"body":["1970-01-01"]}}
+{"type":"Doc","id":"d2","data":{"level":[1.0,0.0,0.0],"name":3,"body":["2020-01-01"]}}
+{"type":"Doc","id":"d3","data":{"level":[1.0,1.0,1.0],"name":2,"body":["2024-02-29"]}}
+{"type":"Item","id":"i0","data":{"note":0.1}}
+{"type":"Item","id":"i1","data":{"note":0.1}}
+{"type":"Item","id":"i2","data":{"note":0.0}}
+{"type":"Item","id":"i3","data":{"note":10000000000.0}}
+{"type":"Item","id":"i4","data":{"note":1.5}}
+{"type":"Tag","data":{"count":null,"born":42,"code":100}}
+{"type":"Tag","data":{"title":"the dog","count":"café","born":2,"code":-5}}
+{"type":"Tag","data":{"title":"and the","count":"it's","born":-1,"code":42}}
+{"type":"Tag","data":{"title":"data base","count":"of the and","born":3,"code":-2147483648}}
+{"type":"Tag","data":{"title":"ran","count":null,"born":2147483647,"code":7}}
+{"type":"Tag","data":{"title":"a","count":null,"born":-5,"code":0}}
+{"type":"Person","id":"p0","data":{"content":0.0,"nums":"1999-12-31"}}
+{"type":"Person","id":"p1","data":{"content":1.5,"nums":"2020-01-01"}}
+{"edge":"Wrote","from":"i4","to":"i4"}
+{"edge":"Wrote","from":"i2","to":"i4"}
+{"edge":"Wrote","from":"i0","to":"i3"}
+
+--- query
+query q2($arg1: String, $arg2: String) {
+  match {
+    $o1: Org
+    "ran" in $o1.title
+    $o1.title contains $arg1
+    match_text($o1.vec, "dgo")
+  }
+  return distinct { $o1.name as c0  $o1.vec }
+  order { bm25($o1.vec, $arg2) asc }
+  limit 3
+}
+
+--- params
+{"arg1": "café", "arg2": "cafe"}
+
+--- expect error: T54

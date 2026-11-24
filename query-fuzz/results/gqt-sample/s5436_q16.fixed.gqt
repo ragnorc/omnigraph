@@ -1,0 +1,58 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 5436, case 16; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  content: String? @index
+  score: String @key
+}
+node Item {
+  rank: String?
+  code: I32?
+  age: I64 @key
+  body: F64 @index
+  weight: Date?
+}
+node Person {
+  level: F64
+  weight: [String]?
+  body: Date @index
+  text: String @index
+  emb: Vector(3)?
+  @range(level, -10..1000)
+}
+edge Near: Person -> Item {
+  weight: DateTime?
+  since: enum(red, green, blue, x-1)?
+}
+
+--- seed
+{"type":"Item","data":{"rank":"Hello World","code":7,"age":1,"body":3.0,"weight":null}}
+{"type":"Item","data":{"rank":"dog","code":0,"age":-2147483648,"body":7.0,"weight":"2024-02-29"}}
+{"type":"Person","id":"p0","data":{"level":1.5,"weight":["fox","runs","run"],"body":"1970-01-01","text":"x RUN","emb":[0.94,-0.18,-0.1]}}
+{"type":"Person","id":"p1","data":{"level":0,"weight":["the"],"body":"2020-01-01","text":"the a a dog","emb":null}}
+{"type":"Person","id":"p2","data":{"level":7,"weight":["it's","running","dog house"],"body":"2020-01-01","text":"RUN café RUN","emb":null}}
+{"type":"Person","id":"p3","data":{"level":0.1,"weight":[],"body":"2020-01-01","text":"runs a Dogs","emb":null}}
+{"type":"Person","id":"p4","data":{"level":-2.25,"weight":[],"body":"2020-01-01","text":"hello ran dog"}}
+
+--- query
+query q17() {
+  match {
+    $i1: Item
+  }
+  return { $i1.weight,  $i1.age as c1 }
+  order { $i1.weight }
+}
+
+--- expect ordered
+{"c1": 1}
+{"i1.weight": "2024-02-29", "c1": -2147483648}
+
+--- expect shape

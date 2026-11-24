@@ -1,0 +1,61 @@
+# issue: none
+# notes: query-fuzz gen v1, world seed 2758, case 1; the edition-2 text, expectations blessed from EDITION-2
+# notes: the `omnigraph lint --fix` rewrite of the edition-2 text, expectations from EDITION-2
+
+--- runner
+timeout_ms: 10000
+environments:
+  - target: omnigraph-engine
+    storage: local-filesystem
+
+--- schema
+node Place {
+  score: F64
+  level: [String]?
+  age: I32
+  nums: String @index
+  @key(age, nums)
+  @range(score, -10..1000)
+}
+node Item {
+  rank: Bool
+  size: Vector(3)
+  flag: I64 @key
+  text: String @index
+}
+edge Near: Item -> Item
+edge Knows: Item -> Place {
+  role: F64
+}
+
+--- seed
+{"type":"Place","data":{"score":2.5,"level":null,"age":-5,"nums":"x"}}
+{"type":"Place","data":{"score":-2.25,"level":["x y z"],"age":100,"nums":"ab"}}
+{"type":"Place","data":{"score":0.0,"level":["hello world"],"age":-1,"nums":"running dogs"}}
+{"type":"Place","data":{"score":2.5,"level":[],"age":-5,"nums":"abc"}}
+{"type":"Place","data":{"score":7.0,"level":["and the","ran","running"],"age":1,"nums":"running"}}
+{"type":"Place","data":{"score":2.5,"level":["x","the"],"age":100,"nums":"fox"}}
+{"type":"Place","data":{"score":0.1,"level":[],"age":7,"nums":"x y z"}}
+{"type":"Place","data":{"score":0.1,"level":["the"],"age":-2147483648,"nums":"ran"}}
+{"type":"Item","data":{"rank":true,"size":[-1.81,0.95,1.62],"flag":-2147483648,"text":""}}
+{"type":"Item","data":{"rank":false,"size":[-0.22,-0.35,-1.25],"flag":4611686018427387904,"text":"a"}}
+{"type":"Item","data":{"rank":false,"size":[1.0,0.0,0.0],"flag":9007199254740993,"text":"a"}}
+{"type":"Item","data":{"rank":true,"size":[-1.0,-1.0,-1.0],"flag":1,"text":"fox Dogs the run"}}
+{"type":"Item","data":{"rank":true,"size":[1.0,0.0,0.0],"flag":-9007199254740993,"text":""}}
+{"edge":"Near","from":"1","to":"-9007199254740993"}
+{"edge":"Near","from":"4611686018427387904","to":"4611686018427387904"}
+{"edge":"Near","from":"1","to":"-2147483648"}
+{"edge":"Knows","from":"9007199254740993","to":"[\"7\",\"x y z\"]","data":{"role":1.5}}
+{"edge":"Knows","from":"9007199254740993","to":"[\"100\",\"fox\"]","data":{"role":2.5}}
+{"edge":"Knows","from":"1","to":"[\"1\",\"running\"]","data":{"role":7.0}}
+
+--- mutate
+query q2($arg1: I32, $arg2: Bool, $arg3: Vector(3), $arg4: I64) {
+  match { $x: Place } where $x.age != $arg1  update $x set { score: 0.1 }
+  insert Item { rank: $arg2, size: $arg3, flag: $arg4, text: "a" }
+}
+
+--- params
+{"arg1": -1, "arg2": true, "arg3": [1.0, -0.9, -0.6], "arg4": 9007199254740993}
+
+--- expect error: Q001
