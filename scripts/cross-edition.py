@@ -872,6 +872,86 @@ class SelfTest(unittest.TestCase):
         self.assertIn("ci.yml", next(iter(pins.values())))
 
 
+def run_generated(args: argparse.Namespace) -> int:
+    """Generated cases (query-fuzz/): each `<case>.gqt` holds an edition-2 text,
+    which both runners run unchanged, and its sibling `<case>.fixed.gqt`, when
+    present, holds `omnigraph lint --fix`'s rewrite, which the current runner
+    runs. Each pair of observations is compared as `run` compares a corpus
+    case's two texts; the differences are reported, not judged: the generated
+    cases have no sanctioned table, and query-fuzz/harness/classify.py judges
+    them against the RFC's Compatibility section."""
+    cases_dir = Path(args.cases).resolve()
+    work = Path(args.work).resolve()
+    work.mkdir(parents=True, exist_ok=True)
+    edition_2_runner = Path(args.edition_2_runner).resolve()
+    current_runner = Path(args.current_runner).resolve()
+    cases = sorted(p for p in cases_dir.rglob("*.gqt") if not p.name.endswith(".fixed.gqt"))
+
+    def one(path: Path):
+        relative = str(path.relative_to(cases_dir))
+        text = path.read_text()
+        old = run_side(edition_2_runner, text, work / "edition-2", relative, args.timeout)
+        new = run_side(current_runner, text, work / "current", relative, args.timeout)
+        fixed_path = path.with_name(path.name[: -len(".gqt")] + ".fixed.gqt")
+        fixed = (
+            run_side(current_runner, fixed_path.read_text(), work / "fixed", relative, args.timeout)
+            if fixed_path.exists()
+            else None
+        )
+        return relative, old, new, fixed
+
+    def compare(old: SideResult, new: SideResult) -> list[dict]:
+        found = []
+        if not new.steps and "does not parse" in new.message:
+            # The runner refuses a step it cannot parse when it loads the
+            # case, before any step runs: the refusal is the observation.
+            refused = new.message[new.message.find("does not parse"):][:300]
+            for key, obs in sorted(old.steps.items()):
+                found.append({"step": key[0], "aspect": "error",
+                              "detail": f"edition 2 {'failed: ' + short(obs.error) if obs.error else 'succeeded'}; current refused the case: {refused}",
+                              "edition_2": obs.to_json(), "current": {"error": refused}})
+            return found
+        pairs = align(old.order, new.order)
+        for key in sorted(new.steps):
+            op = key[:2]
+            if op not in pairs:
+                continue
+            old_key = pairs[op] + key[2:]
+            if old_key not in old.steps:
+                continue
+            for aspect, detail in differences(old.steps[old_key], new.steps[key]):
+                found.append({"step": key[0], "aspect": aspect, "detail": detail,
+                              "edition_2": old.steps[old_key].to_json(), "current": new.steps[key].to_json()})
+        return found
+
+    report = {"cases": len(cases), "results": []}
+    counts: Counter = Counter()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
+        for relative, old, new, fixed in pool.map(one, cases):
+            entry = {"case": relative, "edition_2_status": old.status, "current_status": new.status,
+                     "unchanged": compare(old, new)}
+            # A worker panic is a run-level `error` record the step reader does
+            # not attach to a step: name it, so it never reads as a success.
+            for label, side in (("current", new), ("fixed", fixed)):
+                if side is not None and "panicked" in side.message:
+                    entry[f"{label}_panic"] = side.message[side.message.find("panicked"):][:300]
+                    counts[f"{label} panic"] += 1
+            if fixed is not None:
+                entry["fixed"] = compare(old, fixed)
+            for d in entry["unchanged"]:
+                counts[f"unchanged {d['aspect']}"] += 1
+            for d in entry.get("fixed", []):
+                counts[f"fixed {d['aspect']}"] += 1
+            report["results"].append(entry)
+    report["counts"] = dict(counts)
+    (work / "report.json").write_text(json.dumps(report, indent=1, sort_keys=True))
+    print(f"cross-edition generated: {len(cases)} cases")
+    for k, v in sorted(counts.items()):
+        print(f"  {v:5} {k}")
+    print(f"report: {work / 'report.json'}")
+    return 0
+
+
 def main() -> int:
     if "--self-test" in sys.argv[1:]:
         suite = unittest.defaultTestLoader.loadTestsFromTestCase(SelfTest)
@@ -897,7 +977,16 @@ def main() -> int:
         help="compare the traces an earlier run left under --work instead of running again",
     )
     r.add_argument("--case", action="append", help="a case path under the repository root")
+    g = sub.add_parser("run-generated", help="run query-fuzz's generated cases: each edition-2 text on both runners, its fix on the current one")
+    g.add_argument("--edition-2-runner", required=True)
+    g.add_argument("--current-runner", required=True)
+    g.add_argument("--cases", required=True)
+    g.add_argument("--work", required=True)
+    g.add_argument("--jobs", type=int, default=os.cpu_count() or 2)
+    g.add_argument("--timeout", type=int, default=600)
     args = parser.parse_args()
+    if args.command == "run-generated":
+        return run_generated(args)
     return run(args)
 
 
