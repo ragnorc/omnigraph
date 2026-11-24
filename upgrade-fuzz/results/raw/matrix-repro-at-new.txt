@@ -1,0 +1,405 @@
+
+=== an explicit l2 distance: NEW plans 0 steps, applies, and OLD can no longer open the graph
+$ /src/uf/bin/new/omnigraph schema plan --schema /tmp/tmp.M0vimLydJK/l2/next.pg --target /tmp/tmp.M0vimLydJK/l2/g --json
+{
+  "uri": "/tmp/tmp.M0vimLydJK/l2/g",
+  "supported": true,
+  "step_count": 0,
+  "steps": []
+}
+[exit 0]
+$ /src/uf/bin/new/omnigraph schema apply --schema /tmp/tmp.M0vimLydJK/l2/next.pg --target /tmp/tmp.M0vimLydJK/l2/g --json
+{
+  "uri": "/tmp/tmp.M0vimLydJK/l2/g",
+  "supported": true,
+  "applied": false,
+  "step_count": 0,
+  "graph_manifest_version": 2,
+  "steps": []
+}
+[exit 0]
+$ /src/uf/bin/rel/omnigraph snapshot --target /tmp/tmp.M0vimLydJK/l2/g --json
+{
+  "graph_branch": "main",
+  "graph_manifest_version": 2,
+  "internal_schema_version": 17,
+  "datasets": [
+    {
+      "entity_kind": "node",
+      "type_name": "Doc",
+      "dataset_path": "nodes/0000000000000001-0000000000000004",
+      "published_dataset_version": 2,
+      "native_dataset_branch": null,
+      "entity_count": 1
+    }
+  ]
+}
+[exit 0]
+
+=== @index on a list property (LABEL_LIST): NEW applies it, OLD refuses the whole graph with a parse error
+$ /src/uf/bin/new/omnigraph schema apply --schema /tmp/tmp.M0vimLydJK/list/next.pg --target /tmp/tmp.M0vimLydJK/list/g --json
+{
+  "uri": "/tmp/tmp.M0vimLydJK/list/g",
+  "supported": true,
+  "applied": true,
+  "step_count": 1,
+  "graph_manifest_version": 3,
+  "steps": [
+    {
+      "kind": "add_constraint",
+      "type_kind": "node",
+      "type_name": "T",
+      "constraint": {
+        "Index": [
+          "tags"
+        ]
+      }
+    }
+  ],
+  "one_way_constructs": [
+    {
+      "construct": "list_index",
+      "description": "`@index` on a List property",
+      "type_name": "T",
+      "property": "tags",
+      "line": 1,
+      "column": 29
+    }
+  ],
+  "one_way_note": "binaries before this release refuse the whole graph after this apply, and only a backup taken before the upgrade restores it"
+}
+[exit 0]
+$ /src/uf/bin/rel/omnigraph snapshot --target /tmp/tmp.M0vimLydJK/list/g --json
+{
+  "error": "schema evolution is locked down in phase 1: schema-contract source is not a valid accepted schema definition: parse error: parse error: @index is not supported on list property T.tags; manual coordination is required",
+  "code": "conflict",
+  "disposition": {
+    "effects": "none",
+    "action": "refresh"
+  }
+}
+[exit 1]
+
+=== the respelling the RFC prescribes, @index(fulltext): OLD then refuses every read and write, not only the index
+$ /src/uf/bin/new/omnigraph schema apply --schema /tmp/tmp.M0vimLydJK/ft/next.pg --target /tmp/tmp.M0vimLydJK/ft/g --json
+{
+  "uri": "/tmp/tmp.M0vimLydJK/ft/g",
+  "supported": true,
+  "applied": true,
+  "step_count": 1,
+  "graph_manifest_version": 3,
+  "steps": [
+    {
+      "kind": "change_full_text_analysis",
+      "type_kind": "node",
+      "type_name": "Doc",
+      "property_name": "title",
+      "from": null,
+      "to": {
+        "scorer": "bm25_v1"
+      }
+    }
+  ],
+  "one_way_constructs": [
+    {
+      "construct": "full_text_index",
+      "description": "`@index(fulltext)`, with or without options",
+      "type_name": "Doc",
+      "property": "title",
+      "line": 1,
+      "column": 31
+    }
+  ],
+  "one_way_note": "binaries before this release refuse the whole graph after this apply, and only a backup taken before the upgrade restores it"
+}
+[exit 0]
+$ /src/uf/bin/rel/omnigraph query n --query /tmp/tmp.M0vimLydJK/ft/q.gq --target /tmp/tmp.M0vimLydJK/ft/g --format json
+{
+  "error": "schema evolution is locked down in phase 1: schema feature 'full-text-analysis' in the schema_contract row is unknown to this build; upgrade omnigraph before opening this graph; open will not recover or migrate this schema; manual coordination is required",
+  "code": "conflict",
+  "disposition": {
+    "effects": "none",
+    "action": "refresh"
+  }
+}
+[exit 1]
+
+=== one refused declaration makes every stored query of its file unavailable, each with that declaration's diagnostic
+`fine` compiles under NEW on its own: ok
+$ /src/uf/bin/new/omnigraph queries list --target /tmp/tmp.M0vimLydJK/sq/root --graph g --json
+{
+  "queries": [
+    {
+      "name": "fine",
+      "mcp_expose": false,
+      "tool_name": null,
+      "mutation": false,
+      "params": []
+    }
+  ],
+  "unavailable": [
+    {
+      "name": "old_form",
+      "error": "error[Q010] at line 7, column 11: a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`; fix: match { $d: Doc } where $d.slug = \"a\"; edits: bytes 80..111 -> \"match { $d: Doc } where $d.slug = \\\"a\\\"\"",
+      "diagnostic": {
+        "code": "Q010",
+        "position": {
+          "line": 7,
+          "column": 11,
+          "byte": 88
+        },
+        "end": {
+          "line": 7,
+          "column": 34,
+          "byte": 111
+        },
+        "expected": "a binding takes no property map: `$x: T { p: v }` is the equality `$x.p = v` in `where`",
+        "fix": "match { $d: Doc } where $d.slug = \"a\"",
+        "suggestion": {
+          "applicability": "machine_applicable",
+          "edits": [
+            {
+              "start": 80,
+              "end": 111,
+              "replacement": "match { $d: Doc } where $d.slug = \"a\""
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
+[exit 0]
+
+=== fuzzy(field, q, n): the printed fix is a placeholder with max_edits 2, and no edit
+$ /src/uf/bin/new/omnigraph query f --query /tmp/tmp.M0vimLydJK/fz/q.gq --params {"q":"zebre"} --target /tmp/tmp.M0vimLydJK/fz/g --format json
+{
+  "error": "type error: T6: `fuzzy` is not a registry row; the lexical predicate is `match_terms(field, terms(text, mode: any, max_edits: n))`",
+  "code": "bad_request",
+  "disposition": {
+    "effects": "none",
+    "action": "fix"
+  },
+  "diagnostic": {
+    "code": "T6",
+    "position": {
+      "line": 1,
+      "column": 47,
+      "byte": 46
+    },
+    "end": {
+      "line": 1,
+      "column": 69,
+      "byte": 68
+    },
+    "stage": "typecheck",
+    "expected": "`fuzzy` is not a registry row; the lexical predicate is `match_terms(field, terms(text, mode: any, max_edits: n))`",
+    "fix": "match_terms($d.title, terms($q, mode: any, max_edits: 1))",
+    "suggestion": {
+      "applicability": "machine_applicable",
+      "edits": [
+        {
+          "start": 46,
+          "end": 68,
+          "replacement": "match_terms($d.title, terms($q, mode: any, max_edits: 1))"
+        }
+      ]
+    }
+  }
+}
+[exit 1]
+
+=== lint --json drops a parse refusal's fix and edits, which the same text's query refusal carries
+$ /src/uf/bin/new/omnigraph lint --schema /tmp/tmp.M0vimLydJK/lj/s.pg --query /tmp/tmp.M0vimLydJK/lj/q.gq --json
+{
+  "status": "error",
+  "schema_source": {
+    "kind": "file",
+    "path": "/tmp/tmp.M0vimLydJK/lj/s.pg"
+  },
+  "query_path": "/tmp/tmp.M0vimLydJK/lj/q.gq",
+  "queries_processed": 0,
+  "errors": 1,
+  "warnings": 0,
+  "infos": 0,
+  "results": [],
+  "findings": [
+    {
+      "severity": "error",
+      "code": "Q017",
+      "message": "line 1, column 30: a filter is not an element of `match { … }`: a predicate belongs in the `where` after the braces",
+      "fix": "match { $d: Doc } where $d.n > 0",
+      "suggestion": {
+        "applicability": "machine_applicable",
+        "edits": [
+          {
+            "start": 12,
+            "end": 39,
+            "replacement": "match { $d: Doc } where $d.n > 0"
+          }
+        ]
+      }
+    }
+  ]
+}
+[exit 1]
+$ /src/uf/bin/new/omnigraph query q --query /tmp/tmp.M0vimLydJK/lj/q.gq --target /tmp/tmp.M0vimLydJK/lj/g --format json
+{
+  "error": "parse error: a filter is not an element of `match { … }`: a predicate belongs in the `where` after the braces",
+  "disposition": {
+    "effects": "none",
+    "action": "refresh"
+  },
+  "diagnostic": {
+    "code": "Q017",
+    "position": {
+      "line": 1,
+      "column": 30,
+      "byte": 29
+    },
+    "end": {
+      "line": 1,
+      "column": 40,
+      "byte": 39
+    },
+    "expected": "a filter is not an element of `match { … }`: a predicate belongs in the `where` after the braces",
+    "fix": "match { $d: Doc } where $d.n > 0",
+    "suggestion": {
+      "applicability": "machine_applicable",
+      "edits": [
+        {
+          "start": 12,
+          "end": 39,
+          "replacement": "match { $d: Doc } where $d.n > 0"
+        }
+      ]
+    }
+  }
+}
+[exit 1]
+
+=== NEW index build on an OLD graph with no index pass tells the operator to run the one-way full-text rebuild
+$ /src/uf/bin/new/omnigraph index build --target /tmp/tmp.M0vimLydJK/ib/g --json
+{
+  "uri": "/tmp/tmp.M0vimLydJK/ib/g",
+  "branch": "main",
+  "graph_commit_id": "hb1.01M853TZQ305SM8M3FN8RA73FV.2.01M853TZS5A3JQ2ZMK3DZB5RH1",
+  "indexes": [
+    {
+      "type_key": "node:Doc",
+      "property": "__id",
+      "kind": "btree",
+      "action": "built"
+    },
+    {
+      "type_key": "node:Doc",
+      "property": "slug",
+      "kind": "btree",
+      "action": "built"
+    },
+    {
+      "type_key": "node:Doc",
+      "property": "title",
+      "kind": "btree",
+      "action": "built"
+    },
+    {
+      "type_key": "node:Doc",
+      "property": "title",
+      "kind": "ngram",
+      "action": "built"
+    }
+  ],
+  "pending_indexes": []
+}
+[exit 0]
+$ /src/uf/bin/new/omnigraph index rebuild --kind full-text --target /tmp/tmp.M0vimLydJK/ib/g --json
+{
+  "uri": "/tmp/tmp.M0vimLydJK/ib/g",
+  "branch": "main",
+  "graph_commit_id": "hb1.01M853TZQ305SM8M3FN8RA73FV.3.01M853TZTT14J16CM5DSXB8M5T",
+  "warnings": [
+    "Full-text indexes were rebuilt with each property's analyzer profile (english_v1 where none is declared); any previous custom tokenizer settings were replaced.",
+    "Binaries before this release refuse full-text reads on this graph from now on; that binary's own `omnigraph index rebuild --kind full-text` restores them."
+  ],
+  "rebuilt_indexes": [
+    {
+      "type_key": "node:Doc",
+      "property": "slug"
+    },
+    {
+      "type_key": "node:Doc",
+      "property": "title"
+    }
+  ]
+}
+[exit 0]
+$ /src/uf/bin/rel/omnigraph query s --query /tmp/tmp.M0vimLydJK/ib/q.gq --params {"q":"graph"} --target /tmp/tmp.M0vimLydJK/ib/g --format json
+{
+  "error": "full-text index 'title_idx' requires rebuild: analyzer certificate payload is malformed (index UUID fd2ef7c3-9c78-4289-8e11-11224eb16077); run omnigraph index rebuild --kind full-text --target <target> --branch <branch> on the live branch (historical snapshots are unchanged)",
+  "code": "conflict",
+  "disposition": {
+    "effects": "none",
+    "action": "recover"
+  },
+  "full_text_index_rebuild_required": {
+    "index": "title_idx",
+    "reason": "analyzer certificate payload is malformed (index UUID fd2ef7c3-9c78-4289-8e11-11224eb16077)"
+  }
+}
+[exit 1]
+
+=== a lexical query of stop words: OLD answers no rows, NEW refuses with T20 and no fix
+$ /src/uf/bin/rel/omnigraph query s --query /tmp/tmp.M0vimLydJK/sw/old.gq --params {"q":"the"} --target /tmp/tmp.M0vimLydJK/sw/g --format json
+{
+  "query_name": "s",
+  "target": {
+    "branch": "main",
+    "snapshot": null
+  },
+  "row_count": 0,
+  "columns": [
+    "d.slug"
+  ],
+  "rows": [],
+  "graph_commit_id": "hb1.01M853TZYR0YWGP5EXASW2VVTS.2.01M853V00JAMBAA0HC5Y5QT6VP"
+}
+[exit 0]
+$ /src/uf/bin/new/omnigraph query s --query /tmp/tmp.M0vimLydJK/sw/new.gq --params {"q":"the"} --target /tmp/tmp.M0vimLydJK/sw/g --format json
+{
+  "query_name": "s",
+  "target": {
+    "branch": "main",
+    "snapshot": null
+  },
+  "row_count": 0,
+  "columns": [
+    "d.slug"
+  ],
+  "rows": [],
+  "graph_commit_id": "hb1.01M853TZYR0YWGP5EXASW2VVTS.2.01M853V00JAMBAA0HC5Y5QT6VP"
+}
+[exit 0]
+
+=== the HTTP load response reports mode replace where OLD reported merge, for the same request and contract version
+OLD: mode = merge 
+NEW: mode = replace 
+
+=== load --mode merge --json: the refusal is a usage error on stderr (exit 64) with no JSON, unlike load csv's coded Q004
+$ /src/uf/bin/new/omnigraph load --data /tmp/tmp.M0vimLydJK/cm/d.jsonl --mode merge --target /tmp/tmp.M0vimLydJK/cm/g --json
+{
+  "error": "parse error: the load mode `merge` was removed; write `replace`, which means what `merge` meant (`upsert` sets only the properties a record names)",
+  "code": "bad_request",
+  "disposition": {
+    "effects": "none",
+    "action": "fix"
+  },
+  "diagnostic": {
+    "code": "Q004",
+    "expected": "the load mode `merge` was removed; write `replace`, which means what `merge` meant (`upsert` sets only the properties a record names)",
+    "fix": "--mode replace"
+  }
+}
+[exit 1]
+
+work directory: /tmp/tmp.M0vimLydJK

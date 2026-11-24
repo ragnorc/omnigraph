@@ -1,0 +1,1712 @@
+[
+ {
+  "id": "F5",
+  "class": "c (doc, minor)",
+  "note": "a no-step schema plan lists none of the stored one-way constructs",
+  "part": "Part 1+2 (random configurations)",
+  "kind": "one_way_listing_noop",
+  "sig": "a plan with no step lists none of the one-way constructs the schema holds",
+  "oracle": 4,
+  "cases": [
+   1003,
+   1009,
+   1036,
+   1047,
+   1054,
+   1060,
+   1072,
+   1106,
+   1110,
+   1121,
+   1130,
+   1144,
+   1148,
+   1152,
+   1154,
+   1156,
+   1166,
+   1175,
+   1194,
+   1207,
+   1213,
+   1222,
+   1228,
+   1238,
+   1241,
+   1276,
+   1289,
+   1298,
+   1301,
+   1306,
+   1307,
+   1317,
+   1320,
+   1332,
+   1360,
+   1364,
+   1365,
+   1374,
+   1377,
+   1385,
+   1393,
+   1398,
+   1408,
+   1430,
+   1431,
+   1432,
+   1445,
+   1473,
+   1474,
+   1478,
+   1480,
+   1492,
+   1495,
+   1498,
+   1506,
+   1517,
+   1529,
+   1538,
+   1544,
+   1545,
+   1566,
+   1571,
+   1578,
+   1579,
+   1589,
+   1600,
+   1613,
+   1629,
+   1635,
+   1644,
+   1659,
+   1673,
+   1683,
+   1684,
+   1686,
+   1690,
+   1693,
+   1702,
+   1707,
+   1708,
+   1719,
+   1724,
+   1730,
+   1751,
+   1760,
+   1762,
+   1777,
+   1788,
+   1792,
+   1803,
+   1833,
+   1839,
+   1840,
+   1847,
+   1874,
+   1875,
+   1876,
+   1885,
+   1887,
+   1905,
+   1907,
+   1914,
+   1915,
+   1922,
+   1929,
+   1945,
+   1951,
+   1968,
+   1976,
+   1988,
+   1991,
+   1996,
+   1997
+  ],
+  "occurrences": 124,
+  "example": {
+   "seed": 1003,
+   "where": "schema d",
+   "detail": {
+    "expected": [
+     [
+      "full_text_analyzer",
+      "T3",
+      "txt0_rn"
+     ],
+     [
+      "full_text_index",
+      "T3",
+      "txt0_rn"
+     ],
+     [
+      "full_text_scorer",
+      "T3",
+      "txt0_rn"
+     ]
+    ]
+   }
+  }
+ },
+ {
+  "id": "F3",
+  "class": "c (pre-existing)",
+  "note": "maintenance commands refuse in plain text under --json (here GQ 2's index build, optimize, cleanup)",
+  "part": "Part 3 alternating writers",
+  "kind": "integrity",
+  "sig": "main:uncoded:plain-text",
+  "oracle": 5,
+  "cases": [
+   5002,
+   5005,
+   5008,
+   5012,
+   5014,
+   5101,
+   5104,
+   5109,
+   5111,
+   5113,
+   5118,
+   5120,
+   5122,
+   5126,
+   5127,
+   5202,
+   5205,
+   5207,
+   5208,
+   5210,
+   5220,
+   5221,
+   5222,
+   5300,
+   5301,
+   5302,
+   5305,
+   5306,
+   5307,
+   5309,
+   5313,
+   5314,
+   5316,
+   5403,
+   5409,
+   5411,
+   5413,
+   5414,
+   5416,
+   5418,
+   5420,
+   5421,
+   5422,
+   5423,
+   5425,
+   5426
+  ],
+  "occurrences": 142,
+  "example": {
+   "seed": 5002,
+   "where": "index build",
+   "detail": {
+    "args": [
+     "index",
+     "build",
+     "--target",
+     "/src/uf/work/alt/s5002/u",
+     "--json"
+    ],
+    "rc": 1,
+    "out": "",
+    "err": "target /src/uf/work/alt/s5002/u (inline): direct graph /src/uf/work/alt/s5002/u; requested=/src/uf/work/alt/s5002/u; provider=Local; branch=main\nError: \n   0: schema evolution is locked down in phase 1: schema feature 'full-text-analysis' in the schema_contract row is unknown to this build; upgrade omnigraph before opening this graph; open will not recover or migrate this schema; manual coordination is required\n\n  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ BACKTRACE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n   1: __libc_start_main<unknown>\n      at <unknown source file>:<unknown line>\n"
+   }
+  }
+ },
+ {
+  "id": "F3",
+  "class": "c (pre-existing)",
+  "note": "maintenance commands refuse in plain text under --json (here GQ 2's index build, optimize, cleanup)",
+  "part": "Part 1+2 (random configurations)",
+  "kind": "integrity",
+  "sig": "main:uncoded:plain-text",
+  "oracle": 5,
+  "cases": [
+   1011,
+   1030,
+   1038,
+   1042,
+   1066,
+   1097,
+   1127,
+   1163,
+   1172,
+   1203,
+   1206,
+   1214,
+   1229,
+   1247,
+   1257,
+   1270,
+   1286,
+   1350,
+   1385,
+   1391,
+   1400,
+   1416,
+   1419,
+   1423,
+   1428,
+   1564,
+   1591,
+   1637,
+   1646,
+   1667,
+   1671,
+   1675,
+   1689,
+   1708,
+   1714,
+   1730,
+   1772,
+   1813,
+   1814,
+   1881,
+   1944,
+   1948,
+   1989
+  ],
+  "occurrences": 69,
+  "example": {
+   "seed": 1011,
+   "where": "main index build (probe)",
+   "detail": {
+    "args": [
+     "index",
+     "build",
+     "--target",
+     "/src/uf/work/cases/s1011/probe-main",
+     "--json"
+    ],
+    "rc": 1,
+    "out": "",
+    "err": "target /src/uf/work/cases/s1011/probe-main (inline): direct graph /src/uf/work/cases/s1011/probe-main; requested=/src/uf/work/cases/s1011/probe-main; provider=Local; branch=main\nError: \n   0: storage: stage index batch on node:T2 ([]): stage_index_fold: fold index 'l0_label_list' on 'l0': Invalid user input: A btree index can only be created on a non-nested field., /root/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lance-index-13.0.0/src/scalar/btree.rs:3620:24\n\n  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ BACKTRACE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n   1: __libc_start_main<unknown>\n      at <unknown source file>:<unknown line>\n"
+   }
+  }
+ },
+ {
+  "id": "F3",
+  "class": "c (pre-existing)",
+  "note": "maintenance commands refuse in plain text under --json (here GQ 2's index build, optimize, cleanup)",
+  "part": "Part 3 alternating writers",
+  "kind": "integrity",
+  "sig": "rel:uncoded:plain-text",
+  "oracle": 5,
+  "cases": [
+   5005,
+   5008,
+   5016,
+   5019,
+   5023,
+   5101,
+   5104,
+   5111,
+   5112,
+   5113,
+   5118,
+   5120,
+   5122,
+   5126,
+   5127,
+   5202,
+   5207,
+   5209,
+   5210,
+   5220,
+   5221,
+   5222,
+   5300,
+   5309,
+   5315,
+   5316,
+   5317,
+   5318,
+   5403,
+   5409,
+   5416,
+   5421,
+   5422,
+   5425,
+   5426
+  ],
+  "occurrences": 99,
+  "example": {
+   "seed": 5005,
+   "where": "rel index build (probe)",
+   "detail": {
+    "args": [
+     "index",
+     "build",
+     "--target",
+     "/src/uf/work/alt/s5005/probe-rel",
+     "--json"
+    ],
+    "rc": 1,
+    "out": "",
+    "err": "target /src/uf/work/alt/s5005/probe-rel (inline): direct graph /src/uf/work/alt/s5005/probe-rel; requested=/src/uf/work/alt/s5005/probe-rel; provider=Local; branch=main\nError: \n   0: storage: stage index batch on node:T0 ([]): stage_index_fold: fold index 'l0_label_list' on 'l0': Invalid user input: A btree index can only be created on a non-nested field., /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lance-index-13.0.0/src/scalar/btree.rs:3620:24\n\n  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ BACKTRACE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n   1: __libc_start_main<unknown>\n      at <unknown source file>:<unknown line>\n"
+   }
+  }
+ },
+ {
+  "id": "F3",
+  "class": "c (pre-existing)",
+  "note": "maintenance commands refuse in plain text under --json (here GQ 2's index build, optimize, cleanup)",
+  "part": "Part 1+2 (random configurations)",
+  "kind": "integrity",
+  "sig": "rel:uncoded:plain-text",
+  "oracle": 5,
+  "cases": [
+   1011,
+   1030,
+   1270,
+   1286,
+   1350,
+   1385,
+   1391,
+   1400,
+   1428,
+   1564,
+   1591,
+   1667,
+   1671,
+   1675,
+   1689,
+   1714,
+   1813,
+   1814,
+   1881,
+   1944
+  ],
+  "occurrences": 27,
+  "example": {
+   "seed": 1011,
+   "where": "rel index build (probe)",
+   "detail": {
+    "args": [
+     "index",
+     "build",
+     "--target",
+     "/src/uf/work/cases/s1011/probe-rel",
+     "--json"
+    ],
+    "rc": 1,
+    "out": "",
+    "err": "target /src/uf/work/cases/s1011/probe-rel (inline): direct graph /src/uf/work/cases/s1011/probe-rel; requested=/src/uf/work/cases/s1011/probe-rel; provider=Local; branch=main\nError: \n   0: storage: stage index batch on node:T2 ([]): stage_index_fold: fold index 'l0_label_list' on 'l0': Invalid user input: A btree index can only be created on a non-nested field., /home/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/lance-index-13.0.0/src/scalar/btree.rs:3620:24\n\n  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ BACKTRACE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n   1: __libc_start_main<unknown>\n      at <unknown source file>:<unknown line>\n"
+   }
+  }
+ },
+ {
+  "id": "F5",
+  "class": "c (doc, minor)",
+  "note": "a no-step schema plan lists none of the stored one-way constructs",
+  "part": "Part 3 alternating writers",
+  "kind": "one_way_listing_noop",
+  "sig": "a plan with no step lists none of the one-way constructs the schema holds",
+  "oracle": 4,
+  "cases": [
+   5017,
+   5019,
+   5109,
+   5114,
+   5122,
+   5127,
+   5201,
+   5301,
+   5302,
+   5303,
+   5309,
+   5313,
+   5318,
+   5321,
+   5411,
+   5413,
+   5425
+  ],
+  "occurrences": 19,
+  "example": {
+   "seed": 5017,
+   "where": "schema c_set",
+   "detail": {
+    "expected": [
+     [
+      "full_text_analyzer",
+      "T1",
+      "txt1"
+     ],
+     [
+      "full_text_index",
+      "T1",
+      "txt1"
+     ]
+    ]
+   }
+  }
+ },
+ {
+  "id": "F1",
+  "class": "c (pre-existing)",
+  "note": "the same, against a graph rebuilt from the export",
+  "part": "Part 1+2 (random configurations)",
+  "kind": "fresh_graph_differs",
+  "sig": "near fresh",
+  "oracle": 1,
+  "cases": [
+   1168,
+   1813,
+   1828
+  ],
+  "occurrences": 3,
+  "example": {
+   "seed": 1168,
+   "where": "final",
+   "detail": {
+    "read": "near_T0_v0",
+    "upgraded": {
+     "error": null,
+     "code": null,
+     "columns": [
+      "x.txt0",
+      "x.s0",
+      "x.s2",
+      "x.s4",
+      "dist"
+     ],
+     "types": [
+      "string not null",
+      "string",
+      "int32 not null",
+      "int32",
+      "float not null"
+     ],
+     "n": 2,
+     "rows": [
+      {
+       "x.txt0": "naïve naïve harbour",
+       "x.s0": "alpha",
+       "x.s2": -487,
+       "x.s4": -795,
+       "dist": 4.688616752624512
+      },
+      {
+       "x.txt0": "@#$% ()",
+       "x.s0": "gamma",
+       "x.s2": -734,
+       "x.s4": -949,
+       "dist": 6.255527496337891
+      }
+     ]
+    },
+    "fresh": {
+     "error": null,
+     "code": null,
+     "columns": [
+      "x.txt0",
+      "x.s0",
+      "x.s2",
+      "x.s4",
+      "dist"
+     ],
+     "types": [
+      "string not null",
+      "string",
+      "int32 not null",
+      "int32",
+      "float not null"
+     ],
+     "n": 4,
+     "rows": [
+      {
+       "x.txt0": "naïve naïve harbour",
+       "x.s0": "alpha",
+       "x.s2": -487,
+       "x.s4": -795,
+       "dist": 4.688616752624512
+      },
+      {
+       "x.txt0": "@#$% ()",
+       "x.s0": "gamma",
+       "x.s2": -734,
+       "x.s4": -949,
+       "dist": 6.255527496337891
+      },
+      {
+       "x.txt0": "the and why of a",
+       "x.s0": "beta",
+       "x.s2": -431,
+       "x.s4": -465,
+       "dist": 7.485541343688965
+      },
+      {
+       "x.txt0": "café café delta",
+       "x.s0": null,
+       "x.s2": -98,
+       "x.s4": null,
+       "dist": 8.314546585083008
+      }
+     ]
+    },
+    "history": [
+     "write:insert",
+     "write:delete",
+     "branch:",
+     "cleanup:",
+     "index_build:",
+     "index_build:",
+     "optimize:",
+     "write:update",
+     "schema:d"
+    ]
+   }
+  }
+ },
+ {
+  "id": "F1",
+  "class": "c (pre-existing)",
+  "note": "nearest returns fewer than k rows after a vector index build, a delete and optimize",
+  "part": "Part 1+2 (random configurations)",
+  "kind": "index_state_changed_answer",
+  "sig": "near after main index build+rebuild",
+  "oracle": 1,
+  "cases": [
+   1168,
+   1828,
+   1919
+  ],
+  "occurrences": 3,
+  "example": {
+   "seed": 1168,
+   "where": "7:optimize:+main-rebuilt",
+   "detail": {
+    "read": "near_T0_v0",
+    "first": "3:branch:",
+    "then": "7:optimize:+main-rebuilt",
+    "first_obs": {
+     "error": null,
+     "code": null,
+     "columns": [
+      "x.txt0",
+      "x.s0",
+      "x.s2",
+      "x.s4",
+      "dist"
+     ],
+     "types": [
+      "string not null",
+      "string",
+      "int32 not null",
+      "int32",
+      "float not null"
+     ],
+     "n": 4,
+     "rows": [
+      {
+       "x.txt0": "naïve naïve harbour",
+       "x.s0": "alpha",
+       "x.s2": -487,
+       "x.s4": -795,
+       "dist": 4.688616752624512
+      },
+      {
+       "x.txt0": "@#$% ()",
+       "x.s0": "gamma",
+       "x.s2": -734,
+       "x.s4": -949,
+       "dist": 6.255527496337891
+      },
+      {
+       "x.txt0": "the and why of a",
+       "x.s0": "beta",
+       "x.s2": -431,
+       "x.s4": -465,
+       "dist": 7.485541343688965
+      },
+      {
+       "x.txt0": "café café delta",
+       "x.s0": null,
+       "x.s2": -98,
+       "x.s4": null,
+       "dist": 8.314546585083008
+      }
+     ]
+    },
+    "then_obs": {
+     "error": null,
+     "code": null,
+     "columns": [
+      "x.txt0",
+      "x.s0",
+      "x.s2",
+      "x.s4",
+      "dist"
+     ],
+     "types": [
+      "string not null",
+      "string",
+      "int32 not null",
+      "int32",
+      "float not null"
+     ],
+     "n": 2,
+     "rows": [
+      {
+       "x.txt0": "naïve naïve harbour",
+       "x.s0": "alpha",
+       "x.s2": -487,
+       "x.s4": -795,
+       "dist": 4.688616752624512
+      },
+      {
+       "x.txt0": "@#$% ()",
+       "x.s0": "gamma",
+       "x.s2": -734,
+       "x.s4": -949,
+       "dist": 6.255527496337891
+      }
+     ]
+    },
+    "via": "after main index build+rebuild",
+    "history": [
+     "write:insert",
+     "write:delete",
+     "branch:",
+     "cleanup:",
+     "index_build:",
+     "index_build:",
+     "optimize:"
+    ]
+   }
+  }
+ },
+ {
+  "id": "F1",
+  "class": "c (pre-existing)",
+  "note": "nearest returns fewer than k rows after a vector index build, a delete and optimize",
+  "part": "Part 1+2 (random configurations)",
+  "kind": "index_state_changed_answer",
+  "sig": "near after rel index build+rebuild",
+  "oracle": 1,
+  "cases": [
+   1168,
+   1828,
+   1919
+  ],
+  "occurrences": 3,
+  "example": {
+   "seed": 1168,
+   "where": "7:optimize:+rel-rebuilt",
+   "detail": {
+    "read": "near_T0_v0",
+    "first": "3:branch:",
+    "then": "7:optimize:+rel-rebuilt",
+    "first_obs": {
+     "error": null,
+     "code": null,
+     "columns": [
+      "x.txt0",
+      "x.s0",
+      "x.s2",
+      "x.s4",
+      "dist"
+     ],
+     "types": [
+      "string not null",
+      "string",
+      "int32 not null",
+      "int32",
+      "float not null"
+     ],
+     "n": 4,
+     "rows": [
+      {
+       "x.txt0": "naïve naïve harbour",
+       "x.s0": "alpha",
+       "x.s2": -487,
+       "x.s4": -795,
+       "dist": 4.688616752624512
+      },
+      {
+       "x.txt0": "@#$% ()",
+       "x.s0": "gamma",
+       "x.s2": -734,
+       "x.s4": -949,
+       "dist": 6.255527496337891
+      },
+      {
+       "x.txt0": "the and why of a",
+       "x.s0": "beta",
+       "x.s2": -431,
+       "x.s4": -465,
+       "dist": 7.485541343688965
+      },
+      {
+       "x.txt0": "café café delta",
+       "x.s0": null,
+       "x.s2": -98,
+       "x.s4": null,
+       "dist": 8.314546585083008
+      }
+     ]
+    },
+    "then_obs": {
+     "error": null,
+     "code": null,
+     "columns": [
+      "x.txt0",
+      "x.s0",
+      "x.s2",
+      "x.s4",
+      "dist"
+     ],
+     "types": [
+      "string not null",
+      "string",
+      "int32 not null",
+      "int32",
+      "float not null"
+     ],
+     "n": 2,
+     "rows": [
+      {
+       "x.txt0": "naïve naïve harbour",
+       "x.s0": "alpha",
+       "x.s2": -487,
+       "x.s4": -795,
+       "dist": 4.688616752624512
+      },
+      {
+       "x.txt0": "@#$% ()",
+       "x.s0": "gamma",
+       "x.s2": -734,
+       "x.s4": -949,
+       "dist": 6.255527496337891
+      }
+     ]
+    },
+    "via": "after rel index build+rebuild",
+    "history": [
+     "write:insert",
+     "write:delete",
+     "branch:",
+     "cleanup:",
+     "index_build:",
+     "index_build:",
+     "optimize:"
+    ]
+   }
+  }
+ },
+ {
+  "id": "F1",
+  "class": "c (pre-existing)",
+  "note": "nearest returns fewer than k rows after a vector index build, a delete and optimize",
+  "part": "Part 1+2 (random configurations)",
+  "kind": "index_state_changed_answer",
+  "sig": "near state",
+  "oracle": 1,
+  "cases": [
+   1168,
+   1828,
+   1919
+  ],
+  "occurrences": 3,
+  "example": {
+   "seed": 1168,
+   "where": "7:optimize:",
+   "detail": {
+    "read": "near_T0_v0",
+    "first": "3:branch:",
+    "then": "7:optimize:",
+    "first_obs": {
+     "error": null,
+     "code": null,
+     "columns": [
+      "x.txt0",
+      "x.s0",
+      "x.s2",
+      "x.s4",
+      "dist"
+     ],
+     "types": [
+      "string not null",
+      "string",
+      "int32 not null",
+      "int32",
+      "float not null"
+     ],
+     "n": 4,
+     "rows": [
+      {
+       "x.txt0": "naïve naïve harbour",
+       "x.s0": "alpha",
+       "x.s2": -487,
+       "x.s4": -795,
+       "dist": 4.688616752624512
+      },
+      {
+       "x.txt0": "@#$% ()",
+       "x.s0": "gamma",
+       "x.s2": -734,
+       "x.s4": -949,
+       "dist": 6.255527496337891
+      },
+      {
+       "x.txt0": "the and why of a",
+       "x.s0": "beta",
+       "x.s2": -431,
+       "x.s4": -465,
+       "dist": 7.485541343688965
+      },
+      {
+       "x.txt0": "café café delta",
+       "x.s0": null,
+       "x.s2": -98,
+       "x.s4": null,
+       "dist": 8.314546585083008
+      }
+     ]
+    },
+    "then_obs": {
+     "error": null,
+     "code": null,
+     "columns": [
+      "x.txt0",
+      "x.s0",
+      "x.s2",
+      "x.s4",
+      "dist"
+     ],
+     "types": [
+      "string not null",
+      "string",
+      "int32 not null",
+      "int32",
+      "float not null"
+     ],
+     "n": 2,
+     "rows": [
+      {
+       "x.txt0": "naïve naïve harbour",
+       "x.s0": "alpha",
+       "x.s2": -487,
+       "x.s4": -795,
+       "dist": 4.688616752624512
+      },
+      {
+       "x.txt0": "@#$% ()",
+       "x.s0": "gamma",
+       "x.s2": -734,
+       "x.s4": -949,
+       "dist": 6.255527496337891
+      }
+     ]
+    },
+    "via": "state",
+    "history": [
+     "write:insert",
+     "write:delete",
+     "branch:",
+     "cleanup:",
+     "index_build:",
+     "index_build:",
+     "optimize:"
+    ]
+   }
+  }
+ },
+ {
+  "id": "F1",
+  "class": "c (pre-existing)",
+  "note": "the same, against a graph rebuilt from the export",
+  "part": "Part 1+2 (random configurations)",
+  "kind": "fresh_graph_differs",
+  "sig": "rrf fresh",
+  "oracle": 1,
+  "cases": [
+   1813
+  ],
+  "occurrences": 1,
+  "example": {
+   "seed": 1813,
+   "where": "final",
+   "detail": {
+    "read": "rrf_T1_v0_txt0",
+    "upgraded": {
+     "error": null,
+     "code": null,
+     "columns": [
+      "x.txt0",
+      "x.s0",
+      "x.s1",
+      "x.s3",
+      "s"
+     ],
+     "types": [
+      "string not null",
+      "int32 not null",
+      "int32",
+      "int32",
+      "double not null"
+     ],
+     "n": 6,
+     "rows": [
+      {
+       "x.txt0": "",
+       "x.s0": -458,
+       "x.s1": 106,
+       "x.s3": 721,
+       "s": 0.01639344262295082
+      },
+      {
+       "x.txt0": "naïve naïve vector",
+       "x.s0": -683,
+       "x.s1": null,
+       "x.s3": 494,
+       "s": 0.016129032258064516
+      },
+      {
+       "x.txt0": "supercalifragilisticexpialidociousxxxxxxxxxx juliet",
+       "x.s0": -237,
+       "x.s1": 134,
+       "x.s3": null,
+       "s": 0.015873015873015872
+      },
+      {
+       "x.txt0": "it's very were",
+       "x.s0": -429,
+       "x.s1": 155,
+       "x.s3": -633,
+       "s": 0.015625
+      },
+      {
+       "x.txt0": "",
+       "x.s0": -840,
+       "x.s1": 99,
+       "x.s3": -702,
+       "s": 0.015384615384615385
+      },
+      {
+       "x.txt0": "()",
+       "x.s0": -945,
+       "x.s1": 8,
+       "x.s3": -385,
+       "s": 0.015151515151515152
+      }
+     ]
+    },
+    "fresh": {
+     "error": null,
+     "code": null,
+     "columns": [
+      "x.txt0",
+      "x.s0",
+      "x.s1",
+      "x.s3",
+      "s"
+     ],
+     "types": [
+      "string not null",
+      "int32 not null",
+      "int32",
+      "int32",
+      "double not null"
+     ],
+     "n": 8,
+     "rows": [
+      {
+       "x.txt0": "",
+       "x.s0": -458,
+       "x.s1": 106,
+       "x.s3": 721,
+       "s": 0.01639344262295082
+      },
+      {
+       "x.txt0": "naïve naïve vector",
+       "x.s0": -683,
+       "x.s1": null,
+       "x.s3": 494,
+       "s": 0.016129032258064516
+      },
+      {
+       "x.txt0": "supercalifragilisticexpialidociousxxxxxxxxxx juliet",
+       "x.s0": -237,
+       "x.s1": 134,
+       "x.s3": null,
+       "s": 0.015873015873015872
+      },
+      {
+       "x.txt0": "it's very were",
+       "x.s0": -429,
+       "x.s1": 155,
+       "x.s3": -633,
+       "s": 0.015625
+      },
+      {
+       "x.txt0": "",
+       "x.s0": -840,
+       "x.s1": 99,
+       "x.s3": -702,
+       "s": 0.015384615384615385
+      },
+      {
+       "x.txt0": "()",
+       "x.s0": -945,
+       "x.s1": 8,
+       "x.s3": -385,
+       "s": 0.015151515151515152
+      },
+      {
+       "x.txt0": "vector café C++ русский graf ran",
+       "x.s0": -545,
+       "x.s1": null,
+       "x.s3": -730,
+       "s": 0.014925373134328358
+      },
+      {
+       "x.txt0": "graph",
+       "x.s0": -963,
+       "x.s1": 127,
+       "x.s3": 815,
+       "s": 0.014705882352941176
+      }
+     ]
+    },
+    "history": [
+     "write:update",
+     "schema:i_body",
+     "optimize:",
+     "write:replace",
+     "branch:",
+     "schema:i_body",
+     "branch:",
+     "optimize:",
+     "schema:b",
+     "schema:c_set",
+     "schema:c_change",
+     "index_build:",
+     "schema:c_back"
+    ]
+   }
+  }
+ },
+ {
+  "id": "—",
+  "class": "a",
+  "note": "results.index-state: GQ 2's nearest returned fewer than k rows (an exact prefix of NEW's)",
+  "part": "Part 1+2 (random configurations)",
+  "kind": "gq2_new_difference",
+  "sig": "nearest rows different-identities [lagging]",
+  "oracle": 3,
+  "cases": [
+   1855
+  ],
+  "occurrences": 4,
+  "example": {
+   "seed": 1855,
+   "where": "0:start:",
+   "detail": {
+    "side": "rel",
+    "read": "near_T1_v0",
+    "verdict": {
+     "class": "new",
+     "sig": "nearest rows different-identities [lagging]",
+     "why": "matrix classifier: a? results.full-text-analysis (rows moved; read by hand)"
+    },
+    "old": {
+     "error": null,
+     "code": null,
+     "columns": [
+      "x.k",
+      "dist"
+     ],
+     "types": [
+      "string not null",
+      "float not null"
+     ],
+     "n": 4,
+     "rows": [
+      {
+       "x.k": "t1-000006",
+       "dist": 2.1066551208496094
+      },
+      {
+       "x.k": "t1-000013",
+       "dist": 2.3458175659179688
+      },
+      {
+       "x.k": "t1-000023",
+       "dist": 3.0139551162719727
+      },
+      {
+       "x.k": "t1-000025",
+       "dist": 3.026381492614746
+      }
+     ]
+    },
+    "new": {
+     "error": null,
+     "code": null,
+     "columns": [
+      "x.k",
+      "dist"
+     ],
+     "types": [
+      "string not null",
+      "float not null"
+     ],
+     "n": 5,
+     "rows": [
+      {
+       "x.k": "t1-000006",
+       "dist": 2.1066551208496094
+      },
+      {
+       "x.k": "t1-000013",
+       "dist": 2.3458175659179688
+      },
+      {
+       "x.k": "t1-000023",
+       "dist": 3.0139551162719727
+      },
+      {
+       "x.k": "t1-000025",
+       "dist": 3.026381492614746
+      },
+      {
+       "x.k": "t1-000004",
+       "dist": 3.4821386337280273
+      }
+     ]
+    },
+    "state": "lagging",
+    "field": "T1.v0",
+    "params": {
+     "v": [
+      -0.6064453125,
+      -0.794921875,
+      0.21484375,
+      -0.8251953125,
+      -0.734375,
+      -0.6279296875,
+      -0.4326171875,
+      -0.5361328125
+     ]
+    }
+   }
+  }
+ },
+ {
+  "id": "—",
+  "class": "harness",
+  "note": "the probe drew an empty insert (fixed in the harness at seed ~1460)",
+  "part": "Part 1+2 (random configurations)",
+  "kind": "gq2_write_refused",
+  "sig": "main reads but cannot write",
+  "oracle": 4,
+  "cases": [
+   1453
+  ],
+  "occurrences": 2,
+  "example": {
+   "seed": 1453,
+   "where": "0:start:",
+   "detail": {
+    "msg": "parse error: expected ident",
+    "status": "ok"
+   }
+  }
+ },
+ {
+  "id": "—",
+  "class": "harness",
+  "note": "the probe drew an empty insert (fixed in the harness at seed ~1460)",
+  "part": "Part 1+2 (random configurations)",
+  "kind": "gq2_write_refused",
+  "sig": "rel reads but cannot write",
+  "oracle": 4,
+  "cases": [
+   1453
+  ],
+  "occurrences": 2,
+  "example": {
+   "seed": 1453,
+   "where": "0:start:",
+   "detail": {
+    "msg": "parse error: expected ident",
+    "status": "ok"
+   }
+  }
+ },
+ {
+  "id": "F6",
+  "class": "c (pre-existing, minor)",
+  "note": "near query_memory_bytes, an index build or optimize turns an answer into a resource refusal",
+  "part": "Part 1+2 stress (100,000 rows)",
+  "kind": "fresh_graph_differs",
+  "sig": "rng fresh",
+  "oracle": 1,
+  "cases": [
+   9011
+  ],
+  "occurrences": 1,
+  "example": {
+   "seed": 9011,
+   "where": "final",
+   "detail": {
+    "read": "rng_T0_s3",
+    "upgraded": {
+     "error": "resource limit exceeded for query_memory_bytes: actual 191148197, limit 157286400\ndisposition: {\"effects\":\"none\",\"action\":\"fix\"}",
+     "code": null,
+     "columns": null,
+     "types": null,
+     "n": null,
+     "rows": []
+    },
+    "fresh": {
+     "error": null,
+     "code": null,
+     "columns": [
+      "x.txt0",
+      "x.s2",
+      "x.s4"
+     ],
+     "types": [
+      "string not null",
+      "uint32 not null",
+      "bool"
+     ],
+     "n": 53999,
+     "rows": [
+      {
+       "x.txt0": "",
+       "x.s2": 2243532,
+       "x.s4": null
+      },
+      {
+       "x.txt0": "",
+       "x.s2": 2470566,
+       "x.s4": null
+      },
+      {
+       "x.txt0": "",
+       "x.s2": 3240819,
+       "x.s4": null
+      },
+      {
+       "x.txt0": "",
+       "x.s2": 3771658,
+       "x.s4": false
+      },
+      {
+       "x.txt0": "",
+       "x.s2": 4561053,
+       "x.s4": null
+      },
+      {
+       "x.txt0": "",
+       "x.s2": 5720062,
+       "x.s4": null
+      },
+      {
+       "x.txt0": "",
+       "x.s2": 6458836,
+       "x.s4": null
+      },
+      {
+       "x.txt0": "",
+       "x.s2": 6891108,
+       "x.s4": null
+      },
+      {
+       "x.txt0": "",
+       "x.s2": 7473945,
+       "x.s4": true
+      },
+      {
+       "x.txt0": "",
+       "x.s2": 8151315,
+       "x.s4": null
+      },
+      {
+       "x.txt0": "",
+       "x.s2": 8308954,
+       "x.s4": false
+      },
+      {
+       "x.txt0": "",
+       "x.s2": 8389866,
+       "x.s4": null
+      }
+     ]
+    },
+    "history": [
+     "schema:f_to_fulltext",
+     "schema:f_to_plain",
+     "schema:e_explicit",
+     "schema:e_remove"
+    ]
+   }
+  }
+ },
+ {
+  "id": "—",
+  "class": "a",
+  "note": "results.limit-tie-rule: a distance tie at the limit boundary",
+  "part": "Part 3 alternating writers",
+  "kind": "gq2_new_difference",
+  "sig": "nearest rows same-identities-same-order [full]",
+  "oracle": 3,
+  "cases": [
+   5321
+  ],
+  "occurrences": 18,
+  "example": {
+   "seed": 5321,
+   "where": "10:gq2:fts_rebuild",
+   "detail": {
+    "side": "rel",
+    "read": "near_T2_v0",
+    "verdict": {
+     "class": "new",
+     "sig": "nearest rows same-identities-same-order [full]",
+     "why": "matrix classifier: a? results.full-text-analysis (rows moved; read by hand)"
+    },
+    "old": {
+     "error": null,
+     "code": null,
+     "columns": [
+      "x.ka",
+      "x.kb",
+      "dist"
+     ],
+     "types": [
+      "string not null",
+      "int32 not null",
+      "float not null"
+     ],
+     "n": 5,
+     "rows": [
+      {
+       "x.ka": "x",
+       "x.kb": 90,
+       "dist": 0.0007219314575195312
+      },
+      {
+       "x.ka": "z",
+       "x.kb": 18,
+       "dist": 0.014630317687988281
+      },
+      {
+       "x.ka": "ü",
+       "x.kb": 44,
+       "dist": 0.023636817932128906
+      },
+      {
+       "x.ka": "ü",
+       "x.kb": 49,
+       "dist": 0.035180091857910156
+      },
+      {
+       "x.ka": "ü",
+       "x.kb": 56,
+       "dist": 0.03635883331298828
+      }
+     ]
+    },
+    "new": {
+     "error": null,
+     "code": null,
+     "columns": [
+      "x.ka",
+      "x.kb",
+      "dist"
+     ],
+     "types": [
+      "string not null",
+      "int32 not null",
+      "float not null"
+     ],
+     "n": 5,
+     "rows": [
+      {
+       "x.ka": "x",
+       "x.kb": 90,
+       "dist": 0.0007219314575195312
+      },
+      {
+       "x.ka": "z",
+       "x.kb": 18,
+       "dist": 0.014630317687988281
+      },
+      {
+       "x.ka": "ü",
+       "x.kb": 44,
+       "dist": 0.023636817932128906
+      },
+      {
+       "x.ka": "ü",
+       "x.kb": 49,
+       "dist": 0.035180091857910156
+      },
+      {
+       "x.ka": "ü",
+       "x.kb": 111,
+       "dist": 0.03635883331298828
+      }
+     ]
+    },
+    "state": "rebuilt:main",
+    "field": "T2.v0",
+    "params": {
+     "v": [
+      0.5087890625,
+      -0.7265625
+     ]
+    }
+   }
+  }
+ },
+ {
+  "id": "—",
+  "class": "a",
+  "note": "results.limit-tie-rule: a distance tie at the limit boundary",
+  "part": "Part 3 alternating writers",
+  "kind": "gq2_new_difference",
+  "sig": "nearest rows same-identities-same-order [lagging]",
+  "oracle": 3,
+  "cases": [
+   5321
+  ],
+  "occurrences": 20,
+  "example": {
+   "seed": 5321,
+   "where": "0:start:",
+   "detail": {
+    "side": "rel",
+    "read": "near_T2_v0",
+    "verdict": {
+     "class": "new",
+     "sig": "nearest rows same-identities-same-order [lagging]",
+     "why": "matrix classifier: a? results.full-text-analysis (rows moved; read by hand)"
+    },
+    "old": {
+     "error": null,
+     "code": null,
+     "columns": [
+      "x.ka",
+      "x.kb",
+      "dist"
+     ],
+     "types": [
+      "string not null",
+      "int32 not null",
+      "float not null"
+     ],
+     "n": 5,
+     "rows": [
+      {
+       "x.ka": "x",
+       "x.kb": 90,
+       "dist": 0.0007219314575195312
+      },
+      {
+       "x.ka": "z",
+       "x.kb": 18,
+       "dist": 0.014630317687988281
+      },
+      {
+       "x.ka": "ü",
+       "x.kb": 44,
+       "dist": 0.023636817932128906
+      },
+      {
+       "x.ka": "ü",
+       "x.kb": 49,
+       "dist": 0.035180091857910156
+      },
+      {
+       "x.ka": "ü",
+       "x.kb": 56,
+       "dist": 0.03635883331298828
+      }
+     ]
+    },
+    "new": {
+     "error": null,
+     "code": null,
+     "columns": [
+      "x.ka",
+      "x.kb",
+      "dist"
+     ],
+     "types": [
+      "string not null",
+      "int32 not null",
+      "float not null"
+     ],
+     "n": 5,
+     "rows": [
+      {
+       "x.ka": "x",
+       "x.kb": 90,
+       "dist": 0.0007219314575195312
+      },
+      {
+       "x.ka": "z",
+       "x.kb": 18,
+       "dist": 0.014630317687988281
+      },
+      {
+       "x.ka": "ü",
+       "x.kb": 44,
+       "dist": 0.023636817932128906
+      },
+      {
+       "x.ka": "ü",
+       "x.kb": 49,
+       "dist": 0.035180091857910156
+      },
+      {
+       "x.ka": "ü",
+       "x.kb": 111,
+       "dist": 0.03635883331298828
+      }
+     ]
+    },
+    "state": "lagging",
+    "field": "T2.v0",
+    "params": {
+     "v": [
+      0.5087890625,
+      -0.7265625
+     ]
+    }
+   }
+  }
+ },
+ {
+  "id": "—",
+  "class": "a",
+  "note": "results.limit-tie-rule: a distance tie at the limit boundary",
+  "part": "Part 3 alternating writers",
+  "kind": "gq2_new_difference",
+  "sig": "nearest rows same-identities-same-order [rebuilt_by_new]",
+  "oracle": 3,
+  "cases": [
+   5321
+  ],
+  "occurrences": 4,
+  "example": {
+   "seed": 5321,
+   "where": "19:new:fts_rebuild",
+   "detail": {
+    "side": "rel",
+    "read": "near_T2_v0",
+    "verdict": {
+     "class": "new",
+     "sig": "nearest rows same-identities-same-order [rebuilt_by_new]",
+     "why": "matrix classifier: a? results.full-text-analysis (rows moved; read by hand)"
+    },
+    "old": {
+     "error": null,
+     "code": null,
+     "columns": [
+      "x.ka",
+      "x.kb",
+      "dist"
+     ],
+     "types": [
+      "string not null",
+      "int32 not null",
+      "float not null"
+     ],
+     "n": 5,
+     "rows": [
+      {
+       "x.ka": "x",
+       "x.kb": 90,
+       "dist": 0.0007219314575195312
+      },
+      {
+       "x.ka": "z",
+       "x.kb": 18,
+       "dist": 0.014630317687988281
+      },
+      {
+       "x.ka": "ü",
+       "x.kb": 44,
+       "dist": 0.023636817932128906
+      },
+      {
+       "x.ka": "ü",
+       "x.kb": 49,
+       "dist": 0.035180091857910156
+      },
+      {
+       "x.ka": "ü",
+       "x.kb": 56,
+       "dist": 0.03635883331298828
+      }
+     ]
+    },
+    "new": {
+     "error": null,
+     "code": null,
+     "columns": [
+      "x.ka",
+      "x.kb",
+      "dist"
+     ],
+     "types": [
+      "string not null",
+      "int32 not null",
+      "float not null"
+     ],
+     "n": 5,
+     "rows": [
+      {
+       "x.ka": "x",
+       "x.kb": 90,
+       "dist": 0.0007219314575195312
+      },
+      {
+       "x.ka": "z",
+       "x.kb": 18,
+       "dist": 0.014630317687988281
+      },
+      {
+       "x.ka": "ü",
+       "x.kb": 44,
+       "dist": 0.023636817932128906
+      },
+      {
+       "x.ka": "ü",
+       "x.kb": 49,
+       "dist": 0.035180091857910156
+      },
+      {
+       "x.ka": "ü",
+       "x.kb": 111,
+       "dist": 0.03635883331298828
+      }
+     ]
+    },
+    "state": "rebuilt_by_new",
+    "field": "T2.v0",
+    "params": {
+     "v": [
+      0.5087890625,
+      -0.7265625
+     ]
+    }
+   }
+  }
+ }
+]

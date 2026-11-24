@@ -1,0 +1,61 @@
+== rel (v0.16.0 release 00b8cca8)
+{
+  "version": "0.16.0",
+  "channel": "stable",
+  "commit": "00b8cca842f2bf009bebeefcf765672b5ff64b26",
+  "http_contract": "0.14",
+  "protocols": {
+    "studio": 1,
+    "target": 2,
+    "credential": 2,
+    "access": 2
+  },
+  "internal_schema": {
+    "writes": 17,
+    "serves": [
+      14,
+      17
+    ]
+  }
+}
+== main (9ad7c8ef91594463636a3048ea20bbb557720cc6)
+{
+  "version": "0.16.1",
+  "channel": null,
+  "commit": null,
+  "http_contract": "0.14",
+  "protocols": {
+    "studio": 1,
+    "target": 2,
+    "credential": 2,
+    "access": 2
+  },
+  "internal_schema": {
+    "writes": 18,
+    "serves": [
+      14,
+      18
+    ]
+  }
+}
+== new (a74de14071cf125157eb147b7209a4357cba9071)
+{
+  "version": "0.16.1",
+  "channel": null,
+  "commit": null,
+  "http_contract": "0.14",
+  "gq_language": "3.0",
+  "protocols": {
+    "studio": 1,
+    "target": 2,
+    "credential": 2,
+    "access": 2
+  },
+  "internal_schema": {
+    "writes": 18,
+    "serves": [
+      14,
+      18
+    ]
+  }
+}
