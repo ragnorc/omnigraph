@@ -1,0 +1,10 @@
+# main d3a354e7 (fix source set aside), new tests only
+$ cargo dev-test --test operation_routes issue_1554
+test a_cancel_during_the_publication_is_noted_on_the_succeeded_record_issue_1554 ... FAILED
+test a_cancel_answered_202_reaches_the_terminal_record_issue_1554 ... FAILED
+thread 'a_cancel_during_the_publication_is_noted_on_the_succeeded_record_issue_1554' (28820) panicked at crates/omnigraph-server/tests/operation_routes.rs:726:5:
+  left: Null
+ right: "a cancellation arrived after the publication started: cancelled by operator"
+thread 'a_cancel_answered_202_reaches_the_terminal_record_issue_1554' (28819) panicked at crates/omnigraph-server/tests/operation_routes.rs:658:5:
+26 of 37 cancels answered 202 are missing from the terminal record: [
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 5 filtered out; finished in 2.51s
