@@ -471,6 +471,43 @@ async fn graph_listing_names_exactly_the_graphs_a_caller_holds_a_permission_on()
     }
 }
 
+/// Public readiness tells an unauthenticated caller no more about the
+/// registry than discovery lists to a caller with no grant: nothing. Here
+/// the caller lists no graph, while `/readyz` counts the one it cannot see.
+// contract: E6
+#[tokio::test(flavor = "multi_thread")]
+async fn readiness_counts_no_graph_a_caller_cannot_list_issue_1551() {
+    let temp = init_loaded_graph().await;
+    let graph = graph_path(temp.path());
+    let state = AppState::open_with_bearer_tokens(
+        graph.to_string_lossy().to_string(),
+        vec![("nobody".into(), "nobody-token".into())],
+    )
+    .await
+    .unwrap();
+    let app = build_app(state);
+    let (status, body) =
+        json_response(&app, get_request("/graphs/discovery", "nobody-token")).await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert_eq!(body["graphs"], json!([]), "the caller lists no graph");
+
+    let (status, ready) =
+        json_response(&app, Request::get("/readyz").body(Body::empty()).unwrap()).await;
+    assert_eq!(status, StatusCode::OK, "{ready}");
+    for field in [
+        "served_graph_count",
+        "ready_graph_count",
+        "loading_graph_count",
+        "blocked_graph_count",
+    ] {
+        assert!(
+            ready.get(field).is_none(),
+            "unauthenticated /readyz reveals {field} = {}: {ready}",
+            ready[field]
+        );
+    }
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn signed_identities_obey_current_policy_and_attribute_writes() {
     let tokens = data_tokens::DataTokens::new();
