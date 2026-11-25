@@ -284,6 +284,73 @@ async fn branch_create_open_list_and_lazy_branching_work() {
     assert_eq!(count_rows(&main, "node:Person").await, 4);
 }
 
+/// Issue #1538: a graph's branches live under its own root, whatever
+/// characters the root path holds. A `?` is an ordinary file-name character
+/// on Linux and macOS, and every Windows path canonicalizes to the verbatim
+/// form `\\?\C:\...`; the branch create must neither write outside the root
+/// nor leave a branch that a copy of the root cannot read.
+#[tokio::test]
+async fn branch_create_keeps_branch_under_a_root_whose_path_has_a_question_mark_issue_1538() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().join("q?x").join("graph");
+    let uri = root.to_str().unwrap();
+    let main = init_and_load_at(uri, TEST_SCHEMA).await;
+    main.branch_create("feature").await.unwrap();
+    mutate_branch(
+        &main,
+        "feature",
+        MUTATION_QUERIES,
+        "insert_person",
+        &mixed_params(&[("$name", "Eve")], &[("$age", 22)]),
+    )
+    .await
+    .unwrap();
+
+    fn files(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+        for entry in std::fs::read_dir(dir).unwrap() {
+            let path = entry.unwrap().path();
+            if path.is_dir() {
+                files(&path, out);
+            } else {
+                out.push(path);
+            }
+        }
+    }
+    let mut all = Vec::new();
+    files(dir.path(), &mut all);
+    let outside = all
+        .iter()
+        .filter(|path| !path.starts_with(&root))
+        .collect::<Vec<_>>();
+    assert!(
+        outside.is_empty(),
+        "every file of the graph stays under its root {}; written outside: {outside:#?}",
+        root.display()
+    );
+
+    let copy = dir.path().join("copy");
+    copy_dir(&root, &copy);
+    let copied = helpers::session(Omnigraph::open(copy.to_str().unwrap()).await.unwrap());
+    assert_eq!(
+        count_rows_branch(&copied, "feature", "node:Person").await,
+        5,
+        "a copy of the root carries the branch"
+    );
+}
+
+fn copy_dir(from: &std::path::Path, to: &std::path::Path) {
+    std::fs::create_dir_all(to).unwrap();
+    for entry in std::fs::read_dir(from).unwrap() {
+        let entry = entry.unwrap();
+        let target = to.join(entry.file_name());
+        if entry.file_type().unwrap().is_dir() {
+            copy_dir(&entry.path(), &target);
+        } else {
+            std::fs::copy(entry.path(), target).unwrap();
+        }
+    }
+}
+
 /// The newest commit `list_commits` reports for `branch`.
 async fn newest_commit(db: &Omnigraph, branch: &str) -> GraphCommit {
     db.list_commits(Some(branch)).await.unwrap().remove(0)
