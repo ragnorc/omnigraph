@@ -1,0 +1,13 @@
+== root s3://omnigraph-ci/repro-1795642851/plain/root
+apply with g:    complete
+apply without g: complete
+keys after removal:
+      1     plain/root/__cluster/lock.json
+      2     plain/root/__cluster/resources
+      1     plain/root/__cluster/state.json
+apply with g:    complete
+== root s3://omnigraph-ci/repro-1795642851/my data/root
+apply with g:    refused: target_invalid: an s3 path must name one object key, got 's3://omnigraph-ci/repro-1795642851/my%20data/root': Omnigraph would store its objects under the key 'repro-1795642851/my%20data/root' and Lanc
+apply without g: refused: target_invalid: an s3 path must name one object key, got 's3://omnigraph-ci/repro-1795642851/my%20data/root': Omnigraph would store its objects under the key 'repro-1795642851/my%20data/root' and Lanc
+keys after removal:
+apply with g:    refused: target_invalid: an s3 path must name one object key, got 's3://omnigraph-ci/repro-1795642851/my%20data/root': Omnigraph would store its objects under the key 'repro-1795642851/my%20data/root' and Lanc

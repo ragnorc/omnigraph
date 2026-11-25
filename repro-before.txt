@@ -1,0 +1,17 @@
+== root s3://omnigraph-ci/repro-1795641092/plain/root
+apply with g:    complete
+apply without g: complete
+keys after removal:
+      1     plain/root/__cluster/lock.json
+      2     plain/root/__cluster/resources
+      1     plain/root/__cluster/state.json
+apply with g:    complete
+== root s3://omnigraph-ci/repro-1795641092/my data/root
+apply with g:    complete
+apply without g: complete
+keys after removal:
+      6     my data/root/graphs/g.omni
+      1     my%20data/root/__cluster/lock.json
+      2     my%20data/root/__cluster/resources
+      1     my%20data/root/__cluster/state.json
+apply with g:    refused: deployment_outcome_unknown: deployment 01M8A8SCDHMG1382BGX005VPX1:3:01M8A8SDHRBFHZ2B9WWWAAECA3 graph creation remains outstanding under admission 01M8A8SDHF8ZVF4FV4YQQ05QS3: graph initiali

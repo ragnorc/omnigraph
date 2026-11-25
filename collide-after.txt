@@ -1,0 +1,16 @@
+== root s3://omnigraph-ci/evidence-1795642843/café
+apply with g:    refused: target_invalid: an s3 path must name one object key, got 's3://omnigraph-ci/evidence-1795642843/caf%C3%A9': Omnigraph would store its objects under the key 'evidence-1795642843/caf%C3%A9' and Lance under 'evidence-1795642843/café'; a percent escape or a character a URL escapes (a space, a non-ASCII letter, a brace, a quote) has two spellings, so use a path without them
+apply without g: refused: target_invalid: an s3 path must name one object key, got 's3://omnigraph-ci/evidence-1795642843/caf%C3%A9': Omnigraph would store its objects under the key 'evidence-1795642843/caf%C3%A9' and Lance under 'evidence-1795642843/café'; a percent escape or a character a URL escapes (a space, a non-ASCII letter, a brace, a quote) has two spellings, so use a path without them
+apply with g:    refused: target_invalid: an s3 path must name one object key, got 's3://omnigraph-ci/evidence-1795642843/caf%C3%A9': Omnigraph would store its objects under the key 'evidence-1795642843/caf%C3%A9' and Lance under 'evidence-1795642843/café'; a percent escape or a character a URL escapes (a space, a non-ASCII letter, a brace, a quote) has two spellings, so use a path without them
+== root s3://omnigraph-ci/evidence-1795642843/50%25off
+apply with g:    refused: target_invalid: an s3 path must name one object key, got 's3://omnigraph-ci/evidence-1795642843/50%25off': Omnigraph would store its objects under the key 'evidence-1795642843/50%25off' and Lance under 'evidence-1795642843/50%off'; a percent escape or a character a URL escapes (a space, a non-ASCII letter, a brace, a quote) has two spellings, so use a path without them
+apply without g: refused: target_invalid: an s3 path must name one object key, got 's3://omnigraph-ci/evidence-1795642843/50%25off': Omnigraph would store its objects under the key 'evidence-1795642843/50%25off' and Lance under 'evidence-1795642843/50%off'; a percent escape or a character a URL escapes (a space, a non-ASCII letter, a brace, a quote) has two spellings, so use a path without them
+apply with g:    refused: target_invalid: an s3 path must name one object key, got 's3://omnigraph-ci/evidence-1795642843/50%25off': Omnigraph would store its objects under the key 'evidence-1795642843/50%25off' and Lance under 'evidence-1795642843/50%off'; a percent escape or a character a URL escapes (a space, a non-ASCII letter, a brace, a quote) has two spellings, so use a path without them
+== two roots: s3://omnigraph-ci/evidence-1795642843/aAb then s3://omnigraph-ci/evidence-1795642843/a%41b
+apply aAb with g:   complete
+apply a%41b with g: refused: target_invalid: an s3 path must name one object key, got 's3://omnigraph-ci/evidence-1795642843/a%41b': Omnigraph would store its objects under the key 'evidence-1795642843/a%41b' and Lance under 'evidence-1795642843/aAb'; a percent escape or a character a URL escapes (a space, a non-ASCII letter, a brace, a quote) has two spellings, so use a path without them
+keys under evidence-1795642843/ (count per first three segments):
+      1     aAb/__cluster/lock.json
+      1     aAb/__cluster/resources
+      1     aAb/__cluster/state.json
+      6     aAb/graphs/g.omni

@@ -1,0 +1,27 @@
+== root s3://omnigraph-ci/evidence-1795641398/café
+apply with g:    complete
+apply without g: complete
+apply with g:    refused: deployment_outcome_unknown: deployment 01M8A92NPKANQ7ZCDN7630B99F:3:01M8A92P9DJ1DBXPYW6079BDVY graph creation remains outstanding under admission 01M8A92P95P8XM9NZWYKMCA0ZC: grap
+== root s3://omnigraph-ci/evidence-1795641398/50%25off
+apply with g:    complete
+apply without g: complete
+apply with g:    refused: deployment_outcome_unknown: deployment 01M8A92PKKV4A0ENTVQ1J2RTQC:3:01M8A92Q66YS9CWZ4Z6M039YN6 graph creation remains outstanding under admission 01M8A92Q5XW6RGKAH5VAPZ361R: grap
+== two roots: s3://omnigraph-ci/evidence-1795641398/aAb then s3://omnigraph-ci/evidence-1795641398/a%41b
+apply aAb with g:   complete
+apply a%41b with g: refused: deployment_outcome_unknown: deployment 01M8A92QW21AGRYR5XCJHH7PNM:1:01M8A92QXNAA25AREZ5HFG5X0Q graph creation remains outstanding under admission 01M8A92QXFTEJ3VY7R4GBGT0WY: grap
+keys under evidence-1795641398/ (count per first three segments):
+      2     50%25off/__cluster/resources
+      1     50%25off/__cluster/state.json
+      1     50%25off/graphs/g.omni
+      6     50%off/graphs/g.omni
+      1     a%41b/__cluster/resources
+      1     a%41b/__cluster/state.json
+      1     a%41b/graphs/g.omni
+      1     aAb/__cluster/lock.json
+      1     aAb/__cluster/resources
+      1     aAb/__cluster/state.json
+      6     aAb/graphs/g.omni
+      2     caf%C3%A9/__cluster/resources
+      1     caf%C3%A9/__cluster/state.json
+      1     caf%C3%A9/graphs/g.omni
+      6     café/graphs/g.omni
