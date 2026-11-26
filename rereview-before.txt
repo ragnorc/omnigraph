@@ -1,0 +1,15 @@
+# a_cancel_never_answers_202_for_a_run_whose_start_failed_issue_1554 against the OLD ordering (3264ef38: the run leaves the live set after releasing the record gate; the route ignores cancel_under's answer), with the two server seams at the same steps
+test a_cancel_never_answers_202_for_a_run_whose_start_failed_issue_1554 ... FAILED
+
+failures:
+
+---- a_cancel_never_answers_202_for_a_run_whose_start_failed_issue_1554 stdout ----
+thread 'a_cancel_never_answers_202_for_a_run_whose_start_failed_issue_1554' (11477) panicked at crates/omnigraph-server/tests/operation_routes.rs:1085:5:
+assertion `left == right` failed: a cancel after the run left is answered with its terminal record: {"lookup":"found","operation":{"operation_id":"01JC0000000000000000000001","request_digest":"sha256:9dd2de84425718cd7d9a9075206578abcd7138a4bd0fa348ea87c6a315b77e08","graph":"knowledge","schema_identity_domain":"01M8ANGX2SXN19T59PG1N17YQW","settlement_branch":"main","request":{"kind":"optimize"},"principal":"operator","accepted_at":"2026-11-26T00:54:08.338256061Z","state":"running","outcome":{"kind":"optimize"},"timings":{},"cancellation_request":{"by":"operator","at":"2026-11-26T00:54:08.364615059Z"}},"in_progress":false}
+  left: 202
+ right: 200
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.71s
+
+error: test failed, to rerun pass `-p omnigraph-server --test operation_routes`
+EXIT 101
