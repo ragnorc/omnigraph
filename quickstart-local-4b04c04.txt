@@ -1,0 +1,65 @@
++ /src/omnigraph/target/debug/omnigraph --version
+omnigraph 0.17.0
++ /src/omnigraph/target/debug/omnigraph init --schema schema.pg graph.omni
+target graph.omni (inline): direct graph /tmp/smoke-local/graph.omni; requested=/tmp/smoke-local/graph.omni; provider=Local; branch=main
+initialized /tmp/smoke-local/graph.omni
++ /src/omnigraph/target/debug/omnigraph load --data evidence.jsonl --mode overwrite --target ./graph.omni
+target ./graph.omni (inline): direct graph /tmp/smoke-local/graph.omni; requested=/tmp/smoke-local/graph.omni; provider=Local; branch=main
+loaded /tmp/smoke-local/graph.omni on branch main with overwrite: 5 entities across 2 node types and 1 edge types
++ /src/omnigraph/target/debug/omnigraph query sources_for_claim --query queries.gq --params '{"claim":"lower-latency"}' --format table --target ./graph.omni
+target ./graph.omni (inline): direct graph /tmp/smoke-local/graph.omni; requested=/tmp/smoke-local/graph.omni; provider=Local
+2 rows from branch main via sources_for_claim
+source            
+------------------
+Load test report  
+Production metrics
++ /src/omnigraph/target/debug/omnigraph branch create review/add-benchmark --target ./graph.omni
+target ./graph.omni (inline): direct graph /tmp/smoke-local/graph.omni; requested=/tmp/smoke-local/graph.omni; provider=Local; branch=review/add-benchmark
+created branch review/add-benchmark from main at hb1.01M8APPW5VP4Q2CPAFKYWEAT58.1.01M8APPW5VP4Q2CPAFKYWEAT58
++ /src/omnigraph/target/debug/omnigraph load --data benchmark.jsonl --mode append --branch review/add-benchmark --target ./graph.omni
+target ./graph.omni (inline): direct graph /tmp/smoke-local/graph.omni; requested=/tmp/smoke-local/graph.omni; provider=Local; branch=review/add-benchmark
+loaded /tmp/smoke-local/graph.omni on branch review/add-benchmark with append: 2 entities across 1 node types and 1 edge types
++ /src/omnigraph/target/debug/omnigraph query sources_for_claim --query queries.gq --params '{"claim":"lower-latency"}' --branch review/add-benchmark --target ./graph.omni
+target ./graph.omni (inline): direct graph /tmp/smoke-local/graph.omni; requested=/tmp/smoke-local/graph.omni; provider=Local
+3 rows from branch review/add-benchmark via sources_for_claim
+source               
+---------------------
+Independent benchmark
+Load test report     
+Production metrics   
++ /src/omnigraph/target/debug/omnigraph branch merge review/add-benchmark --into main --target ./graph.omni
+target ./graph.omni (inline): direct graph /tmp/smoke-local/graph.omni; requested=/tmp/smoke-local/graph.omni; provider=Local; branch=main
+merged review/add-benchmark into main: fast_forward
++ /src/omnigraph/target/debug/omnigraph query sources_for_claim --query queries.gq --params '{"claim":"lower-latency"}' --format table --target ./graph.omni
+target ./graph.omni (inline): direct graph /tmp/smoke-local/graph.omni; requested=/tmp/smoke-local/graph.omni; provider=Local
+3 rows from branch main via sources_for_claim
+source               
+---------------------
+Independent benchmark
+Load test report     
+Production metrics   
++ /src/omnigraph/target/debug/omnigraph branch list --target ./graph.omni
+target ./graph.omni (inline): direct graph /tmp/smoke-local/graph.omni; requested=/tmp/smoke-local/graph.omni; provider=Local
+main
+review/add-benchmark
++ /src/omnigraph/target/debug/omnigraph version --target ./graph.omni --json
++ /src/omnigraph/target/debug/omnigraph version --json
+{
+  "version": "0.17.0",
+  "channel": null,
+  "commit": null,
+  "http_contract": "0.14",
+  "protocols": {
+    "studio": 1,
+    "target": 2,
+    "credential": 2,
+    "access": 2
+  },
+  "internal_schema": {
+    "writes": 18,
+    "serves": [
+      14,
+      18
+    ]
+  }
+}
