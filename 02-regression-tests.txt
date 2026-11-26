@@ -1,0 +1,9 @@
+# Regression test a_capture_receives_a_callsite_another_thread_registered_first_issue_1560, run alone
+without the global subscriber (unfixed): failed 50/50
+with the global subscriber:              failed 0/50
+
+# Regression test an_owned_operation_closes_its_request_span_under_its_subscriber_issue_1560
+old OperationRuntime spawn:
+  left: ["native.operation", "native.operation"]
+ right: ["native.operation", "native.operation", "request"]
+fixed spawn_operation: ok

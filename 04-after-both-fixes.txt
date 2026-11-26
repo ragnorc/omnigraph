@@ -1,0 +1,2 @@
+# Both fixes: full omnigraph-server lib suite, --test-threads 64 (nproc 32)
+batch 1: fails=0/500

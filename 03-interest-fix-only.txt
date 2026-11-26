@@ -1,0 +1,20 @@
+# Interest-cache fix only (global subscriber, old OperationRuntime): full suite, --test-threads 64
+fails=5/500
+      5 ---- telemetry::tests::http_and_owned_operations_preserve_parent_context_without_payloads stdout ----
+
+## Backtrace of the misrouted parent release (keeper was then a Registry and panicked on the foreign id):
+2: <tracing_subscriber::registry::sharded::Registry as tracing_core::subscriber::Subscriber>::try_close
+3: <tracing_subscriber::layer::layered::Layered<tracing_subscriber::filter::filter_fn::DynFilterFn<tracing_subscriber::registry::sharded::Registry, omnigraph_server::test_log_capture::keep_callsite_interest_dynamic::__ct
+4: <tracing_subscriber::registry::sharded::DataInner as sharded_slab::clear::Clear>::clear
+5: <sharded_slab::page::slot::Slot<tracing_subscriber::registry::sharded::DataInner, sharded_slab::cfg::DefaultConfig>>::release_with::<sharded_slab::page::Local, <sharded_slab::page::slot::Slot<tracing_subscriber::regis
+6: <sharded_slab::pool::Pool<tracing_subscriber::registry::sharded::DataInner>>::clear
+7: core::ptr::drop_glue::<tracing_subscriber::registry::sharded::CloseGuard>
+8: core::ptr::drop_glue::<core::option::Option<tracing_subscriber::registry::sharded::CloseGuard>>
+9: <tracing_subscriber::layer::layered::Layered<tracing_subscriber::filter::layer_filters::Filtered<tracing_subscriber::fmt::fmt_layer::Layer<tracing_subscriber::layer::layered::Layered<core::option::Option<tracing_subsc
+12: core::ptr::drop_glue::<tracing::instrument::Instrumented<<omnigraph_server::operations::OperationRuntime>::submit<(), (), omnigraph_server::telemetry::tests::http_and_owned_operations_case::{closure#0}::{closure#1}::
+13: core::ptr::drop_glue::<tracing::instrument::WithDispatch<tracing::instrument::Instrumented<<omnigraph_server::operations::OperationRuntime>::submit<(), (), omnigraph_server::telemetry::tests::http_and_owned_operation
+14: core::ptr::drop_glue::<tokio::runtime::task::core::Stage<tracing::instrument::WithDispatch<tracing::instrument::Instrumented<<omnigraph_server::operations::OperationRuntime>::submit<(), (), omnigraph_server::telemetr
+15: <tokio::runtime::task::core::Core<tracing::instrument::WithDispatch<tracing::instrument::Instrumented<<omnigraph_server::operations::OperationRuntime>::submit<(), (), omnigraph_server::telemetry::tests::http_and_owne
+16: <tokio::runtime::task::core::Core<tracing::instrument::WithDispatch<tracing::instrument::Instrumented<<omnigraph_server::operations::OperationRuntime>::submit<(), (), omnigraph_server::telemetry::tests::http_and_owne
+17: <tokio::runtime::task::core::Core<tracing::instrument::WithDispatch<tracing::instrument::Instrumented<<omnigraph_server::operations::OperationRuntime>::submit<(), (), omnigraph_server::telemetry::tests::http_and_owne
+18: tokio::runtime::task::harness::poll_future::<tracing::instrument::WithDispatch<tracing::instrument::Instrumented<<omnigraph_server::operations::OperationRuntime>::submit<(), (), omnigraph_server::telemetry::tests::ht

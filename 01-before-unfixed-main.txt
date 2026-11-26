@@ -1,0 +1,12 @@
+# Full omnigraph-server lib suite, --test-threads 64 (nproc 32), unfixed main f403e102
+first batch:  fails=3/60   (an_uncertain_engine_failure... x2, telemetry::...http_and_owned_operations... x1)
+second batch: fails=2/200
+      1 ---- api_error_tests::an_uncertain_engine_failure_logs_the_status_its_response_sends stdout ----
+      1 ---- telemetry::tests::http_and_owned_operations_preserve_parent_context_without_payloads stdout ----
+
+## One failure as CI showed it (capture empty, left: 0):
+---- api_error_tests::an_uncertain_engine_failure_logs_the_status_its_response_sends stdout ----
+
+thread 'api_error_tests::an_uncertain_engine_failure_logs_the_status_its_response_sends' (14201) panicked at crates/omnigraph-server/src/lib.rs:2729:17:
+assertion `left == right` failed: engine failure without definite completion evidence: 
+  left: 0
